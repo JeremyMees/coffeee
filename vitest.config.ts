@@ -29,7 +29,12 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['app/**/*.{ts,vue}', 'server/**/*.ts', 'shared/**/*.ts'],
-      exclude: ['app/components/ui/**', 'app/assets/**', 'app/utils/shadcn.ts'],
+      exclude: [
+        'app/components/ui/**',
+        'app/assets/**',
+        'app/utils/shadcn.ts',
+        'server/utils/db.ts',
+      ],
       thresholds: {
         lines: 80,
         functions: 80,

@@ -3,12 +3,84 @@ name: Pull request
 on:
   pull_request:
     branches: ["main"]
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.number }}
   cancel-in-progress: true
+
+env:
+  NEON_BRANCH: preview/pr-${{ github.event.number }}
 
 jobs:
   validate:
     name: Validate
+    if: github.event.action != 'closed'
     uses: ./.github/workflows/validate.yaml
+
+  preview:
+    name: Preview
+    needs: validate
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    environment:
+      name: preview
+      url: ${{ steps.deployment.outputs.preview-url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Create Neon branch
+        id: database
+        uses: neondatabase/create-branch-action@v6.4.0
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          branch_name: ${{ env.NEON_BRANCH }}
+      - name: Run migrations
+        run: pnpm db:migrate
+        env:
+          NUXT_DATABASE_URL: ${{ steps.database.outputs.db_url }}
+      - name: Vercel deploy
+        id: deployment
+        uses: amondnet/vercel-action@v42.3.0
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          scope: lilmees
+          vercel-version: 50.44.0
+          vercel-args: >-
+            --env NUXT_DATABASE_URL=${{ steps.database.outputs.db_url_pooled }}
+            --meta prNumber=${{ github.event.number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check health
+        run: >-
+          curl --fail-with-body --silent --show-error
+          --header "x-vercel-protection-bypass: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}"
+          "${{ steps.deployment.outputs.preview-url }}/api/health"
+
+  cleanup:
+    name: Clean up preview
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Neon branch
+        uses: neondatabase/delete-branch-action@v3.2.1
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          branch: ${{ env.NEON_BRANCH }}
+      - name: Remove Vercel previews
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          urls=$(npx --yes vercel@50.44.0 list coffeee --meta "prNumber=$PR_NUMBER" --format json --scope lilmees --token "$VERCEL_TOKEN" | jq -r '.deployments[].url')
+          if [ -n "$urls" ]; then
+            npx --yes vercel@50.44.0 remove $urls --yes --scope lilmees --token "$VERCEL_TOKEN"
+          fi

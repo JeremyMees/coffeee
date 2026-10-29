@@ -47,3 +47,34 @@ jobs:
         uses: ./.github/actions/setup
       - name: Run tests with coverage gate
         run: pnpm test:coverage
+
+  end-to-end:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: coffeee
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NUXT_DATABASE_URL: postgres://postgres:postgres@localhost:5432/coffeee
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run migrations
+        run: pnpm db:migrate
+      - name: Run Playwright
+        run: pnpm test:e2e
