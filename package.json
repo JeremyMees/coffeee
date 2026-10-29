@@ -1,0 +1,40 @@
+{
+  "name": "coffeee",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "format": "prettier . --check",
+    "format:fix": "prettier . --write",
+    "typecheck": "nuxt typecheck",
+    "prepare": "husky",
+    "deps": "npx taze -w"
+  },
+  "dependencies": {
+    "@nuxt/a11y": "1.0.0-alpha.1",
+    "@nuxt/eslint": "1.17.0",
+    "@nuxt/hints": "1.1.5",
+    "@nuxt/test-utils": "4.3.4",
+    "eslint": "^10.13.0",
+    "nuxt": "npm:nuxt-nightly@5x",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "@golar/vue": "^0.1.11",
+    "@vitest/coverage-v8": "^5.0.5",
+    "@vue/test-utils": "^2.5.1",
+    "golar": "^0.1.11",
+    "happy-dom": "^21.0.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "vitest": "^5.0.5"
+  }
+}
