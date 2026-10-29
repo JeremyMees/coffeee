@@ -8,14 +8,14 @@ export default defineConfig({
       {
         test: {
           name: 'unit',
-          include: ['test/unit/*.{test,spec}.ts'],
+          include: ['test/unit/**/*.{test,spec}.ts'],
           environment: 'node',
         },
       },
       await defineVitestProject({
         test: {
           name: 'nuxt',
-          include: ['test/nuxt/*.{test,spec}.ts'],
+          include: ['test/nuxt/**/*.{test,spec}.ts'],
           environment: 'nuxt',
           environmentOptions: {
             nuxt: {
@@ -27,8 +27,15 @@ export default defineConfig({
       }),
     ],
     coverage: {
-      enabled: true,
       provider: 'v8',
+      include: ['app/**/*.{ts,vue}', 'server/**/*.ts', 'shared/**/*.ts'],
+      exclude: ['app/components/ui/**', 'app/assets/**', 'app/utils/shadcn.ts'],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
     },
   },
 })
