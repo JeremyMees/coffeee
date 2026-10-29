@@ -20,6 +20,10 @@ export default defineNuxtConfig({
 
   vite: { plugins: [tailwindcss()] },
 
+  runtimeConfig: {
+    databaseUrl: '',
+  },
+
   colorMode: { classSuffix: '' },
 
   shadcn: {

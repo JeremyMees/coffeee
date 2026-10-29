@@ -27,10 +27,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: ".nvmrc"
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Get production database URLs
+        id: database
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          direct=$(pnpm dlx neonctl@8.4.4 connection-string --project-id "$NEON_PROJECT_ID")
+          pooled=$(pnpm dlx neonctl@8.4.4 connection-string --project-id "$NEON_PROJECT_ID" --pooled)
+          echo "::add-mask::$direct"
+          echo "::add-mask::$pooled"
+          echo "direct=$direct" >> "$GITHUB_OUTPUT"
+          echo "pooled=$pooled" >> "$GITHUB_OUTPUT"
+      - name: Run migrations
+        run: pnpm db:migrate
+        env:
+          NUXT_DATABASE_URL: ${{ steps.database.outputs.direct }}
       - name: Vercel deploy
         id: deployment
         uses: amondnet/vercel-action@v42.3.0
@@ -40,3 +54,9 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           scope: lilmees
+          env: NUXT_DATABASE_URL=${{ steps.database.outputs.pooled }}
+      - name: Check health
+        run: >-
+          curl --fail-with-body --silent --show-error
+          --header "x-vercel-protection-bypass: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}"
+          "${{ steps.deployment.outputs.preview-url }}/api/health"
