@@ -49,12 +49,12 @@ jobs:
         id: deployment
         uses: amondnet/vercel-action@v42.3.0
         with:
-          vercel-args: --prod
+          vercel-version: 50.44.0
+          vercel-args: --prod --env NUXT_DATABASE_URL=${{ steps.database.outputs.pooled }}
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           scope: lilmees
-          env: NUXT_DATABASE_URL=${{ steps.database.outputs.pooled }}
       - name: Check health
         run: >-
           curl --fail-with-body --silent --show-error

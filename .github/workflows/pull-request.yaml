@@ -53,8 +53,11 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           scope: lilmees
+          vercel-version: 50.44.0
+          vercel-args: >-
+            --env NUXT_DATABASE_URL=${{ steps.database.outputs.db_url_pooled }}
+            --meta prNumber=${{ github.event.number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          env: NUXT_DATABASE_URL=${{ steps.database.outputs.db_url_pooled }}
       - name: Check health
         run: >-
           curl --fail-with-body --silent --show-error
@@ -62,7 +65,7 @@ jobs:
           "${{ steps.deployment.outputs.preview-url }}/api/health"
 
   cleanup:
-    name: Delete Neon branch
+    name: Clean up preview
     if: github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
@@ -72,3 +75,12 @@ jobs:
           project_id: ${{ secrets.NEON_PROJECT_ID }}
           api_key: ${{ secrets.NEON_API_KEY }}
           branch: ${{ env.NEON_BRANCH }}
+      - name: Remove Vercel previews
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          urls=$(npx --yes vercel@50.44.0 list coffeee --meta "prNumber=$PR_NUMBER" --format json --scope lilmees --token "$VERCEL_TOKEN" | jq -r '.deployments[].url')
+          if [ -n "$urls" ]; then
+            npx --yes vercel@50.44.0 remove $urls --yes --scope lilmees --token "$VERCEL_TOKEN"
+          fi
