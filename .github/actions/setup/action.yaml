@@ -1,0 +1,19 @@
+name: Setup
+description: Set up Node.js and pnpm, then install dependencies from the pnpm store cache
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version-file: ".nvmrc"
+        cache: pnpm
+
+    # postinstall runs nuxt prepare, so .nuxt exists for eslint, typecheck and tests
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
