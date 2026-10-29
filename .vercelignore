@@ -1,0 +1,13 @@
+test
+skills
+.github
+.husky
+.vscode
+.claude
+.agents
+README.md
+vitest.config.ts
+lint-staged.config.mjs
+eslint.config.mjs
+.prettierrc
+.prettierignore
