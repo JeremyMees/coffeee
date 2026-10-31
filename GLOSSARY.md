@@ -24,8 +24,8 @@ never adds a coffee. _Avoid_: Bag, order, rebuy, duplicate
 **Finished**: A purchase whose bag has been used up. _Avoid_: Out of stock,
 empty
 
-**Current stock**: The coffees that have at least one purchase in stock.
-_Avoid_: Inventory, shelf
+**Current stock**: The coffees on a shelf that have at least one purchase in
+stock. _Avoid_: Inventory
 
 **Last bought**: The purchase date of a coffee's most recent purchase. _Avoid_:
 Last ordered
@@ -75,8 +75,8 @@ by taste. _Avoid_: Tasting note, taste, notes
 
 ### Judging a coffee
 
-**Rating**: A verdict of one to five stars on a coffee as a whole, not on one
-purchase. _Avoid_: Score, stars
+**Rating**: A shelf's verdict of one to five stars on a coffee as a whole, not
+on one purchase. _Avoid_: Score, stars
 
 **Not yet rated**: A coffee that has no rating yet.
 
@@ -95,18 +95,38 @@ Gen 2. _Avoid_: Mill, machine
 **Brew method**: The way coffee is brewed, such as Espresso, Pour over, Moka pot
 or AeroPress. _Avoid_: Brew type, recipe, filter (say Pour over or Batch brew)
 
-**Grind setting**: A person's dial setting that works for one coffee on one
+**Grind setting**: A shelf's dial setting that works for one coffee on one
 grinder for one brew method, written the way that grinder labels its dial.
 _Avoid_: Grind size, grind level
 
 ### People
 
-**User**: A person with an account, who has their own purchases, ratings,
-would-buy-again verdicts, grind settings and owned grinders. All of that is
-private to them. _Avoid_: Member, account, household
+**User**: A person with an account. Every user gets a shelf of their own when
+they sign up and can belong to several shelves. _Avoid_: Account, profile
+
+**Shelf**: The coffee a group of users keep together, such as Home or Work. Its
+purchases, ratings, would-buy-again verdicts, grind settings and owned grinders
+belong to the shelf, not to one user: every member sees and changes them, and
+nobody else sees them. _Avoid_: Stock, household, stash, group
+
+**Member**: A user who belongs to a shelf. Every member can add, edit and finish
+coffee on it and invite others to it. _Avoid_: Participant, collaborator
+
+**Shelf owner**: The member who created a shelf. Only the shelf owner may remove
+members, rename or delete the shelf, and hand ownership to another member.
+_Avoid_: Admin, creator
+
+**Invite**: A single-use email invitation from a member to join their shelf. It
+is the only way a new person can sign up, besides an admin inviting them without
+a shelf. _Avoid_: Invitation link, referral
+
+**Notification**: A message telling members that something happened on a shelf:
+an invite, a coffee or purchase added, a bag finished, or a member who joined or
+left. It always shows in the app; invites are also emailed, and a user can turn
+on email for the others. _Avoid_: Alert, activity, message
 
 **Admin**: A user who may rename, merge and delete entries in the shared lists,
-and edit any coffee. _Avoid_: Moderator, owner
+and edit any coffee. _Avoid_: Moderator, shelf owner
 
 **Catalog**: Everything shared by all users: coffees, roasters, flavor notes,
 origins, regions, processes, varietals and grinders. A coffee in the catalog can

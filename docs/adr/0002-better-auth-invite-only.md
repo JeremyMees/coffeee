@@ -20,3 +20,6 @@ to stay comfortably inside the free tiers.
   and lets the auth flows run in our PGlite integration tests.
 - **Supabase Auth / Clerk**: hosted, but adds a second vendor and either couples
   us to Supabase or hits paid tiers as users grow.
+
+Email and password sign-in was added later, once the app needed to send email
+for shelves; see ADR 0004.
