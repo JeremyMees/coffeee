@@ -33,6 +33,8 @@ export default defineConfig({
         'app/components/ui/**',
         'app/assets/**',
         'app/utils/shadcn.ts',
+        'app/**/prototype/**',
+        'app/**/prototype*.ts',
         'server/utils/db.ts',
       ],
       thresholds: {
