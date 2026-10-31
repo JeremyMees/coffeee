@@ -16,8 +16,8 @@ a domain Jeremy owns, the same setup as dnd-tracker.
   sign-up must verify its email before it can sign in.
 - Accounts with the same verified email are linked, so signing in with Google
   after signing up with a password reaches the same user.
-- The production app moves to Jeremy's own domain, which is also the verified
-  sending domain in Plunk.
+- Emails are sent from Jeremy's own domain, verified in Plunk, while the app
+  itself stays on its `vercel.app` address for now.
 - Email sending sits behind one server util, so tests replace it and assert on
   what would have been sent instead of calling Plunk.
 
