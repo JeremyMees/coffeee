@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.10",
+    "@internationalized/date": "^3.12.4",
     "@lucide/vue": "^1.63.0",
     "@nuxt/a11y": "1.0.0-alpha.1",
     "@nuxt/eslint": "1.17.0",
