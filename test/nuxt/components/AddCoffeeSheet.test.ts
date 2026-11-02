@@ -59,6 +59,13 @@ async function fillRequired(name = 'Ayele Fulasa') {
   await click('coffee-roasted-for', 'option-filter')
 }
 
+async function addedAndGone(stockPath: string) {
+  await vi.waitFor(() => {
+    expect(useAddCoffee().value).toBe(false)
+    expect(currentPath()).toBe(stockPath)
+  })
+}
+
 describe('AddCoffeeSheet', () => {
   it('stays closed until asked for', async () => {
     await mountSuspended(AddCoffeeSheet, {
@@ -156,8 +163,7 @@ describe('AddCoffeeSheet', () => {
         price: 16.5,
       },
     ])
-    await vi.waitFor(() => expect(useAddCoffee().value).toBe(false))
-    expect(currentPath()).toBe('/shelves/home')
+    await addedAndGone('/shelves/home')
   })
 
   it('leaves the optional details empty and can add a new roaster', async () => {
@@ -188,6 +194,7 @@ describe('AddCoffeeSheet', () => {
         price: null,
       }),
     ])
+    await addedAndGone('/shelves/home')
   })
 
   it('shows what the server refused next to the field', async () => {

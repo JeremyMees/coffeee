@@ -1,14 +1,29 @@
+import { readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm'
 import { drizzle } from 'drizzle-orm/pglite'
-import { migrate } from 'drizzle-orm/pglite/migrator'
+import { inject } from 'vitest'
 import * as schema from '#server/db/schemas'
 import type { TestDatabase } from '#test/support/types'
 
+let migrated: Promise<PGlite> | undefined
+
+async function loadMigrated() {
+  const dump = await readFile(inject('migratedDatabase'))
+
+  const template = new PGlite({
+    extensions: { pg_trgm },
+    loadDataDir: new Blob([dump]),
+  })
+  await template.waitReady
+
+  return template
+}
+
 export async function createTestDatabase() {
-  const client = new PGlite({ extensions: { pg_trgm } })
+  migrated ??= loadMigrated()
+  const client = (await (await migrated).clone()) as PGlite
   const db = drizzle({ client, schema })
-  await migrate(db, { migrationsFolder: 'server/db/migrations' })
 
   return { db, client }
 }
