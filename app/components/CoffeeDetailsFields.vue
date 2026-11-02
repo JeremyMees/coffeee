@@ -30,9 +30,12 @@ const roastedForChoices = roastedForOptions.map(value => ({
     <VeeField v-slot="{ componentField, errors }" name="roaster">
       <Field :data-invalid="errors.length ? true : undefined">
         <FieldLabel for="coffee-roaster">Roaster</FieldLabel>
-        <RoasterPicker
+        <ListPicker
           id="coffee-roaster"
           v-bind="componentField"
+          endpoint="/api/roasters"
+          placeholder="Search or add a roaster"
+          hint="Type the roaster's name"
           data-testid="coffee-roaster"
           :invalid="errors.length > 0"
         />

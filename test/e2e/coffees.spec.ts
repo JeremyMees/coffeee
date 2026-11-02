@@ -37,7 +37,7 @@ async function pickDate(page: Page, picker: string, isoDate: string) {
 async function pickRoaster(page: Page, name: string, isNew: boolean) {
   await page.getByTestId('coffee-roaster').fill(name)
   await page
-    .getByTestId(isNew ? 'roaster-option-new' : 'roaster-option')
+    .getByTestId(isNew ? 'list-option-new' : 'list-option')
     .filter({ hasText: name })
     .first()
     .click()
@@ -192,6 +192,26 @@ test('refuses a name the roaster already has', async ({ page, member }) => {
   await expect(
     sheet.getByText(`${roaster} already has a coffee called Red Brick`),
   ).toBeVisible()
+})
+
+test('suggests a similar roaster before adding a new one', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+
+  await page.getByTestId('page-add-coffee').click()
+  const misspelled = roaster.replace('Roaster', 'Roastery')
+  await page.getByTestId('coffee-roaster').fill(misspelled)
+
+  await expect(
+    page.getByTestId('list-option').filter({ hasText: roaster }),
+  ).toBeVisible()
+  await expect(page.getByTestId('list-option-new')).toHaveText(
+    `Add “${misspelled}”`,
+  )
 })
 
 test('keeps a roast date optional', async ({ page, member }) => {

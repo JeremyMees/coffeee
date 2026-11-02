@@ -24,6 +24,13 @@ export const newShelfSchema = z.object({
   ),
 })
 
+export const listSearchSchema = z.object({
+  search: z
+    .string({ error: 'Search with a single piece of text' })
+    .max(80, 'Keep the search to 80 characters or fewer')
+    .default(''),
+})
+
 export const inviteEmailSchema = z.object({
   email: z
     .string({ error: 'Enter a valid email' })

@@ -28,7 +28,6 @@ async function refreshEdited() {
   await refreshNuxtData([
     `coffee:${shelfId.value}:${coffeeId.value}`,
     `stock:${shelfId.value}`,
-    'roasters',
   ])
 }
 

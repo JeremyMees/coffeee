@@ -328,6 +328,34 @@ describe('GET /api/roasters', () => {
     ])
   })
 
+  it('suggests the roasters similar to a search', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers)
+
+    const similar = await request('/api/roasters?search=squar%20mil', {
+      headers,
+    })
+    const unknown = await request('/api/roasters?search=April', { headers })
+
+    expect(await similar.json()).toEqual([
+      { id: expect.any(String), name: 'Square Mile' },
+    ])
+    expect(await unknown.json()).toEqual([])
+  })
+
+  it('refuses a search that is too long', async () => {
+    const { headers } = await member()
+
+    const response = await request(`/api/roasters?search=${'a'.repeat(81)}`, {
+      headers,
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      data: { errors: { search: 'Keep the search to 80 characters or fewer' } },
+    })
+  })
+
   it('refuses anonymous requests', async () => {
     const response = await request('/api/roasters')
 

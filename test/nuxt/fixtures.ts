@@ -1,6 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { Window as HappyWindow } from 'happy-dom'
+import { vi } from 'vitest'
 import { defineComponent } from 'vue'
 import type { CurrentUser } from '~/composables/useCurrentUser'
 import { localDate, useRouter } from '#imports'
@@ -84,27 +85,30 @@ export async function submit(formTestId: string) {
   await flushPromises()
 }
 
-export function roasterOptions() {
-  return [
-    ...document.body.querySelectorAll(
-      `${tid('roaster-option')}, ${tid('roaster-option-new')}`,
-    ),
-  ].map(element => element.textContent?.trim())
+const pickerOption = `${tid('list-option')}, ${tid('list-option-new')}`
+
+export function pickerOptions() {
+  return [...document.body.querySelectorAll(pickerOption)].map(element =>
+    element.textContent?.trim(),
+  )
 }
 
-export async function pickRoasterOption(text: string) {
-  const option = [
-    ...document.body.querySelectorAll<HTMLElement>(
-      `${tid('roaster-option')}, ${tid('roaster-option-new')}`,
-    ),
-  ].find(element => element.textContent?.trim() === text)!
+export async function pickOption(text: string) {
+  const option = await vi.waitFor(() => {
+    const found = [
+      ...document.body.querySelectorAll<HTMLElement>(pickerOption),
+    ].find(element => element.textContent?.trim() === text)
+    if (!found) throw new Error(`No option “${text}”`)
+
+    return found
+  })
   option.click()
   await flushPromises()
 }
 
 export async function pickRoaster(search: string, option: string) {
   await type('coffee-roaster', search)
-  await pickRoasterOption(option)
+  await pickOption(option)
 }
 
 export async function pickDate(pickerTestId: string, isoDate: string) {

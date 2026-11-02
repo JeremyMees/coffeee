@@ -5,9 +5,9 @@ import {
   addCoffee,
   editCoffee,
   findShelfCoffee,
-  listRoasters,
   listStock,
 } from '#server/utils/coffees'
+import { findSimilar } from '#server/utils/lists'
 import { createShelf } from '#server/utils/shelves'
 import type { NewCoffee } from '#shared/utils/schemas'
 import { createTestDatabase, createTestUser } from '#test/support/database'
@@ -78,7 +78,7 @@ describe('adding a coffee', () => {
       coffee: newCoffee({ roaster: 'la-cabra', name: 'Kiamabara' }),
     })
 
-    expect(await listRoasters(db)).toEqual([
+    expect(await findSimilar(db, roaster, '')).toEqual([
       { id: expect.any(String), name: 'La Cabra' },
     ])
   })
@@ -433,10 +433,9 @@ describe('editing a coffee', () => {
       details: { ...details, roaster: 'April' },
     })
 
-    expect((await listRoasters(db)).map(item => item.name)).toEqual([
-      'April',
-      'Square Mile',
-    ])
+    expect((await findSimilar(db, roaster, '')).map(item => item.name)).toEqual(
+      ['April', 'Square Mile'],
+    )
   })
 
   it('never touches anyone’s purchases', async () => {
@@ -461,7 +460,7 @@ describe('editing a coffee', () => {
 })
 
 describe('roasters', () => {
-  it('are listed by name', async () => {
+  it('are created once per name', async () => {
     const { db, sarah, home } = await setup()
     for (const name of ['Square Mile', 'April', 'La Cabra']) {
       await addCoffee(db, {
@@ -471,7 +470,7 @@ describe('roasters', () => {
       })
     }
 
-    const roasters = await listRoasters(db)
+    const roasters = await findSimilar(db, roaster, '')
 
     expect(roasters.map(item => item.name)).toEqual([
       'April',

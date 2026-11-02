@@ -1,5 +1,15 @@
 import { registerEndpoint } from '@nuxt/test-utils/runtime'
-import { createError, readBody } from 'h3'
+import { createError, getQuery, readBody } from 'h3'
+import type { H3Event } from 'h3'
+import { nameKey } from '#imports'
+
+export function fakeList(entries: () => { id: string; name: string }[]) {
+  return (event: H3Event) => {
+    const key = nameKey(String(getQuery(event).search ?? ''))
+
+    return entries().filter(entry => nameKey(entry.name).includes(key))
+  }
+}
 
 export function ayele() {
   return {
@@ -67,10 +77,13 @@ export function fakeApi() {
 
   registerEndpoint('/api/shelves/home/stock', () => api.stock)
 
-  registerEndpoint('/api/roasters', () => [
-    { id: 'r1', name: 'La Cabra' },
-    { id: 'r2', name: 'Square Mile' },
-  ])
+  registerEndpoint(
+    '/api/roasters',
+    fakeList(() => [
+      { id: 'r1', name: 'La Cabra' },
+      { id: 'r2', name: 'Square Mile' },
+    ]),
+  )
 
   registerEndpoint('/api/shelves/home/coffees', {
     method: 'POST',

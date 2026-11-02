@@ -1,24 +1,34 @@
 <script setup lang="ts">
+import { refDebounced } from '@vueuse/core'
+
 defineOptions({ inheritAttrs: false })
 
 const model = defineModel<string>({ default: '' })
 
-defineProps<{ id: string; invalid?: boolean }>()
-
-const { data: roasters } = useFetch('/api/roasters', {
-  key: 'roasters',
-  default: () => [],
-})
+const props = defineProps<{
+  id: string
+  endpoint: string
+  placeholder: string
+  hint: string
+  invalid?: boolean
+}>()
 
 const search = ref(model.value)
-const key = computed(() => nameKey(search.value))
-const matches = computed(() =>
-  roasters.value.filter(roaster => nameKey(roaster.name).includes(key.value)),
+const searched = refDebounced(search, 150)
+
+const { data: entries } = useFetch<{ id: string; name: string }[]>(
+  () => props.endpoint,
+  {
+    query: { search: searched },
+    default: () => [],
+  },
 )
+
+const key = computed(() => nameKey(search.value))
 const canCreate = computed(
   () =>
     key.value !== '' &&
-    !roasters.value.some(roaster => nameKey(roaster.name) === key.value),
+    !entries.value.some(entry => nameKey(entry.name) === key.value),
 )
 </script>
 
@@ -29,7 +39,7 @@ const canCreate = computed(
         v-bind="$attrs"
         :id="id"
         v-model="search"
-        placeholder="Search or add a roaster"
+        :placeholder="placeholder"
         autocomplete="off"
         :aria-invalid="invalid ? true : undefined"
       />
@@ -37,28 +47,28 @@ const canCreate = computed(
     <ComboboxList class="rounded-[18px] p-1.5 font-mono ring-primary">
       <ComboboxViewport>
         <ComboboxItem
-          v-for="roaster in matches"
-          :key="roaster.id"
-          :value="roaster.name"
-          data-testid="roaster-option"
+          v-for="entry in entries"
+          :key="entry.id"
+          :value="entry.name"
+          data-testid="list-option"
           class="rounded-full px-3 py-2"
         >
-          {{ roaster.name }}
+          {{ entry.name }}
         </ComboboxItem>
         <ComboboxItem
           v-if="canCreate"
           :value="search.trim()"
-          data-testid="roaster-option-new"
+          data-testid="list-option-new"
           class="rounded-full px-3 py-2"
         >
           Add “{{ search.trim() }}”
         </ComboboxItem>
         <p
-          v-if="!matches.length && !canCreate"
-          data-testid="roaster-hint"
+          v-if="!entries.length && !canCreate"
+          data-testid="list-hint"
           class="px-3 py-2 text-xs"
         >
-          Type the roaster's name
+          {{ hint }}
         </p>
       </ComboboxViewport>
     </ComboboxList>

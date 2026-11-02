@@ -1,13 +1,13 @@
-import { createError, readBody } from 'h3'
+import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
 import type { z } from 'zod'
 import { fieldErrors } from '#shared/utils/validation'
 
-export async function readValidBody<Schema extends z.ZodType>(
-  event: H3Event,
+function validate<Schema extends z.ZodType>(
   schema: Schema,
-): Promise<z.output<Schema>> {
-  const result = schema.safeParse(await readBody(event))
+  input: unknown,
+): z.output<Schema> {
+  const result = schema.safeParse(input)
 
   if (!result.success) {
     const errors = fieldErrors(result.error)
@@ -20,4 +20,18 @@ export async function readValidBody<Schema extends z.ZodType>(
   }
 
   return result.data
+}
+
+export async function readValidBody<Schema extends z.ZodType>(
+  event: H3Event,
+  schema: Schema,
+) {
+  return validate(schema, await readBody(event))
+}
+
+export function readValidQuery<Schema extends z.ZodType>(
+  event: H3Event,
+  schema: Schema,
+) {
+  return validate(schema, getQuery(event))
 }

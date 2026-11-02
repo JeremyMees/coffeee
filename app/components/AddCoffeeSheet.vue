@@ -43,7 +43,7 @@ const add = handleSubmit(async coffee => {
     open.value = false
 
     await navigateTo(`/shelves/${shelf.value.id}`)
-    await refreshNuxtData([`stock:${shelf.value.id}`, 'roasters'])
+    await refreshNuxtData(`stock:${shelf.value.id}`)
   } catch (error) {
     const { fields, message } = serverErrors(error)
 

@@ -13,7 +13,7 @@ import {
   inputValue,
   pickDate,
   pickRoaster,
-  roasterOptions,
+  pickerOptions,
   submit,
   testUser,
   type,
@@ -105,7 +105,7 @@ describe('AddCoffeeSheet', () => {
 
     await type('coffee-roaster', 'square-mile')
 
-    expect(roasterOptions()).toEqual(['Square Mile'])
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Square Mile']))
   })
 
   it('adds the coffee with its first bag and goes to the stock', async () => {

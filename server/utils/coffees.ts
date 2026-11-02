@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, max, ne } from 'drizzle-orm'
+import { and, desc, eq, isNull, max, ne } from 'drizzle-orm'
 import { nameKey } from '#shared/utils/names'
 import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
 import type { Database } from '#server/db/database'
@@ -92,13 +92,6 @@ export function addCoffee(
 
     return { coffee: found, purchase: added! }
   })
-}
-
-export function listRoasters(db: Database) {
-  return db
-    .select({ id: roaster.id, name: roaster.name })
-    .from(roaster)
-    .orderBy(asc(roaster.nameKey))
 }
 
 export function listStock(db: Database, shelfId: string) {
