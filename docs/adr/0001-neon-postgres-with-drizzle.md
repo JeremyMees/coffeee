@@ -20,3 +20,9 @@ each photo's URL.
   deploys, which we turned off.
 - Tests never touch Neon: unit and integration tests run on PGlite, and the
   Playwright tests in CI run on a Postgres service container.
+- Photos are shrunk in the browser to WebP (JPEG where WebP cannot be made)
+  before upload, which keeps them under Vercel's 4.5 MB request limit and Blob's
+  free storage. Nuxt Image serves them through Vercel's image optimiser; the
+  build reads the Blob store's host from `BLOB_READ_WRITE_TOKEN` so the
+  optimiser accepts it. Without that token, in development and the Playwright
+  tests, photos are kept in `.data/photos` and served by the app itself.

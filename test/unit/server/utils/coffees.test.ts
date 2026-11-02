@@ -12,6 +12,7 @@ import {
 import {
   addCoffee,
   editCoffee,
+  findEditableCoffee,
   findShelfCoffee,
   listStock,
 } from '#server/utils/coffees'
@@ -192,6 +193,7 @@ describe('current stock', () => {
         colour: '#e4572e',
         roastedOn: '2026-10-28',
         flavorNotes: [],
+        photoUrl: null,
       },
     ])
   })
@@ -386,7 +388,7 @@ describe('editing a coffee', () => {
 
     expect(result).toEqual({
       outcome: 'edited',
-      coffee: { id: added.id, ...savedDetails },
+      coffee: { id: added.id, ...savedDetails, photoUrl: null },
     })
   })
 
@@ -720,5 +722,45 @@ describe('producers', () => {
     })
 
     expect((await show())!.producers).toEqual([])
+  })
+})
+
+describe('finding a coffee to edit', () => {
+  it('gives its photo to someone who may edit it', async () => {
+    const { db, sarah, home } = await setup()
+    const { coffee: added } = await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee(),
+    })
+    await db
+      .update(coffee)
+      .set({ photoUrl: '/api/photos/coffees/a.webp' })
+      .where(eq(coffee.id, added.id))
+
+    expect(
+      await findEditableCoffee(db, { coffeeId: added.id, editor: sarah }),
+    ).toEqual({ outcome: 'editable', photoUrl: '/api/photos/coffees/a.webp' })
+  })
+
+  it('refuses anyone else', async () => {
+    const { db, sarah, tom, home } = await setup()
+    const { coffee: added } = await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee(),
+    })
+
+    expect(
+      await findEditableCoffee(db, { coffeeId: added.id, editor: tom }),
+    ).toEqual({ outcome: 'forbidden' })
+  })
+
+  it('says when there is no such coffee', async () => {
+    const { db, sarah } = await setup()
+
+    expect(
+      await findEditableCoffee(db, { coffeeId: 'nope', editor: sarah }),
+    ).toEqual({ outcome: 'notFound' })
   })
 })

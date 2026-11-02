@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { useQueryClient } from '@tanstack/vue-query'
-import { readBody } from 'h3'
+import { readBody, readMultipartFormData } from 'h3'
 import {
   useCoffeeCreate,
+  useCoffeePhotoRemoval,
+  useCoffeePhotoUpdate,
   useCoffeeUpdate,
   useShelfCoffee,
   useStock,
@@ -11,7 +13,41 @@ import {
 import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
 
-const calls = { stock: 0, posted: [] as unknown[], patched: [] as unknown[] }
+const calls = {
+  stock: 0,
+  posted: [] as unknown[],
+  patched: [] as unknown[],
+  photos: [] as unknown[],
+}
+
+mockNuxtImport(
+  'compressPhoto',
+  () => async () => new Blob(['small'], { type: 'image/webp' }),
+)
+
+registerEndpoint('/api/shelves/cellar/coffees/c1/photo', {
+  method: 'PUT',
+  handler: async event => {
+    const [photo] = (await readMultipartFormData(event)) ?? []
+    calls.photos.push({
+      name: photo?.name,
+      filename: photo?.filename,
+      type: photo?.type,
+      content: photo?.data.toString(),
+    })
+
+    return { photoUrl: '/api/photos/coffees/a.webp' }
+  },
+})
+
+registerEndpoint('/api/shelves/cellar/coffees/c1/photo', {
+  method: 'DELETE',
+  handler: () => {
+    calls.photos.push('removed')
+
+    return { photoUrl: null }
+  },
+})
 
 registerEndpoint('/api/shelves/cellar/stock', () => {
   calls.stock++
@@ -46,6 +82,7 @@ beforeEach(() => {
   calls.stock = 0
   calls.posted = []
   calls.patched = []
+  calls.photos = []
 })
 
 async function withClient<T>(use: () => T) {
@@ -116,5 +153,43 @@ describe('useCoffeeUpdate', () => {
       { queryKey: queryKeys.shelf('cellar') },
       { queryKey: queryKeys.lists() },
     ])
+  })
+})
+
+describe('useCoffeePhotoUpdate', () => {
+  it('uploads the shrunk photo and refreshes that shelf', async () => {
+    const { result, invalidated } = await withClient(useCoffeePhotoUpdate)
+
+    const saved = await result.mutateAsync({
+      shelfId: 'cellar',
+      coffeeId: 'c1',
+      photo: new Blob(['huge'], { type: 'image/jpeg' }),
+    })
+
+    expect(saved).toEqual({ photoUrl: '/api/photos/coffees/a.webp' })
+    expect(calls.photos).toEqual([
+      {
+        name: 'photo',
+        filename: 'blob',
+        type: 'image/webp',
+        content: 'small',
+      },
+    ])
+    expect(invalidated()).toContainEqual({
+      queryKey: queryKeys.shelf('cellar'),
+    })
+  })
+})
+
+describe('useCoffeePhotoRemoval', () => {
+  it('removes the photo and refreshes that shelf', async () => {
+    const { result, invalidated } = await withClient(useCoffeePhotoRemoval)
+
+    await result.mutateAsync({ shelfId: 'cellar', coffeeId: 'c1' })
+
+    expect(calls.photos).toEqual(['removed'])
+    expect(invalidated()).toContainEqual({
+      queryKey: queryKeys.shelf('cellar'),
+    })
   })
 })

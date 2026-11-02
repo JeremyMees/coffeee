@@ -1,6 +1,7 @@
 import { createError, getRouterParam } from 'h3'
 import type { H3Event } from 'h3'
 import { useAuth } from '#server/utils/auth'
+import { findEditableCoffee } from '#server/utils/coffees'
 import { useDb } from '#server/utils/db'
 import { findShelf } from '#server/utils/shelves'
 
@@ -39,4 +40,26 @@ export async function requireShelf(event: H3Event) {
   }
 
   return { user, shelf }
+}
+
+export function refuseCoffeeEdit(outcome: 'notFound' | 'forbidden'): never {
+  if (outcome === 'notFound') {
+    throw createError({ statusCode: 404, statusMessage: 'Coffee not found' })
+  }
+
+  throw createError({
+    statusCode: 403,
+    statusMessage:
+      'Only the person who added this coffee or an admin can edit it',
+  })
+}
+
+export async function requireEditableCoffee(event: H3Event) {
+  const { user } = await requireShelf(event)
+  const coffeeId = getRouterParam(event, 'coffeeId')!
+  const found = await findEditableCoffee(useDb(), { coffeeId, editor: user })
+
+  if (found.outcome !== 'editable') refuseCoffeeEdit(found.outcome)
+
+  return { coffeeId, photoUrl: found.photoUrl }
 }

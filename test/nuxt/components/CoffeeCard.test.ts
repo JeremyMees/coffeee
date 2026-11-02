@@ -12,6 +12,7 @@ const coffee: CardCoffee = {
   colour: '#2f6f4f',
   roastedOn: daysAgo(3),
   flavorNotes: [],
+  photoUrl: null,
 }
 
 function mountCard(props: Record<string, unknown> = {}) {
@@ -92,5 +93,29 @@ describe('CoffeeCard', () => {
     expect((light.element as HTMLElement).style.color).toMatch(
       /#1d1d1f|rgb\(29, 29, 31\)/,
     )
+  })
+
+  it('uses the photo of the bag as its cover', async () => {
+    const card = await mountCard({
+      coffee: { ...coffee, photoUrl: '/api/photos/coffees/a.webp' },
+    })
+
+    expect(card.get(tid('coffee-card-photo')).attributes('src')).toBe(
+      '/api/photos/coffees/a.webp',
+    )
+    expect(card.find(tid('coffee-card-placeholder')).exists()).toBe(false)
+  })
+
+  it('keeps a tidy cover when there is no photo', async () => {
+    const card = await mountCard()
+
+    expect(card.find(tid('coffee-card-placeholder')).exists()).toBe(true)
+    expect(card.find(tid('coffee-card-photo')).exists()).toBe(false)
+  })
+
+  it('can leave the cover out', async () => {
+    const card = await mountCard({ cover: false })
+
+    expect(card.find(tid('coffee-card-cover')).exists()).toBe(false)
   })
 })

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { clearError, useCurrentUser, useError } from '#imports'
 import { api, ayele, fakeApi, resetApi } from '../../../../fake-api'
@@ -13,6 +13,11 @@ import {
 } from '../../../../fixtures'
 
 fakeApi()
+
+mockNuxtImport(
+  'compressPhoto',
+  () => async () => new Blob(['small'], { type: 'image/webp' }),
+)
 
 beforeEach(() => {
   forgetLastShelf()
@@ -200,5 +205,36 @@ describe('a coffee page', () => {
 
     expect(page.find(tid('coffee-details')).exists()).toBe(false)
     expect(page.find(tid('coffee-link-out')).exists()).toBe(false)
+  })
+
+  it('heads the page with the photo of the bag', async () => {
+    api.coffee = { ...ayele(), photoUrl: '/api/photos/coffees/a.webp' }
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('coffee-photo-image')).attributes('src')).toBe(
+      '/api/photos/coffees/a.webp',
+    )
+    expect(page.find(tid('coffee-card-cover')).exists()).toBe(false)
+  })
+
+  it('shows a new photo once it is uploaded', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+    const input = page.get(tid('coffee-photo-input'))
+    Object.defineProperty(input.element, 'files', {
+      value: [new File(['huge'], 'bag.jpg', { type: 'image/jpeg' })],
+    })
+
+    await input.trigger('change')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('coffee-photo-image')).attributes('src')).toBe(
+        '/api/photos/coffees/new.webp',
+      ),
+    )
   })
 })

@@ -538,6 +538,69 @@ test('lets an admin fix a coffee someone else added', async ({
   )
 })
 
+async function bagPhoto(page: Page, colour: string) {
+  const dataUrl = await page.evaluate(fill => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 3200
+    canvas.height = 2400
+    const context = canvas.getContext('2d')!
+    context.fillStyle = fill
+    context.fillRect(0, 0, canvas.width, canvas.height)
+
+    return canvas.toDataURL('image/png')
+  }, colour)
+
+  return {
+    name: 'bag.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(dataUrl.split(',')[1]!, 'base64'),
+  }
+}
+
+test('gives a coffee a shrunk photo of its bag and lets it be replaced or removed', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await expect(
+    stockCard(page, 'Ayele Fulasa').getByTestId('coffee-card-placeholder'),
+  ).toBeVisible()
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page.getByTestId('coffee-photo-placeholder')).toBeVisible()
+
+  await page
+    .getByTestId('coffee-photo-input')
+    .setInputFiles(await bagPhoto(page, '#e4572e'))
+
+  const photo = page.getByTestId('coffee-photo-image')
+  await expect(photo).toHaveAttribute('src', /\.webp$/)
+  await expect
+    .poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBe(1600)
+  const firstUrl = await photo.getAttribute('src')
+
+  await page
+    .getByTestId('coffee-photo-input')
+    .setInputFiles(await bagPhoto(page, '#3d5a80'))
+
+  await expect(photo).not.toHaveAttribute('src', firstUrl!)
+  expect((await page.request.get(firstUrl!)).status()).toBe(404)
+  const secondUrl = await photo.getAttribute('src')
+
+  await page.getByTestId('coffee-back').click()
+  await expect(
+    stockCard(page, 'Ayele Fulasa').getByTestId('coffee-card-photo'),
+  ).toHaveAttribute('src', secondUrl!)
+
+  await stockCard(page, 'Ayele Fulasa').click()
+  await page.getByTestId('coffee-photo-remove').click()
+
+  await expect(page.getByTestId('coffee-photo-placeholder')).toBeVisible()
+  expect((await page.request.get(secondUrl!)).status()).toBe(404)
+})
+
 test('says when a shelf has no such coffee', async ({ page, member }) => {
   await page.goto(`/shelves/${member.shelfId}/coffees/${randomUUID()}`)
 

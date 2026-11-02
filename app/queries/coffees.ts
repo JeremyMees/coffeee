@@ -64,3 +64,35 @@ export function useCoffeeUpdate() {
     onSuccess: (_data, input) => saved(input.shelfId),
   })
 }
+
+function photoPath(input: { shelfId: string; coffeeId: string }) {
+  return `/api/shelves/${input.shelfId}/coffees/${input.coffeeId}/photo`
+}
+
+export function useCoffeePhotoUpdate() {
+  const saved = useCoffeeSaved()
+
+  return useMutation({
+    mutationFn: async (input: {
+      shelfId: string
+      coffeeId: string
+      photo: Blob
+    }) => {
+      const body = new FormData()
+      body.append('photo', await compressPhoto(input.photo))
+
+      return $fetch(photoPath(input), { method: 'PUT', body })
+    },
+    onSuccess: (_data, input) => saved(input.shelfId),
+  })
+}
+
+export function useCoffeePhotoRemoval() {
+  const saved = useCoffeeSaved()
+
+  return useMutation({
+    mutationFn: (input: { shelfId: string; coffeeId: string }) =>
+      $fetch(photoPath(input), { method: 'DELETE' }),
+    onSuccess: (_data, input) => saved(input.shelfId),
+  })
+}

@@ -28,7 +28,9 @@ import {
 } from '#server/utils/lists'
 import type { Viewer } from '#server/types/coffees'
 import type { CoffeeList } from '#server/types/lists'
+import type { EditableCoffeePhoto } from '#server/types/photos'
 import { describeOrigins, originsOf } from '#server/utils/origins'
+import { deletePhoto } from '#server/utils/photos'
 
 const coffeeColumns = {
   id: coffee.id,
@@ -37,6 +39,7 @@ const coffeeColumns = {
   roastLevel: coffee.roastLevel,
   roastedFor: coffee.roastedFor,
   colour: coffee.colour,
+  photoUrl: coffee.photoUrl,
 }
 
 const detailColumns = {
@@ -207,6 +210,38 @@ export function canEditCoffee(viewer: Viewer, createdBy: string | null) {
   return viewer.role === 'admin' || viewer.id === createdBy
 }
 
+export async function findEditableCoffee(
+  db: Database,
+  input: { coffeeId: string; editor: Viewer },
+) {
+  const [current] = await db
+    .select({ createdBy: coffee.createdBy, photoUrl: coffee.photoUrl })
+    .from(coffee)
+    .where(eq(coffee.id, input.coffeeId))
+
+  if (!current) return { outcome: 'notFound' as const }
+
+  if (!canEditCoffee(input.editor, current.createdBy)) {
+    return { outcome: 'forbidden' as const }
+  }
+
+  return { outcome: 'editable' as const, photoUrl: current.photoUrl }
+}
+
+export async function replaceCoffeePhoto(
+  db: Database,
+  current: EditableCoffeePhoto,
+  photoUrl: string | null,
+) {
+  await db
+    .update(coffee)
+    .set({ photoUrl })
+    .where(eq(coffee.id, current.coffeeId))
+  await deletePhoto(current.photoUrl)
+
+  return { photoUrl }
+}
+
 export async function findShelfCoffee(
   db: Database,
   input: { shelfId: string; coffeeId: string; viewer: Viewer },
@@ -254,16 +289,9 @@ export function editCoffee(
   const { details } = input
 
   return db.transaction(async tx => {
-    const [current] = await tx
-      .select({ createdBy: coffee.createdBy })
-      .from(coffee)
-      .where(eq(coffee.id, input.coffeeId))
+    const current = await findEditableCoffee(tx, input)
 
-    if (!current) return { outcome: 'notFound' as const }
-
-    if (!canEditCoffee(input.editor, current.createdBy)) {
-      return { outcome: 'forbidden' as const }
-    }
+    if (current.outcome !== 'editable') return current
 
     const roasterId = await findOrCreateEntry(tx, roaster, {
       name: details.roaster,

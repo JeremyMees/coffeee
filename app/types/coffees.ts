@@ -6,7 +6,10 @@ export type ShelfCoffee =
 export type StockCoffee =
   InternalApi['/api/shelves/:shelfId/stock']['get'][number]
 
-export type EditableCoffee = Omit<ShelfCoffee, 'canEdit' | 'purchases'>
+export type EditableCoffee = Omit<
+  ShelfCoffee,
+  'canEdit' | 'purchases' | 'photoUrl'
+>
 
 export type CardCoffee = Pick<
   StockCoffee,
@@ -17,4 +20,10 @@ export type CardCoffee = Pick<
   | 'colour'
   | 'roastedOn'
   | 'flavorNotes'
+  | 'photoUrl'
+>
+
+export type PhotoCoffee = Pick<
+  ShelfCoffee,
+  'id' | 'name' | 'colour' | 'photoUrl' | 'canEdit'
 >

@@ -8,6 +8,9 @@ import regionsHandler from '#server/api/regions.get'
 import roastersHandler from '#server/api/roasters.get'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
+import removePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/photo.delete'
+import replacePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/photo.put'
+import photoHandler from '#server/api/photos/[...pathname].get'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
 import varietalsHandler from '#server/api/varietals.get'
@@ -55,6 +58,9 @@ function request(path: string, init: RequestInit = {}) {
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
+    .put('/api/shelves/:shelfId/coffees/:coffeeId/photo', replacePhotoHandler)
+    .delete('/api/shelves/:shelfId/coffees/:coffeeId/photo', removePhotoHandler)
+    .get('/api/photos/**:pathname', photoHandler)
   const app = createApp().use(router)
 
   return toWebHandler(app)(new Request(`http://localhost:3000${path}`, init))
@@ -259,6 +265,7 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
       processes: [{ id: expect.any(String), name: 'Natural' }],
       varietals: [],
       flavorNotes: [],
+      photoUrl: null,
       altitudeFrom: null,
       altitudeTo: null,
     })
@@ -602,5 +609,137 @@ describe('describing where a coffee was grown', () => {
     expect(await response.json()).toMatchObject({
       data: { errors: { origins: 'Pick where it was grown' } },
     })
+  })
+})
+
+describe('the photo of a coffee', () => {
+  async function addedCoffee() {
+    const creator = await member()
+    const added = await add(creator.shelf.id, creator.headers)
+    const { coffee: created } = await added.json()
+
+    return { creator, coffeeId: created.id as string }
+  }
+
+  function photoPath(shelfId: string, coffeeId: string) {
+    return `/api/shelves/${shelfId}/coffees/${coffeeId}/photo`
+  }
+
+  function upload(
+    shelfId: string,
+    coffeeId: string,
+    headers: Headers,
+    content = 'bag',
+  ) {
+    const body = new FormData()
+    body.append(
+      'photo',
+      new Blob([content], { type: 'image/webp' }),
+      'photo.webp',
+    )
+    const multipart = new Headers(headers)
+    multipart.delete('content-type')
+
+    return request(photoPath(shelfId, coffeeId), {
+      method: 'PUT',
+      headers: multipart,
+      body,
+    })
+  }
+
+  async function shownPhoto(
+    shelfId: string,
+    coffeeId: string,
+    headers: Headers,
+  ) {
+    const response = await request(
+      `/api/shelves/${shelfId}/coffees/${coffeeId}`,
+      {
+        headers,
+      },
+    )
+
+    return (await response.json()).photoUrl
+  }
+
+  it('lets the person who added it add a photo everyone sees', async () => {
+    const { creator, coffeeId } = await addedCoffee()
+
+    const response = await upload(creator.shelf.id, coffeeId, creator.headers)
+    const { photoUrl } = await response.json()
+    const served = await request(photoUrl)
+    const stock = await request(`/api/shelves/${creator.shelf.id}/stock`, {
+      headers: creator.headers,
+    })
+
+    expect(response.status).toBe(200)
+    expect(await shownPhoto(creator.shelf.id, coffeeId, creator.headers)).toBe(
+      photoUrl,
+    )
+    expect((await stock.json())[0].photoUrl).toBe(photoUrl)
+    expect(served.headers.get('content-type')).toBe('image/webp')
+    expect(await served.text()).toBe('bag')
+  })
+
+  it('deletes the old photo when it is replaced', async () => {
+    const { creator, coffeeId } = await addedCoffee()
+    const first = await upload(creator.shelf.id, coffeeId, creator.headers)
+    const { photoUrl: oldUrl } = await first.json()
+
+    const second = await upload(
+      creator.shelf.id,
+      coffeeId,
+      creator.headers,
+      'new bag',
+    )
+    const { photoUrl: newUrl } = await second.json()
+
+    expect(newUrl).not.toBe(oldUrl)
+    expect((await request(oldUrl)).status).toBe(404)
+    expect(await (await request(newUrl)).text()).toBe('new bag')
+  })
+
+  it('removes the photo and its file', async () => {
+    const { creator, coffeeId } = await addedCoffee()
+    const uploaded = await upload(creator.shelf.id, coffeeId, creator.headers)
+    const { photoUrl } = await uploaded.json()
+
+    const response = await request(photoPath(creator.shelf.id, coffeeId), {
+      method: 'DELETE',
+      headers: creator.headers,
+    })
+
+    expect(await response.json()).toEqual({ photoUrl: null })
+    expect(
+      await shownPhoto(creator.shelf.id, coffeeId, creator.headers),
+    ).toBeNull()
+    expect((await request(photoUrl)).status).toBe(404)
+  })
+
+  it('refuses anyone who may not edit the coffee', async () => {
+    const { coffeeId } = await addedCoffee()
+    const other = await member()
+
+    const response = await upload(other.shelf.id, coffeeId, other.headers)
+
+    expect(response.status).toBe(403)
+    expect(await shownPhoto(other.shelf.id, coffeeId, other.headers)).toBeNull()
+  })
+
+  it('says when there is no such coffee', async () => {
+    const { creator } = await addedCoffee()
+
+    const response = await request(photoPath(creator.shelf.id, 'nope'), {
+      method: 'DELETE',
+      headers: creator.headers,
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('serves no photo that is not there', async () => {
+    const response = await request('/api/photos/coffees/missing.webp')
+
+    expect(response.status).toBe(404)
   })
 })

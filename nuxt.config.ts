@@ -1,5 +1,8 @@
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
+import { blobHost } from './shared/utils/photos.ts'
+
+const photoHost = blobHost(process.env)
 
 export default defineNuxtConfig({
   modules: [
@@ -8,6 +11,7 @@ export default defineNuxtConfig({
     '@nuxt/hints',
     '@nuxt/test-utils/module',
     '@nuxt/fonts',
+    '@nuxt/image',
     '@vite-pwa/nuxt',
     'shadcn-nuxt',
   ],
@@ -27,6 +31,9 @@ export default defineNuxtConfig({
   vite: { plugins: [tailwindcss()] },
 
   nitro: {
+    storage: {
+      photos: { driver: 'fs', base: './.data/photos' },
+    },
     typescript: {
       tsConfig: {
         include: ['../test/unit/**/*', '../test/support/**/*'],
@@ -49,6 +56,11 @@ export default defineNuxtConfig({
     { path: '~/components/form', pathPrefix: false },
     '~/components',
   ],
+
+  image: {
+    provider: process.env.VERCEL ? 'vercel' : 'none',
+    domains: photoHost ? [photoHost] : [],
+  },
 
   shadcn: {
     prefix: '',

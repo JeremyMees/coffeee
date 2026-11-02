@@ -39,6 +39,7 @@ export function ayele() {
     varietals: [] as ListEntry[],
     flavorNotes: [] as ListEntry[],
     link: null as string | null,
+    photoUrl: null as string | null,
     altitudeFrom: 1900,
     altitudeTo: 2200,
     canEdit: true,
@@ -68,6 +69,8 @@ export const api = {
   added: [] as unknown[],
   edits: [] as unknown[],
   shelves: [] as string[],
+  photos: [] as string[],
+  photoFails: false,
   coffee: ayele() as Record<string, unknown>,
 }
 
@@ -76,6 +79,8 @@ export function resetApi() {
   api.added = []
   api.edits = []
   api.shelves = []
+  api.photos = []
+  api.photoFails = false
   api.coffee = ayele()
 }
 
@@ -219,6 +224,34 @@ export function fakeApi() {
       api.coffee = { ...api.coffee, ...body }
 
       return { id: 'c1', ...body }
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/coffees/c1/photo', {
+    method: 'PUT',
+    handler: () => {
+      if (api.photoFails) {
+        throw createError({
+          statusCode: 413,
+          statusMessage: 'That photo is too large',
+        })
+      }
+
+      const photoUrl = '/api/photos/coffees/new.webp'
+      api.photos.push('uploaded')
+      api.coffee = { ...api.coffee, photoUrl }
+
+      return { photoUrl }
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/coffees/c1/photo', {
+    method: 'DELETE',
+    handler: () => {
+      api.photos.push('removed')
+      api.coffee = { ...api.coffee, photoUrl: null }
+
+      return { photoUrl: null }
     },
   })
 }

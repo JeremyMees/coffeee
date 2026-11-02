@@ -77,7 +77,8 @@ const euros = new Intl.NumberFormat(undefined, {
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
       Stock
     </NuxtLink>
-    <header class="mt-4 flex items-end justify-between gap-4">
+    <CoffeePhoto class="mt-4" :shelf-id="shelfId" :coffee="coffee" />
+    <header class="mt-6 flex items-end justify-between gap-4">
       <div>
         <p class="text-xs uppercase" data-testid="coffee-roaster-name">
           {{ coffee.roaster }}
@@ -110,6 +111,7 @@ const euros = new Intl.NumberFormat(undefined, {
     </header>
     <CoffeeCard
       class="mt-8"
+      :cover="false"
       :coffee="{ ...coffee, roastedOn: latestRoastedOn }"
     />
     <dl
