@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import DatePicker from '~/components/DatePicker.vue'
-import { byTestId, daysAgo, pickDate, tid } from '../fixtures'
+import DatePicker from '~/components/form/DatePicker.vue'
+import { byTestId, daysAgo, pickDate, tid } from '../../fixtures'
 
 function mountPicker(props: Record<string, unknown> = {}) {
   return mountSuspended(DatePicker, {

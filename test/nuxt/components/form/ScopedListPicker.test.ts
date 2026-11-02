@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import ScopedListPicker from '~/components/ScopedListPicker.vue'
-import { fakeRegions } from '../fake-api'
+import ScopedListPicker from '~/components/form/ScopedListPicker.vue'
+import { fakeRegions } from '../../fake-api'
 import {
   allByTestId,
   byTestId,
@@ -10,7 +10,7 @@ import {
   inputValue,
   pickScoped,
   type,
-} from '../fixtures'
+} from '../../fixtures'
 
 const searched: string[] = []
 

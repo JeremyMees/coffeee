@@ -24,11 +24,14 @@ const latestRoastedOn = computed(
 )
 
 function grownAt(shown: NonNullable<typeof coffee.value>) {
-  const regions = shown.regions.map(region =>
-    shown.origins.length > 1
-      ? `${region.name} (${originName(region.origin)})`
-      : region.name,
-  )
+  const inOrigins = (entries: OriginEntry[]) =>
+    entries
+      .map(entry =>
+        shown.origins.length > 1
+          ? `${entry.name} (${originName(entry.origin)})`
+          : entry.name,
+      )
+      .join(', ')
 
   return [
     {
@@ -36,11 +39,22 @@ function grownAt(shown: NonNullable<typeof coffee.value>) {
       label: 'Origin',
       value: shown.origins.map(origin => origin.name).join(', '),
     },
-    { key: 'regions', label: 'Region', value: regions.join(', ') },
+    { key: 'regions', label: 'Region', value: inOrigins(shown.regions) },
     {
       key: 'altitude',
       label: 'Altitude',
       value: formatAltitude(shown.altitudeFrom, shown.altitudeTo) ?? '',
+    },
+    {
+      key: 'producers',
+      label: 'Producer',
+      value: shown.producers.map(producer => producer.name).join(', '),
+    },
+    { key: 'farms', label: 'Farm', value: inOrigins(shown.farms) },
+    {
+      key: 'washing-stations',
+      label: 'Washing station',
+      value: inOrigins(shown.washingStations),
     },
   ].filter(row => row.value)
 }

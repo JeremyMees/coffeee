@@ -43,6 +43,11 @@ export default defineNuxtConfig({
     googleClientSecret: '',
   },
 
+  components: [
+    { path: '~/components/form', pathPrefix: false },
+    '~/components',
+  ],
+
   shadcn: {
     prefix: '',
     componentDir: '~/components/ui',

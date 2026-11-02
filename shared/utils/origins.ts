@@ -271,3 +271,12 @@ export function formatAltitude(from: number | null, to: number | null) {
     ? `${metres.format(from)} m`
     : `${metres.format(from)}–${metres.format(to)} m`
 }
+
+export const originListFields = ['regions', 'farms', 'washingStations'] as const
+
+export type OriginListField = (typeof originListFields)[number]
+
+export interface OriginEntry {
+  origin: string
+  name: string
+}

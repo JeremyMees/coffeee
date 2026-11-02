@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import ListPicker from '~/components/ListPicker.vue'
+import ListPicker from '~/components/form/ListPicker.vue'
 import { nameKey } from '#imports'
-import { fakeList } from '../fake-api'
+import { fakeList } from '../../fake-api'
 import {
   byTestId,
   inputValue,
   pickerOptions,
   pickOption,
   type,
-} from '../fixtures'
+} from '../../fixtures'
 
 const known = { processes: [] as { id: string; name: string }[] }
 const searches: string[] = []

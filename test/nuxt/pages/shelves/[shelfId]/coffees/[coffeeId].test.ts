@@ -103,6 +103,26 @@ describe('a coffee page', () => {
     expect(page.get(tid('grown-origins')).text()).toBe('Ethiopia')
     expect(page.get(tid('grown-regions')).text()).toBe('Guji')
     expect(page.get(tid('grown-altitude')).text()).toBe('1,900–2,200 m')
+    expect(page.get(tid('grown-washing-stations')).text()).toBe('Hambela')
+    expect(page.find(tid('grown-farms')).exists()).toBe(false)
+  })
+
+  it('says who grew it', async () => {
+    api.coffee = {
+      ...ayele(),
+      producers: [
+        { id: 'n1', name: 'Nestor Lasso' },
+        { id: 'n2', name: 'Diego Bermudez' },
+      ],
+    }
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('grown-producers')).text()).toBe(
+      'Nestor Lasso, Diego Bermudez',
+    )
   })
 
   it('names the country of each region of a blend', async () => {
@@ -116,6 +136,7 @@ describe('a coffee page', () => {
         { id: 'h1', name: 'Huila', origin: 'CO' },
         { id: 'g1', name: 'Guji', origin: 'ET' },
       ],
+      farms: [{ id: 'f1', name: 'La Palma', origin: 'CO' }],
     }
 
     const page = await mountSuspended(App, {
@@ -126,6 +147,10 @@ describe('a coffee page', () => {
     expect(page.get(tid('grown-regions')).text()).toBe(
       'Huila (Colombia), Guji (Ethiopia)',
     )
+    expect(page.get(tid('grown-farms')).text()).toBe('La Palma (Colombia)')
+    expect(page.get(tid('grown-washing-stations')).text()).toBe(
+      'Hambela (Ethiopia)',
+    )
   })
 
   it('leaves out what nobody filled in', async () => {
@@ -133,6 +158,9 @@ describe('a coffee page', () => {
       ...ayele(),
       origins: [],
       regions: [],
+      farms: [],
+      washingStations: [],
+      producers: [],
       altitudeFrom: null,
       altitudeTo: null,
     }

@@ -36,6 +36,13 @@
       "when": 1793621122476,
       "tag": "0004_origins_regions_and_altitude",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793623894063,
+      "tag": "0005_producers_farms_and_washing_stations",
+      "breakpoints": true
     }
   ]
 }

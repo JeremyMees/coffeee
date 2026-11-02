@@ -1,33 +1,39 @@
-import { and, asc, eq, inArray } from 'drizzle-orm'
-import { nameKey } from '#shared/utils/names'
+import { asc, eq, inArray } from 'drizzle-orm'
+import { defineEventHandler } from 'h3'
+import { originListFields } from '#shared/utils/origins'
+import type { OriginEntry, OriginListField } from '#shared/utils/origins'
+import { originListSearchSchema } from '#shared/utils/schemas'
 import type { Database } from '#server/db/database'
-import { coffeeOrigin, coffeeRegion, origin, region } from '#server/db/schemas'
-import { findSimilar } from '#server/utils/lists'
+import {
+  coffeeFarm,
+  coffeeOrigin,
+  coffeeRegion,
+  coffeeWashingStation,
+  farm,
+  origin,
+  region,
+  washingStation,
+} from '#server/db/schemas'
+import { useDb } from '#server/utils/db'
+import { describeEntries, entriesOf, findSimilar } from '#server/utils/lists'
+import type { CoffeeList } from '#server/utils/lists'
+import { requireUser } from '#server/utils/session'
+import { readValidQuery } from '#server/utils/validation'
 
-interface Described {
-  origins: string[]
-  regions: { origin: string; name: string }[]
+type OriginList = typeof region | typeof farm | typeof washingStation
+
+const originLists: Record<OriginListField, CoffeeList<OriginList>> = {
+  regions: { list: region, link: coffeeRegion, entryId: coffeeRegion.regionId },
+  farms: { list: farm, link: coffeeFarm, entryId: coffeeFarm.farmId },
+  washingStations: {
+    list: washingStation,
+    link: coffeeWashingStation,
+    entryId: coffeeWashingStation.washingStationId,
+  },
 }
 
-async function findOrCreateRegion(
-  db: Database,
-  input: { originCode: string; name: string; createdBy: string },
-) {
-  const key = nameKey(input.name)
-
-  await db
-    .insert(region)
-    .values({ ...input, nameKey: key })
-    .onConflictDoNothing({ target: [region.originCode, region.nameKey] })
-
-  const [found] = await db
-    .select({ id: region.id })
-    .from(region)
-    .where(
-      and(eq(region.originCode, input.originCode), eq(region.nameKey, key)),
-    )
-
-  return found!
+type Described = Record<OriginListField, OriginEntry[]> & {
+  origins: string[]
 }
 
 export async function describeOrigins(
@@ -37,8 +43,6 @@ export async function describeOrigins(
   const { coffeeId, details } = input
 
   await db.delete(coffeeOrigin).where(eq(coffeeOrigin.coffeeId, coffeeId))
-  await db.delete(coffeeRegion).where(eq(coffeeRegion.coffeeId, coffeeId))
-
   await db.insert(coffeeOrigin).values(
     details.origins.map((originCode, position) => ({
       coffeeId,
@@ -47,26 +51,28 @@ export async function describeOrigins(
     })),
   )
 
-  const regionIds = new Set<string>()
-
-  for (const picked of details.regions) {
-    const { id } = await findOrCreateRegion(db, {
-      originCode: picked.origin,
-      name: picked.name,
-      createdBy: input.userId,
-    })
-    regionIds.add(id)
-  }
-
-  if (regionIds.size) {
-    await db.insert(coffeeRegion).values(
-      [...regionIds].map((regionId, position) => ({
-        coffeeId,
-        regionId,
-        position,
+  for (const field of originListFields) {
+    await describeEntries(db, originLists[field], {
+      coffeeId,
+      userId: input.userId,
+      entries: details[field].map(picked => ({
+        originCode: picked.origin,
+        name: picked.name,
       })),
-    )
+    })
   }
+}
+
+function originEntriesOf(
+  db: Database,
+  field: OriginListField,
+  coffeeId: string,
+) {
+  const coffeeList = originLists[field]
+
+  return entriesOf(db, coffeeList, coffeeId, {
+    origin: coffeeList.list.originCode,
+  })
 }
 
 export async function originsOf(db: Database, coffeeId: string) {
@@ -77,22 +83,30 @@ export async function originsOf(db: Database, coffeeId: string) {
     .where(eq(coffeeOrigin.coffeeId, coffeeId))
     .orderBy(asc(coffeeOrigin.position))
 
-  const regions = await db
-    .select({ id: region.id, name: region.name, origin: region.originCode })
-    .from(coffeeRegion)
-    .innerJoin(region, eq(region.id, coffeeRegion.regionId))
-    .where(eq(coffeeRegion.coffeeId, coffeeId))
-    .orderBy(asc(coffeeRegion.position))
-
-  return { origins, regions }
+  return {
+    origins,
+    regions: await originEntriesOf(db, 'regions', coffeeId),
+    farms: await originEntriesOf(db, 'farms', coffeeId),
+    washingStations: await originEntriesOf(db, 'washingStations', coffeeId),
+  }
 }
 
-export function findSimilarRegions(
+export function findSimilarInOrigins(
   db: Database,
+  list: OriginList,
   input: { origins: string[]; search: string },
 ) {
-  return findSimilar(db, region, input.search, {
-    where: inArray(region.originCode, input.origins),
-    columns: { origin: region.originCode },
+  return findSimilar(db, list, input.search, {
+    where: inArray(list.originCode, input.origins),
+    columns: { origin: list.originCode },
+  })
+}
+
+export function originListSearchHandler(list: OriginList) {
+  return defineEventHandler(async event => {
+    await requireUser(event)
+    const query = readValidQuery(event, originListSearchSchema)
+
+    return findSimilarInOrigins(useDb(), list, query)
   })
 }

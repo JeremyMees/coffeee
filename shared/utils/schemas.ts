@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { roastedForOptions, roastLevels } from './coffee'
 import { bagColours } from './colours'
-import { isOriginCode } from './origins'
+import { isOriginCode, originListFields } from './origins'
+import type { OriginEntry, OriginListField } from './origins'
 
 function blankToNull(value: unknown) {
   return value === '' || value === undefined ? null : value
@@ -32,7 +33,7 @@ export const listSearchSchema = z.object({
     .default(''),
 })
 
-export const regionSearchSchema = listSearchSchema.extend({
+export const originListSearchSchema = listSearchSchema.extend({
   origins: z
     .string({ error: 'Pick origins as a list of country codes' })
     .default('')
@@ -69,22 +70,53 @@ const coffeeDetailsShape = {
     .max(10, 'Pick 10 origins or fewer')
     .refine(codes => codes.every(isOriginCode), 'Pick countries from the list')
     .transform(codes => [...new Set(codes)]),
-  regions: z
-    .array(z.object({ origin: z.string(), name: z.string().trim() }), {
-      error: 'Pick regions from the list',
-    })
-    .max(20, 'Pick 20 regions or fewer')
-    .refine(
-      regions => regions.every(region => region.name.length > 0),
-      'Give the region a name',
-    )
-    .refine(
-      regions => regions.every(region => region.name.length <= 60),
-      'Keep each region to 60 characters or fewer',
-    )
-    .default([]),
+  regions: originEntries('region', 20, 60),
+  farms: originEntries('farm', 20, 80),
+  washingStations: originEntries('washing station', 20, 80),
+  producers: listEntries('producer', 20, 80),
   altitudeFrom: altitude('lowest'),
   altitudeTo: altitude('highest'),
+}
+
+function namedEntries<Entry extends z.ZodType>(
+  entry: Entry,
+  nameOf: (entry: z.output<Entry>) => string,
+  noun: string,
+  max: number,
+  maxLength: number,
+) {
+  return z
+    .array(entry, { error: `Pick ${noun}s from the list` })
+    .max(max, `Pick ${max} ${noun}s or fewer`)
+    .refine(
+      entries => entries.every(picked => nameOf(picked).length > 0),
+      `Give the ${noun} a name`,
+    )
+    .refine(
+      entries => entries.every(picked => nameOf(picked).length <= maxLength),
+      `Keep each ${noun} to ${maxLength} characters or fewer`,
+    )
+    .default([])
+}
+
+function listEntries(noun: string, max: number, maxLength: number) {
+  return namedEntries(z.string().trim(), name => name, noun, max, maxLength)
+}
+
+function originEntries(noun: string, max: number, maxLength: number) {
+  return namedEntries(
+    z.object({ origin: z.string(), name: z.string().trim() }),
+    picked => picked.name,
+    noun,
+    max,
+    maxLength,
+  )
+}
+
+const originListNouns: Record<OriginListField, string> = {
+  regions: 'regions',
+  farms: 'farms',
+  washingStations: 'washing stations',
 }
 
 function altitude(end: string) {
@@ -99,9 +131,8 @@ function altitude(end: string) {
   )
 }
 
-interface DescribedCoffee {
+type DescribedCoffee = Record<OriginListField, OriginEntry[]> & {
   origins: string[]
-  regions: { origin: string; name: string }[]
   altitudeFrom: number | null
   altitudeTo: number | null
 }
@@ -114,16 +145,23 @@ function validFields(...fields: string[]) {
 function describedCoffee<Coffee extends z.ZodType<DescribedCoffee>>(
   coffee: Coffee,
 ) {
-  return coffee
-    .refine(
-      ({ origins, regions }) =>
-        regions.every(region => origins.includes(region.origin)),
-      {
-        path: ['regions'],
-        message: "Pick regions from the coffee's own origins",
-        when: validFields('origins', 'regions'),
-      },
-    )
+  const fromOwnOrigins = originListFields.reduce(
+    (checked, field) =>
+      checked.refine(
+        described =>
+          described[field].every(picked =>
+            described.origins.includes(picked.origin),
+          ),
+        {
+          path: [field],
+          message: `Pick ${originListNouns[field]} from the coffee's own origins`,
+          when: validFields('origins', field),
+        },
+      ),
+    coffee as z.ZodType<DescribedCoffee>,
+  ) as Coffee
+
+  return fromOwnOrigins
     .refine(
       ({ altitudeFrom, altitudeTo }) =>
         altitudeFrom === null ||

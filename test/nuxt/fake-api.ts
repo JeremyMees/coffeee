@@ -32,6 +32,9 @@ export function ayele() {
     colour: '#2f6f4f',
     origins: [{ code: 'ET', name: 'Ethiopia' }],
     regions: [{ id: 'g1', name: 'Guji', origin: 'ET' }],
+    farms: [] as (ListEntry & { origin: string })[],
+    washingStations: [{ id: 'w1', name: 'Hambela', origin: 'ET' }],
+    producers: [] as ListEntry[],
     altitudeFrom: 1900,
     altitudeTo: 2200,
     canEdit: true,
@@ -105,6 +108,24 @@ export function fakeApi() {
     fakeRegions(() => [
       { id: 'g1', name: 'Guji', origin: 'ET' },
       { id: 'h1', name: 'Huila', origin: 'CO' },
+    ]),
+  )
+
+  registerEndpoint(
+    '/api/farms',
+    fakeRegions(() => [{ id: 'f1', name: 'La Palma', origin: 'CO' }]),
+  )
+
+  registerEndpoint(
+    '/api/washing-stations',
+    fakeRegions(() => [{ id: 'w1', name: 'Hambela', origin: 'ET' }]),
+  )
+
+  registerEndpoint(
+    '/api/producers',
+    fakeList(() => [
+      { id: 'n1', name: 'Nestor Lasso' },
+      { id: 'n2', name: 'Diego Bermudez' },
     ]),
   )
 

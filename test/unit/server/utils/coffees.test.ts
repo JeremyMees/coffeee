@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
-import { coffee, purchase, roaster } from '#server/db/schemas'
+import { coffee, producer, purchase, roaster } from '#server/db/schemas'
 import {
   addCoffee,
   editCoffee,
@@ -31,6 +31,9 @@ function newCoffee(overrides: Partial<NewCoffee> = {}): NewCoffee {
     colour: '#e4572e',
     origins: ['ET'],
     regions: [],
+    farms: [],
+    washingStations: [],
+    producers: [],
     altitudeFrom: null,
     altitudeTo: null,
     purchasedOn: '2026-11-01',
@@ -335,6 +338,9 @@ describe('editing a coffee', () => {
     colour: '#3d5a80',
     origins: ['ET'],
     regions: [],
+    farms: [],
+    washingStations: [],
+    producers: [],
     altitudeFrom: null,
     altitudeTo: null,
   }
@@ -343,6 +349,9 @@ describe('editing a coffee', () => {
     ...details,
     origins: [{ code: 'ET', name: 'Ethiopia' }],
     regions: [],
+    farms: [],
+    washingStations: [],
+    producers: [],
   }
 
   it('changes its shared details for the person who added it', async () => {
@@ -494,5 +503,74 @@ describe('roasters', () => {
     expect(
       await db.select().from(roaster).where(eq(roaster.nameKey, 'april')),
     ).toHaveLength(1)
+  })
+})
+
+describe('producers', () => {
+  async function shown(producers: string[]) {
+    const context = await setup()
+    const { coffee: added } = await addCoffee(context.db, {
+      shelfId: context.home.id,
+      userId: context.sarah.id,
+      coffee: newCoffee({ producers }),
+    })
+    const show = () =>
+      findShelfCoffee(context.db, {
+        shelfId: context.home.id,
+        coffeeId: added.id,
+        viewer: context.sarah,
+      })
+
+    return { ...context, added, show }
+  }
+
+  it('are kept on the coffee in the order they were picked', async () => {
+    const { show } = await shown(['Nestor Lasso', 'Diego Bermudez'])
+
+    expect((await show())!.producers).toEqual([
+      { id: expect.any(String), name: 'Nestor Lasso' },
+      { id: expect.any(String), name: 'Diego Bermudez' },
+    ])
+  })
+
+  it('reuse a producer whose name only differs in case or accents', async () => {
+    const { db, sarah, home, show } = await shown(['Néstor Lasso'])
+
+    await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee({ name: 'Another', producers: ['NESTOR LASSO'] }),
+    })
+
+    expect(await db.select().from(producer)).toHaveLength(1)
+    expect((await show())!.producers).toEqual([
+      { id: expect.any(String), name: 'Néstor Lasso' },
+    ])
+  })
+
+  it('are replaced when the coffee is edited', async () => {
+    const { db, sarah, added, show } = await shown(['Nestor Lasso'])
+
+    await editCoffee(db, {
+      coffeeId: added.id,
+      editor: sarah,
+      details: { ...newCoffee(), producers: ['Diego Bermudez'] },
+    })
+
+    expect((await show())!.producers).toEqual([
+      { id: expect.any(String), name: 'Diego Bermudez' },
+    ])
+  })
+
+  it('can all be removed', async () => {
+    const { db, sarah, added, show } = await shown(['Nestor Lasso'])
+
+    await editCoffee(db, {
+      coffeeId: added.id,
+      editor: sarah,
+      details: { ...newCoffee(), producers: [] },
+    })
+
+    expect((await show())!.producers).toEqual([])
   })
 })

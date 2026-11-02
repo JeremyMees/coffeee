@@ -12,7 +12,10 @@ const props = defineProps<{
     roastedFor: RoastedFor
     colour: string
     origins: { code: string; name: string }[]
-    regions: { origin: string; name: string }[]
+    regions: OriginEntry[]
+    farms: OriginEntry[]
+    washingStations: OriginEntry[]
+    producers: { name: string }[]
     altitudeFrom: number | null
     altitudeTo: number | null
   }
@@ -22,6 +25,10 @@ const open = defineModel<boolean>('open', { default: false })
 const formError = ref('')
 const { mutateAsync: updateCoffee } = useCoffeeUpdate()
 
+function originEntries(entries: OriginEntry[]) {
+  return entries.map(({ origin, name }) => ({ origin, name }))
+}
+
 function currentDetails() {
   return {
     name: props.coffee.name,
@@ -30,7 +37,10 @@ function currentDetails() {
     roastedFor: props.coffee.roastedFor,
     colour: props.coffee.colour as BagColour,
     origins: props.coffee.origins.map(origin => origin.code),
-    regions: props.coffee.regions.map(({ origin, name }) => ({ origin, name })),
+    regions: originEntries(props.coffee.regions),
+    farms: originEntries(props.coffee.farms),
+    washingStations: originEntries(props.coffee.washingStations),
+    producers: props.coffee.producers.map(producer => producer.name),
     altitudeFrom: props.coffee.altitudeFrom?.toString() ?? '',
     altitudeTo: props.coffee.altitudeTo?.toString() ?? '',
   }

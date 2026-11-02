@@ -1,10 +1,12 @@
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { Window as HappyWindow } from 'happy-dom'
+import { useForm } from 'vee-validate'
 import { vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, h } from 'vue'
+import type { Component } from 'vue'
 import type { CurrentUser } from '~/composables/useCurrentUser'
-import { localDate, useRouter } from '#imports'
+import { coffeeDetailsSchema, localDate, useRouter, zodSchema } from '#imports'
 
 export function testUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
   return {
@@ -132,11 +134,16 @@ export async function pickOrigin(search: string, country: string) {
   await flushPromises()
 }
 
-export async function pickScoped(testId: string, search: string, text: string) {
+async function pickFrom(
+  testId: string,
+  search: string,
+  text: string,
+  options: string[],
+) {
   await type(testId, search)
   const option = await vi.waitFor(() => {
-    const found = allByTestId('scoped-option')
-      .concat(allByTestId('scoped-option-new'))
+    const found = options
+      .flatMap(option => allByTestId(option))
       .find(
         element => element.textContent?.replace(/\s+/g, ' ').trim() === text,
       )
@@ -146,6 +153,45 @@ export async function pickScoped(testId: string, search: string, text: string) {
   }, 3000)
   option.click()
   await flushPromises()
+}
+
+export function pickScoped(testId: string, search: string, text: string) {
+  return pickFrom(testId, search, text, ['scoped-option', 'scoped-option-new'])
+}
+
+export function pickMulti(testId: string, search: string, text: string) {
+  return pickFrom(testId, search, text, ['multi-option', 'multi-option-new'])
+}
+
+export async function mountInForm(
+  component: Component,
+  initialValues: Record<string, unknown> = {},
+) {
+  let form!: ReturnType<typeof useForm>
+
+  const Form = defineComponent({
+    setup() {
+      form = useForm({
+        validationSchema: zodSchema(coffeeDetailsSchema),
+        initialValues: {
+          name: '',
+          roaster: '',
+          origins: [],
+          regions: [],
+          farms: [],
+          washingStations: [],
+          producers: [],
+          ...initialValues,
+        },
+      })
+
+      return () => h('form', [h(component)])
+    },
+  })
+
+  const wrapper = await mountSuspended(Form, { attachTo: document.body })
+
+  return { wrapper, form }
 }
 
 export async function pickDate(pickerTestId: string, isoDate: string) {

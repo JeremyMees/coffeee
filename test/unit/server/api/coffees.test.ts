@@ -1,11 +1,14 @@
 import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import farmsHandler from '#server/api/farms.get'
+import producersHandler from '#server/api/producers.get'
 import regionsHandler from '#server/api/regions.get'
 import roastersHandler from '#server/api/roasters.get'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
+import washingStationsHandler from '#server/api/washing-stations.get'
 import { createShelf } from '#server/utils/shelves'
 import { createTestAuth } from '#test/support/auth'
 import { createTestDatabase, createTestUser } from '#test/support/database'
@@ -40,6 +43,9 @@ function request(path: string, init: RequestInit = {}) {
   const router = createRouter()
     .get('/api/roasters', roastersHandler)
     .get('/api/regions', regionsHandler)
+    .get('/api/farms', farmsHandler)
+    .get('/api/washing-stations', washingStationsHandler)
+    .get('/api/producers', producersHandler)
     .get('/api/shelves/:shelfId/stock', stockHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
@@ -239,6 +245,9 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
       ...details,
       origins: [{ code: 'ET', name: 'Ethiopia' }],
       regions: [],
+      farms: [],
+      washingStations: [],
+      producers: [],
       altitudeFrom: null,
       altitudeTo: null,
     })
@@ -410,7 +419,80 @@ describe('GET /api/regions', () => {
   })
 })
 
+describe('GET /api/farms and /api/washing-stations', () => {
+  it('suggest the entries of the origins asked for', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers, {
+      ...coffee,
+      origins: ['CO', 'ET'],
+      farms: [{ origin: 'CO', name: 'La Palma' }],
+      washingStations: [{ origin: 'ET', name: 'Hambela' }],
+    })
+
+    const farms = await request('/api/farms?origins=CO&search=palma', {
+      headers,
+    })
+    const stations = await request('/api/washing-stations?origins=CO', {
+      headers,
+    })
+
+    expect(await farms.json()).toEqual([
+      { id: expect.any(String), name: 'La Palma', origin: 'CO' },
+    ])
+    expect(await stations.json()).toEqual([])
+  })
+
+  it('refuse anonymous requests', async () => {
+    const farms = await request('/api/farms?origins=CO')
+    const stations = await request('/api/washing-stations?origins=CO')
+
+    expect(farms.status).toBe(401)
+    expect(stations.status).toBe(401)
+  })
+})
+
+describe('GET /api/producers', () => {
+  it('suggests the producers similar to a search', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers, { ...coffee, producers: ['Nestor Lasso'] })
+
+    const response = await request('/api/producers?search=nestr', { headers })
+
+    expect(await response.json()).toEqual([
+      { id: expect.any(String), name: 'Nestor Lasso' },
+    ])
+  })
+
+  it('refuses anonymous requests', async () => {
+    const response = await request('/api/producers')
+
+    expect(response.status).toBe(401)
+  })
+})
+
 describe('describing where a coffee was grown', () => {
+  it("refuses a farm or washing station outside the coffee's origins", async () => {
+    const { shelf, headers } = await member()
+
+    const response = await add(shelf.id, headers, {
+      ...coffee,
+      origins: ['ET'],
+      farms: [{ origin: 'CO', name: 'La Palma' }],
+      washingStations: [{ origin: 'CO', name: 'Tres Dragones' }],
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      data: {
+        errors: {
+          farms: "Pick farms from the coffee's own origins",
+          washingStations:
+            "Pick washing stations from the coffee's own origins",
+        },
+      },
+    })
+  })
+
   it("refuses a region outside the coffee's origins", async () => {
     const { shelf, headers } = await member()
 

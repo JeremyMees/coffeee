@@ -13,6 +13,7 @@ import {
   inputValue,
   pickDate,
   pickOrigin,
+  pickMulti,
   pickRoaster,
   pickScoped,
   pickerOptions,
@@ -117,6 +118,8 @@ describe('AddCoffeeSheet', () => {
     await fillRequired()
     await click('coffee-colour', 'colour-slate')
     await pickScoped('coffee-regions', 'guj', 'Guji')
+    await pickScoped('coffee-washing-stations', 'hamb', 'Hambela')
+    await pickMulti('coffee-producers', 'Tesfaye', 'Add “Tesfaye”')
     await type('coffee-altitude-from', '1900')
     await type('coffee-altitude-to', '2200')
     await pickDate('coffee-roasted-on', daysAgo(10))
@@ -134,6 +137,9 @@ describe('AddCoffeeSheet', () => {
         colour: '#3d5a80',
         origins: ['ET'],
         regions: [{ origin: 'ET', name: 'Guji' }],
+        farms: [],
+        washingStations: [{ origin: 'ET', name: 'Hambela' }],
+        producers: ['Tesfaye'],
         altitudeFrom: 1900,
         altitudeTo: 2200,
         purchasedOn: localDate(),

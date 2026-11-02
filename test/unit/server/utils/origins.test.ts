@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { origin, region } from '#server/db/schemas'
+import { farm, origin, region, washingStation } from '#server/db/schemas'
 import { addCoffee, editCoffee, findShelfCoffee } from '#server/utils/coffees'
-import { findSimilarRegions } from '#server/utils/origins'
+import { findSimilarInOrigins } from '#server/utils/origins'
 import { createShelf } from '#server/utils/shelves'
 import { originCodes, origins } from '#shared/utils/origins'
 import type { NewCoffee } from '#shared/utils/schemas'
@@ -27,6 +27,9 @@ function newCoffee(overrides: Partial<NewCoffee> = {}): NewCoffee {
       { origin: 'CO', name: 'Huila' },
       { origin: 'ET', name: 'Guji' },
     ],
+    farms: [{ origin: 'CO', name: 'La Palma' }],
+    washingStations: [{ origin: 'ET', name: 'Hambela' }],
+    producers: [],
     altitudeFrom: 1700,
     altitudeTo: 2100,
     purchasedOn: '2026-11-01',
@@ -82,6 +85,60 @@ describe('describing where a coffee was grown', () => {
       altitudeFrom: 1700,
       altitudeTo: 2100,
     })
+  })
+
+  it('keeps its farms and washing stations in the order they were picked', async () => {
+    const { show } = await added({
+      farms: [
+        { origin: 'ET', name: 'Buku Abel' },
+        { origin: 'CO', name: 'La Palma' },
+      ],
+    })
+
+    expect(await show()).toMatchObject({
+      farms: [
+        { id: expect.any(String), name: 'Buku Abel', origin: 'ET' },
+        { id: expect.any(String), name: 'La Palma', origin: 'CO' },
+      ],
+      washingStations: [
+        { id: expect.any(String), name: 'Hambela', origin: 'ET' },
+      ],
+    })
+  })
+
+  it('keeps regions, farms and washing stations of the same name in their own lists', async () => {
+    const { db } = await added({
+      regions: [{ origin: 'CO', name: 'Santa Rosa' }],
+      farms: [{ origin: 'CO', name: 'Santa Rosa' }],
+      washingStations: [{ origin: 'CO', name: 'Santa Rosa' }],
+    })
+
+    for (const list of [region, farm, washingStation]) {
+      expect(
+        (await db.select().from(list)).map(({ name, originCode }) => ({
+          name,
+          originCode,
+        })),
+      ).toEqual([{ name: 'Santa Rosa', originCode: 'CO' }])
+    }
+  })
+
+  it('reuses a farm someone else added to the same country', async () => {
+    const { db, sarah, home } = await added()
+
+    await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee({
+        name: 'Another',
+        origins: ['CO'],
+        regions: [],
+        farms: [{ origin: 'CO', name: 'la palma' }],
+        washingStations: [],
+      }),
+    })
+
+    expect(await db.select().from(farm)).toHaveLength(1)
   })
 
   it('reuses a region whose name only differs in case or accents', async () => {
@@ -146,7 +203,13 @@ describe('describing where a coffee was grown', () => {
     await addCoffee(db, {
       shelfId: home.id,
       userId: sarah.id,
-      coffee: newCoffee({ origins: ['KE'], regions: [], altitudeFrom: 1 }),
+      coffee: newCoffee({
+        origins: ['KE'],
+        regions: [],
+        farms: [],
+        washingStations: [],
+        altitudeFrom: 1,
+      }),
     })
 
     expect(await show()).toMatchObject({
@@ -165,6 +228,8 @@ describe('describing where a coffee was grown', () => {
         ...newCoffee(),
         origins: ['KE'],
         regions: [{ origin: 'KE', name: 'Nyeri' }],
+        farms: [{ origin: 'KE', name: 'Gatomboya' }],
+        washingStations: [],
         altitudeFrom: 1800,
         altitudeTo: 1800,
       },
@@ -173,6 +238,8 @@ describe('describing where a coffee was grown', () => {
     expect(await show()).toMatchObject({
       origins: [{ code: 'KE', name: 'Kenya' }],
       regions: [{ name: 'Nyeri', origin: 'KE' }],
+      farms: [{ name: 'Gatomboya', origin: 'KE' }],
+      washingStations: [],
       altitudeFrom: 1800,
       altitudeTo: 1800,
     })
@@ -183,7 +250,7 @@ describe('finding similar regions', () => {
   it('only suggests regions of the countries picked', async () => {
     const { db } = await added()
 
-    const found = await findSimilarRegions(db, {
+    const found = await findSimilarInOrigins(db, region, {
       origins: ['CO'],
       search: '',
     })
@@ -196,19 +263,35 @@ describe('finding similar regions', () => {
   it('suggests a region spelled differently', async () => {
     const { db } = await added()
 
-    const found = await findSimilarRegions(db, {
+    const found = await findSimilarInOrigins(db, region, {
       origins: ['CO', 'ET'],
       search: 'Gujji',
     })
 
-    expect(found.map(({ name }) => name)).toEqual(['Guji'])
+    expect(found.map(entry => entry.name)).toEqual(['Guji'])
   })
 
   it('suggests nothing without origins', async () => {
     const { db } = await added()
 
-    expect(await findSimilarRegions(db, { origins: [], search: '' })).toEqual(
-      [],
-    )
+    expect(
+      await findSimilarInOrigins(db, region, { origins: [], search: '' }),
+    ).toEqual([])
+  })
+})
+
+describe('finding similar farms and washing stations', () => {
+  it('only suggests entries of their own list in the countries picked', async () => {
+    const { db } = await added()
+
+    expect(
+      await findSimilarInOrigins(db, farm, { origins: ['CO'], search: '' }),
+    ).toEqual([{ id: expect.any(String), name: 'La Palma', origin: 'CO' }])
+    expect(
+      await findSimilarInOrigins(db, washingStation, {
+        origins: ['CO', 'ET'],
+        search: 'hambla',
+      }),
+    ).toEqual([{ id: expect.any(String), name: 'Hambela', origin: 'ET' }])
   })
 })

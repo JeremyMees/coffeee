@@ -5,43 +5,38 @@ import {
   pgTable,
   primaryKey,
   text,
-  timestamp,
   unique,
 } from 'drizzle-orm/pg-core'
-import { user } from './auth.schema'
 import { coffee } from './catalog.schema'
+import { coffeeLink, createdByFk, sharedListColumns } from './lists'
 
 export const origin = pgTable('origin', {
   code: text().primaryKey(),
   name: text().notNull(),
 })
 
-export const region = pgTable(
-  'region',
-  {
-    id: text()
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    originCode: text().notNull(),
-    name: text().notNull(),
-    nameKey: text().notNull(),
-    createdBy: text(),
-    createdAt: timestamp().notNull().defaultNow(),
-  },
-  table => [
-    unique('regionOriginCodeNameKeyUnique').on(table.originCode, table.nameKey),
-    foreignKey({
-      name: 'regionOriginCodeFk',
-      columns: [table.originCode],
-      foreignColumns: [origin.code],
-    }),
-    foreignKey({
-      name: 'regionCreatedByFk',
-      columns: [table.createdBy],
-      foreignColumns: [user.id],
-    }).onDelete('set null'),
-  ],
-)
+function originList<Name extends string>(name: Name) {
+  return pgTable(
+    name,
+    { ...sharedListColumns(), originCode: text().notNull() },
+    table => [
+      unique(`${name}OriginCodeNameKeyUnique`).on(
+        table.originCode,
+        table.nameKey,
+      ),
+      foreignKey({
+        name: `${name}OriginCodeFk`,
+        columns: [table.originCode],
+        foreignColumns: [origin.code],
+      }),
+      createdByFk(name, table.createdBy),
+    ],
+  )
+}
+
+export const region = originList('region')
+export const farm = originList('farm')
+export const washingStation = originList('washingStation')
 
 export const coffeeOrigin = pgTable(
   'coffeeOrigin',
@@ -69,28 +64,10 @@ export const coffeeOrigin = pgTable(
   ],
 )
 
-export const coffeeRegion = pgTable(
-  'coffeeRegion',
-  {
-    coffeeId: text().notNull(),
-    regionId: text().notNull(),
-    position: integer().notNull(),
-  },
-  table => [
-    primaryKey({
-      name: 'coffeeRegionPk',
-      columns: [table.coffeeId, table.regionId],
-    }),
-    foreignKey({
-      name: 'coffeeRegionCoffeeIdFk',
-      columns: [table.coffeeId],
-      foreignColumns: [coffee.id],
-    }).onDelete('cascade'),
-    foreignKey({
-      name: 'coffeeRegionRegionIdFk',
-      columns: [table.regionId],
-      foreignColumns: [region.id],
-    }),
-    index('coffeeRegionRegionIdIdx').on(table.regionId),
-  ],
+export const coffeeRegion = coffeeLink('coffeeRegion', 'region', region)
+export const coffeeFarm = coffeeLink('coffeeFarm', 'farm', farm)
+export const coffeeWashingStation = coffeeLink(
+  'coffeeWashingStation',
+  'washingStation',
+  washingStation,
 )

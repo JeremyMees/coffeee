@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import OptionPills from '~/components/OptionPills.vue'
-import { tid } from '../fixtures'
+import OptionPills from '~/components/form/OptionPills.vue'
+import { tid } from '../../fixtures'
 
 const options = [
   { value: 'light', label: 'Light' },

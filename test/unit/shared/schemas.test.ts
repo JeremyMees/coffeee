@@ -4,7 +4,7 @@ import {
   coffeeDetailsSchema,
   inviteEmailSchema,
   newCoffeeSchema,
-  regionSearchSchema,
+  originListSearchSchema,
   newShelfSchema,
 } from '#shared/utils/schemas'
 import { fieldErrors } from '#shared/utils/validation'
@@ -33,6 +33,9 @@ describe('newCoffeeSchema', () => {
     expect(newCoffeeSchema.parse(coffee)).toEqual({
       ...coffee,
       regions: [],
+      farms: [],
+      washingStations: [],
+      producers: [],
       altitudeFrom: null,
       altitudeTo: null,
     })
@@ -183,14 +186,65 @@ describe('where a coffee was grown', () => {
       regions: 'Pick regions from the list',
     })
   })
+
+  it('explains farms and washing stations that make no sense', () => {
+    expect(
+      errorsOf(coffeeDetailsSchema, {
+        ...details,
+        farms: [{ origin: 'CO', name: 'x'.repeat(81) }],
+        washingStations: [{ origin: 'ET', name: 'Hambela' }],
+      }),
+    ).toEqual({
+      farms: 'Keep each farm to 80 characters or fewer',
+      washingStations: "Pick washing stations from the coffee's own origins",
+    })
+    expect(
+      errorsOf(coffeeDetailsSchema, {
+        ...details,
+        farms: [{ origin: 'ET', name: 'Buku Abel' }],
+        washingStations: [{ origin: 'CO', name: ' ' }],
+      }),
+    ).toEqual({
+      farms: "Pick farms from the coffee's own origins",
+      washingStations: 'Give the washing station a name',
+    })
+  })
+
+  it('trims producer names', () => {
+    expect(
+      coffeeDetailsSchema.parse({ ...details, producers: [' Nestor Lasso '] })
+        .producers,
+    ).toEqual(['Nestor Lasso'])
+  })
+
+  it('explains producers that make no sense', () => {
+    const producerErrors = (producers: unknown) =>
+      errorsOf(coffeeDetailsSchema, { ...details, producers })
+
+    expect(producerErrors([' '])).toEqual({
+      producers: 'Give the producer a name',
+    })
+    expect(producerErrors(['x'.repeat(81)])).toEqual({
+      producers: 'Keep each producer to 80 characters or fewer',
+    })
+    expect(
+      producerErrors(Array.from({ length: 21 }, (_, i) => `P${i}`)),
+    ).toEqual({ producers: 'Pick 20 producers or fewer' })
+    expect(producerErrors('Nestor Lasso')).toEqual({
+      producers: 'Pick producers from the list',
+    })
+  })
 })
 
-describe('regionSearchSchema', () => {
+describe('originListSearchSchema', () => {
   it('reads the origins as known country codes', () => {
     expect(
-      regionSearchSchema.parse({ search: 'hui', origins: 'CO,xx,ET' }),
+      originListSearchSchema.parse({ search: 'hui', origins: 'CO,xx,ET' }),
     ).toEqual({ search: 'hui', origins: ['CO', 'ET'] })
-    expect(regionSearchSchema.parse({})).toEqual({ search: '', origins: [] })
+    expect(originListSearchSchema.parse({})).toEqual({
+      search: '',
+      origins: [],
+    })
   })
 })
 

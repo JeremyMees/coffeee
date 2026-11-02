@@ -11,6 +11,7 @@ import {
   isChecked,
   chipLabels,
   pickOrigin,
+  pickMulti,
   pickRoaster,
   pickScoped,
   submit,
@@ -34,6 +35,9 @@ const coffee = {
   colour: '#2f6f4f',
   origins: [{ code: 'ET', name: 'Ethiopia' }],
   regions: [{ id: 'g1', name: 'Guji', origin: 'ET' }],
+  farms: [],
+  washingStations: [{ id: 'w1', name: 'Hambela', origin: 'ET' }],
+  producers: [{ id: 'n1', name: 'Nestor Lasso' }],
   altitudeFrom: 1900,
   altitudeTo: 2200,
 }
@@ -68,6 +72,8 @@ describe('EditCoffeeSheet', () => {
     expect(isChecked('coffee-colour', 'colour-forest')).toBe(true)
     expect(chipLabels('coffee-origins-chips')).toEqual(['Ethiopia'])
     expect(chipLabels('coffee-regions-chips')).toEqual(['Guji'])
+    expect(chipLabels('coffee-washing-stations-chips')).toEqual(['Hambela'])
+    expect(chipLabels('coffee-producers-chips')).toEqual(['Nestor Lasso'])
     expect(inputValue('coffee-altitude-from')).toBe('1900')
     expect(inputValue('coffee-altitude-to')).toBe('2200')
   })
@@ -95,6 +101,7 @@ describe('EditCoffeeSheet', () => {
     await click('coffee-roast-level', 'option-medium')
     await click('coffee-roasted-for', 'option-omni')
     await click('coffee-colour', 'colour-ink')
+    await pickMulti('coffee-producers', 'dieg', 'Diego Bermudez')
     await submit('edit-coffee-form')
 
     await vi.waitFor(() =>
@@ -109,6 +116,9 @@ describe('EditCoffeeSheet', () => {
         colour: '#1d1d1f',
         origins: ['ET'],
         regions: [{ origin: 'ET', name: 'Guji' }],
+        farms: [],
+        washingStations: [{ origin: 'ET', name: 'Hambela' }],
+        producers: ['Nestor Lasso', 'Diego Bermudez'],
         altitudeFrom: 1900,
         altitudeTo: 2200,
       },

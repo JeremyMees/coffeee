@@ -2,7 +2,19 @@ import { and, desc, eq, isNull, max, ne } from 'drizzle-orm'
 import { nameKey } from '#shared/utils/names'
 import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
 import type { Database } from '#server/db/database'
-import { coffee, purchase, roaster } from '#server/db/schemas'
+import {
+  coffee,
+  coffeeProducer,
+  producer,
+  purchase,
+  roaster,
+} from '#server/db/schemas'
+import {
+  describeEntries,
+  entriesOf,
+  findOrCreateEntry,
+} from '#server/utils/lists'
+import type { CoffeeList } from '#server/utils/lists'
 import { describeOrigins, originsOf } from '#server/utils/origins'
 
 interface Viewer {
@@ -25,23 +37,29 @@ const detailColumns = {
   altitudeTo: coffee.altitudeTo,
 }
 
-async function findOrCreateRoaster(
+const producers: CoffeeList = {
+  list: producer,
+  link: coffeeProducer,
+  entryId: coffeeProducer.producerId,
+}
+
+async function describeCoffee(
   db: Database,
-  input: { name: string; createdBy: string },
+  input: { coffeeId: string; userId: string; details: CoffeeDetails },
 ) {
-  const key = nameKey(input.name)
+  await describeOrigins(db, input)
+  await describeEntries(db, producers, {
+    coffeeId: input.coffeeId,
+    userId: input.userId,
+    entries: input.details.producers.map(name => ({ name })),
+  })
+}
 
-  await db
-    .insert(roaster)
-    .values({ ...input, nameKey: key })
-    .onConflictDoNothing({ target: roaster.nameKey })
-
-  const [found] = await db
-    .select()
-    .from(roaster)
-    .where(eq(roaster.nameKey, key))
-
-  return found!
+async function describedOf(db: Database, coffeeId: string) {
+  return {
+    ...(await originsOf(db, coffeeId)),
+    producers: await entriesOf(db, producers, coffeeId),
+  }
 }
 
 async function findOrCreateCoffee(
@@ -72,7 +90,7 @@ export function addCoffee(
   const details = input.coffee
 
   return db.transaction(async tx => {
-    const { id: roasterId } = await findOrCreateRoaster(tx, {
+    const roasterId = await findOrCreateEntry(tx, roaster, {
       name: details.roaster,
       createdBy: input.userId,
     })
@@ -88,7 +106,7 @@ export function addCoffee(
     })
 
     if (created) {
-      await describeOrigins(tx, {
+      await describeCoffee(tx, {
         coffeeId: found.id,
         userId: input.userId,
         details,
@@ -161,7 +179,7 @@ export async function findShelfCoffee(
 
   return {
     ...details,
-    ...(await originsOf(db, input.coffeeId)),
+    ...(await describedOf(db, input.coffeeId)),
     canEdit: canEditCoffee(input.viewer, createdBy),
     purchases,
   }
@@ -185,7 +203,7 @@ export function editCoffee(
       return { outcome: 'forbidden' as const }
     }
 
-    const { id: roasterId } = await findOrCreateRoaster(tx, {
+    const roasterId = await findOrCreateEntry(tx, roaster, {
       name: details.roaster,
       createdBy: input.editor.id,
     })
@@ -218,7 +236,7 @@ export function editCoffee(
       })
       .where(eq(coffee.id, input.coffeeId))
 
-    await describeOrigins(tx, {
+    await describeCoffee(tx, {
       coffeeId: input.coffeeId,
       userId: input.editor.id,
       details,
@@ -232,7 +250,7 @@ export function editCoffee(
 
     return {
       outcome: 'edited' as const,
-      coffee: { ...edited!, ...(await originsOf(tx, input.coffeeId)) },
+      coffee: { ...edited!, ...(await describedOf(tx, input.coffeeId)) },
     }
   })
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import OriginPicker from '~/components/OriginPicker.vue'
+import OriginPicker from '~/components/form/OriginPicker.vue'
 import {
   byTestId,
   chipLabels,
@@ -9,7 +9,7 @@ import {
   originOptions,
   pickOrigin,
   type,
-} from '../fixtures'
+} from '../../fixtures'
 
 function mountPicker(props: Record<string, unknown> = {}) {
   return mountSuspended(OriginPicker, {
