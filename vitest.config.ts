@@ -2,10 +2,22 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import { defineVitestProject } from '@nuxt/test-utils/config'
 
+const ignoredLogs = [/^<Suspense>/]
+
 export default defineConfig({
   test: {
+    onConsoleLog: log => !ignoredLogs.some(pattern => pattern.test(log)),
     projects: [
       {
+        resolve: {
+          alias: {
+            '#server': fileURLToPath(new URL('server', import.meta.url)),
+            '#test': fileURLToPath(new URL('test', import.meta.url)),
+            'nitropack/runtime': fileURLToPath(
+              new URL('test/support/nitro.ts', import.meta.url),
+            ),
+          },
+        },
         test: {
           name: 'unit',
           include: ['test/unit/**/*.{test,spec}.ts'],
@@ -36,6 +48,7 @@ export default defineConfig({
         'app/**/prototype/**',
         'app/**/prototype*.ts',
         'server/utils/db.ts',
+        'server/db/**',
       ],
       thresholds: {
         lines: 80,

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
@@ -18,10 +19,27 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  alias: {
+    '#test': fileURLToPath(new URL('./test', import.meta.url)),
+  },
+
   vite: { plugins: [tailwindcss()] },
+
+  nitro: {
+    typescript: {
+      tsConfig: {
+        include: ['../test/unit/**/*', '../test/support/**/*'],
+      },
+    },
+  },
 
   runtimeConfig: {
     databaseUrl: '',
+    betterAuthSecret: '',
+    productionUrl: '',
+    adminEmail: '',
+    googleClientId: '',
+    googleClientSecret: '',
   },
 
   colorMode: { classSuffix: '' },

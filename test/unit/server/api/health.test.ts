@@ -1,7 +1,7 @@
 import { createApp, toWebHandler } from 'h3'
 import { describe, expect, it, vi } from 'vitest'
-import handler from '../../../../server/api/health.get'
-import { createTestDatabase } from '../../../support/database'
+import handler from '#server/api/health.get'
+import { createTestDatabase } from '#test/support/database'
 
 type TestDatabase = Awaited<ReturnType<typeof createTestDatabase>>['db']
 
@@ -9,7 +9,7 @@ const database = vi.hoisted(() => ({
   current: undefined as TestDatabase | undefined,
 }))
 
-vi.mock('../../../../server/utils/db', () => ({
+vi.mock('#server/utils/db', () => ({
   useDb: () => database.current,
 }))
 
@@ -32,6 +32,7 @@ describe('GET /api/health', () => {
   })
 
   it('reports the database as unreachable when it is down', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { db, client } = await createTestDatabase()
     await client.close()
     database.current = db
@@ -43,5 +44,6 @@ describe('GET /api/health', () => {
       status: 'error',
       database: 'unreachable',
     })
+    log.mockRestore()
   })
 })

@@ -56,6 +56,11 @@ jobs:
           vercel-version: 50.44.0
           vercel-args: >-
             --env NUXT_DATABASE_URL=${{ steps.database.outputs.db_url_pooled }}
+            --env NUXT_BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
+            --env NUXT_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            --env NUXT_GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            --env NUXT_ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+            --env NUXT_PRODUCTION_URL=https://coffeee-shelf.vercel.app
             --meta prNumber=${{ github.event.number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check health

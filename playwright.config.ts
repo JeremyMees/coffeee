@@ -14,7 +14,11 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'node --env-file-if-exists=.env .output/server/index.mjs',
-    env: { PORT: String(port) },
+    env: {
+      PORT: String(port),
+      NUXT_BETTER_AUTH_SECRET: 'a-test-secret-that-is-long-enough-to-use',
+      NUXT_PRODUCTION_URL: `http://localhost:${port}`,
+    },
     url: `http://localhost:${port}`,
     reuseExistingServer: false,
   },

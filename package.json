@@ -27,6 +27,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "1.7.10",
     "@lucide/vue": "^1.63.0",
     "@nuxt/a11y": "1.0.0-alpha.1",
     "@nuxt/eslint": "1.17.0",
@@ -35,6 +36,8 @@
     "@nuxtjs/color-mode": "^4.1.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vercel/functions": "^3.10.4",
+    "@vueuse/core": "^15.0.0",
+    "better-auth": "1.7.10",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "drizzle-orm": "^0.45.4",
