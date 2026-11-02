@@ -9,7 +9,7 @@ import {
 } from '#server/utils/coffees'
 import { findSimilar } from '#server/utils/lists'
 import { createShelf } from '#server/utils/shelves'
-import type { NewCoffee } from '#shared/utils/schemas'
+import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
 async function setup() {
@@ -29,6 +29,10 @@ function newCoffee(overrides: Partial<NewCoffee> = {}): NewCoffee {
     roastLevel: 'light',
     roastedFor: 'filter',
     colour: '#e4572e',
+    origins: ['ET'],
+    regions: [],
+    altitudeFrom: null,
+    altitudeTo: null,
     purchasedOn: '2026-11-01',
     roastedOn: '2026-10-28',
     sizeGrams: 250,
@@ -323,13 +327,23 @@ describe('editing a coffee', () => {
     return { ...context, added }
   }
 
-  const details = {
+  const details: CoffeeDetails = {
     name: 'Ayele Fulasa Natural',
     roaster: 'Square Mile',
     roastLevel: 'medium',
     roastedFor: 'omni',
     colour: '#3d5a80',
-  } as const
+    origins: ['ET'],
+    regions: [],
+    altitudeFrom: null,
+    altitudeTo: null,
+  }
+
+  const savedDetails = {
+    ...details,
+    origins: [{ code: 'ET', name: 'Ethiopia' }],
+    regions: [],
+  }
 
   it('changes its shared details for the person who added it', async () => {
     const { db, sarah, added } = await withCoffee()
@@ -342,7 +356,7 @@ describe('editing a coffee', () => {
 
     expect(result).toEqual({
       outcome: 'edited',
-      coffee: { id: added.id, ...details },
+      coffee: { id: added.id, ...savedDetails },
     })
   })
 

@@ -5,7 +5,7 @@ import { useForm } from 'vee-validate'
 import { defineComponent, h } from 'vue'
 import CoffeeDetailsFields from '~/components/CoffeeDetailsFields.vue'
 import { fakeApi } from '../fake-api'
-import { tid } from '../fixtures'
+import { pickOrigin, pickScoped, tid, type } from '../fixtures'
 
 fakeApi()
 
@@ -16,14 +16,20 @@ async function mountFields(initialValues: Record<string, unknown> = {}) {
     setup() {
       form = useForm({
         validationSchema: zodSchema(coffeeDetailsSchema),
-        initialValues: { name: '', roaster: '', ...initialValues },
+        initialValues: {
+          name: '',
+          roaster: '',
+          origins: [],
+          regions: [],
+          ...initialValues,
+        },
       })
 
       return () => h('form', [h(CoffeeDetailsFields)])
     },
   })
 
-  const wrapper = await mountSuspended(Form)
+  const wrapper = await mountSuspended(Form, { attachTo: document.body })
 
   return { wrapper, form }
 }
@@ -94,6 +100,64 @@ describe('CoffeeDetailsFields', () => {
     )
     expect(wrapper.get(tid('coffee-roaster')).attributes('aria-invalid')).toBe(
       'true',
+    )
+  })
+
+  it('only takes a roaster, origin or region once it is picked', async () => {
+    const { form } = await mountFields()
+
+    await type('coffee-roaster', 'Squ')
+    await type('coffee-origins', 'Colom')
+    await flushPromises()
+
+    expect(form.values).toMatchObject({ roaster: '', origins: [] })
+  })
+
+  it('fills where it was grown as it is picked', async () => {
+    const { wrapper, form } = await mountFields()
+
+    await pickOrigin('colom', 'Colombia')
+    await pickScoped('coffee-regions', 'hui', 'Huila')
+    await wrapper.get(tid('coffee-altitude-from')).setValue('1700')
+    await wrapper.get(tid('coffee-altitude-to')).setValue('2000')
+    await flushPromises()
+
+    expect(form.values).toMatchObject({
+      origins: ['CO'],
+      regions: [{ origin: 'CO', name: 'Huila' }],
+      altitudeFrom: '1700',
+      altitudeTo: '2000',
+    })
+  })
+
+  it('drops the regions of an origin that is removed', async () => {
+    const { form } = await mountFields({
+      origins: ['CO', 'ET'],
+      regions: [
+        { origin: 'CO', name: 'Huila' },
+        { origin: 'ET', name: 'Guji' },
+      ],
+    })
+
+    form.setFieldValue('origins', ['ET'])
+    await flushPromises()
+
+    expect(form.values.regions).toEqual([{ origin: 'ET', name: 'Guji' }])
+  })
+
+  it('explains an altitude range that makes no sense', async () => {
+    const { wrapper, form } = await mountFields({
+      origins: ['CO'],
+      altitudeFrom: '2000',
+      altitudeTo: '1700',
+    })
+
+    await form.validate()
+
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain(
+        "The highest altitude can't be below the lowest",
+      ),
     )
   })
 })

@@ -1,5 +1,6 @@
 import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import regionsHandler from '#server/api/regions.get'
 import roastersHandler from '#server/api/roasters.get'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
@@ -38,6 +39,7 @@ beforeEach(async () => {
 function request(path: string, init: RequestInit = {}) {
   const router = createRouter()
     .get('/api/roasters', roastersHandler)
+    .get('/api/regions', regionsHandler)
     .get('/api/shelves/:shelfId/stock', stockHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
@@ -62,6 +64,7 @@ const coffee = {
   roastLevel: 'light',
   roastedFor: 'filter',
   colour: '#e4572e',
+  origins: ['ET'],
   purchasedOn: '2026-11-01',
   roastedOn: '2026-10-28',
   sizeGrams: 250,
@@ -192,6 +195,7 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
     roastLevel: 'medium',
     roastedFor: 'omni',
     colour: '#3d5a80',
+    origins: ['ET'],
   }
 
   async function addedCoffee() {
@@ -230,7 +234,14 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
     const response = await edit(creator.shelf.id, coffeeId, creator.headers)
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ id: coffeeId, ...details })
+    expect(await response.json()).toEqual({
+      id: coffeeId,
+      ...details,
+      origins: [{ code: 'ET', name: 'Ethiopia' }],
+      regions: [],
+      altitudeFrom: null,
+      altitudeTo: null,
+    })
     expect(await canEdit(creator.shelf.id, coffeeId, creator.headers)).toBe(
       true,
     )
@@ -360,5 +371,71 @@ describe('GET /api/roasters', () => {
     const response = await request('/api/roasters')
 
     expect(response.status).toBe(401)
+  })
+})
+
+describe('GET /api/regions', () => {
+  it('suggests the regions of the origins asked for', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers, {
+      ...coffee,
+      origins: ['CO', 'ET'],
+      regions: [
+        { origin: 'CO', name: 'Huila' },
+        { origin: 'ET', name: 'Guji' },
+      ],
+    })
+
+    const response = await request('/api/regions?origins=CO,XX&search=hui', {
+      headers,
+    })
+
+    expect(await response.json()).toEqual([
+      { id: expect.any(String), name: 'Huila', origin: 'CO' },
+    ])
+  })
+
+  it('suggests nothing without origins', async () => {
+    const { headers } = await member()
+
+    const response = await request('/api/regions', { headers })
+
+    expect(await response.json()).toEqual([])
+  })
+
+  it('refuses anonymous requests', async () => {
+    const response = await request('/api/regions?origins=CO')
+
+    expect(response.status).toBe(401)
+  })
+})
+
+describe('describing where a coffee was grown', () => {
+  it("refuses a region outside the coffee's origins", async () => {
+    const { shelf, headers } = await member()
+
+    const response = await add(shelf.id, headers, {
+      ...coffee,
+      origins: ['ET'],
+      regions: [{ origin: 'CO', name: 'Huila' }],
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      data: {
+        errors: { regions: "Pick regions from the coffee's own origins" },
+      },
+    })
+  })
+
+  it('refuses a coffee without an origin', async () => {
+    const { shelf, headers } = await member()
+
+    const response = await add(shelf.id, headers, { ...coffee, origins: [] })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      data: { errors: { origins: 'Pick where it was grown' } },
+    })
   })
 })

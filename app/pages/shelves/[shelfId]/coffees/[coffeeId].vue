@@ -23,6 +23,28 @@ const latestRoastedOn = computed(
     null,
 )
 
+function grownAt(shown: NonNullable<typeof coffee.value>) {
+  const regions = shown.regions.map(region =>
+    shown.origins.length > 1
+      ? `${region.name} (${originName(region.origin)})`
+      : region.name,
+  )
+
+  return [
+    {
+      key: 'origins',
+      label: 'Origin',
+      value: shown.origins.map(origin => origin.name).join(', '),
+    },
+    { key: 'regions', label: 'Region', value: regions.join(', ') },
+    {
+      key: 'altitude',
+      label: 'Altitude',
+      value: formatAltitude(shown.altitudeFrom, shown.altitudeTo) ?? '',
+    },
+  ].filter(row => row.value)
+}
+
 const euros = new Intl.NumberFormat(undefined, {
   style: 'currency',
   currency: 'EUR',
@@ -63,6 +85,16 @@ const euros = new Intl.NumberFormat(undefined, {
       class="mt-8"
       :coffee="{ ...coffee, roastedOn: latestRoastedOn }"
     />
+    <dl
+      v-if="grownAt(coffee).length"
+      class="mt-8 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-xs"
+      data-testid="grown-at"
+    >
+      <template v-for="row in grownAt(coffee)" :key="row.key">
+        <dt class="uppercase">{{ row.label }}</dt>
+        <dd :data-testid="`grown-${row.key}`">{{ row.value }}</dd>
+      </template>
+    </dl>
     <section class="mt-10">
       <h2 class="text-[28px]">Bags on this shelf</h2>
       <p

@@ -11,5 +11,9 @@ export const queryKeys = {
   ],
   invites: () => ['invites'],
   lists: () => ['lists'],
-  listSearch: (endpoint: string, search: string) => ['lists', endpoint, search],
+  listSearch: (
+    endpoint: string,
+    search: string,
+    params: Record<string, string> = {},
+  ) => ['lists', endpoint, search, params],
 } satisfies Record<string, (...args: never[]) => QueryKey>

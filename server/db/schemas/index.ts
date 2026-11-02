@@ -1,5 +1,6 @@
 export * from './auth.schema'
 export * from './catalog.schema'
 export * from './invite.schema'
+export * from './origin.schema'
 export * from './purchase.schema'
 export * from './shelf.schema'

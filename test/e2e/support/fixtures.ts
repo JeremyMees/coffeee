@@ -60,6 +60,7 @@ async function createMember(client: pg.Client, name: string, role: Role) {
 async function removeMember(client: pg.Client, member: Member) {
   await client.query(`delete from "purchase" where "addedBy" = $1`, [member.id])
   await client.query(`delete from "coffee" where "createdBy" = $1`, [member.id])
+  await client.query(`delete from "region" where "createdBy" = $1`, [member.id])
   await client.query(`delete from "roaster" where "createdBy" = $1`, [
     member.id,
   ])
@@ -79,6 +80,26 @@ async function useCookie(context: BrowserContext, url: string, cookie: string) {
 }
 
 export const test = base.extend<{ member: Member; people: People }>({
+  page: async ({ page }, use) => {
+    const goto = page.goto.bind(page)
+
+    page.goto = async (url, options) => {
+      const response = await goto(url, options)
+      await page.waitForFunction(() =>
+        Boolean(
+          (
+            document.querySelector('#__nuxt') as {
+              __vue_app__?: unknown
+            } | null
+          )?.__vue_app__,
+        ),
+      )
+
+      return response
+    }
+
+    await use(page)
+  },
   people: async ({ context, baseURL }, use) => {
     const database = new pg.Client({ connectionString: databaseUrl() })
     await database.connect()

@@ -9,7 +9,10 @@ import {
   click,
   inputValue,
   isChecked,
+  chipLabels,
+  pickOrigin,
   pickRoaster,
+  pickScoped,
   submit,
   testUser,
   type,
@@ -26,10 +29,14 @@ const coffee = {
   id: 'c1',
   name: 'Ayele Fulasa',
   roaster: 'Square Mile',
-  roastLevel: 'light',
-  roastedFor: 'filter',
+  roastLevel: 'light' as const,
+  roastedFor: 'filter' as const,
   colour: '#2f6f4f',
-} as const
+  origins: [{ code: 'ET', name: 'Ethiopia' }],
+  regions: [{ id: 'g1', name: 'Guji', origin: 'ET' }],
+  altitudeFrom: 1900,
+  altitudeTo: 2200,
+}
 
 async function openSheet(open = true) {
   const sheet = await mountSuspended(EditCoffeeSheet, {
@@ -59,6 +66,25 @@ describe('EditCoffeeSheet', () => {
     expect(isChecked('coffee-roast-level', 'option-light')).toBe(true)
     expect(isChecked('coffee-roasted-for', 'option-filter')).toBe(true)
     expect(isChecked('coffee-colour', 'colour-forest')).toBe(true)
+    expect(chipLabels('coffee-origins-chips')).toEqual(['Ethiopia'])
+    expect(chipLabels('coffee-regions-chips')).toEqual(['Guji'])
+    expect(inputValue('coffee-altitude-from')).toBe('1900')
+    expect(inputValue('coffee-altitude-to')).toBe('2200')
+  })
+
+  it('drops the regions of an origin that is removed', async () => {
+    await openSheet()
+
+    await pickOrigin('colom', 'Colombia')
+    await pickScoped('coffee-regions', 'hui', 'Huila · Colombia')
+    await click('coffee-origins-chips', 'chip-remove')
+    await submit('edit-coffee-form')
+
+    await vi.waitFor(() => expect(api.edits).toHaveLength(1))
+    expect(api.edits[0]).toMatchObject({
+      origins: ['CO'],
+      regions: [{ origin: 'CO', name: 'Huila' }],
+    })
   })
 
   it('saves the new details and closes', async () => {
@@ -81,6 +107,10 @@ describe('EditCoffeeSheet', () => {
         roastLevel: 'medium',
         roastedFor: 'omni',
         colour: '#1d1d1f',
+        origins: ['ET'],
+        regions: [{ origin: 'ET', name: 'Guji' }],
+        altitudeFrom: 1900,
+        altitudeTo: 2200,
       },
     ])
   })

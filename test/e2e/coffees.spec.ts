@@ -43,6 +43,24 @@ async function pickRoaster(page: Page, name: string, isNew: boolean) {
     .click()
 }
 
+async function pickOrigin(page: Page, country: string) {
+  await page.getByTestId('coffee-origins').fill(country.slice(0, 5))
+  await page
+    .getByTestId('origin-option')
+    .filter({ hasText: new RegExp(`^${country}$`) })
+    .click()
+}
+
+async function pickRegion(page: Page, name: string, option: string) {
+  await page.getByTestId('coffee-regions').fill(name)
+  await page
+    .getByTestId(
+      option.startsWith('Add') ? 'scoped-option-new' : 'scoped-option',
+    )
+    .filter({ hasText: option })
+    .click()
+}
+
 async function addCoffee(
   page: Page,
   coffee: { name: string; roaster: string; newRoaster: boolean },
@@ -52,6 +70,7 @@ async function addCoffee(
   const sheet = page.getByTestId('add-coffee-sheet')
   await sheet.getByTestId('coffee-name').fill(coffee.name)
   await pickRoaster(page, coffee.roaster, coffee.newRoaster)
+  await pickOrigin(page, 'Ethiopia')
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-filter')
   await pickDate(page, 'coffee-roasted-on', daysAgo(10))
@@ -214,6 +233,79 @@ test('suggests a similar roaster before adding a new one', async ({
   )
 })
 
+test('says where a blend was grown and keeps it up to date', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  const region = uniqueName('Huila')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await page.getByTestId('page-add-coffee').click()
+  const sheet = page.getByTestId('add-coffee-sheet')
+  await sheet.getByTestId('coffee-name').fill('Huila Blend')
+  await pickRoaster(page, roaster, true)
+  await pickOrigin(page, 'Colombia')
+  await pickOrigin(page, 'Ethiopia')
+  await pickRegion(page, region, `Add “${region}” in Colombia`)
+  await sheet.getByTestId('coffee-altitude-from').fill('1700')
+  await sheet.getByTestId('coffee-altitude-to').fill('2100')
+  await choose(sheet, 'coffee-roast-level', 'option-light')
+  await choose(sheet, 'coffee-roasted-for', 'option-filter')
+  await sheet.getByTestId('add-coffee-submit').click()
+  await expect(sheet).toBeHidden()
+
+  await stockCard(page, 'Huila Blend').click()
+
+  await expect(page.getByTestId('grown-origins')).toHaveText(
+    'Colombia, Ethiopia',
+  )
+  await expect(page.getByTestId('grown-regions')).toHaveText(
+    `${region} (Colombia)`,
+  )
+  await expect(page.getByTestId('grown-altitude')).toHaveText('1,700–2,100 m')
+
+  await page.getByTestId('coffee-edit').click()
+  const edit = page.getByTestId('edit-coffee-sheet')
+  await edit
+    .getByTestId('coffee-origins-chips')
+    .getByRole('button', { name: 'Remove Colombia' })
+    .click()
+  await expect(edit.getByTestId('coffee-regions-chips')).toBeHidden()
+  await edit.getByTestId('coffee-altitude-to').fill('')
+  await edit.getByTestId('edit-coffee-submit').click()
+
+  await expect(page.getByTestId('grown-origins')).toHaveText('Ethiopia')
+  await expect(page.getByTestId('grown-regions')).toBeHidden()
+  await expect(page.getByTestId('grown-altitude')).toHaveText('1,700 m')
+})
+
+test('suggests a region another coffee already used', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  const region = uniqueName('Yirgacheffe')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  const coffee = stockCard(page, 'Ayele Fulasa')
+  await coffee.click()
+  await page.getByTestId('coffee-edit').click()
+  await pickRegion(page, region, `Add “${region}”`)
+  await page.getByTestId('edit-coffee-submit').click()
+  await expect(page.getByTestId('grown-regions')).toHaveText(region)
+
+  await page.getByTestId('coffee-back').click()
+  await page.getByTestId('page-add-coffee').click()
+  await pickOrigin(page, 'Ethiopia')
+  await page
+    .getByTestId('coffee-regions')
+    .fill(region.replace('Yirgacheffe', 'Yirgachefe'))
+
+  await expect(
+    page.getByTestId('scoped-option').filter({ hasText: region }),
+  ).toBeVisible()
+})
+
 test('keeps a roast date optional', async ({ page, member }) => {
   const roaster = uniqueName('Roaster')
   await page.goto(`/shelves/${member.shelfId}`)
@@ -222,6 +314,7 @@ test('keeps a roast date optional', async ({ page, member }) => {
 
   await sheet.getByTestId('coffee-name').fill('Halo')
   await pickRoaster(page, roaster, true)
+  await pickOrigin(page, 'Kenya')
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-omni')
   await pickDate(page, 'coffee-roasted-on', daysAgo(5))

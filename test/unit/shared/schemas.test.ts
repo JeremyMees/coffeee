@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
 import {
+  coffeeDetailsSchema,
   inviteEmailSchema,
   newCoffeeSchema,
+  regionSearchSchema,
   newShelfSchema,
 } from '#shared/utils/schemas'
 import { fieldErrors } from '#shared/utils/validation'
@@ -19,6 +21,7 @@ const coffee = {
   roastLevel: 'light',
   roastedFor: 'filter',
   colour: '#e4572e',
+  origins: ['ET'],
   purchasedOn: '2026-11-02',
   roastedOn: null,
   sizeGrams: null,
@@ -27,7 +30,12 @@ const coffee = {
 
 describe('newCoffeeSchema', () => {
   it('accepts a coffee with only the required details', () => {
-    expect(newCoffeeSchema.parse(coffee)).toEqual(coffee)
+    expect(newCoffeeSchema.parse(coffee)).toEqual({
+      ...coffee,
+      regions: [],
+      altitudeFrom: null,
+      altitudeTo: null,
+    })
   })
 
   it('trims names and accepts every optional purchase detail', () => {
@@ -70,6 +78,7 @@ describe('newCoffeeSchema', () => {
       roastLevel: 'Pick a roast level',
       roastedFor: 'Pick what it was roasted for',
       colour: 'Pick a colour',
+      origins: 'Pick where it was grown',
       purchasedOn: 'Enter the date you bought it',
     })
   })
@@ -89,6 +98,99 @@ describe('newCoffeeSchema', () => {
       sizeGrams: 'The size has to be more than 0 g',
       price: "The price can't be negative",
     })
+  })
+})
+
+describe('where a coffee was grown', () => {
+  const details = {
+    name: 'Huila Blend',
+    roaster: 'Square Mile',
+    roastLevel: 'light',
+    roastedFor: 'filter',
+    colour: '#e4572e',
+    origins: ['CO'],
+  }
+
+  it('keeps each origin once', () => {
+    expect(
+      coffeeDetailsSchema.parse({ ...details, origins: ['CO', 'ET', 'CO'] })
+        .origins,
+    ).toEqual(['CO', 'ET'])
+  })
+
+  it('only takes countries from the list', () => {
+    expect(
+      errorsOf(coffeeDetailsSchema, { ...details, origins: ['CO', 'XX'] }),
+    ).toEqual({ origins: 'Pick countries from the list' })
+  })
+
+  it('takes a single altitude as both ends of the range', () => {
+    expect(
+      coffeeDetailsSchema.parse({
+        ...details,
+        altitudeFrom: '',
+        altitudeTo: '1850',
+      }),
+    ).toMatchObject({ altitudeFrom: 1850, altitudeTo: 1850 })
+    expect(
+      coffeeDetailsSchema.parse({ ...details, altitudeFrom: 1700 }),
+    ).toMatchObject({ altitudeFrom: 1700, altitudeTo: 1700 })
+  })
+
+  it('explains an altitude range that makes no sense', () => {
+    expect(
+      errorsOf(coffeeDetailsSchema, {
+        ...details,
+        altitudeFrom: 2100,
+        altitudeTo: 1700,
+      }),
+    ).toEqual({ altitudeTo: "The highest altitude can't be below the lowest" })
+    expect(
+      errorsOf(coffeeDetailsSchema, {
+        ...details,
+        altitudeFrom: -10,
+        altitudeTo: 7000.5,
+      }),
+    ).toEqual({
+      altitudeFrom: "The altitude can't be below sea level",
+      altitudeTo: 'Enter the highest altitude in whole metres',
+    })
+  })
+
+  it('trims region names', () => {
+    expect(
+      coffeeDetailsSchema.parse({
+        ...details,
+        regions: [{ origin: 'CO', name: ' Huila ' }],
+      }).regions,
+    ).toEqual([{ origin: 'CO', name: 'Huila' }])
+  })
+
+  it('explains regions that make no sense', () => {
+    const regionErrors = (regions: unknown) =>
+      errorsOf(coffeeDetailsSchema, { ...details, regions })
+
+    expect(regionErrors([{ origin: 'CO', name: ' ' }])).toEqual({
+      regions: 'Give the region a name',
+    })
+    expect(regionErrors([{ origin: 'CO', name: 'x'.repeat(61) }])).toEqual({
+      regions: 'Keep each region to 60 characters or fewer',
+    })
+    expect(regionErrors([{ origin: 'ET', name: 'Guji' }])).toEqual({
+      regions: "Pick regions from the coffee's own origins",
+    })
+    expect(regionErrors('Huila')).toEqual({
+      regions: 'Pick regions from the list',
+    })
+  })
+})
+
+describe('regionSearchSchema', () => {
+  it('reads the origins as known country codes', () => {
+    expect(
+      regionSearchSchema.parse({ search: 'hui', origins: 'CO,xx,ET' }),
+    ).toEqual({ search: 'hui', origins: ['CO', 'ET'] })
+    expect(regionSearchSchema.parse({})).toEqual({ search: '', origins: [] })
   })
 })
 

@@ -11,6 +11,10 @@ const props = defineProps<{
     roastLevel: RoastLevel
     roastedFor: RoastedFor
     colour: string
+    origins: { code: string; name: string }[]
+    regions: { origin: string; name: string }[]
+    altitudeFrom: number | null
+    altitudeTo: number | null
   }
 }>()
 
@@ -25,6 +29,10 @@ function currentDetails() {
     roastLevel: props.coffee.roastLevel,
     roastedFor: props.coffee.roastedFor,
     colour: props.coffee.colour as BagColour,
+    origins: props.coffee.origins.map(origin => origin.code),
+    regions: props.coffee.regions.map(({ origin, name }) => ({ origin, name })),
+    altitudeFrom: props.coffee.altitudeFrom?.toString() ?? '',
+    altitudeTo: props.coffee.altitudeTo?.toString() ?? '',
   }
 }
 

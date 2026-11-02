@@ -111,6 +111,43 @@ export async function pickRoaster(search: string, option: string) {
   await pickOption(option)
 }
 
+export function originOptions() {
+  return allByTestId('origin-option').map(element =>
+    element.textContent?.trim(),
+  )
+}
+
+export function chipLabels(...within: string[]) {
+  return allByTestId(...within, 'chip-label').map(element =>
+    element.textContent?.trim(),
+  )
+}
+
+export async function pickOrigin(search: string, country: string) {
+  await type('coffee-origins', search)
+  const option = allByTestId('origin-option').find(
+    element => element.textContent?.trim() === country,
+  )!
+  option.click()
+  await flushPromises()
+}
+
+export async function pickScoped(testId: string, search: string, text: string) {
+  await type(testId, search)
+  const option = await vi.waitFor(() => {
+    const found = allByTestId('scoped-option')
+      .concat(allByTestId('scoped-option-new'))
+      .find(
+        element => element.textContent?.replace(/\s+/g, ' ').trim() === text,
+      )
+    if (!found) throw new Error(`No option “${text}”`)
+
+    return found
+  }, 3000)
+  option.click()
+  await flushPromises()
+}
+
 export async function pickDate(pickerTestId: string, isoDate: string) {
   await click(pickerTestId, 'date-picker-trigger')
 

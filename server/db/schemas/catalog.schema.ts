@@ -1,5 +1,8 @@
+import { sql } from 'drizzle-orm'
 import {
+  check,
   foreignKey,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -45,11 +48,17 @@ export const coffee = pgTable(
     roastLevel: roastLevel().notNull(),
     roastedFor: roastedFor().notNull(),
     colour: text().notNull(),
+    altitudeFrom: integer(),
+    altitudeTo: integer(),
     createdBy: text(),
     createdAt: timestamp().notNull().defaultNow(),
   },
   table => [
     unique('coffeeRoasterIdNameKeyUnique').on(table.roasterId, table.nameKey),
+    check(
+      'coffeeAltitudeRangeCheck',
+      sql`(${table.altitudeFrom} is null) = (${table.altitudeTo} is null) and ${table.altitudeFrom} between 0 and ${table.altitudeTo}`,
+    ),
     foreignKey({
       name: 'coffeeRoasterIdFk',
       columns: [table.roasterId],

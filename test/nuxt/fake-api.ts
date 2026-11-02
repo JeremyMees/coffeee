@@ -1,13 +1,24 @@
 import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
+import type { ListEntry } from '~/queries/lists'
 import { nameKey } from '#imports'
 
-export function fakeList(entries: () => { id: string; name: string }[]) {
+export function fakeList<Entry extends ListEntry>(entries: () => Entry[]) {
   return (event: H3Event) => {
     const key = nameKey(String(getQuery(event).search ?? ''))
 
     return entries().filter(entry => nameKey(entry.name).includes(key))
+  }
+}
+
+export function fakeRegions(regions: () => (ListEntry & { origin: string })[]) {
+  return (event: H3Event) => {
+    const origins = String(getQuery(event).origins ?? '').split(',')
+
+    return fakeList(regions)(event).filter(region =>
+      origins.includes(region.origin),
+    )
   }
 }
 
@@ -19,6 +30,10 @@ export function ayele() {
     roastLevel: 'light',
     roastedFor: 'filter',
     colour: '#2f6f4f',
+    origins: [{ code: 'ET', name: 'Ethiopia' }],
+    regions: [{ id: 'g1', name: 'Guji', origin: 'ET' }],
+    altitudeFrom: 1900,
+    altitudeTo: 2200,
     canEdit: true,
     purchases: [
       {
@@ -82,6 +97,14 @@ export function fakeApi() {
     fakeList(() => [
       { id: 'r1', name: 'La Cabra' },
       { id: 'r2', name: 'Square Mile' },
+    ]),
+  )
+
+  registerEndpoint(
+    '/api/regions',
+    fakeRegions(() => [
+      { id: 'g1', name: 'Guji', origin: 'ET' },
+      { id: 'h1', name: 'Huila', origin: 'CO' },
     ]),
   )
 

@@ -94,4 +94,53 @@ describe('a coffee page', () => {
 
     expect(useError().value).toMatchObject({ statusCode: 404 })
   })
+
+  it('says where it was grown', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('grown-origins')).text()).toBe('Ethiopia')
+    expect(page.get(tid('grown-regions')).text()).toBe('Guji')
+    expect(page.get(tid('grown-altitude')).text()).toBe('1,900–2,200 m')
+  })
+
+  it('names the country of each region of a blend', async () => {
+    api.coffee = {
+      ...ayele(),
+      origins: [
+        { code: 'CO', name: 'Colombia' },
+        { code: 'ET', name: 'Ethiopia' },
+      ],
+      regions: [
+        { id: 'h1', name: 'Huila', origin: 'CO' },
+        { id: 'g1', name: 'Guji', origin: 'ET' },
+      ],
+    }
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('grown-origins')).text()).toBe('Colombia, Ethiopia')
+    expect(page.get(tid('grown-regions')).text()).toBe(
+      'Huila (Colombia), Guji (Ethiopia)',
+    )
+  })
+
+  it('leaves out what nobody filled in', async () => {
+    api.coffee = {
+      ...ayele(),
+      origins: [],
+      regions: [],
+      altitudeFrom: null,
+      altitudeTo: null,
+    }
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.find(tid('grown-at')).exists()).toBe(false)
+  })
 })

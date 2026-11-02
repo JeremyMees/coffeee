@@ -12,7 +12,9 @@ import {
   forgetLastShelf,
   inputValue,
   pickDate,
+  pickOrigin,
   pickRoaster,
+  pickScoped,
   pickerOptions,
   submit,
   testUser,
@@ -47,6 +49,7 @@ function sheetText() {
 async function fillRequired(name = 'Ayele Fulasa') {
   await type('coffee-name', name)
   await pickRoaster('square', 'Square Mile')
+  await pickOrigin('ethi', 'Ethiopia')
   await click('coffee-roast-level', 'option-light')
   await click('coffee-roasted-for', 'option-filter')
 }
@@ -82,6 +85,7 @@ describe('AddCoffeeSheet', () => {
       expect(sheetText()).toContain('Pick a roaster or add a new one')
       expect(sheetText()).toContain('Pick a roast level')
       expect(sheetText()).toContain('Pick what it was roasted for')
+      expect(sheetText()).toContain('Pick where it was grown')
     })
     expect(api.added).toEqual([])
   })
@@ -112,6 +116,9 @@ describe('AddCoffeeSheet', () => {
 
     await fillRequired()
     await click('coffee-colour', 'colour-slate')
+    await pickScoped('coffee-regions', 'guj', 'Guji')
+    await type('coffee-altitude-from', '1900')
+    await type('coffee-altitude-to', '2200')
     await pickDate('coffee-roasted-on', daysAgo(10))
     await type('coffee-size', '250')
     await type('coffee-price', '16.5')
@@ -125,6 +132,10 @@ describe('AddCoffeeSheet', () => {
         roastLevel: 'light',
         roastedFor: 'filter',
         colour: '#3d5a80',
+        origins: ['ET'],
+        regions: [{ origin: 'ET', name: 'Guji' }],
+        altitudeFrom: 1900,
+        altitudeTo: 2200,
         purchasedOn: localDate(),
         roastedOn: daysAgo(10),
         sizeGrams: 250,
@@ -140,6 +151,7 @@ describe('AddCoffeeSheet', () => {
 
     await type('coffee-name', 'Halo')
     await pickRoaster('April', 'Add “April”')
+    await pickOrigin('kenya', 'Kenya')
     await click('coffee-roast-level', 'option-light')
     await click('coffee-roasted-for', 'option-omni')
     await submit('add-coffee-form')
@@ -148,6 +160,10 @@ describe('AddCoffeeSheet', () => {
     expect(api.added).toEqual([
       expect.objectContaining({
         roaster: 'April',
+        origins: ['KE'],
+        regions: [],
+        altitudeFrom: null,
+        altitudeTo: null,
         roastedOn: null,
         sizeGrams: null,
         price: null,

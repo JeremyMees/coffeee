@@ -3,6 +3,7 @@ import { nameKey } from '#shared/utils/names'
 import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
 import type { Database } from '#server/db/database'
 import { coffee, purchase, roaster } from '#server/db/schemas'
+import { describeOrigins, originsOf } from '#server/utils/origins'
 
 interface Viewer {
   id: string
@@ -16,6 +17,12 @@ const coffeeColumns = {
   roastLevel: coffee.roastLevel,
   roastedFor: coffee.roastedFor,
   colour: coffee.colour,
+}
+
+const detailColumns = {
+  ...coffeeColumns,
+  altitudeFrom: coffee.altitudeFrom,
+  altitudeTo: coffee.altitudeTo,
 }
 
 async function findOrCreateRoaster(
@@ -43,10 +50,11 @@ async function findOrCreateCoffee(
 ) {
   const key = nameKey(input.name)
 
-  await db
+  const [created] = await db
     .insert(coffee)
     .values({ ...input, nameKey: key })
     .onConflictDoNothing({ target: [coffee.roasterId, coffee.nameKey] })
+    .returning({ id: coffee.id })
 
   const [found] = await db
     .select(coffeeColumns)
@@ -54,7 +62,7 @@ async function findOrCreateCoffee(
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
     .where(and(eq(coffee.roasterId, input.roasterId), eq(coffee.nameKey, key)))
 
-  return found!
+  return { coffee: found!, created: created !== undefined }
 }
 
 export function addCoffee(
@@ -68,14 +76,24 @@ export function addCoffee(
       name: details.roaster,
       createdBy: input.userId,
     })
-    const found = await findOrCreateCoffee(tx, {
+    const { coffee: found, created } = await findOrCreateCoffee(tx, {
       roasterId,
       name: details.name,
       roastLevel: details.roastLevel,
       roastedFor: details.roastedFor,
       colour: details.colour,
+      altitudeFrom: details.altitudeFrom,
+      altitudeTo: details.altitudeTo,
       createdBy: input.userId,
     })
+
+    if (created) {
+      await describeOrigins(tx, {
+        coffeeId: found.id,
+        userId: input.userId,
+        details,
+      })
+    }
     const [added] = await tx
       .insert(purchase)
       .values({
@@ -114,7 +132,7 @@ export async function findShelfCoffee(
   input: { shelfId: string; coffeeId: string; viewer: Viewer },
 ) {
   const [found] = await db
-    .select({ ...coffeeColumns, createdBy: coffee.createdBy })
+    .select({ ...detailColumns, createdBy: coffee.createdBy })
     .from(coffee)
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
     .where(eq(coffee.id, input.coffeeId))
@@ -143,6 +161,7 @@ export async function findShelfCoffee(
 
   return {
     ...details,
+    ...(await originsOf(db, input.coffeeId)),
     canEdit: canEditCoffee(input.viewer, createdBy),
     purchases,
   }
@@ -194,15 +213,26 @@ export function editCoffee(
         roastLevel: details.roastLevel,
         roastedFor: details.roastedFor,
         colour: details.colour,
+        altitudeFrom: details.altitudeFrom,
+        altitudeTo: details.altitudeTo,
       })
       .where(eq(coffee.id, input.coffeeId))
 
+    await describeOrigins(tx, {
+      coffeeId: input.coffeeId,
+      userId: input.editor.id,
+      details,
+    })
+
     const [edited] = await tx
-      .select(coffeeColumns)
+      .select(detailColumns)
       .from(coffee)
       .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
       .where(eq(coffee.id, input.coffeeId))
 
-    return { outcome: 'edited' as const, coffee: edited! }
+    return {
+      outcome: 'edited' as const,
+      coffee: { ...edited!, ...(await originsOf(tx, input.coffeeId)) },
+    }
   })
 }
