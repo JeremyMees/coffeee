@@ -78,6 +78,13 @@
       "when": 1793630050696,
       "tag": "0010_grinders_brew_methods_and_grind_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793631030679,
+      "tag": "0011_roaster_details",
+      "breakpoints": true
     }
   ]
 }

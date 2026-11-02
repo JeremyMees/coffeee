@@ -743,3 +743,61 @@ test('keeps a grind setting per grinder and brew method on the coffee only', asy
   await page.getByTestId('coffee-back').click()
   await expect(stockCard(page, 'Ayele Fulasa')).not.toContainText(brand)
 })
+
+test('lets the person who added a roaster fill in its details and logo', async ({
+  page,
+  member,
+  people,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page).toHaveURL(/\/coffees\//)
+  const coffeePath = new URL(page.url()).pathname
+  await expect(page.getByTestId('roaster-details-name')).toHaveText(roaster)
+  await expect(page.getByTestId('roaster-logo-placeholder')).toBeVisible()
+
+  await page.getByTestId('roaster-edit').click()
+  const sheet = page.getByTestId('edit-roaster-sheet')
+  await sheet
+    .getByTestId('roaster-logo-input')
+    .setInputFiles(await bagPhoto(page, '#1d1d1f'))
+  await expect(sheet.getByTestId('roaster-logo-image')).toHaveAttribute(
+    'src',
+    /\/roasters\/.*\.webp$/,
+  )
+  await sheet.getByTestId('roaster-website').fill('https://www.example.com')
+  await sheet.getByTestId('roaster-country').selectOption('GB')
+  await sheet.getByTestId('roaster-city').fill('London')
+  await sheet.getByTestId('edit-roaster-submit').click()
+
+  await expect(sheet).toBeHidden()
+  await expect(page.getByTestId('roaster-details-place')).toHaveText(
+    'London, United Kingdom',
+  )
+  await expect(page.getByTestId('roaster-details-website')).toHaveText(
+    'example.com',
+  )
+  await expect(page.getByTestId('roaster-logo-image')).toBeVisible()
+
+  const sam = await people.signIn('Sam')
+  await people.joinShelf(sam, member.shelfId)
+  await page.goto(coffeePath)
+
+  await expect(page.getByTestId('roaster-details-place')).toHaveText(
+    'London, United Kingdom',
+  )
+  await expect(page.getByTestId('roaster-edit')).toBeHidden()
+
+  const admin = await people.signIn('Ada', 'admin')
+  await people.joinShelf(admin, member.shelfId)
+  await page.goto(coffeePath)
+  await page.getByTestId('roaster-edit').click()
+  await sheet.getByTestId('roaster-city').fill('Bristol')
+  await sheet.getByTestId('edit-roaster-submit').click()
+
+  await expect(page.getByTestId('roaster-details-place')).toHaveText(
+    'Bristol, United Kingdom',
+  )
+})

@@ -28,12 +28,14 @@ import {
   findOrCreateEntry,
 } from '#server/utils/lists'
 import type { Viewer } from '#server/types/coffees'
+import { canEditCatalogEntry } from '#server/utils/catalog'
 import type { CoffeeList } from '#server/types/lists'
 import type { EditableCoffeePhoto } from '#server/types/photos'
 import { describeOrigins, originsOf } from '#server/utils/origins'
 import { deletePhoto } from '#server/utils/photos'
 import { grindSettingsOf } from '#server/utils/grind-settings'
 import { addPurchase, purchaseColumns } from '#server/utils/purchases'
+import { findRoaster } from '#server/utils/roasters'
 import { findVerdict, verdictOn } from '#server/utils/verdicts'
 
 const coffeeColumns = {
@@ -208,10 +210,6 @@ export async function listStock(db: Database, shelfId: string) {
   return stock.map(row => ({ ...row, flavorNotes: notes.get(row.id) ?? [] }))
 }
 
-export function canEditCoffee(viewer: Viewer, createdBy: string | null) {
-  return viewer.role === 'admin' || viewer.id === createdBy
-}
-
 export async function findEditableCoffee(
   db: Database,
   input: { coffeeId: string; editor: Viewer },
@@ -223,7 +221,7 @@ export async function findEditableCoffee(
 
   if (!current) return { outcome: 'notFound' as const }
 
-  if (!canEditCoffee(input.editor, current.createdBy)) {
+  if (!canEditCatalogEntry(input.editor, current.createdBy)) {
     return { outcome: 'forbidden' as const }
   }
 
@@ -249,14 +247,18 @@ export async function findShelfCoffee(
   input: { shelfId: string; coffeeId: string; viewer: Viewer },
 ) {
   const [found] = await db
-    .select({ ...detailColumns, createdBy: coffee.createdBy })
+    .select({
+      ...detailColumns,
+      roasterId: coffee.roasterId,
+      createdBy: coffee.createdBy,
+    })
     .from(coffee)
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
     .where(eq(coffee.id, input.coffeeId))
 
   if (!found) return undefined
 
-  const { createdBy, ...details } = found
+  const { roasterId, createdBy, ...details } = found
 
   const purchases = await db
     .select(purchaseColumns)
@@ -273,9 +275,13 @@ export async function findShelfCoffee(
     ...details,
     ...(await describedOf(db, input.coffeeId)),
     ...(await findVerdict(db, input)),
-    canEdit: canEditCoffee(input.viewer, createdBy),
+    canEdit: canEditCatalogEntry(input.viewer, createdBy),
     purchases,
     grindSettings: await grindSettingsOf(db, input),
+    roasterDetails: (await findRoaster(db, {
+      roasterId,
+      viewer: input.viewer,
+    }))!,
   }
 }
 

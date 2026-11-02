@@ -20,6 +20,23 @@ function requiredText(missing: string, max: number, tooLong: string) {
   return z.string({ error: missing }).trim().min(1, missing).max(max, tooLong)
 }
 
+function trimmedOrNull(value: unknown) {
+  return blankToNull(typeof value === 'string' ? value.trim() : value)
+}
+
+function optionalLink(noun: string) {
+  return z.preprocess(
+    trimmedOrNull,
+    z
+      .url({
+        protocol: /^https?$/,
+        error: `Enter a ${noun} that starts with https://`,
+      })
+      .max(500, `Keep the ${noun} to 500 characters or fewer`)
+      .nullable(),
+  )
+}
+
 export const newShelfSchema = z.object({
   name: requiredText(
     'Give the shelf a name',
@@ -84,16 +101,7 @@ const coffeeDetailsShape = {
   ),
   varietals: listEntries(nouns('varietal'), 10, 60),
   flavorNotes: listEntries(nouns('flavor note'), 20, 40),
-  link: z.preprocess(
-    value => blankToNull(typeof value === 'string' ? value.trim() : value),
-    z
-      .url({
-        protocol: /^https?$/,
-        error: 'Enter a link that starts with https://',
-      })
-      .max(500, 'Keep the link to 500 characters or fewer')
-      .nullable(),
-  ),
+  link: optionalLink('link'),
   altitudeFrom: altitude('lowest'),
   altitudeTo: altitude('highest'),
 }
@@ -303,10 +311,33 @@ export const grindSettingSchema = z.object({
   grinderId: requiredText('Pick a grinder', 100, 'Pick a grinder'),
   brewMethodId: requiredText('Pick a brew method', 100, 'Pick a brew method'),
   setting: z.preprocess(
-    value => blankToNull(typeof value === 'string' ? value.trim() : value),
+    trimmedOrNull,
     z
       .string({ error: 'Write the setting as text' })
       .max(30, 'Keep the setting to 30 characters or fewer')
+      .nullable(),
+  ),
+})
+
+export const roasterDetailsSchema = z.object({
+  name: requiredText(
+    'Give the roaster a name',
+    80,
+    'Keep the name to 80 characters or fewer',
+  ),
+  website: optionalLink('website'),
+  countryCode: z.preprocess(
+    blankToNull,
+    z
+      .string({ error: 'Pick a country from the list' })
+      .refine(isOriginCode, 'Pick a country from the list')
+      .nullable(),
+  ),
+  city: z.preprocess(
+    trimmedOrNull,
+    z
+      .string({ error: 'Enter the city as text' })
+      .max(80, 'Keep the city to 80 characters or fewer')
       .nullable(),
   ),
 })

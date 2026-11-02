@@ -11,6 +11,7 @@ import {
   originListSearchSchema,
   newShelfSchema,
   purchaseSchema,
+  roasterDetailsSchema,
   verdictSchema,
 } from '#shared/utils/schemas'
 import { fieldErrors } from '#shared/utils/validation'
@@ -503,6 +504,56 @@ describe('grindSettingSchema', () => {
     ).toEqual({ setting: 'Keep the setting to 30 characters or fewer' })
     expect(errorsOf(grindSettingSchema, { ...target, setting: 12 })).toEqual({
       setting: 'Write the setting as text',
+    })
+  })
+})
+
+describe('roasterDetailsSchema', () => {
+  it('takes a name with an optional website, country and city', () => {
+    expect(
+      roasterDetailsSchema.parse({
+        name: ' Square Mile ',
+        website: ' https://squaremilecoffee.com ',
+        countryCode: 'GB',
+        city: ' London ',
+      }),
+    ).toEqual({
+      name: 'Square Mile',
+      website: 'https://squaremilecoffee.com',
+      countryCode: 'GB',
+      city: 'London',
+    })
+  })
+
+  it('leaves out the details left blank', () => {
+    expect(
+      roasterDetailsSchema.parse({
+        name: 'Square Mile',
+        website: '',
+        countryCode: '',
+        city: '  ',
+      }),
+    ).toEqual({
+      name: 'Square Mile',
+      website: null,
+      countryCode: null,
+      city: null,
+    })
+  })
+
+  it('explains details that are not right', () => {
+    expect(
+      errorsOf(roasterDetailsSchema, {
+        name: '',
+        website: 'ftp://squaremile',
+        countryCode: 'XX',
+        city: 'c'.repeat(81),
+      }),
+    ).toEqual({
+      name: 'Give the roaster a name',
+      website: 'Enter a website that starts with https://',
+      countryCode: 'Pick a country from the list',
+      city: 'Keep the city to 80 characters or fewer',
     })
   })
 })

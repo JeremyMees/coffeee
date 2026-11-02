@@ -15,6 +15,11 @@ import { user } from './auth.schema'
 export const roastLevel = pgEnum('roastLevel', roastLevels)
 export const roastedFor = pgEnum('roastedFor', roastedForOptions)
 
+export const origin = pgTable('origin', {
+  code: text().primaryKey(),
+  name: text().notNull(),
+})
+
 export const roaster = pgTable(
   'roaster',
   {
@@ -23,11 +28,20 @@ export const roaster = pgTable(
       .$defaultFn(() => crypto.randomUUID()),
     name: text().notNull(),
     nameKey: text().notNull(),
+    website: text(),
+    countryCode: text(),
+    city: text(),
+    logoUrl: text(),
     createdBy: text(),
     createdAt: timestamp().notNull().defaultNow(),
   },
   table => [
     unique('roasterNameKeyUnique').on(table.nameKey),
+    foreignKey({
+      name: 'roasterCountryCodeFk',
+      columns: [table.countryCode],
+      foreignColumns: [origin.code],
+    }),
     foreignKey({
       name: 'roasterCreatedByFk',
       columns: [table.createdBy],

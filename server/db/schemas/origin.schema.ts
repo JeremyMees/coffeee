@@ -7,13 +7,8 @@ import {
   text,
   unique,
 } from 'drizzle-orm/pg-core'
-import { coffee } from './catalog.schema'
+import { coffee, origin } from './catalog.schema'
 import { coffeeLink, createdByFk, sharedListColumns } from './lists'
-
-export const origin = pgTable('origin', {
-  code: text().primaryKey(),
-  name: text().notNull(),
-})
 
 function originList<Name extends string>(name: Name) {
   return pgTable(

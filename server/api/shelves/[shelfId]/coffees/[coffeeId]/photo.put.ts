@@ -6,7 +6,7 @@ import { requireEditableCoffee } from '#server/utils/session'
 
 export default defineEventHandler(async event => {
   const coffee = await requireEditableCoffee(event)
-  const photoUrl = await storePhoto(await readPhoto(event))
+  const photoUrl = await storePhoto(await readPhoto(event), 'coffees')
 
   return replaceCoffeePhoto(useDb(), coffee, photoUrl)
 })

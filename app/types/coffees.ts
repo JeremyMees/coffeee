@@ -14,6 +14,7 @@ export type EditableCoffee = Omit<
   | 'rating'
   | 'wouldBuyAgain'
   | 'grindSettings'
+  | 'roasterDetails'
 >
 
 export type CardCoffee = Pick<

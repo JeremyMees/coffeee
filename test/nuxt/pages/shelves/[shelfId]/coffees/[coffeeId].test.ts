@@ -137,6 +137,27 @@ describe('a coffee page', () => {
     expect(page.get(tid('coffee-card')).text()).not.toContain('Opus')
   })
 
+  it('shows the roaster and its edited details', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+      attachTo: document.body,
+    })
+    expect(page.get(tid('roaster-details-place')).text()).toBe(
+      'London, United Kingdom',
+    )
+
+    await page.get(tid('roaster-edit')).trigger('click')
+    await vi.waitFor(() => expect(byTestId('edit-roaster-form')).not.toBeNull())
+    await type('roaster-city', 'Bristol')
+    await submit('edit-roaster-form')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('roaster-details-place')).text()).toBe(
+        'Bristol, United Kingdom',
+      ),
+    )
+  })
+
   it('is not found when the shelf has no such coffee', async () => {
     await mountSuspended(App, { route: '/shelves/home/coffees/nope' })
 

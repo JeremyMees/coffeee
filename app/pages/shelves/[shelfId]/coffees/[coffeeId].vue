@@ -152,6 +152,7 @@ const outlined =
         <dd :data-testid="`detail-${row.key}`">{{ row.value }}</dd>
       </template>
     </dl>
+    <RoasterDetails :shelf-id="shelfId" :roaster="coffee.roasterDetails" />
     <CoffeeGrindSettings
       :shelf-id="shelfId"
       :coffee-id="coffee.id"

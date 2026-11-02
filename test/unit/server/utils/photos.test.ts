@@ -101,7 +101,7 @@ describe('reading an uploaded photo', () => {
 
 describe('storing a photo without Blob', () => {
   it('keeps it locally and serves it from the app', async () => {
-    const url = await storePhoto(photo)
+    const url = await storePhoto(photo, 'coffees')
 
     expect(url).toMatch(/^\/api\/photos\/coffees\/[\w-]+\.webp$/)
     expect(await readLocalPhoto(url.slice('/api/photos/'.length))).toBe(
@@ -111,13 +111,22 @@ describe('storing a photo without Blob', () => {
   })
 
   it('deletes it again', async () => {
-    const url = await storePhoto(photo)
+    const url = await storePhoto(photo, 'coffees')
     const pathname = url.slice('/api/photos/'.length)
 
     await deletePhoto(url)
 
     expect(await readLocalPhoto(pathname)).toBeNull()
     expect(blob.del).not.toHaveBeenCalled()
+  })
+
+  it('keeps roaster logos in their own folder', async () => {
+    const url = await storePhoto(photo, 'roasters')
+
+    expect(url).toMatch(/^\/api\/photos\/roasters\/[\w-]+\.webp$/)
+    expect(await readLocalPhoto(url.slice('/api/photos/'.length))).toBe(
+      photo.data,
+    )
   })
 
   it('only serves photo paths', async () => {
@@ -132,7 +141,7 @@ describe('storing a photo on Blob', () => {
   })
 
   it('uploads it publicly under its environment and returns its url', async () => {
-    const url = await storePhoto({ ...photo, type: 'image/jpeg' })
+    const url = await storePhoto({ ...photo, type: 'image/jpeg' }, 'coffees')
 
     expect(url).toMatch(
       /^https:\/\/store\.public\.blob\.vercel-storage\.com\/production\/coffees\/[\w-]+\.jpg$/,
@@ -147,7 +156,7 @@ describe('storing a photo on Blob', () => {
   it('keeps photos apart while developing', async () => {
     vi.stubEnv('VERCEL_ENV', undefined)
 
-    await storePhoto(photo)
+    await storePhoto(photo, 'coffees')
 
     expect(blob.put).toHaveBeenCalledWith(
       expect.stringMatching(/^development\/coffees\//),

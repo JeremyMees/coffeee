@@ -7,10 +7,11 @@ import {
   photoExtensions,
   photoMaxBytes,
 } from '#shared/utils/photos'
+import type { PhotoFolder } from '#shared/types/photos'
 import type { Photo } from '#server/types/photos'
 
 const localPhotos = '/api/photos/'
-const localPathname = /^coffees\/[\w-]+\.(webp|jpg)$/
+const localPathname = /^(coffees|roasters)\/[\w-]+\.(webp|jpg)$/
 
 function onBlob() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN)
@@ -45,8 +46,8 @@ export async function readPhoto(event: H3Event): Promise<Photo> {
   return { data: photo.data, type: photo.type }
 }
 
-export async function storePhoto(photo: Photo) {
-  const pathname = `coffees/${crypto.randomUUID()}.${photoExtensions[photo.type]}`
+export async function storePhoto(photo: Photo, folder: PhotoFolder) {
+  const pathname = `${folder}/${crypto.randomUUID()}.${photoExtensions[photo.type]}`
 
   if (onBlob()) {
     const { url } = await put(`${blobScope()}/${pathname}`, photo.data, {

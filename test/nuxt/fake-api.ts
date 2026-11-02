@@ -46,6 +46,7 @@ export function ayele() {
     wouldBuyAgain: false,
     canEdit: true,
     grindSettings: [] as ShelfGrindSetting[],
+    roasterDetails: squareMile(),
     purchases: [
       {
         id: 'p2',
@@ -64,6 +65,18 @@ export function ayele() {
         finishedAt: '2026-09-20T10:00:00.000Z',
       },
     ] as ShelfPurchase[],
+  }
+}
+
+export function squareMile(): ShelfRoaster {
+  return {
+    id: 'r2',
+    name: 'Square Mile',
+    website: 'https://www.squaremilecoffee.com',
+    countryCode: 'GB',
+    city: 'London',
+    logoUrl: null,
+    canEdit: true,
   }
 }
 
@@ -96,7 +109,17 @@ export const api = {
   brewMethodCalls: [] as unknown[],
   grindSettingCalls: [] as unknown[],
   grindSettingFails: false,
+  roasterCalls: [] as unknown[],
+  roasterFails: false,
   coffee: ayele() as Record<string, unknown>,
+}
+
+function roaster() {
+  return api.coffee.roasterDetails as ShelfRoaster
+}
+
+function setRoaster(changed: ShelfRoaster) {
+  api.coffee = { ...api.coffee, roaster: changed.name, roasterDetails: changed }
 }
 
 function purchases() {
@@ -146,6 +169,8 @@ export function resetApi() {
   api.brewMethodCalls = []
   api.grindSettingCalls = []
   api.grindSettingFails = false
+  api.roasterCalls = []
+  api.roasterFails = false
   api.coffee = ayele()
 }
 
@@ -401,6 +426,66 @@ export function fakeApi() {
       api.coffee = { ...api.coffee, grindSettings: [...others, ...saved] }
 
       return body
+    },
+  })
+
+  registerEndpoint('/api/roasters/r2', {
+    method: 'PATCH',
+    handler: async event => {
+      const body = await readBody(event)
+      api.roasterCalls.push({ edit: body })
+
+      if (body.name === 'La Cabra') {
+        const message = 'There is already a roaster called La Cabra'
+
+        throw createError({
+          statusCode: 409,
+          statusMessage: message,
+          data: { errors: { name: message } },
+        })
+      }
+
+      if (api.roasterFails) {
+        throw createError({
+          statusCode: 403,
+          statusMessage:
+            'Only the person who added this roaster or an admin can edit it',
+        })
+      }
+
+      const edited = { ...roaster(), ...body }
+      setRoaster(edited)
+
+      return edited
+    },
+  })
+
+  registerEndpoint('/api/roasters/r2/logo', {
+    method: 'PUT',
+    handler: () => {
+      api.roasterCalls.push('logo uploaded')
+
+      if (api.roasterFails) {
+        throw createError({
+          statusCode: 413,
+          statusMessage: 'That photo is too large',
+        })
+      }
+
+      const logoUrl = '/api/photos/roasters/new.webp'
+      setRoaster({ ...roaster(), logoUrl })
+
+      return { logoUrl }
+    },
+  })
+
+  registerEndpoint('/api/roasters/r2/logo', {
+    method: 'DELETE',
+    handler: () => {
+      api.roasterCalls.push('logo removed')
+      setRoaster({ ...roaster(), logoUrl: null })
+
+      return { logoUrl: null }
     },
   })
 
