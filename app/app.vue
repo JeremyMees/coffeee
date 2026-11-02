@@ -1,4 +1,7 @@
 <template>
+  <NuxtPwaManifest />
   <NuxtRouteAnnouncer />
-  <NuxtPage />
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
 </template>

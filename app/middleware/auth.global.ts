@@ -1,4 +1,4 @@
-const publicPaths = ['/sign-in', '/invite/', '/prototype/']
+const publicPaths = ['/sign-in', '/invite/']
 
 export default defineNuxtRouteMiddleware(async to => {
   if (publicPaths.some(path => to.path.startsWith(path))) return

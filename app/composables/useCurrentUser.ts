@@ -9,6 +9,8 @@ export function useCurrentUser() {
 export async function signOut() {
   await authClient.signOut()
 
+  if ('caches' in window) await caches.delete('pages')
+
   useCurrentUser().value = null
 
   await navigateTo('/sign-in')

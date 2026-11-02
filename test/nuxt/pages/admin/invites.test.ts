@@ -78,9 +78,9 @@ describe('admin invites page', () => {
   it('sends someone who is not an admin back home', async () => {
     server.role = 'user'
 
-    const page = await mountSuspended(App, { route: '/admin/invites' })
+    await mountSuspended(App, { route: '/admin/invites' })
 
-    expect(page.text()).toContain('Signed in as Jeremy')
+    expect(useRouter().currentRoute.value.path).toBe('/')
   })
 
   it('lists pending invites', async () => {

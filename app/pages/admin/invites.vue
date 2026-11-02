@@ -73,7 +73,7 @@ function formatDate(date: string) {
     <div class="flex items-center justify-between gap-4">
       <h1 class="text-3xl font-bold">Invites</h1>
       <Button variant="ghost" as-child>
-        <NuxtLink to="/">Done</NuxtLink>
+        <NuxtLink to="/profile">Done</NuxtLink>
       </Button>
     </div>
 
