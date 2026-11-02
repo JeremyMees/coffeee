@@ -6,6 +6,7 @@ import {
   newCoffeeSchema,
   originListSearchSchema,
   newShelfSchema,
+  purchaseSchema,
 } from '#shared/utils/schemas'
 import { fieldErrors } from '#shared/utils/validation'
 
@@ -105,6 +106,30 @@ describe('newCoffeeSchema', () => {
       roastedOn: 'Enter the roast date as a date',
       sizeGrams: 'The size has to be more than 0 g',
       price: "The price can't be negative",
+    })
+  })
+})
+
+describe('purchaseSchema', () => {
+  it('reads a purchase from the form', () => {
+    expect(
+      purchaseSchema.parse({
+        purchasedOn: '2026-11-02',
+        roastedOn: '',
+        sizeGrams: '250',
+        price: '16.50',
+      }),
+    ).toEqual({
+      purchasedOn: '2026-11-02',
+      roastedOn: null,
+      sizeGrams: 250,
+      price: 16.5,
+    })
+  })
+
+  it('explains a missing purchase date', () => {
+    expect(errorsOf(purchaseSchema, { roastedOn: null })).toEqual({
+      purchasedOn: 'Enter the date you bought it',
     })
   })
 })

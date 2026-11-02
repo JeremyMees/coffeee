@@ -31,6 +31,7 @@ import type { CoffeeList } from '#server/types/lists'
 import type { EditableCoffeePhoto } from '#server/types/photos'
 import { describeOrigins, originsOf } from '#server/utils/origins'
 import { deletePhoto } from '#server/utils/photos'
+import { addPurchase, purchaseColumns } from '#server/utils/purchases'
 
 const coffeeColumns = {
   id: coffee.id,
@@ -171,21 +172,14 @@ export function addCoffee(
         details,
       })
     }
-    const [added] = await tx
-      .insert(purchase)
-      .values({
-        shelfId: input.shelfId,
-        coffeeId: found.id,
-        purchasedOn: details.purchasedOn,
-        roastedOn: details.roastedOn ?? null,
-        sizeGrams: details.sizeGrams ?? null,
-        priceCents:
-          details.price == null ? null : Math.round(details.price * 100),
-        addedBy: input.userId,
-      })
-      .returning({ id: purchase.id })
+    const added = await addPurchase(tx, {
+      shelfId: input.shelfId,
+      coffeeId: found.id,
+      userId: input.userId,
+      purchase: details,
+    })
 
-    return { coffee: found, purchase: added! }
+    return { coffee: found, purchase: { id: added.id } }
   })
 }
 
@@ -257,14 +251,7 @@ export async function findShelfCoffee(
   const { createdBy, ...details } = found
 
   const purchases = await db
-    .select({
-      id: purchase.id,
-      purchasedOn: purchase.purchasedOn,
-      roastedOn: purchase.roastedOn,
-      sizeGrams: purchase.sizeGrams,
-      priceCents: purchase.priceCents,
-      finishedAt: purchase.finishedAt,
-    })
+    .select(purchaseColumns)
     .from(purchase)
     .where(
       and(

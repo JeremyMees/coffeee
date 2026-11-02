@@ -1,12 +1,24 @@
 <script setup lang="ts">
-import { ArrowLeftIcon, ArrowUpRightIcon, PencilIcon } from '@lucide/vue'
+import {
+  ArrowLeftIcon,
+  ArrowUpRightIcon,
+  CheckIcon,
+  PencilIcon,
+  PlusIcon,
+} from '@lucide/vue'
 import { useShelfCoffee } from '~/queries/coffees'
+import { useCoffeeFinish } from '~/queries/purchases'
 
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
 const shelfId = computed(() => route.params.shelfId)
 const coffeeId = computed(() => route.params.coffeeId)
 
 const editing = ref(false)
+const buying = ref(false)
+const editingPurchase = ref<ShelfPurchase>()
+const editingPurchaseOpen = ref(false)
+const finishError = ref('')
+const { mutateAsync: finishCoffee, isPending: finishing } = useCoffeeFinish()
 
 const { data: coffee, error, suspense } = useShelfCoffee(shelfId, coffeeId)
 await suspense()
@@ -17,11 +29,24 @@ if (error.value || !coffee.value) {
 
 useHead({ title: () => `${coffee.value?.name} · Coffeee` })
 
-const latestRoastedOn = computed(
-  () =>
-    coffee.value?.purchases.find(purchase => purchase.roastedOn)?.roastedOn ??
-    null,
+const inStock = computed(
+  () => coffee.value?.purchases.some(purchase => !purchase.finishedAt) ?? false,
 )
+
+function editPurchase(purchase: ShelfPurchase) {
+  editingPurchase.value = purchase
+  editingPurchaseOpen.value = true
+}
+
+async function finish() {
+  finishError.value = ''
+
+  try {
+    await finishCoffee({ shelfId: shelfId.value, coffeeId: coffeeId.value })
+  } catch (error) {
+    finishError.value = serverErrors(error).message
+  }
+}
 
 function names(entries: ListEntry[]) {
   return entries.map(entry => entry.name).join(', ')
@@ -61,10 +86,8 @@ function detailRows(shown: NonNullable<typeof coffee.value>) {
   ].filter(row => row.value)
 }
 
-const euros = new Intl.NumberFormat(undefined, {
-  style: 'currency',
-  currency: 'EUR',
-})
+const outlined =
+  'flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60'
 </script>
 
 <template>
@@ -102,7 +125,7 @@ const euros = new Intl.NumberFormat(undefined, {
         v-if="coffee.canEdit"
         type="button"
         data-testid="coffee-edit"
-        class="mb-2 flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground"
+        :class="['mb-2', outlined]"
         @click="editing = true"
       >
         <PencilIcon class="size-4" aria-hidden="true" />
@@ -112,7 +135,7 @@ const euros = new Intl.NumberFormat(undefined, {
     <CoffeeCard
       class="mt-8"
       :cover="false"
-      :coffee="{ ...coffee, roastedOn: latestRoastedOn }"
+      :coffee="{ ...coffee, roastedOn: latestRoastDate(coffee.purchases) }"
     />
     <dl
       v-if="detailRows(coffee).length"
@@ -125,7 +148,39 @@ const euros = new Intl.NumberFormat(undefined, {
       </template>
     </dl>
     <section class="mt-10">
-      <h2 class="text-[28px]">Bags on this shelf</h2>
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <h2 class="text-[28px]">Bags on this shelf</h2>
+        <div class="flex gap-2">
+          <button
+            v-if="inStock"
+            type="button"
+            data-testid="coffee-finish"
+            :class="outlined"
+            :disabled="finishing"
+            @click="finish"
+          >
+            <CheckIcon class="size-4" aria-hidden="true" />
+            Finished
+          </button>
+          <button
+            type="button"
+            data-testid="coffee-buy-again"
+            :class="outlined"
+            @click="buying = true"
+          >
+            <PlusIcon class="size-4" aria-hidden="true" />
+            Buy again
+          </button>
+        </div>
+      </div>
+      <Alert
+        v-if="finishError"
+        variant="destructive"
+        class="mt-4"
+        data-testid="coffee-finish-error"
+      >
+        <AlertDescription>{{ finishError }}</AlertDescription>
+      </Alert>
       <p
         v-if="!coffee.purchases.length"
         class="mt-3 text-xs"
@@ -133,44 +188,34 @@ const euros = new Intl.NumberFormat(undefined, {
       >
         Nobody on this shelf has bought it yet.
       </p>
-      <ul
-        v-else
-        class="mt-4 divide-y rounded-[18px] border"
-        data-testid="purchases"
-      >
-        <li
-          v-for="purchase in coffee.purchases"
-          :key="purchase.id"
-          data-testid="purchase"
-          class="grid grid-cols-2 gap-x-4 gap-y-1 p-4 text-xs sm:grid-cols-4"
-        >
-          <span data-testid="purchase-bought"
-            >Bought {{ formatDate(purchase.purchasedOn) }}</span
-          >
-          <span data-testid="purchase-roasted">
-            {{
-              purchase.roastedOn
-                ? `Roasted ${formatDate(purchase.roastedOn)}`
-                : 'No roast date'
-            }}
-          </span>
-          <span data-testid="purchase-size-price">
-            {{
-              purchase.sizeGrams ? `${purchase.sizeGrams} g` : 'Size unknown'
-            }}
-            ·
-            {{
-              purchase.priceCents === null
-                ? 'Price unknown'
-                : euros.format(purchase.priceCents / 100)
-            }}
-          </span>
-          <span class="uppercase sm:text-right" data-testid="purchase-status">
-            {{ purchase.finishedAt ? 'Finished' : 'In stock' }}
-          </span>
-        </li>
-      </ul>
+      <template v-else>
+        <PurchaseSummary class="mt-4" :purchases="coffee.purchases" />
+        <ul class="mt-4 divide-y rounded-[18px] border" data-testid="purchases">
+          <PurchaseRow
+            v-for="purchase in coffee.purchases"
+            :key="purchase.id"
+            :shelf-id="shelfId"
+            :coffee-id="coffee.id"
+            :purchase="purchase"
+            @edit="editPurchase(purchase)"
+          />
+        </ul>
+      </template>
     </section>
+    <PurchaseSheet
+      v-model:open="buying"
+      :shelf-id="shelfId"
+      :coffee-id="coffee.id"
+      :purchases="coffee.purchases"
+    />
+    <PurchaseSheet
+      v-if="editingPurchase"
+      v-model:open="editingPurchaseOpen"
+      :shelf-id="shelfId"
+      :coffee-id="coffee.id"
+      :purchases="coffee.purchases"
+      :purchase="editingPurchase"
+    />
     <EditCoffeeSheet
       v-if="coffee.canEdit"
       v-model:open="editing"

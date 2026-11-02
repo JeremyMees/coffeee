@@ -222,30 +222,33 @@ function describedCoffee<Coffee extends z.ZodType<DescribedCoffee>>(
 
 export const coffeeDetailsSchema = describedCoffee(z.object(coffeeDetailsShape))
 
+const purchaseShape = {
+  purchasedOn: z.iso.date({ error: 'Enter the date you bought it' }),
+  roastedOn: z.preprocess(
+    blankToNull,
+    z.iso.date({ error: 'Enter the roast date as a date' }).nullable(),
+  ),
+  sizeGrams: z.preprocess(
+    numberFromForm,
+    z
+      .number({ error: 'Enter the size in grams' })
+      .int('Enter the size in whole grams')
+      .positive('The size has to be more than 0 g')
+      .max(5000, 'Keep the size to 5000 g or less')
+      .nullable(),
+  ),
+  price: z.preprocess(
+    numberFromForm,
+    z
+      .number({ error: 'Enter the price as a number' })
+      .nonnegative("The price can't be negative")
+      .max(1000, 'Keep the price to 1000 or less')
+      .nullable(),
+  ),
+}
+
+export const purchaseSchema = z.object(purchaseShape)
+
 export const newCoffeeSchema = describedCoffee(
-  z.object({
-    ...coffeeDetailsShape,
-    purchasedOn: z.iso.date({ error: 'Enter the date you bought it' }),
-    roastedOn: z.preprocess(
-      blankToNull,
-      z.iso.date({ error: 'Enter the roast date as a date' }).nullable(),
-    ),
-    sizeGrams: z.preprocess(
-      numberFromForm,
-      z
-        .number({ error: 'Enter the size in grams' })
-        .int('Enter the size in whole grams')
-        .positive('The size has to be more than 0 g')
-        .max(5000, 'Keep the size to 5000 g or less')
-        .nullable(),
-    ),
-    price: z.preprocess(
-      numberFromForm,
-      z
-        .number({ error: 'Enter the price as a number' })
-        .nonnegative("The price can't be negative")
-        .max(1000, 'Keep the price to 1000 or less')
-        .nullable(),
-    ),
-  }),
+  z.object({ ...coffeeDetailsShape, ...purchaseShape }),
 )

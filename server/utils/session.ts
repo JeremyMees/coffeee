@@ -63,3 +63,24 @@ export async function requireEditableCoffee(event: H3Event) {
 
   return { coffeeId, photoUrl: found.photoUrl }
 }
+
+export async function requireShelfPurchase(event: H3Event) {
+  const { shelf } = await requireShelf(event)
+
+  return {
+    shelfId: shelf.id,
+    coffeeId: getRouterParam(event, 'coffeeId')!,
+    purchaseId: getRouterParam(event, 'purchaseId')!,
+  }
+}
+
+export function orNotFound<Found>(
+  found: Found | undefined,
+  statusMessage: string,
+) {
+  if (found === undefined) {
+    throw createError({ statusCode: 404, statusMessage })
+  }
+
+  return found
+}

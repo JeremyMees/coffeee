@@ -601,6 +601,64 @@ test('gives a coffee a shrunk photo of its bag and lets it be replaced or remove
   expect((await page.request.get(secondUrl!)).status()).toBe(404)
 })
 
+test('buys a coffee again, finishes its bags and keeps its history tidy', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page).toHaveURL(/\/coffees\//)
+
+  await page.getByTestId('coffee-buy-again').click()
+  const sheet = page.getByTestId('purchase-sheet')
+  await expect(sheet.getByTestId('coffee-size')).toHaveValue('250')
+  await expect(sheet.getByTestId('coffee-price')).toHaveValue('16.50')
+  await sheet.getByTestId('coffee-size').fill('1000')
+  await sheet.getByTestId('coffee-price').fill('52')
+  await sheet.getByTestId('purchase-submit').click()
+  await expect(sheet).toBeHidden()
+
+  await expect(page.getByTestId('purchase')).toHaveCount(2)
+  await expect(page.getByTestId('summary-times-bought')).toHaveText('2 times')
+  await expect(page.getByTestId('summary-latest-price')).toHaveText('€52.00')
+  await expect(page.getByTestId('summary-price-per-gram')).toHaveText(
+    '€0.052/g',
+  )
+
+  await page.getByTestId('coffee-finish').click()
+  await expect(page.getByTestId('purchase-status')).toHaveText([
+    'In stock',
+    'Finished',
+  ])
+
+  const latest = page.getByTestId('purchase').first()
+  await latest.getByTestId('purchase-edit').click()
+  await expect(sheet.getByTestId('coffee-size')).toHaveValue('1000')
+  await sheet.getByTestId('coffee-price').fill('48')
+  await sheet.getByTestId('purchase-submit').click()
+  await expect(sheet).toBeHidden()
+  await expect(latest.getByTestId('purchase-size-price')).toHaveText(
+    '1000 g · €48.00',
+  )
+
+  await latest.getByTestId('purchase-finish').click()
+  await expect(page.getByTestId('coffee-finish')).toBeHidden()
+  await page.getByTestId('coffee-back').click()
+  await expect(page.getByTestId('stock-empty')).toBeVisible()
+
+  await page.goBack()
+  for (let left = 2; left > 0; left--) {
+    await page.getByTestId('purchase-delete').first().click()
+    await page.getByTestId('purchase-delete-confirm').click()
+    await expect(page.getByTestId('purchase')).toHaveCount(left - 1)
+  }
+
+  await expect(page.getByTestId('purchases-empty')).toBeVisible()
+  await expect(page.getByTestId('coffee-title')).toHaveText('Ayele Fulasa')
+})
+
 test('says when a shelf has no such coffee', async ({ page, member }) => {
   await page.goto(`/shelves/${member.shelfId}/coffees/${randomUUID()}`)
 

@@ -4,6 +4,7 @@ import App from '~/app.vue'
 import { clearError, useCurrentUser, useError } from '#imports'
 import { api, ayele, fakeApi, resetApi } from '../../../../fake-api'
 import {
+  allByTestId,
   byTestId,
   forgetLastShelf,
   submit,
@@ -236,5 +237,103 @@ describe('a coffee page', () => {
         '/api/photos/coffees/new.webp',
       ),
     )
+  })
+
+  it('sums up what the shelf bought', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('summary-last-bought')).text()).toBe(
+      formatDate('2026-11-01'),
+    )
+    expect(page.get(tid('summary-times-bought')).text()).toBe('2 times')
+    expect(page.get(tid('coffee-card-days')).text()).not.toContain(
+      'no roast date',
+    )
+  })
+
+  it('buys the coffee again from the last purchase', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+      attachTo: document.body,
+    })
+    await page.get(tid('coffee-buy-again')).trigger('click')
+    await vi.waitFor(() => expect(byTestId('purchase-form')).not.toBeNull())
+
+    await submit('purchase-form')
+
+    await vi.waitFor(() =>
+      expect(page.findAll(tid('purchase'))).toHaveLength(3),
+    )
+    expect(page.get(tid('summary-times-bought')).text()).toBe('3 times')
+    expect(byTestId('purchase-sheet')).toBeNull()
+  })
+
+  it('finishes the oldest bag in stock and offers no finish once all are', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    await page.get(tid('coffee-finish')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(
+        page.findAll(tid('purchase-status')).map(status => status.text()),
+      ).toEqual(['Finished', 'Finished']),
+    )
+    expect(page.find(tid('coffee-finish')).exists()).toBe(false)
+  })
+
+  it('says why the coffee could not be finished', async () => {
+    api.purchaseFails = true
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    await page.get(tid('coffee-finish')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('coffee-finish-error')).text()).toBe(
+        'The shelf is out of reach',
+      ),
+    )
+  })
+
+  it('edits a purchase in the history', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+      attachTo: document.body,
+    })
+    await page.findAll(tid('purchase-edit'))[1]!.trigger('click')
+    await vi.waitFor(() => expect(byTestId('purchase-form')).not.toBeNull())
+
+    expect(byTestId('form-sheet-title')!.textContent).toContain('Edit purchase')
+    await type('coffee-size', '500')
+    await submit('purchase-form')
+
+    await vi.waitFor(() =>
+      expect(allByTestId('purchase-size-price')[1]!.textContent).toContain(
+        '500 g',
+      ),
+    )
+    expect(api.purchaseCalls).toMatchObject([{ edit: 'p1' }])
+  })
+
+  it('says nobody bought it once every purchase is deleted', async () => {
+    api.coffee = { ...ayele(), purchases: ayele().purchases.slice(0, 1) }
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    await page.get(tid('purchase-delete')).trigger('click')
+    await page.get(tid('purchase-delete-confirm')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('purchases-empty')).exists()).toBe(true),
+    )
+    expect(page.find(tid('purchase-summary')).exists()).toBe(false)
+    expect(page.find(tid('coffee-finish')).exists()).toBe(false)
+    expect(page.find(tid('coffee-buy-again')).exists()).toBe(true)
   })
 })

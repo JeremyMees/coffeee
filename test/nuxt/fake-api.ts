@@ -60,7 +60,7 @@ export function ayele() {
         priceCents: null,
         finishedAt: '2026-09-20T10:00:00.000Z',
       },
-    ],
+    ] as ShelfPurchase[],
   }
 }
 
@@ -71,7 +71,38 @@ export const api = {
   shelves: [] as string[],
   photos: [] as string[],
   photoFails: false,
+  purchaseCalls: [] as unknown[],
+  purchaseFails: false,
   coffee: ayele() as Record<string, unknown>,
+}
+
+function purchases() {
+  return api.coffee.purchases as ShelfPurchase[]
+}
+
+function setPurchases(changed: ShelfPurchase[]) {
+  api.coffee = { ...api.coffee, purchases: changed }
+}
+
+function failPurchase() {
+  if (api.purchaseFails) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'The shelf is out of reach',
+    })
+  }
+}
+
+function storedPurchase(id: string, body: Record<string, unknown>) {
+  return {
+    id,
+    purchasedOn: String(body.purchasedOn),
+    roastedOn: (body.roastedOn as string | null) ?? null,
+    sizeGrams: (body.sizeGrams as number | null) ?? null,
+    priceCents:
+      body.price == null ? null : Math.round(Number(body.price) * 100),
+    finishedAt: null as string | null,
+  }
 }
 
 export function resetApi() {
@@ -81,6 +112,8 @@ export function resetApi() {
   api.shelves = []
   api.photos = []
   api.photoFails = false
+  api.purchaseCalls = []
+  api.purchaseFails = false
   api.coffee = ayele()
 }
 
@@ -254,4 +287,104 @@ export function fakeApi() {
       return { photoUrl: null }
     },
   })
+
+  registerEndpoint('/api/shelves/home/coffees/c1/purchases', {
+    method: 'POST',
+    handler: async event => {
+      const body = await readBody(event)
+      api.purchaseCalls.push({ buyAgain: body })
+
+      if (body.price === 999) {
+        throw createError({
+          statusCode: 400,
+          data: { errors: { price: 'That price looks like a typo' } },
+        })
+      }
+
+      failPurchase()
+
+      const added = storedPurchase('p3', body)
+      setPurchases([added, ...purchases()])
+
+      return added
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/coffees/c1/finish', {
+    method: 'POST',
+    handler: () => {
+      api.purchaseCalls.push('finish coffee')
+      failPurchase()
+
+      const oldest = purchases().findLast(purchase => !purchase.finishedAt)
+
+      if (!oldest) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: 'Nothing of this coffee is in stock',
+        })
+      }
+
+      const finished = { ...oldest, finishedAt: '2026-11-02T08:00:00.000Z' }
+      setPurchases(
+        purchases().map(purchase =>
+          purchase.id === oldest.id ? finished : purchase,
+        ),
+      )
+
+      return finished
+    },
+  })
+
+  for (const id of ['p1', 'p2']) {
+    const path = `/api/shelves/home/coffees/c1/purchases/${id}`
+
+    registerEndpoint(path, {
+      method: 'PATCH',
+      handler: async event => {
+        const body = await readBody(event)
+        api.purchaseCalls.push({ edit: id, body })
+        failPurchase()
+
+        const edited = storedPurchase(id, body)
+        setPurchases(
+          purchases().map(purchase =>
+            purchase.id === id
+              ? { ...edited, finishedAt: purchase.finishedAt }
+              : purchase,
+          ),
+        )
+
+        return edited
+      },
+    })
+
+    registerEndpoint(`${path}/finish`, {
+      method: 'POST',
+      handler: () => {
+        api.purchaseCalls.push({ finish: id })
+        failPurchase()
+        setPurchases(
+          purchases().map(purchase =>
+            purchase.id === id
+              ? { ...purchase, finishedAt: '2026-11-02T08:00:00.000Z' }
+              : purchase,
+          ),
+        )
+
+        return { id }
+      },
+    })
+
+    registerEndpoint(path, {
+      method: 'DELETE',
+      handler: () => {
+        api.purchaseCalls.push({ delete: id })
+        failPurchase()
+        setPurchases(purchases().filter(purchase => purchase.id !== id))
+
+        return { id }
+      },
+    })
+  }
 }
