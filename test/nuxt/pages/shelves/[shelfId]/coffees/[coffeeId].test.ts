@@ -95,6 +95,31 @@ describe('a coffee page', () => {
     expect(byTestId('edit-coffee-sheet')).toBeNull()
   })
 
+  it('rates the coffee and marks it a favourite once it would be bought again', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('coffee-card-rating')).text()).toBe('Not yet rated')
+
+    await page.get(tid('verdict-star-5')).trigger('click')
+    await vi.waitFor(() =>
+      expect(page.get(tid('verdict-rating')).text()).toBe('5 stars'),
+    )
+    expect(
+      page
+        .get(tid('coffee-card-rating', 'rating-stars'))
+        .attributes('aria-label'),
+    ).toBe('5 stars')
+    expect(page.find(tid('verdict-favourite')).exists()).toBe(false)
+
+    await page.get(tid('verdict-buy-again')).trigger('click')
+    await vi.waitFor(() =>
+      expect(page.find(tid('verdict-favourite')).exists()).toBe(true),
+    )
+    expect(api.verdicts).toEqual([{ rating: 5 }, { wouldBuyAgain: true }])
+  })
+
   it('is not found when the shelf has no such coffee', async () => {
     await mountSuspended(App, { route: '/shelves/home/coffees/nope' })
 

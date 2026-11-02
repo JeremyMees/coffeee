@@ -252,3 +252,21 @@ export const purchaseSchema = z.object(purchaseShape)
 export const newCoffeeSchema = describedCoffee(
   z.object({ ...coffeeDetailsShape, ...purchaseShape }),
 )
+
+export const verdictSchema = z
+  .object({
+    rating: z
+      .number({ error: 'Rate it from 1 to 5 stars' })
+      .int('Rate it in whole stars')
+      .min(1, 'Rate it from 1 to 5 stars')
+      .max(5, 'Rate it from 1 to 5 stars')
+      .nullable()
+      .optional(),
+    wouldBuyAgain: z
+      .boolean({ error: 'Say yes or no to buying it again' })
+      .optional(),
+  })
+  .refine(
+    change => change.rating !== undefined || change.wouldBuyAgain !== undefined,
+    'Change the rating or whether you would buy it again',
+  )

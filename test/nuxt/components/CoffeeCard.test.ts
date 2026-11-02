@@ -13,6 +13,7 @@ const coffee: CardCoffee = {
   roastedOn: daysAgo(3),
   flavorNotes: [],
   photoUrl: null,
+  rating: null,
 }
 
 function mountCard(props: Record<string, unknown> = {}) {
@@ -34,6 +35,18 @@ describe('CoffeeCard', () => {
     expect(
       card.findAll(tid('coffee-card-flavor-note')).map(note => note.text()),
     ).toEqual(['Lime', 'Milk chocolate'])
+  })
+
+  it('shows the rating, or that it is not yet rated', async () => {
+    const rated = await mountCard({ coffee: { ...coffee, rating: 4 } })
+    const unrated = await mountCard()
+
+    expect(
+      rated
+        .get(tid('coffee-card-rating', 'rating-stars'))
+        .attributes('aria-label'),
+    ).toBe('4 stars')
+    expect(unrated.get(tid('coffee-card-rating')).text()).toBe('Not yet rated')
   })
 
   it('leaves out flavor notes when it has none', async () => {

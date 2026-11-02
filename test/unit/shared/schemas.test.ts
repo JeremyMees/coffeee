@@ -7,6 +7,7 @@ import {
   originListSearchSchema,
   newShelfSchema,
   purchaseSchema,
+  verdictSchema,
 } from '#shared/utils/schemas'
 import { fieldErrors } from '#shared/utils/validation'
 
@@ -378,6 +379,41 @@ describe('inviteEmailSchema', () => {
   it('explains an invalid email', () => {
     expect(errorsOf(inviteEmailSchema, { email: 'not an email' })).toEqual({
       email: 'Enter a valid email',
+    })
+  })
+})
+
+describe('verdictSchema', () => {
+  it('takes a rating, would buy again, or both', () => {
+    expect(verdictSchema.parse({ rating: 4 })).toEqual({ rating: 4 })
+    expect(verdictSchema.parse({ wouldBuyAgain: true })).toEqual({
+      wouldBuyAgain: true,
+    })
+    expect(verdictSchema.parse({ rating: null, wouldBuyAgain: false })).toEqual(
+      { rating: null, wouldBuyAgain: false },
+    )
+  })
+
+  it('explains a rating outside one to five whole stars', () => {
+    for (const rating of [0, 6, 2.5, '3']) {
+      expect(Object.keys(errorsOf(verdictSchema, { rating }))).toEqual([
+        'rating',
+      ])
+    }
+    expect(errorsOf(verdictSchema, { rating: 6 })).toEqual({
+      rating: 'Rate it from 1 to 5 stars',
+    })
+  })
+
+  it('explains a would buy again that is not yes or no', () => {
+    expect(errorsOf(verdictSchema, { wouldBuyAgain: 'yes' })).toEqual({
+      wouldBuyAgain: 'Say yes or no to buying it again',
+    })
+  })
+
+  it('explains an empty change', () => {
+    expect(errorsOf(verdictSchema, {})).toEqual({
+      form: 'Change the rating or whether you would buy it again',
     })
   })
 })

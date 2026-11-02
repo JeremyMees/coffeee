@@ -82,7 +82,7 @@ const roast = computed(
           v-for="note in coffee.flavorNotes"
           :key="note.id"
           data-testid="coffee-card-flavor-note"
-          class="rounded-full bg-background/90 px-2.5 py-1 text-[11px] text-[#1d1d1f] uppercase"
+          class="rounded-full bg-background/90 px-2.5 py-1 text-[11px] text-ink uppercase"
         >
           {{ note.name }}
         </li>
@@ -95,7 +95,7 @@ const roast = computed(
             Roast
           </dt>
           <dd
-            class="mt-0.5 font-sans font-semibold text-[#1d1d1f]"
+            class="mt-0.5 font-sans font-semibold text-ink"
             data-testid="coffee-card-roast"
           >
             {{ roast }}
@@ -106,10 +106,21 @@ const roast = computed(
             Freshness
           </dt>
           <dd
-            class="mt-0.5 font-sans font-semibold text-[#1d1d1f]"
+            class="mt-0.5 font-sans font-semibold text-ink"
             data-testid="coffee-card-freshness"
           >
             {{ days === null ? 'Unknown' : freshness(days, coffee.roastedFor) }}
+          </dd>
+        </div>
+        <div class="col-span-2">
+          <dt class="text-[10px] uppercase" :style="{ color: labelColour }">
+            Rating
+          </dt>
+          <dd
+            class="mt-0.5 font-sans font-semibold text-ink"
+            data-testid="coffee-card-rating"
+          >
+            <RatingStars :rating="coffee.rating" />
           </dd>
         </div>
       </dl>

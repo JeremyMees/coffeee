@@ -665,3 +665,36 @@ test('says when a shelf has no such coffee', async ({ page, member }) => {
   await expect(page.getByTestId('error-title')).toHaveText('Not found')
   await expect(page.getByTestId('error-message')).toHaveText('Coffee not found')
 })
+
+test('rates a coffee, says it would be bought again and shows it in Stock', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await expect(
+    stockCard(page, 'Ayele Fulasa').getByTestId('coffee-card-rating'),
+  ).toHaveText('Not yet rated')
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page).toHaveURL(/\/coffees\//)
+
+  await page.getByTestId('verdict-star-4').click()
+  await expect(page.getByTestId('verdict-rating')).toHaveText('4 stars')
+  await expect(page.getByTestId('verdict-favourite')).toBeHidden()
+
+  await page.getByTestId('verdict-buy-again').click()
+  await expect(page.getByTestId('verdict-favourite')).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByTestId('verdict-rating')).toHaveText('4 stars')
+  await expect(page.getByTestId('verdict-buy-again')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+
+  await page.getByTestId('coffee-back').click()
+  await expect(
+    stockCard(page, 'Ayele Fulasa').getByLabel('4 stars'),
+  ).toBeVisible()
+})

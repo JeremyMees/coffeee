@@ -42,6 +42,8 @@ export function ayele() {
     photoUrl: null as string | null,
     altitudeFrom: 1900,
     altitudeTo: 2200,
+    rating: null as number | null,
+    wouldBuyAgain: false,
     canEdit: true,
     purchases: [
       {
@@ -73,6 +75,8 @@ export const api = {
   photoFails: false,
   purchaseCalls: [] as unknown[],
   purchaseFails: false,
+  verdicts: [] as unknown[],
+  verdictFails: false,
   coffee: ayele() as Record<string, unknown>,
 }
 
@@ -114,6 +118,8 @@ export function resetApi() {
   api.photoFails = false
   api.purchaseCalls = []
   api.purchaseFails = false
+  api.verdicts = []
+  api.verdictFails = false
   api.coffee = ayele()
 }
 
@@ -307,6 +313,28 @@ export function fakeApi() {
       setPurchases([added, ...purchases()])
 
       return added
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/coffees/c1/verdict', {
+    method: 'PATCH',
+    handler: async event => {
+      const body = await readBody(event)
+      api.verdicts.push(body)
+
+      if (api.verdictFails) {
+        throw createError({
+          statusCode: 500,
+          statusMessage: 'The verdict could not be saved',
+        })
+      }
+
+      api.coffee = { ...api.coffee, ...body }
+
+      return {
+        rating: api.coffee.rating,
+        wouldBuyAgain: api.coffee.wouldBuyAgain,
+      }
     },
   })
 

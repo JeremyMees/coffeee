@@ -137,6 +137,11 @@ const outlined =
       :cover="false"
       :coffee="{ ...coffee, roastedOn: latestRoastDate(coffee.purchases) }"
     />
+    <CoffeeVerdict
+      :shelf-id="shelfId"
+      :coffee-id="coffee.id"
+      :verdict="coffee"
+    />
     <dl
       v-if="detailRows(coffee).length"
       class="mt-8 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-xs"

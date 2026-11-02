@@ -194,6 +194,7 @@ describe('current stock', () => {
         roastedOn: '2026-10-28',
         flavorNotes: [],
         photoUrl: null,
+        rating: null,
       },
     ])
   })

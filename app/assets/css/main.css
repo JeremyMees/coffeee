@@ -25,6 +25,7 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-material: var(--material);
+  --color-ink: var(--ink);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -58,6 +59,7 @@
   --input: color-mix(in oklab, #1f4fd8 35%, transparent);
   --ring: #1f4fd8;
   --material: rgb(255 250 245 / 85%);
+  --ink: #1d1d1f;
 }
 
 @layer base {
