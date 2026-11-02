@@ -28,7 +28,24 @@ export default defineNuxtConfig({
     '#test': fileURLToPath(new URL('./test', import.meta.url)),
   },
 
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: [
+        '@internationalized/date',
+        '@lucide/vue',
+        '@tanstack/vue-query',
+        '@vueuse/core',
+        'better-auth/vue',
+        'class-variance-authority',
+        'cn',
+        'reka-ui',
+        'reka-ui/date',
+        'vee-validate',
+        'zod',
+      ],
+    },
+  },
 
   $development: {
     nitro: { experimental: { tasks: true } },

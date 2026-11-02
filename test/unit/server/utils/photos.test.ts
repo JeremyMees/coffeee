@@ -1,7 +1,6 @@
 import { createApp, createRouter, defineEventHandler, toWebHandler } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  copyPhoto,
   deletePhoto,
   readLocalPhoto,
   readPhoto,
@@ -26,7 +25,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs()
-  vi.unstubAllGlobals()
 })
 
 const photo = { data: Buffer.from('bag'), type: 'image/webp' as const }
@@ -167,21 +165,14 @@ describe('storing a photo on Blob', () => {
     )
   })
 
-  it('stores a copied photo under another environment when asked', async () => {
+  it('stores under another environment when asked', async () => {
     vi.stubEnv('VERCEL_ENV', undefined)
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response('bag', { headers: { 'content-type': 'image/webp' } }),
-      ),
-    )
 
-    await copyPhoto('https://notion/bag.webp', 'coffees', 'production')
+    await storePhoto(photo, 'coffees', 'production')
 
     expect(blob.put).toHaveBeenCalledWith(
       expect.stringMatching(/^production\/coffees\/[\w-]+\.webp$/),
-      Buffer.from('bag'),
+      photo.data,
       expect.anything(),
     )
   })
@@ -211,54 +202,5 @@ describe('deleting no photo', () => {
     await deletePhoto(null)
 
     expect(blob.del).not.toHaveBeenCalled()
-  })
-})
-
-describe('copying a photo from elsewhere', () => {
-  function serving(response: Response) {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => response),
-    )
-  }
-
-  it('stores a JPEG or WebP photo of its own', async () => {
-    serving(
-      new Response('bag', { headers: { 'content-type': 'image/jpeg; q=1' } }),
-    )
-
-    const url = await copyPhoto('https://notion/bag.jpg', 'coffees')
-
-    expect(url).toMatch(/^\/api\/photos\/coffees\/[\w-]+\.jpg$/)
-    expect(await readLocalPhoto(url!.slice('/api/photos/'.length))).toEqual(
-      Buffer.from('bag'),
-    )
-  })
-
-  it('skips other formats', async () => {
-    serving(new Response('bag', { headers: { 'content-type': 'image/png' } }))
-
-    expect(await copyPhoto('https://notion/bag.png', 'coffees')).toBeNull()
-  })
-
-  it('skips a photo it could not download', async () => {
-    serving(
-      new Response('gone', {
-        status: 403,
-        headers: { 'content-type': 'image/webp' },
-      }),
-    )
-
-    expect(await copyPhoto('https://notion/bag.webp', 'coffees')).toBeNull()
-  })
-
-  it('skips a photo that is too large', async () => {
-    serving(
-      new Response(new Uint8Array(3 * 1024 * 1024), {
-        headers: { 'content-type': 'image/webp' },
-      }),
-    )
-
-    expect(await copyPhoto('https://notion/bag.webp', 'coffees')).toBeNull()
   })
 })

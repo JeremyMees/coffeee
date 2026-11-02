@@ -7,7 +7,7 @@ import {
   notionDatabases,
   readNotionCoffee,
 } from '#server/utils/notion-import'
-import { copyPhoto } from '#server/utils/photos'
+import { copyPhoto } from '#server/utils/photo-copies'
 
 function productionDb() {
   const url = process.env.NOTION_PRODUCTION_DATABASE_URL

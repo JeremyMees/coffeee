@@ -67,23 +67,6 @@ export async function storePhoto(
   return `${localPhotos}${pathname}`
 }
 
-export async function copyPhoto(
-  url: string,
-  folder: PhotoFolder,
-  scope?: string,
-) {
-  const response = await fetch(url)
-  const type = response.headers.get('content-type')?.split(';')[0]?.trim()
-
-  if (!response.ok || !isPhotoType(type)) return null
-
-  const data = Buffer.from(await response.arrayBuffer())
-
-  if (data.byteLength > photoMaxBytes) return null
-
-  return storePhoto({ data, type }, folder, scope)
-}
-
 export async function deletePhoto(url: string | null) {
   if (!url) return
 
