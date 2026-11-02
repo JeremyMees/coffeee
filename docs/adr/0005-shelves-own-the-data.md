@@ -1,5 +1,8 @@
 # Shelves own the data, not users
 
+Ratings, would-buy-again verdicts and grind settings moved to users in
+[ADR 0007](0007-people-judge-and-grind-not-shelves.md).
+
 People want to keep one stock of coffee together, such as a couple at home or a
 group at work, and act as one: everyone adds, finishes and rates the same bags.
 So purchases, ratings, would-buy-again verdicts, grind settings and owned

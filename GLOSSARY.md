@@ -75,16 +75,24 @@ Tasting note, taste, notes
 
 ### Judging a coffee
 
-**Rating**: A shelf's verdict of one to five stars on a coffee as a whole, not
-on one purchase. _Avoid_: Score, stars
+**Rating**: A user's verdict of one to five stars on a coffee as a whole, not on
+one purchase. Everyone who is signed in sees it with the user's name. _Avoid_:
+Score, stars
 
-**Not yet rated**: A coffee that has no rating yet.
+**Not yet rated**: A coffee the viewer has not rated yet.
 
-**Would buy again**: A yes-or-no verdict on whether a coffee is worth rebuying,
-separate from its rating: a five-star coffee can still be too expensive to buy
-again. _Avoid_: Rebuy, wishlist
+**Community rating**: The average of every user's rating of a coffee, with how
+many users rated it. _Avoid_: Average score, overall rating
 
-**Favourite**: A coffee rated four or five stars that would be bought again.
+**Review**: One user's rating and would-buy-again verdict on a coffee, shown
+with their name in the coffee's review section. Stars only, no written text.
+_Avoid_: Comment, opinion
+
+**Would buy again**: A user's yes-or-no verdict on whether a coffee is worth
+rebuying, separate from their rating: a five-star coffee can still be too
+expensive to buy again. _Avoid_: Rebuy, wishlist
+
+**Favourite**: A coffee the viewer rated four or five stars and would buy again.
 _Avoid_: Top coffee, best
 
 ### Grinding
@@ -95,9 +103,10 @@ Gen 2. _Avoid_: Mill, machine
 **Brew method**: The way coffee is brewed, such as Espresso, Pour over, Moka pot
 or AeroPress. _Avoid_: Brew type, recipe, filter (say Pour over or Batch brew)
 
-**Grind setting**: A shelf's dial setting that works for one coffee on one
+**Grind setting**: A user's dial setting that works for one coffee on one
 grinder for one brew method, written the way that grinder labels its dial.
-_Avoid_: Grind size, grind level
+Everyone who is signed in sees it with the user's name. _Avoid_: Grind size,
+grind level
 
 ### People
 
@@ -105,9 +114,10 @@ _Avoid_: Grind size, grind level
 they sign up and can belong to several shelves. _Avoid_: Account, profile
 
 **Shelf**: The coffee a group of users keep together, such as Home or Work. Its
-purchases, ratings, would-buy-again verdicts, grind settings and owned grinders
-belong to the shelf, not to one user: every member sees and changes them, and
-nobody else sees them. _Avoid_: Stock, household, stash, group
+purchases and owned grinders belong to the shelf, not to one user: every member
+sees and changes them, and nobody else sees them. Ratings, would-buy-again
+verdicts and grind settings belong to each user instead. _Avoid_: Stock,
+household, stash, group
 
 **Member**: A user who belongs to a shelf. Every member can add, edit and finish
 coffee on it and invite others to it. _Avoid_: Participant, collaborator
