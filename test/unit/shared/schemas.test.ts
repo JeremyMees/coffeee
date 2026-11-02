@@ -22,6 +22,7 @@ const coffee = {
   roastedFor: 'filter',
   colour: '#e4572e',
   origins: ['ET'],
+  processes: ['Washed'],
   purchasedOn: '2026-11-02',
   roastedOn: null,
   sizeGrams: null,
@@ -36,6 +37,8 @@ describe('newCoffeeSchema', () => {
       farms: [],
       washingStations: [],
       producers: [],
+      varietals: [],
+      link: null,
       altitudeFrom: null,
       altitudeTo: null,
     })
@@ -82,6 +85,7 @@ describe('newCoffeeSchema', () => {
       roastedFor: 'Pick what it was roasted for',
       colour: 'Pick a colour',
       origins: 'Pick where it was grown',
+      processes: 'Pick how it was processed',
       purchasedOn: 'Enter the date you bought it',
     })
   })
@@ -112,6 +116,7 @@ describe('where a coffee was grown', () => {
     roastedFor: 'filter',
     colour: '#e4572e',
     origins: ['CO'],
+    processes: ['Washed'],
   }
 
   it('keeps each origin once', () => {
@@ -232,6 +237,66 @@ describe('where a coffee was grown', () => {
     ).toEqual({ producers: 'Pick 20 producers or fewer' })
     expect(producerErrors('Nestor Lasso')).toEqual({
       producers: 'Pick producers from the list',
+    })
+  })
+})
+
+describe('how a coffee was made', () => {
+  const details = {
+    name: 'Pink Bourbon',
+    roaster: 'Square Mile',
+    roastLevel: 'light',
+    roastedFor: 'filter',
+    colour: '#e4572e',
+    origins: ['CO'],
+    processes: [' Washed '],
+  }
+
+  it('trims process and varietal names', () => {
+    expect(
+      coffeeDetailsSchema.parse({ ...details, varietals: [' Geisha '] }),
+    ).toMatchObject({ processes: ['Washed'], varietals: ['Geisha'] })
+  })
+
+  it('explains processes that make no sense', () => {
+    const processErrors = (processes: unknown) =>
+      errorsOf(coffeeDetailsSchema, { ...details, processes })
+
+    expect(processErrors([])).toEqual({
+      processes: 'Pick how it was processed',
+    })
+    expect(processErrors('Washed')).toEqual({
+      processes: 'Pick how it was processed',
+    })
+    expect(
+      processErrors(Array.from({ length: 11 }, (_, i) => `P${i}`)),
+    ).toEqual({ processes: 'Pick 10 processes or fewer' })
+    expect(processErrors(['x'.repeat(61)])).toEqual({
+      processes: 'Keep each process to 60 characters or fewer',
+    })
+  })
+
+  it('takes a blank link as none', () => {
+    expect(coffeeDetailsSchema.parse({ ...details, link: '  ' }).link).toBe(
+      null,
+    )
+    expect(
+      coffeeDetailsSchema.parse({ ...details, link: ' https://a.coffee/x ' })
+        .link,
+    ).toBe('https://a.coffee/x')
+  })
+
+  it('only takes web links', () => {
+    const linkErrors = (link: unknown) =>
+      errorsOf(coffeeDetailsSchema, { ...details, link })
+
+    for (const link of ['example.com', 'ftp://example.com', 'javascript:x']) {
+      expect(linkErrors(link)).toEqual({
+        link: 'Enter a link that starts with https://',
+      })
+    }
+    expect(linkErrors(`https://a.coffee/${'x'.repeat(500)}`)).toEqual({
+      link: 'Keep the link to 500 characters or fewer',
     })
   })
 })

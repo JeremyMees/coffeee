@@ -35,6 +35,9 @@ export function ayele() {
     farms: [] as (ListEntry & { origin: string })[],
     washingStations: [{ id: 'w1', name: 'Hambela', origin: 'ET' }],
     producers: [] as ListEntry[],
+    processes: [{ id: 's1', name: 'Washed' }],
+    varietals: [] as ListEntry[],
+    link: null as string | null,
     altitudeFrom: 1900,
     altitudeTo: 2200,
     canEdit: true,
@@ -126,6 +129,23 @@ export function fakeApi() {
     fakeList(() => [
       { id: 'n1', name: 'Nestor Lasso' },
       { id: 'n2', name: 'Diego Bermudez' },
+    ]),
+  )
+
+  registerEndpoint(
+    '/api/processes',
+    fakeList(() => [
+      { id: 's1', name: 'Washed' },
+      { id: 's2', name: 'Natural' },
+      { id: 's3', name: 'Anaerobic' },
+    ]),
+  )
+
+  registerEndpoint(
+    '/api/varietals',
+    fakeList(() => [
+      { id: 'v1', name: 'Geisha' },
+      { id: 'v2', name: 'Pink Bourbon' },
     ]),
   )
 

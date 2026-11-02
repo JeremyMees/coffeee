@@ -1,13 +1,19 @@
 import { and, desc, eq, isNull, max, ne } from 'drizzle-orm'
+import { coffeeListFields } from '#shared/utils/coffee'
+import type { CoffeeListField } from '#shared/utils/coffee'
 import { nameKey } from '#shared/utils/names'
 import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
 import type { Database } from '#server/db/database'
 import {
   coffee,
+  coffeeProcess,
   coffeeProducer,
+  coffeeVarietal,
+  processList,
   producer,
   purchase,
   roaster,
+  varietal,
 } from '#server/db/schemas'
 import {
   describeEntries,
@@ -35,12 +41,25 @@ const detailColumns = {
   ...coffeeColumns,
   altitudeFrom: coffee.altitudeFrom,
   altitudeTo: coffee.altitudeTo,
+  link: coffee.link,
 }
 
-const producers: CoffeeList = {
-  list: producer,
-  link: coffeeProducer,
-  entryId: coffeeProducer.producerId,
+const coffeeLists: Record<CoffeeListField, CoffeeList> = {
+  producers: {
+    list: producer,
+    link: coffeeProducer,
+    entryId: coffeeProducer.producerId,
+  },
+  processes: {
+    list: processList,
+    link: coffeeProcess,
+    entryId: coffeeProcess.processId,
+  },
+  varietals: {
+    list: varietal,
+    link: coffeeVarietal,
+    entryId: coffeeVarietal.varietalId,
+  },
 }
 
 async function describeCoffee(
@@ -48,18 +67,24 @@ async function describeCoffee(
   input: { coffeeId: string; userId: string; details: CoffeeDetails },
 ) {
   await describeOrigins(db, input)
-  await describeEntries(db, producers, {
-    coffeeId: input.coffeeId,
-    userId: input.userId,
-    entries: input.details.producers.map(name => ({ name })),
-  })
+
+  for (const field of coffeeListFields) {
+    await describeEntries(db, coffeeLists[field], {
+      coffeeId: input.coffeeId,
+      userId: input.userId,
+      entries: input.details[field].map(name => ({ name })),
+    })
+  }
 }
 
 async function describedOf(db: Database, coffeeId: string) {
-  return {
-    ...(await originsOf(db, coffeeId)),
-    producers: await entriesOf(db, producers, coffeeId),
+  const entries = {} as Record<CoffeeListField, { id: string; name: string }[]>
+
+  for (const field of coffeeListFields) {
+    entries[field] = await entriesOf(db, coffeeLists[field], coffeeId)
   }
+
+  return { ...(await originsOf(db, coffeeId)), ...entries }
 }
 
 async function findOrCreateCoffee(
@@ -102,6 +127,7 @@ export function addCoffee(
       colour: details.colour,
       altitudeFrom: details.altitudeFrom,
       altitudeTo: details.altitudeTo,
+      link: details.link,
       createdBy: input.userId,
     })
 
@@ -233,6 +259,7 @@ export function editCoffee(
         colour: details.colour,
         altitudeFrom: details.altitudeFrom,
         altitudeTo: details.altitudeTo,
+        link: details.link,
       })
       .where(eq(coffee.id, input.coffeeId))
 

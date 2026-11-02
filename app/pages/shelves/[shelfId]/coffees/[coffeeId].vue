@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeftIcon, PencilIcon } from '@lucide/vue'
+import { ArrowLeftIcon, ArrowUpRightIcon, PencilIcon } from '@lucide/vue'
 import { useShelfCoffee } from '~/queries/coffees'
 
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
@@ -23,7 +23,11 @@ const latestRoastedOn = computed(
     null,
 )
 
-function grownAt(shown: NonNullable<typeof coffee.value>) {
+function names(entries: { name: string }[]) {
+  return entries.map(entry => entry.name).join(', ')
+}
+
+function detailRows(shown: NonNullable<typeof coffee.value>) {
   const inOrigins = (entries: OriginEntry[]) =>
     entries
       .map(entry =>
@@ -45,17 +49,15 @@ function grownAt(shown: NonNullable<typeof coffee.value>) {
       label: 'Altitude',
       value: formatAltitude(shown.altitudeFrom, shown.altitudeTo) ?? '',
     },
-    {
-      key: 'producers',
-      label: 'Producer',
-      value: shown.producers.map(producer => producer.name).join(', '),
-    },
+    { key: 'producers', label: 'Producer', value: names(shown.producers) },
     { key: 'farms', label: 'Farm', value: inOrigins(shown.farms) },
     {
       key: 'washing-stations',
       label: 'Washing station',
       value: inOrigins(shown.washingStations),
     },
+    { key: 'processes', label: 'Process', value: names(shown.processes) },
+    { key: 'varietals', label: 'Varietal', value: names(shown.varietals) },
   ].filter(row => row.value)
 }
 
@@ -83,6 +85,17 @@ const euros = new Intl.NumberFormat(undefined, {
         <h1 class="mt-2 text-[48px] lg:text-[72px]" data-testid="coffee-title">
           {{ coffee.name }}
         </h1>
+        <a
+          v-if="coffee.link"
+          :href="coffee.link"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="coffee-link-out"
+          class="mt-2 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
+        >
+          At the roaster
+          <ArrowUpRightIcon class="size-4" aria-hidden="true" />
+        </a>
       </div>
       <button
         v-if="coffee.canEdit"
@@ -100,13 +113,13 @@ const euros = new Intl.NumberFormat(undefined, {
       :coffee="{ ...coffee, roastedOn: latestRoastedOn }"
     />
     <dl
-      v-if="grownAt(coffee).length"
+      v-if="detailRows(coffee).length"
       class="mt-8 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-xs"
-      data-testid="grown-at"
+      data-testid="coffee-details"
     >
-      <template v-for="row in grownAt(coffee)" :key="row.key">
+      <template v-for="row in detailRows(coffee)" :key="row.key">
         <dt class="uppercase">{{ row.label }}</dt>
-        <dd :data-testid="`grown-${row.key}`">{{ row.value }}</dd>
+        <dd :data-testid="`detail-${row.key}`">{{ row.value }}</dd>
       </template>
     </dl>
     <section class="mt-10">

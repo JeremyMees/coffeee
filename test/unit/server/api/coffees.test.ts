@@ -1,6 +1,7 @@
 import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import farmsHandler from '#server/api/farms.get'
+import processesHandler from '#server/api/processes.get'
 import producersHandler from '#server/api/producers.get'
 import regionsHandler from '#server/api/regions.get'
 import roastersHandler from '#server/api/roasters.get'
@@ -8,6 +9,7 @@ import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].
 import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
+import varietalsHandler from '#server/api/varietals.get'
 import washingStationsHandler from '#server/api/washing-stations.get'
 import { createShelf } from '#server/utils/shelves'
 import { createTestAuth } from '#test/support/auth'
@@ -46,6 +48,8 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/farms', farmsHandler)
     .get('/api/washing-stations', washingStationsHandler)
     .get('/api/producers', producersHandler)
+    .get('/api/processes', processesHandler)
+    .get('/api/varietals', varietalsHandler)
     .get('/api/shelves/:shelfId/stock', stockHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
@@ -71,6 +75,7 @@ const coffee = {
   roastedFor: 'filter',
   colour: '#e4572e',
   origins: ['ET'],
+  processes: ['Washed'],
   purchasedOn: '2026-11-01',
   roastedOn: '2026-10-28',
   sizeGrams: 250,
@@ -202,6 +207,8 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
     roastedFor: 'omni',
     colour: '#3d5a80',
     origins: ['ET'],
+    processes: ['Natural'],
+    link: 'https://example.com/ayele',
   }
 
   async function addedCoffee() {
@@ -248,6 +255,8 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
       farms: [],
       washingStations: [],
       producers: [],
+      processes: [{ id: expect.any(String), name: 'Natural' }],
+      varietals: [],
       altitudeFrom: null,
       altitudeTo: null,
     })
@@ -448,6 +457,59 @@ describe('GET /api/farms and /api/washing-stations', () => {
 
     expect(farms.status).toBe(401)
     expect(stations.status).toBe(401)
+  })
+})
+
+describe('GET /api/processes and /api/varietals', () => {
+  it('suggest the seeded processes and the varietals used so far', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers, { ...coffee, varietals: ['Pink Bourbon'] })
+
+    const processes = await request('/api/processes?search=anaerob', {
+      headers,
+    })
+    const varietals = await request('/api/varietals?search=bourbon', {
+      headers,
+    })
+
+    expect(await processes.json()).toEqual([
+      { id: expect.any(String), name: 'Anaerobic' },
+    ])
+    expect(await varietals.json()).toEqual([
+      { id: expect.any(String), name: 'Pink Bourbon' },
+    ])
+  })
+
+  it('refuse anonymous requests', async () => {
+    expect((await request('/api/processes')).status).toBe(401)
+    expect((await request('/api/varietals')).status).toBe(401)
+  })
+})
+
+describe('describing how a coffee was made', () => {
+  it('refuses a coffee without a process', async () => {
+    const { shelf, headers } = await member()
+
+    const response = await add(shelf.id, headers, { ...coffee, processes: [] })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      data: { errors: { processes: 'Pick how it was processed' } },
+    })
+  })
+
+  it('refuses a link that is not a web address', async () => {
+    const { shelf, headers } = await member()
+
+    const response = await add(shelf.id, headers, {
+      ...coffee,
+      link: 'javascript:alert(1)',
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      data: { errors: { link: 'Enter a link that starts with https://' } },
+    })
   })
 })
 

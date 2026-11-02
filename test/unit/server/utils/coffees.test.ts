@@ -1,6 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
-import { coffee, producer, purchase, roaster } from '#server/db/schemas'
+import {
+  coffee,
+  processList,
+  producer,
+  purchase,
+  roaster,
+  varietal,
+} from '#server/db/schemas'
 import {
   addCoffee,
   editCoffee,
@@ -9,6 +16,7 @@ import {
 } from '#server/utils/coffees'
 import { findSimilar } from '#server/utils/lists'
 import { createShelf } from '#server/utils/shelves'
+import { seededProcesses } from '#shared/utils/coffee'
 import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
@@ -34,6 +42,9 @@ function newCoffee(overrides: Partial<NewCoffee> = {}): NewCoffee {
     farms: [],
     washingStations: [],
     producers: [],
+    processes: ['Washed'],
+    varietals: [],
+    link: null,
     altitudeFrom: null,
     altitudeTo: null,
     purchasedOn: '2026-11-01',
@@ -341,6 +352,9 @@ describe('editing a coffee', () => {
     farms: [],
     washingStations: [],
     producers: [],
+    processes: ['Washed'],
+    varietals: [],
+    link: null,
     altitudeFrom: null,
     altitudeTo: null,
   }
@@ -352,6 +366,8 @@ describe('editing a coffee', () => {
     farms: [],
     washingStations: [],
     producers: [],
+    processes: [{ id: expect.any(String), name: 'Washed' }],
+    varietals: [],
   }
 
   it('changes its shared details for the person who added it', async () => {
@@ -503,6 +519,81 @@ describe('roasters', () => {
     expect(
       await db.select().from(roaster).where(eq(roaster.nameKey, 'april')),
     ).toHaveLength(1)
+  })
+})
+
+describe('processes, varietals and link', () => {
+  async function shown(overrides: Partial<NewCoffee> = {}) {
+    const context = await setup()
+    const { coffee: added } = await addCoffee(context.db, {
+      shelfId: context.home.id,
+      userId: context.sarah.id,
+      coffee: newCoffee(overrides),
+    })
+    const show = () =>
+      findShelfCoffee(context.db, {
+        shelfId: context.home.id,
+        coffeeId: added.id,
+        viewer: context.sarah,
+      })
+
+    return { ...context, added, show }
+  }
+
+  it('seeds the processes roasters use most', async () => {
+    const { db } = await createTestDatabase()
+
+    expect(
+      (await db.select().from(processList)).map(entry => entry.name),
+    ).toEqual(seededProcesses)
+  })
+
+  it('reuses a seeded process and keeps new ones', async () => {
+    const { db, show } = await shown({
+      processes: ['washed', 'Thermal shock'],
+      varietals: ['Pink Bourbon', 'Geisha'],
+      link: 'https://example.com/pink-bourbon',
+    })
+
+    expect(await show()).toMatchObject({
+      processes: [
+        { id: expect.any(String), name: 'Washed' },
+        { id: expect.any(String), name: 'Thermal shock' },
+      ],
+      varietals: [
+        { id: expect.any(String), name: 'Pink Bourbon' },
+        { id: expect.any(String), name: 'Geisha' },
+      ],
+      link: 'https://example.com/pink-bourbon',
+    })
+    expect(await db.select().from(processList)).toHaveLength(
+      seededProcesses.length + 1,
+    )
+    expect(await db.select().from(varietal)).toHaveLength(2)
+  })
+
+  it('are replaced when the coffee is edited', async () => {
+    const { db, sarah, added, show } = await shown({
+      varietals: ['Geisha'],
+      link: 'https://example.com/a',
+    })
+
+    await editCoffee(db, {
+      coffeeId: added.id,
+      editor: sarah,
+      details: {
+        ...newCoffee(),
+        processes: ['Natural', 'Anaerobic'],
+        varietals: [],
+        link: null,
+      },
+    })
+
+    expect(await show()).toMatchObject({
+      processes: [{ name: 'Natural' }, { name: 'Anaerobic' }],
+      varietals: [],
+      link: null,
+    })
   })
 })
 

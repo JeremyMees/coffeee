@@ -51,6 +51,7 @@ async function fillRequired(name = 'Ayele Fulasa') {
   await type('coffee-name', name)
   await pickRoaster('square', 'Square Mile')
   await pickOrigin('ethi', 'Ethiopia')
+  await pickMulti('coffee-processes', 'wash', 'Washed')
   await click('coffee-roast-level', 'option-light')
   await click('coffee-roasted-for', 'option-filter')
 }
@@ -140,6 +141,9 @@ describe('AddCoffeeSheet', () => {
         farms: [],
         washingStations: [{ origin: 'ET', name: 'Hambela' }],
         producers: ['Tesfaye'],
+        processes: ['Washed'],
+        varietals: [],
+        link: null,
         altitudeFrom: 1900,
         altitudeTo: 2200,
         purchasedOn: localDate(),
@@ -158,6 +162,7 @@ describe('AddCoffeeSheet', () => {
     await type('coffee-name', 'Halo')
     await pickRoaster('April', 'Add “April”')
     await pickOrigin('kenya', 'Kenya')
+    await pickMulti('coffee-processes', 'Thermal shock', 'Add “Thermal shock”')
     await click('coffee-roast-level', 'option-light')
     await click('coffee-roasted-for', 'option-omni')
     await submit('add-coffee-form')
@@ -168,6 +173,9 @@ describe('AddCoffeeSheet', () => {
         roaster: 'April',
         origins: ['KE'],
         regions: [],
+        processes: ['Thermal shock'],
+        varietals: [],
+        link: null,
         altitudeFrom: null,
         altitudeTo: null,
         roastedOn: null,

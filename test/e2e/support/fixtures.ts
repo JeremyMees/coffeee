@@ -60,7 +60,14 @@ async function createMember(client: pg.Client, name: string, role: Role) {
 async function removeMember(client: pg.Client, member: Member) {
   await client.query(`delete from "purchase" where "addedBy" = $1`, [member.id])
   await client.query(`delete from "coffee" where "createdBy" = $1`, [member.id])
-  for (const list of ['region', 'farm', 'washingStation', 'producer']) {
+  for (const list of [
+    'region',
+    'farm',
+    'washingStation',
+    'producer',
+    'process',
+    'varietal',
+  ]) {
     await client.query(`delete from "${list}" where "createdBy" = $1`, [
       member.id,
     ])

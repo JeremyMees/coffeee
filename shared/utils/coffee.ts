@@ -3,6 +3,27 @@ const dayLength = 24 * 60 * 60 * 1000
 export const roastLevels = ['light', 'medium', 'medium-dark', 'dark'] as const
 export const roastedForOptions = ['espresso', 'filter', 'omni'] as const
 
+export const coffeeListFields = ['producers', 'processes', 'varietals'] as const
+
+export type CoffeeListField = (typeof coffeeListFields)[number]
+
+export const seededProcesses = [
+  'Washed',
+  'Natural',
+  'Semi washed',
+  'Honey',
+  'Anaerobic',
+  'Yeast Inoculated',
+  'Co fermentation',
+  'Black diamond',
+  'Nitro Maceration',
+  'Nitro Culturing',
+  'Extended fermentation',
+  'Double',
+  'Experimental',
+  'Super natural',
+]
+
 export type RoastLevel = (typeof roastLevels)[number]
 export type RoastedFor = (typeof roastedForOptions)[number]
 

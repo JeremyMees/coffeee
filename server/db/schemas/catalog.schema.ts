@@ -50,6 +50,7 @@ export const coffee = pgTable(
     colour: text().notNull(),
     altitudeFrom: integer(),
     altitudeTo: integer(),
+    link: text(),
     createdBy: text(),
     createdAt: timestamp().notNull().defaultNow(),
   },

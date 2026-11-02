@@ -43,6 +43,13 @@
       "when": 1793623894063,
       "tag": "0005_producers_farms_and_washing_stations",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793624578205,
+      "tag": "0006_processes_varietals_and_link",
+      "breakpoints": true
     }
   ]
 }

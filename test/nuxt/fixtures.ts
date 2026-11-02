@@ -181,6 +181,8 @@ export async function mountInForm(
           farms: [],
           washingStations: [],
           producers: [],
+          processes: [],
+          varietals: [],
           ...initialValues,
         },
       })

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import CoffeeDetailsFields from '~/components/form/CoffeeDetailsFields.vue'
 import { fakeApi } from '../../fake-api'
-import { mountInForm, pickMulti, tid, type } from '../../fixtures'
+import { mountInForm, tid, type } from '../../fixtures'
 
 fakeApi()
 
@@ -23,6 +23,9 @@ describe('CoffeeDetailsFields', () => {
       'coffee-washing-stations',
       'coffee-altitude-from',
       'coffee-producers',
+      'coffee-processes',
+      'coffee-varietals',
+      'coffee-link',
       'coffee-roast-level',
       'coffee-roasted-for',
       'coffee-colour',
@@ -31,18 +34,32 @@ describe('CoffeeDetailsFields', () => {
     }
   })
 
-  it('fills the name and producers as they are entered', async () => {
+  it('fills the name and link as they are entered', async () => {
     const { wrapper, form } = await mountFields()
 
     await wrapper.get(tid('coffee-name')).setValue('Halo')
-    await pickMulti('coffee-producers', 'nest', 'Nestor Lasso')
-    await pickMulti('coffee-producers', 'Finca Team', 'Add “Finca Team”')
+    await wrapper.get(tid('coffee-link')).setValue('https://example.com/halo')
     await flushPromises()
 
     expect(form.values).toMatchObject({
       name: 'Halo',
-      producers: ['Nestor Lasso', 'Finca Team'],
+      link: 'https://example.com/halo',
     })
+  })
+
+  it('explains a link that is not a web address', async () => {
+    const { wrapper, form } = await mountFields({ link: 'example.com' })
+
+    await form.validate()
+
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain(
+        'Enter a link that starts with https://',
+      ),
+    )
+    expect(wrapper.get(tid('coffee-link')).attributes('aria-invalid')).toBe(
+      'true',
+    )
   })
 
   it('shows each error next to its field', async () => {
@@ -54,6 +71,7 @@ describe('CoffeeDetailsFields', () => {
       expect(wrapper.text()).toContain('Give the coffee a name')
       expect(wrapper.text()).toContain('Pick a roaster or add a new one')
       expect(wrapper.text()).toContain('Pick where it was grown')
+      expect(wrapper.text()).toContain('Pick how it was processed')
       expect(wrapper.text()).toContain('Pick a roast level')
     })
     expect(wrapper.get(tid('coffee-name')).attributes('aria-invalid')).toBe(

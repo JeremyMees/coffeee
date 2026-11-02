@@ -16,6 +16,9 @@ const props = defineProps<{
     farms: OriginEntry[]
     washingStations: OriginEntry[]
     producers: { name: string }[]
+    processes: { name: string }[]
+    varietals: { name: string }[]
+    link: string | null
     altitudeFrom: number | null
     altitudeTo: number | null
   }
@@ -29,6 +32,10 @@ function originEntries(entries: OriginEntry[]) {
   return entries.map(({ origin, name }) => ({ origin, name }))
 }
 
+function names(entries: { name: string }[]) {
+  return entries.map(entry => entry.name)
+}
+
 function currentDetails() {
   return {
     name: props.coffee.name,
@@ -40,7 +47,10 @@ function currentDetails() {
     regions: originEntries(props.coffee.regions),
     farms: originEntries(props.coffee.farms),
     washingStations: originEntries(props.coffee.washingStations),
-    producers: props.coffee.producers.map(producer => producer.name),
+    producers: names(props.coffee.producers),
+    processes: names(props.coffee.processes),
+    varietals: names(props.coffee.varietals),
+    link: props.coffee.link ?? '',
     altitudeFrom: props.coffee.altitudeFrom?.toString() ?? '',
     altitudeTo: props.coffee.altitudeTo?.toString() ?? '',
   }

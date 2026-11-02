@@ -36,22 +36,22 @@
 
     <CoffeeOriginFields />
 
+    <CoffeeListFields />
+
     <LabelledField
-      v-slot="{ value, handleChange, handleBlur, invalid }"
-      name="producers"
-      label="Producer"
-      input-id="coffee-producers"
+      v-slot="{ componentField, invalid }"
+      name="link"
+      label="Link"
+      input-id="coffee-link"
     >
-      <MultiListPicker
-        id="coffee-producers"
-        :model-value="value"
-        endpoint="/api/producers"
-        placeholder="Search or add a producer"
-        hint="Type the producer's name"
-        data-testid="coffee-producers"
-        :invalid="invalid"
-        @update:model-value="handleChange"
-        @blur="handleBlur"
+      <Input
+        id="coffee-link"
+        v-bind="componentField"
+        data-testid="coffee-link"
+        type="url"
+        inputmode="url"
+        autocomplete="off"
+        :aria-invalid="invalid || undefined"
       />
     </LabelledField>
 

@@ -56,15 +56,24 @@ async function pickFromList(
   field: string,
   kind: 'scoped' | 'multi',
   name: string,
-  option: string,
+  option: string | RegExp,
 ) {
+  const isNew = typeof option === 'string' && option.startsWith('Add')
   await page.getByTestId(field).fill(name)
   await page
-    .getByTestId(
-      option.startsWith('Add') ? `${kind}-option-new` : `${kind}-option`,
-    )
+    .getByTestId(isNew ? `${kind}-option-new` : `${kind}-option`)
     .filter({ hasText: option })
     .click()
+}
+
+function pickProcess(page: Page, name: string) {
+  return pickFromList(
+    page,
+    'coffee-processes',
+    'multi',
+    name,
+    new RegExp(`^${name}$`),
+  )
 }
 
 function pickRegion(page: Page, name: string, option: string) {
@@ -81,6 +90,7 @@ async function addCoffee(
   await sheet.getByTestId('coffee-name').fill(coffee.name)
   await pickRoaster(page, coffee.roaster, coffee.newRoaster)
   await pickOrigin(page, 'Ethiopia')
+  await pickProcess(page, 'Washed')
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-filter')
   await pickDate(page, 'coffee-roasted-on', daysAgo(10))
@@ -256,6 +266,7 @@ test('says where a blend was grown and keeps it up to date', async ({
   await pickRoaster(page, roaster, true)
   await pickOrigin(page, 'Colombia')
   await pickOrigin(page, 'Ethiopia')
+  await pickProcess(page, 'Washed')
   await pickRegion(page, region, `Add “${region}” in Colombia`)
   await sheet.getByTestId('coffee-altitude-from').fill('1700')
   await sheet.getByTestId('coffee-altitude-to').fill('2100')
@@ -266,13 +277,13 @@ test('says where a blend was grown and keeps it up to date', async ({
 
   await stockCard(page, 'Huila Blend').click()
 
-  await expect(page.getByTestId('grown-origins')).toHaveText(
+  await expect(page.getByTestId('detail-origins')).toHaveText(
     'Colombia, Ethiopia',
   )
-  await expect(page.getByTestId('grown-regions')).toHaveText(
+  await expect(page.getByTestId('detail-regions')).toHaveText(
     `${region} (Colombia)`,
   )
-  await expect(page.getByTestId('grown-altitude')).toHaveText('1,700–2,100 m')
+  await expect(page.getByTestId('detail-altitude')).toHaveText('1,700–2,100 m')
 
   await page.getByTestId('coffee-edit').click()
   const edit = page.getByTestId('edit-coffee-sheet')
@@ -284,9 +295,9 @@ test('says where a blend was grown and keeps it up to date', async ({
   await edit.getByTestId('coffee-altitude-to').fill('')
   await edit.getByTestId('edit-coffee-submit').click()
 
-  await expect(page.getByTestId('grown-origins')).toHaveText('Ethiopia')
-  await expect(page.getByTestId('grown-regions')).toBeHidden()
-  await expect(page.getByTestId('grown-altitude')).toHaveText('1,700 m')
+  await expect(page.getByTestId('detail-origins')).toHaveText('Ethiopia')
+  await expect(page.getByTestId('detail-regions')).toBeHidden()
+  await expect(page.getByTestId('detail-altitude')).toHaveText('1,700 m')
 })
 
 test('suggests a region another coffee already used', async ({
@@ -302,7 +313,7 @@ test('suggests a region another coffee already used', async ({
   await page.getByTestId('coffee-edit').click()
   await pickRegion(page, region, `Add “${region}”`)
   await page.getByTestId('edit-coffee-submit').click()
-  await expect(page.getByTestId('grown-regions')).toHaveText(region)
+  await expect(page.getByTestId('detail-regions')).toHaveText(region)
 
   await page.getByTestId('coffee-back').click()
   await page.getByTestId('page-add-coffee').click()
@@ -331,6 +342,7 @@ test('says who grew a coffee and where it was processed', async ({
   await pickRoaster(page, roaster, true)
   await pickOrigin(page, 'Colombia')
   await pickOrigin(page, 'Ethiopia')
+  await pickProcess(page, 'Washed')
   await pickFromList(
     page,
     'coffee-farms',
@@ -359,9 +371,11 @@ test('says who grew a coffee and where it was processed', async ({
 
   await stockCard(page, 'Pink Bourbon').click()
 
-  await expect(page.getByTestId('grown-producers')).toHaveText(producer)
-  await expect(page.getByTestId('grown-farms')).toHaveText(`${farm} (Colombia)`)
-  await expect(page.getByTestId('grown-washing-stations')).toHaveText(
+  await expect(page.getByTestId('detail-producers')).toHaveText(producer)
+  await expect(page.getByTestId('detail-farms')).toHaveText(
+    `${farm} (Colombia)`,
+  )
+  await expect(page.getByTestId('detail-washing-stations')).toHaveText(
     `${station} (Ethiopia)`,
   )
 
@@ -378,9 +392,60 @@ test('says who grew a coffee and where it was processed', async ({
     .click()
   await edit.getByTestId('edit-coffee-submit').click()
 
-  await expect(page.getByTestId('grown-washing-stations')).toHaveText(station)
-  await expect(page.getByTestId('grown-farms')).toBeHidden()
-  await expect(page.getByTestId('grown-producers')).toBeHidden()
+  await expect(page.getByTestId('detail-washing-stations')).toHaveText(station)
+  await expect(page.getByTestId('detail-farms')).toBeHidden()
+  await expect(page.getByTestId('detail-producers')).toBeHidden()
+})
+
+test('says how a coffee was made and links to the roaster', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  const varietal = uniqueName('Pink Bourbon')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await page.getByTestId('page-add-coffee').click()
+  const sheet = page.getByTestId('add-coffee-sheet')
+  await sheet.getByTestId('coffee-name').fill('Thermal')
+  await pickRoaster(page, roaster, true)
+  await pickOrigin(page, 'Colombia')
+  await pickProcess(page, 'Washed')
+  await pickProcess(page, 'Anaerobic')
+  await pickFromList(
+    page,
+    'coffee-varietals',
+    'multi',
+    varietal,
+    `Add “${varietal}”`,
+  )
+  await sheet.getByTestId('coffee-link').fill('https://example.com/thermal')
+  await choose(sheet, 'coffee-roast-level', 'option-light')
+  await choose(sheet, 'coffee-roasted-for', 'option-filter')
+  await sheet.getByTestId('add-coffee-submit').click()
+  await expect(sheet).toBeHidden()
+
+  await stockCard(page, 'Thermal').click()
+
+  await expect(page.getByTestId('detail-processes')).toHaveText(
+    'Washed, Anaerobic',
+  )
+  await expect(page.getByTestId('detail-varietals')).toHaveText(varietal)
+  await expect(page.getByTestId('coffee-link-out')).toHaveAttribute(
+    'href',
+    'https://example.com/thermal',
+  )
+
+  await page.getByTestId('coffee-edit').click()
+  const edit = page.getByTestId('edit-coffee-sheet')
+  await edit
+    .getByTestId('coffee-processes-chips')
+    .getByRole('button', { name: 'Remove Washed' })
+    .click()
+  await edit.getByTestId('coffee-link').fill('')
+  await edit.getByTestId('edit-coffee-submit').click()
+
+  await expect(page.getByTestId('detail-processes')).toHaveText('Anaerobic')
+  await expect(page.getByTestId('coffee-link-out')).toBeHidden()
 })
 
 test('keeps a roast date optional', async ({ page, member }) => {
@@ -392,6 +457,7 @@ test('keeps a roast date optional', async ({ page, member }) => {
   await sheet.getByTestId('coffee-name').fill('Halo')
   await pickRoaster(page, roaster, true)
   await pickOrigin(page, 'Kenya')
+  await pickProcess(page, 'Washed')
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-omni')
   await pickDate(page, 'coffee-roasted-on', daysAgo(5))

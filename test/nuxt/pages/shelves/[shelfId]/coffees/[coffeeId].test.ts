@@ -100,11 +100,34 @@ describe('a coffee page', () => {
       route: '/shelves/home/coffees/c1',
     })
 
-    expect(page.get(tid('grown-origins')).text()).toBe('Ethiopia')
-    expect(page.get(tid('grown-regions')).text()).toBe('Guji')
-    expect(page.get(tid('grown-altitude')).text()).toBe('1,900–2,200 m')
-    expect(page.get(tid('grown-washing-stations')).text()).toBe('Hambela')
-    expect(page.find(tid('grown-farms')).exists()).toBe(false)
+    expect(page.get(tid('detail-origins')).text()).toBe('Ethiopia')
+    expect(page.get(tid('detail-regions')).text()).toBe('Guji')
+    expect(page.get(tid('detail-altitude')).text()).toBe('1,900–2,200 m')
+    expect(page.get(tid('detail-washing-stations')).text()).toBe('Hambela')
+    expect(page.find(tid('detail-farms')).exists()).toBe(false)
+  })
+
+  it('says how it was made and links to the roaster', async () => {
+    api.coffee = {
+      ...ayele(),
+      processes: [
+        { id: 's1', name: 'Washed' },
+        { id: 's3', name: 'Anaerobic' },
+      ],
+      varietals: [{ id: 'v1', name: 'Geisha' }],
+      link: 'https://example.com/ayele',
+    }
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('detail-processes')).text()).toBe('Washed, Anaerobic')
+    expect(page.get(tid('detail-varietals')).text()).toBe('Geisha')
+    const link = page.get(tid('coffee-link-out'))
+    expect(link.attributes('href')).toBe('https://example.com/ayele')
+    expect(link.attributes('target')).toBe('_blank')
+    expect(link.attributes('rel')).toBe('noopener noreferrer')
   })
 
   it('says who grew it', async () => {
@@ -120,7 +143,7 @@ describe('a coffee page', () => {
       route: '/shelves/home/coffees/c1',
     })
 
-    expect(page.get(tid('grown-producers')).text()).toBe(
+    expect(page.get(tid('detail-producers')).text()).toBe(
       'Nestor Lasso, Diego Bermudez',
     )
   })
@@ -143,12 +166,12 @@ describe('a coffee page', () => {
       route: '/shelves/home/coffees/c1',
     })
 
-    expect(page.get(tid('grown-origins')).text()).toBe('Colombia, Ethiopia')
-    expect(page.get(tid('grown-regions')).text()).toBe(
+    expect(page.get(tid('detail-origins')).text()).toBe('Colombia, Ethiopia')
+    expect(page.get(tid('detail-regions')).text()).toBe(
       'Huila (Colombia), Guji (Ethiopia)',
     )
-    expect(page.get(tid('grown-farms')).text()).toBe('La Palma (Colombia)')
-    expect(page.get(tid('grown-washing-stations')).text()).toBe(
+    expect(page.get(tid('detail-farms')).text()).toBe('La Palma (Colombia)')
+    expect(page.get(tid('detail-washing-stations')).text()).toBe(
       'Hambela (Ethiopia)',
     )
   })
@@ -161,6 +184,9 @@ describe('a coffee page', () => {
       farms: [],
       washingStations: [],
       producers: [],
+      processes: [],
+      varietals: [],
+      link: null,
       altitudeFrom: null,
       altitudeTo: null,
     }
@@ -169,6 +195,7 @@ describe('a coffee page', () => {
       route: '/shelves/home/coffees/c1',
     })
 
-    expect(page.find(tid('grown-at')).exists()).toBe(false)
+    expect(page.find(tid('coffee-details')).exists()).toBe(false)
+    expect(page.find(tid('coffee-link-out')).exists()).toBe(false)
   })
 })

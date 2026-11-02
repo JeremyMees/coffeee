@@ -70,47 +70,95 @@ const coffeeDetailsShape = {
     .max(10, 'Pick 10 origins or fewer')
     .refine(codes => codes.every(isOriginCode), 'Pick countries from the list')
     .transform(codes => [...new Set(codes)]),
-  regions: originEntries('region', 20, 60),
-  farms: originEntries('farm', 20, 80),
-  washingStations: originEntries('washing station', 20, 80),
-  producers: listEntries('producer', 20, 80),
+  regions: originEntries(nouns('region'), 20, 60),
+  farms: originEntries(nouns('farm'), 20, 80),
+  washingStations: originEntries(nouns('washing station'), 20, 80),
+  producers: listEntries(nouns('producer'), 20, 80),
+  processes: requiredListEntries(
+    nouns('process', 'processes'),
+    10,
+    60,
+    'Pick how it was processed',
+  ),
+  varietals: listEntries(nouns('varietal'), 10, 60),
+  link: z.preprocess(
+    value => blankToNull(typeof value === 'string' ? value.trim() : value),
+    z
+      .url({
+        protocol: /^https?$/,
+        error: 'Enter a link that starts with https://',
+      })
+      .max(500, 'Keep the link to 500 characters or fewer')
+      .nullable(),
+  ),
   altitudeFrom: altitude('lowest'),
   altitudeTo: altitude('highest'),
+}
+
+interface Nouns {
+  one: string
+  many: string
+}
+
+function nouns(one: string, many = `${one}s`): Nouns {
+  return { one, many }
 }
 
 function namedEntries<Entry extends z.ZodType>(
   entry: Entry,
   nameOf: (entry: z.output<Entry>) => string,
-  noun: string,
+  noun: Nouns,
   max: number,
   maxLength: number,
+  missing = `Pick ${noun.many} from the list`,
 ) {
   return z
-    .array(entry, { error: `Pick ${noun}s from the list` })
-    .max(max, `Pick ${max} ${noun}s or fewer`)
+    .array(entry, { error: missing })
+    .max(max, `Pick ${max} ${noun.many} or fewer`)
     .refine(
       entries => entries.every(picked => nameOf(picked).length > 0),
-      `Give the ${noun} a name`,
+      `Give the ${noun.one} a name`,
     )
     .refine(
       entries => entries.every(picked => nameOf(picked).length <= maxLength),
-      `Keep each ${noun} to ${maxLength} characters or fewer`,
+      `Keep each ${noun.one} to ${maxLength} characters or fewer`,
     )
-    .default([])
 }
 
-function listEntries(noun: string, max: number, maxLength: number) {
-  return namedEntries(z.string().trim(), name => name, noun, max, maxLength)
+function listEntries(noun: Nouns, max: number, maxLength: number) {
+  return namedEntries(
+    z.string().trim(),
+    name => name,
+    noun,
+    max,
+    maxLength,
+  ).default([])
 }
 
-function originEntries(noun: string, max: number, maxLength: number) {
+function requiredListEntries(
+  noun: Nouns,
+  max: number,
+  maxLength: number,
+  missing: string,
+) {
+  return namedEntries(
+    z.string().trim(),
+    name => name,
+    noun,
+    max,
+    maxLength,
+    missing,
+  ).min(1, missing)
+}
+
+function originEntries(noun: Nouns, max: number, maxLength: number) {
   return namedEntries(
     z.object({ origin: z.string(), name: z.string().trim() }),
     picked => picked.name,
     noun,
     max,
     maxLength,
-  )
+  ).default([])
 }
 
 const originListNouns: Record<OriginListField, string> = {
