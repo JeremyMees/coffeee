@@ -31,6 +31,7 @@ describe('the Stock page', () => {
         roastedFor: 'espresso',
         colour: '#2f6f4f',
         roastedOn: daysAgo(3),
+        flavorNotes: [{ id: 'n1', name: 'Lime' }],
       },
     ]
 
@@ -39,6 +40,7 @@ describe('the Stock page', () => {
 
     expect(card.attributes('href')).toBe('/shelves/home/coffees/c1')
     expect(card.get(tid('coffee-card-name')).text()).toBe('Ayele Fulasa')
+    expect(card.get(tid('coffee-card-flavor-note')).text()).toBe('Lime')
   })
 
   it('invites adding a coffee when nothing is in stock', async () => {

@@ -19,6 +19,7 @@ function emptyForm() {
     producers: [] as string[],
     processes: [] as string[],
     varietals: [] as string[],
+    flavorNotes: [] as string[],
     link: '',
     altitudeFrom: '',
     altitudeTo: '',

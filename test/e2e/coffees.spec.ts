@@ -403,6 +403,7 @@ test('says how a coffee was made and links to the roaster', async ({
 }) => {
   const roaster = uniqueName('Roaster')
   const varietal = uniqueName('Pink Bourbon')
+  const flavor = uniqueName('Bergamot')
   await page.goto(`/shelves/${member.shelfId}`)
   await page.getByTestId('page-add-coffee').click()
   const sheet = page.getByTestId('add-coffee-sheet')
@@ -418,18 +419,29 @@ test('says how a coffee was made and links to the roaster', async ({
     varietal,
     `Add “${varietal}”`,
   )
+  await pickFromList(
+    page,
+    'coffee-flavor-notes',
+    'multi',
+    flavor,
+    `Add “${flavor}”`,
+  )
   await sheet.getByTestId('coffee-link').fill('https://example.com/thermal')
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-filter')
   await sheet.getByTestId('add-coffee-submit').click()
   await expect(sheet).toBeHidden()
 
+  await expect(
+    stockCard(page, 'Thermal').getByTestId('coffee-card-flavor-note'),
+  ).toHaveText(flavor)
   await stockCard(page, 'Thermal').click()
 
   await expect(page.getByTestId('detail-processes')).toHaveText(
     'Washed, Anaerobic',
   )
   await expect(page.getByTestId('detail-varietals')).toHaveText(varietal)
+  await expect(page.getByTestId('coffee-card-flavor-note')).toHaveText(flavor)
   await expect(page.getByTestId('coffee-link-out')).toHaveAttribute(
     'href',
     'https://example.com/thermal',
@@ -441,11 +453,16 @@ test('says how a coffee was made and links to the roaster', async ({
     .getByTestId('coffee-processes-chips')
     .getByRole('button', { name: 'Remove Washed' })
     .click()
+  await edit
+    .getByTestId('coffee-flavor-notes-chips')
+    .getByRole('button', { name: `Remove ${flavor}` })
+    .click()
   await edit.getByTestId('coffee-link').fill('')
   await edit.getByTestId('edit-coffee-submit').click()
 
   await expect(page.getByTestId('detail-processes')).toHaveText('Anaerobic')
   await expect(page.getByTestId('coffee-link-out')).toBeHidden()
+  await expect(page.getByTestId('coffee-card-flavor-notes')).toBeHidden()
 })
 
 test('keeps a roast date optional', async ({ page, member }) => {

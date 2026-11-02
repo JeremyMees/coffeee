@@ -50,6 +50,20 @@ const roast = computed(
         </span>
       </p>
     </div>
+    <ul
+      v-if="coffee.flavorNotes.length"
+      class="mt-4 flex flex-wrap gap-1.5"
+      data-testid="coffee-card-flavor-notes"
+    >
+      <li
+        v-for="note in coffee.flavorNotes"
+        :key="note.id"
+        data-testid="coffee-card-flavor-note"
+        class="rounded-full bg-background/90 px-2.5 py-1 text-[11px] text-[#1d1d1f] uppercase"
+      >
+        {{ note.name }}
+      </li>
+    </ul>
     <dl
       class="mt-auto grid grid-cols-2 gap-x-4 gap-y-3 rounded-[18px] bg-background p-4"
     >

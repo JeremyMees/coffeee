@@ -7,12 +7,13 @@ import { mountInForm, pickMulti, tid, type } from '../../fixtures'
 fakeApi()
 
 describe('CoffeeListFields', () => {
-  it('asks for processes, varietals and producers', async () => {
+  it('asks for processes, varietals, flavor notes and producers', async () => {
     const { wrapper } = await mountInForm(CoffeeListFields)
 
     expect(wrapper.findAll('label').map(label => label.text())).toEqual([
       'Process',
       'Varietal',
+      'Flavor note',
       'Producer',
     ])
   })
@@ -23,12 +24,14 @@ describe('CoffeeListFields', () => {
     await pickMulti('coffee-processes', 'wash', 'Washed')
     await pickMulti('coffee-processes', 'Thermal shock', 'Add “Thermal shock”')
     await pickMulti('coffee-varietals', 'geish', 'Geisha')
+    await pickMulti('coffee-flavor-notes', 'Bergamot', 'Add “Bergamot”')
     await pickMulti('coffee-producers', 'nest', 'Nestor Lasso')
     await flushPromises()
 
     expect(form.values).toMatchObject({
       processes: ['Washed', 'Thermal shock'],
       varietals: ['Geisha'],
+      flavorNotes: ['Bergamot'],
       producers: ['Nestor Lasso'],
     })
   })

@@ -1,22 +1,46 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CoffeeCard from '~/components/CoffeeCard.vue'
+import type { CardCoffee } from '#imports'
 import { daysAgo, tid } from '../fixtures'
 
-const coffee = {
+const coffee: CardCoffee = {
   name: 'Ayele Fulasa',
   roaster: 'Square Mile',
   roastLevel: 'medium-dark',
   roastedFor: 'espresso',
   colour: '#2f6f4f',
   roastedOn: daysAgo(3),
-} as const
+  flavorNotes: [],
+}
 
 function mountCard(props: Record<string, unknown> = {}) {
   return mountSuspended(CoffeeCard, { props: { coffee, ...props } })
 }
 
 describe('CoffeeCard', () => {
+  it('lists its flavor notes in order', async () => {
+    const card = await mountCard({
+      coffee: {
+        ...coffee,
+        flavorNotes: [
+          { id: 'n1', name: 'Lime' },
+          { id: 'n2', name: 'Milk chocolate' },
+        ],
+      },
+    })
+
+    expect(
+      card.findAll(tid('coffee-card-flavor-note')).map(note => note.text()),
+    ).toEqual(['Lime', 'Milk chocolate'])
+  })
+
+  it('leaves out flavor notes when it has none', async () => {
+    const card = await mountCard()
+
+    expect(card.find(tid('coffee-card-flavor-notes')).exists()).toBe(false)
+  })
+
   it('shows the roaster, the name and how it was roasted', async () => {
     const card = await mountCard()
 

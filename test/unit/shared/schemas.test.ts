@@ -38,6 +38,7 @@ describe('newCoffeeSchema', () => {
       washingStations: [],
       producers: [],
       varietals: [],
+      flavorNotes: [],
       link: null,
       altitudeFrom: null,
       altitudeTo: null,
@@ -274,6 +275,24 @@ describe('how a coffee was made', () => {
     expect(processErrors(['x'.repeat(61)])).toEqual({
       processes: 'Keep each process to 60 characters or fewer',
     })
+  })
+
+  it('trims flavor notes and explains ones that make no sense', () => {
+    expect(
+      coffeeDetailsSchema.parse({ ...details, flavorNotes: [' Lime '] })
+        .flavorNotes,
+    ).toEqual(['Lime'])
+    expect(
+      errorsOf(coffeeDetailsSchema, {
+        ...details,
+        flavorNotes: ['x'.repeat(41)],
+      }),
+    ).toEqual({
+      flavorNotes: 'Keep each flavor note to 40 characters or fewer',
+    })
+    expect(
+      errorsOf(coffeeDetailsSchema, { ...details, flavorNotes: 'Lime' }),
+    ).toEqual({ flavorNotes: 'Pick flavor notes from the list' })
   })
 
   it('takes a blank link as none', () => {

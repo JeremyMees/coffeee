@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, max, ne } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, max, ne } from 'drizzle-orm'
 import { coffeeListFields } from '#shared/utils/coffee'
 import type { ListEntry } from '#shared/types/catalog'
 import type {
@@ -10,9 +10,11 @@ import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
 import {
   coffee,
+  coffeeFlavorNote,
   coffeeProcess,
   coffeeProducer,
   coffeeVarietal,
+  flavorNote,
   processList,
   producer,
   purchase,
@@ -60,6 +62,11 @@ const coffeeLists: Record<CoffeeListField, CoffeeList> = {
     link: coffeeVarietal,
     entryId: coffeeVarietal.varietalId,
   },
+  flavorNotes: {
+    list: flavorNote,
+    link: coffeeFlavorNote,
+    entryId: coffeeFlavorNote.flavorNoteId,
+  },
 }
 
 async function describeCoffee(
@@ -85,6 +92,29 @@ async function describedOf(db: Database, coffeeId: string) {
   }
 
   return { ...(await originsOf(db, coffeeId)), ...entries }
+}
+
+async function flavorNotesOf(db: Database, coffeeIds: string[]) {
+  const notes = new Map<string, ListEntry[]>()
+
+  if (!coffeeIds.length) return notes
+
+  const linked = await db
+    .select({
+      coffeeId: coffeeFlavorNote.coffeeId,
+      id: flavorNote.id,
+      name: flavorNote.name,
+    })
+    .from(coffeeFlavorNote)
+    .innerJoin(flavorNote, eq(flavorNote.id, coffeeFlavorNote.flavorNoteId))
+    .where(inArray(coffeeFlavorNote.coffeeId, coffeeIds))
+    .orderBy(asc(coffeeFlavorNote.position))
+
+  for (const { coffeeId, ...note } of linked) {
+    notes.set(coffeeId, [...(notes.get(coffeeId) ?? []), note])
+  }
+
+  return notes
 }
 
 async function findOrCreateCoffee(
@@ -156,8 +186,8 @@ export function addCoffee(
   })
 }
 
-export function listStock(db: Database, shelfId: string) {
-  return db
+export async function listStock(db: Database, shelfId: string) {
+  const stock = await db
     .select({ ...coffeeColumns, roastedOn: max(purchase.roastedOn) })
     .from(purchase)
     .innerJoin(coffee, eq(coffee.id, purchase.coffeeId))
@@ -165,6 +195,12 @@ export function listStock(db: Database, shelfId: string) {
     .where(and(eq(purchase.shelfId, shelfId), isNull(purchase.finishedAt)))
     .groupBy(coffee.id, roaster.id)
     .orderBy(desc(max(purchase.purchasedOn)), desc(max(purchase.createdAt)))
+  const notes = await flavorNotesOf(
+    db,
+    stock.map(row => row.id),
+  )
+
+  return stock.map(row => ({ ...row, flavorNotes: notes.get(row.id) ?? [] }))
 }
 
 export function canEditCoffee(viewer: Viewer, createdBy: string | null) {

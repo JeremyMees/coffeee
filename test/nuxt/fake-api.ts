@@ -37,6 +37,7 @@ export function ayele() {
     producers: [] as ListEntry[],
     processes: [{ id: 's1', name: 'Washed' }],
     varietals: [] as ListEntry[],
+    flavorNotes: [] as ListEntry[],
     link: null as string | null,
     altitudeFrom: 1900,
     altitudeTo: 2200,
@@ -146,6 +147,14 @@ export function fakeApi() {
     fakeList(() => [
       { id: 'v1', name: 'Geisha' },
       { id: 'v2', name: 'Pink Bourbon' },
+    ]),
+  )
+
+  registerEndpoint(
+    '/api/flavor-notes',
+    fakeList(() => [
+      { id: 'n1', name: 'Lime' },
+      { id: 'n2', name: 'Jasmine' },
     ]),
   )
 

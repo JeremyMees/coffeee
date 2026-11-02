@@ -1,6 +1,7 @@
 import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import farmsHandler from '#server/api/farms.get'
+import flavorNotesHandler from '#server/api/flavor-notes.get'
 import processesHandler from '#server/api/processes.get'
 import producersHandler from '#server/api/producers.get'
 import regionsHandler from '#server/api/regions.get'
@@ -49,6 +50,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/producers', producersHandler)
     .get('/api/processes', processesHandler)
     .get('/api/varietals', varietalsHandler)
+    .get('/api/flavor-notes', flavorNotesHandler)
     .get('/api/shelves/:shelfId/stock', stockHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
@@ -256,6 +258,7 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
       producers: [],
       processes: [{ id: expect.any(String), name: 'Natural' }],
       varietals: [],
+      flavorNotes: [],
       altitudeFrom: null,
       altitudeTo: null,
     })
@@ -482,6 +485,25 @@ describe('GET /api/processes and /api/varietals', () => {
   it('refuse anonymous requests', async () => {
     expect((await request('/api/processes')).status).toBe(401)
     expect((await request('/api/varietals')).status).toBe(401)
+  })
+})
+
+describe('GET /api/flavor-notes', () => {
+  it('suggests the flavor notes similar to a search', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers, { ...coffee, flavorNotes: ['Milk chocolate'] })
+
+    const response = await request('/api/flavor-notes?search=choclate', {
+      headers,
+    })
+
+    expect(await response.json()).toEqual([
+      { id: expect.any(String), name: 'Milk chocolate' },
+    ])
+  })
+
+  it('refuses anonymous requests', async () => {
+    expect((await request('/api/flavor-notes')).status).toBe(401)
   })
 })
 

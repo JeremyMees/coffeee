@@ -40,6 +40,7 @@ const coffee = {
   producers: [{ id: 'n1', name: 'Nestor Lasso' }],
   processes: [{ id: 's1', name: 'Washed' }],
   varietals: [{ id: 'v1', name: 'Geisha' }],
+  flavorNotes: [{ id: 'n1', name: 'Lime' }],
   link: 'https://example.com/ayele',
   altitudeFrom: 1900,
   altitudeTo: 2200,
@@ -82,6 +83,7 @@ describe('EditCoffeeSheet', () => {
     expect(chipLabels('coffee-producers-chips')).toEqual(['Nestor Lasso'])
     expect(chipLabels('coffee-processes-chips')).toEqual(['Washed'])
     expect(chipLabels('coffee-varietals-chips')).toEqual(['Geisha'])
+    expect(chipLabels('coffee-flavor-notes-chips')).toEqual(['Lime'])
     expect(inputValue('coffee-link')).toBe('https://example.com/ayele')
     expect(inputValue('coffee-altitude-from')).toBe('1900')
     expect(inputValue('coffee-altitude-to')).toBe('2200')
@@ -112,6 +114,7 @@ describe('EditCoffeeSheet', () => {
     await click('coffee-colour', 'colour-ink')
     await pickMulti('coffee-producers', 'dieg', 'Diego Bermudez')
     await pickMulti('coffee-processes', 'anaer', 'Anaerobic')
+    await pickMulti('coffee-flavor-notes', 'jasm', 'Jasmine')
     await type('coffee-link', '')
     await submit('edit-coffee-form')
 
@@ -132,6 +135,7 @@ describe('EditCoffeeSheet', () => {
         producers: ['Nestor Lasso', 'Diego Bermudez'],
         processes: ['Washed', 'Anaerobic'],
         varietals: ['Geisha'],
+        flavorNotes: ['Lime', 'Jasmine'],
         link: null,
         altitudeFrom: 1900,
         altitudeTo: 2200,

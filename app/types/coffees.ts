@@ -10,5 +10,11 @@ export type EditableCoffee = Omit<ShelfCoffee, 'canEdit' | 'purchases'>
 
 export type CardCoffee = Pick<
   StockCoffee,
-  'name' | 'roaster' | 'roastLevel' | 'roastedFor' | 'colour' | 'roastedOn'
+  | 'name'
+  | 'roaster'
+  | 'roastLevel'
+  | 'roastedFor'
+  | 'colour'
+  | 'roastedOn'
+  | 'flavorNotes'
 >

@@ -32,6 +32,7 @@ function newCoffee(overrides: Partial<NewCoffee> = {}): NewCoffee {
     producers: [],
     processes: ['Washed'],
     varietals: [],
+    flavorNotes: [],
     link: null,
     altitudeFrom: 1700,
     altitudeTo: 2100,

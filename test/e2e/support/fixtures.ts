@@ -54,6 +54,7 @@ async function removeMember(client: pg.Client, member: Member) {
     'producer',
     'process',
     'varietal',
+    'flavorNote',
   ]) {
     await client.query(`delete from "${list}" where "createdBy" = $1`, [
       member.id,

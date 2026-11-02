@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
 import {
   coffee,
+  flavorNote,
   processList,
   producer,
   purchase,
@@ -44,6 +45,7 @@ function newCoffee(overrides: Partial<NewCoffee> = {}): NewCoffee {
     producers: [],
     processes: ['Washed'],
     varietals: [],
+    flavorNotes: [],
     link: null,
     altitudeFrom: null,
     altitudeTo: null,
@@ -189,6 +191,7 @@ describe('current stock', () => {
         roastedFor: 'filter',
         colour: '#e4572e',
         roastedOn: '2026-10-28',
+        flavorNotes: [],
       },
     ])
   })
@@ -354,6 +357,7 @@ describe('editing a coffee', () => {
     producers: [],
     processes: ['Washed'],
     varietals: [],
+    flavorNotes: [],
     link: null,
     altitudeFrom: null,
     altitudeTo: null,
@@ -368,6 +372,7 @@ describe('editing a coffee', () => {
     producers: [],
     processes: [{ id: expect.any(String), name: 'Washed' }],
     varietals: [],
+    flavorNotes: [],
   }
 
   it('changes its shared details for the person who added it', async () => {
@@ -585,6 +590,7 @@ describe('processes, varietals and link', () => {
         ...newCoffee(),
         processes: ['Natural', 'Anaerobic'],
         varietals: [],
+        flavorNotes: [],
         link: null,
       },
     })
@@ -592,8 +598,59 @@ describe('processes, varietals and link', () => {
     expect(await show()).toMatchObject({
       processes: [{ name: 'Natural' }, { name: 'Anaerobic' }],
       varietals: [],
+      flavorNotes: [],
       link: null,
     })
+  })
+})
+
+describe('flavor notes', () => {
+  it('are kept on the coffee and shared by name', async () => {
+    const { db, sarah, home } = await setup()
+    const { coffee: added } = await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee({ flavorNotes: ['Lime', 'Milk chocolate'] }),
+    })
+    await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee({ name: 'Red Brick', flavorNotes: ['LIME'] }),
+    })
+
+    const shown = await findShelfCoffee(db, {
+      shelfId: home.id,
+      coffeeId: added.id,
+      viewer: sarah,
+    })
+
+    expect(shown!.flavorNotes).toEqual([
+      { id: expect.any(String), name: 'Lime' },
+      { id: expect.any(String), name: 'Milk chocolate' },
+    ])
+    expect(await db.select().from(flavorNote)).toHaveLength(2)
+  })
+
+  it('show on each coffee in stock', async () => {
+    const { db, sarah, home } = await setup()
+    await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee({ flavorNotes: ['Lime', 'Jasmine'] }),
+    })
+    await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee({ name: 'Red Brick' }),
+    })
+
+    const stock = await listStock(db, home.id)
+
+    expect(
+      Object.fromEntries(
+        stock.map(row => [row.name, row.flavorNotes.map(note => note.name)]),
+      ),
+    ).toEqual({ 'Ayele Fulasa': ['Lime', 'Jasmine'], 'Red Brick': [] })
   })
 })
 

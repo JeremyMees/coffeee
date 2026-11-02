@@ -83,6 +83,7 @@ const coffeeDetailsShape = {
     'Pick how it was processed',
   ),
   varietals: listEntries(nouns('varietal'), 10, 60),
+  flavorNotes: listEntries(nouns('flavor note'), 20, 40),
   link: z.preprocess(
     value => blankToNull(typeof value === 'string' ? value.trim() : value),
     z

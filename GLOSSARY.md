@@ -70,8 +70,8 @@ or Omni (both). _Avoid_: Roast type, profile
 Geisha. _Avoid_: Variety, cultivar
 
 **Flavor note**: A taste a coffee is described with, such as Lime or Milk
-Chocolate, shown with an emoji. Flavor notes are shared, so coffees can be found
-by taste. _Avoid_: Tasting note, taste, notes
+Chocolate. Flavor notes are shared, so coffees can be found by taste. _Avoid_:
+Tasting note, taste, notes
 
 ### Judging a coffee
 

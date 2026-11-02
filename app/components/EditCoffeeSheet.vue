@@ -30,6 +30,7 @@ function currentDetails() {
     producers: names(props.coffee.producers),
     processes: names(props.coffee.processes),
     varietals: names(props.coffee.varietals),
+    flavorNotes: names(props.coffee.flavorNotes),
     link: props.coffee.link ?? '',
     altitudeFrom: props.coffee.altitudeFrom?.toString() ?? '',
     altitudeTo: props.coffee.altitudeTo?.toString() ?? '',

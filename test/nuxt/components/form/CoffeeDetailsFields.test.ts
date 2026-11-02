@@ -25,6 +25,7 @@ describe('CoffeeDetailsFields', () => {
       'coffee-producers',
       'coffee-processes',
       'coffee-varietals',
+      'coffee-flavor-notes',
       'coffee-link',
       'coffee-roast-level',
       'coffee-roasted-for',

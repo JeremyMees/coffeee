@@ -50,6 +50,13 @@
       "when": 1793624578205,
       "tag": "0006_processes_varietals_and_link",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793626243857,
+      "tag": "0007_flavor_notes",
+      "breakpoints": true
     }
   ]
 }

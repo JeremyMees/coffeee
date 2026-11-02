@@ -183,6 +183,7 @@ export async function mountInForm(
           producers: [],
           processes: [],
           varietals: [],
+          flavorNotes: [],
           ...initialValues,
         },
       })

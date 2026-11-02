@@ -115,6 +115,7 @@ describe('a coffee page', () => {
         { id: 's3', name: 'Anaerobic' },
       ],
       varietals: [{ id: 'v1', name: 'Geisha' }],
+      flavorNotes: [{ id: 'n1', name: 'Lime' }],
       link: 'https://example.com/ayele',
     }
 
@@ -124,6 +125,7 @@ describe('a coffee page', () => {
 
     expect(page.get(tid('detail-processes')).text()).toBe('Washed, Anaerobic')
     expect(page.get(tid('detail-varietals')).text()).toBe('Geisha')
+    expect(page.get(tid('coffee-card-flavor-note')).text()).toBe('Lime')
     const link = page.get(tid('coffee-link-out'))
     expect(link.attributes('href')).toBe('https://example.com/ayele')
     expect(link.attributes('target')).toBe('_blank')
@@ -186,6 +188,7 @@ describe('a coffee page', () => {
       producers: [],
       processes: [],
       varietals: [],
+      flavorNotes: [],
       link: null,
       altitudeFrom: null,
       altitudeTo: null,

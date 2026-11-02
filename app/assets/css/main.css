@@ -81,6 +81,11 @@
     line-height: 0.9;
     letter-spacing: -0.045em;
   }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 @media (prefers-reduced-transparency: reduce) {

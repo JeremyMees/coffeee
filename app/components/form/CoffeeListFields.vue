@@ -12,6 +12,12 @@ const listPickers: Record<CoffeeListField, ListPickerConfig> = {
     noun: 'varietal',
     id: 'coffee-varietals',
   },
+  flavorNotes: {
+    label: 'Flavor note',
+    endpoint: '/api/flavor-notes',
+    noun: 'flavor note',
+    id: 'coffee-flavor-notes',
+  },
   producers: {
     label: 'Producer',
     endpoint: '/api/producers',

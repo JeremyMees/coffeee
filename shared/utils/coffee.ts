@@ -5,7 +5,12 @@ const dayLength = 24 * 60 * 60 * 1000
 export const roastLevels = ['light', 'medium', 'medium-dark', 'dark'] as const
 export const roastedForOptions = ['espresso', 'filter', 'omni'] as const
 
-export const coffeeListFields = ['producers', 'processes', 'varietals'] as const
+export const coffeeListFields = [
+  'producers',
+  'processes',
+  'varietals',
+  'flavorNotes',
+] as const
 
 export const seededProcesses = [
   'Washed',
