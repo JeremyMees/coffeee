@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3'
-import { useDb } from '../../utils/db'
-import { listPendingInvites } from '../../utils/invites'
-import { requireAdmin } from '../../utils/session'
+import { useDb } from '#server/utils/db'
+import { listPendingInvites } from '#server/utils/invites'
+import { requireAdmin } from '#server/utils/session'
 
 export default defineEventHandler(async event => {
   await requireAdmin(event)

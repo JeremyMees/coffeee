@@ -6,10 +6,10 @@ import {
   setResponseStatus,
 } from 'h3'
 import { inviteEmailSchema } from '#shared/utils/schemas'
-import { useDb } from '../../utils/db'
-import { createInviteLink, inviteEmail } from '../../utils/invites'
-import { requireAdmin } from '../../utils/session'
-import { readValidBody } from '../../utils/validation'
+import { useDb } from '#server/utils/db'
+import { createInviteLink, inviteEmail } from '#server/utils/invites'
+import { requireAdmin } from '#server/utils/session'
+import { readValidBody } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
   const admin = await requireAdmin(event)

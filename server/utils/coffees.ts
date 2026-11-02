@@ -1,8 +1,13 @@
-import { and, asc, desc, eq, isNull, max } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, max, ne } from 'drizzle-orm'
 import { nameKey } from '#shared/utils/names'
-import type { NewCoffee } from '#shared/utils/schemas'
-import type { Database } from '../db/database'
-import { coffee, purchase, roaster } from '../db/schemas'
+import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
+import type { Database } from '#server/db/database'
+import { coffee, purchase, roaster } from '#server/db/schemas'
+
+interface Viewer {
+  id: string
+  role?: string | null
+}
 
 const coffeeColumns = {
   id: coffee.id,
@@ -107,17 +112,23 @@ export function listStock(db: Database, shelfId: string) {
     .orderBy(desc(max(purchase.purchasedOn)), desc(max(purchase.createdAt)))
 }
 
+export function canEditCoffee(viewer: Viewer, createdBy: string | null) {
+  return viewer.role === 'admin' || viewer.id === createdBy
+}
+
 export async function findShelfCoffee(
   db: Database,
-  input: { shelfId: string; coffeeId: string },
+  input: { shelfId: string; coffeeId: string; viewer: Viewer },
 ) {
   const [found] = await db
-    .select(coffeeColumns)
+    .select({ ...coffeeColumns, createdBy: coffee.createdBy })
     .from(coffee)
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
     .where(eq(coffee.id, input.coffeeId))
 
   if (!found) return undefined
+
+  const { createdBy, ...details } = found
 
   const purchases = await db
     .select({
@@ -137,5 +148,68 @@ export async function findShelfCoffee(
     )
     .orderBy(desc(purchase.purchasedOn), desc(purchase.createdAt))
 
-  return { ...found, purchases }
+  return {
+    ...details,
+    canEdit: canEditCoffee(input.viewer, createdBy),
+    purchases,
+  }
+}
+
+export function editCoffee(
+  db: Database,
+  input: { coffeeId: string; editor: Viewer; details: CoffeeDetails },
+) {
+  const { details } = input
+
+  return db.transaction(async tx => {
+    const [current] = await tx
+      .select({ createdBy: coffee.createdBy })
+      .from(coffee)
+      .where(eq(coffee.id, input.coffeeId))
+
+    if (!current) return { outcome: 'notFound' as const }
+
+    if (!canEditCoffee(input.editor, current.createdBy)) {
+      return { outcome: 'forbidden' as const }
+    }
+
+    const { id: roasterId } = await findOrCreateRoaster(tx, {
+      name: details.roaster,
+      createdBy: input.editor.id,
+    })
+    const key = nameKey(details.name)
+    const [taken] = await tx
+      .select({ roaster: roaster.name, name: coffee.name })
+      .from(coffee)
+      .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+      .where(
+        and(
+          eq(coffee.roasterId, roasterId),
+          eq(coffee.nameKey, key),
+          ne(coffee.id, input.coffeeId),
+        ),
+      )
+
+    if (taken) return { outcome: 'taken' as const, taken }
+
+    await tx
+      .update(coffee)
+      .set({
+        roasterId,
+        name: details.name,
+        nameKey: key,
+        roastLevel: details.roastLevel,
+        roastedFor: details.roastedFor,
+        colour: details.colour,
+      })
+      .where(eq(coffee.id, input.coffeeId))
+
+    const [edited] = await tx
+      .select(coffeeColumns)
+      .from(coffee)
+      .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+      .where(eq(coffee.id, input.coffeeId))
+
+    return { outcome: 'edited' as const, coffee: edited! }
+  })
 }

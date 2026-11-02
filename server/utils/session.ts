@@ -1,8 +1,8 @@
 import { createError, getRouterParam } from 'h3'
 import type { H3Event } from 'h3'
-import { useAuth } from './auth'
-import { useDb } from './db'
-import { findShelf } from './shelves'
+import { useAuth } from '#server/utils/auth'
+import { useDb } from '#server/utils/db'
+import { findShelf } from '#server/utils/shelves'
 
 export async function requireUser(event: H3Event) {
   const session = await useAuth().api.getSession({ headers: event.headers })

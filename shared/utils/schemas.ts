@@ -32,7 +32,7 @@ export const inviteEmailSchema = z.object({
     .pipe(z.email({ error: 'Enter a valid email' })),
 })
 
-export const newCoffeeSchema = z.object({
+export const coffeeDetailsSchema = z.object({
   name: requiredText(
     'Give the coffee a name',
     80,
@@ -48,6 +48,9 @@ export const newCoffeeSchema = z.object({
     error: 'Pick what it was roasted for',
   }),
   colour: z.enum(bagColours, { error: 'Pick a colour' }),
+})
+
+export const newCoffeeSchema = coffeeDetailsSchema.extend({
   purchasedOn: z.iso.date({ error: 'Enter the date you bought it' }),
   roastedOn: z.preprocess(
     blankToNull,
@@ -72,4 +75,5 @@ export const newCoffeeSchema = z.object({
   ),
 })
 
+export type CoffeeDetails = z.output<typeof coffeeDetailsSchema>
 export type NewCoffee = z.output<typeof newCoffeeSchema>

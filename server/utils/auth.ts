@@ -4,11 +4,11 @@ import type { BetterAuthPlugin } from 'better-auth'
 import { APIError, getOAuthState } from 'better-auth/api'
 import { admin, oAuthProxy } from 'better-auth/plugins'
 import { useRuntimeConfig } from 'nitropack/runtime'
-import type { Database } from '../db/database'
-import * as schema from '../db/schemas'
-import { useDb } from './db'
-import { claimInvite } from './invites'
-import { createShelf, shelfNameFor } from './shelves'
+import type { Database } from '#server/db/database'
+import * as schema from '#server/db/schemas'
+import { useDb } from '#server/utils/db'
+import { claimInvite } from '#server/utils/invites'
+import { createShelf, shelfNameFor } from '#server/utils/shelves'
 
 export interface AuthConfig {
   db: Database

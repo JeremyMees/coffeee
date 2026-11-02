@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3'
-import { useDb } from '../utils/db'
-import { requireUser } from '../utils/session'
-import { listShelves } from '../utils/shelves'
+import { useDb } from '#server/utils/db'
+import { requireUser } from '#server/utils/session'
+import { listShelves } from '#server/utils/shelves'
 
 export default defineEventHandler(async event => {
   const user = await requireUser(event)

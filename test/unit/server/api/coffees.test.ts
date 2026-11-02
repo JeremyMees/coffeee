@@ -2,6 +2,7 @@ import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import roastersHandler from '#server/api/roasters.get'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
+import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
 import { createShelf } from '#server/utils/shelves'
@@ -40,13 +41,14 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/stock', stockHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
+    .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
   const app = createApp().use(router)
 
   return toWebHandler(app)(new Request(`http://localhost:3000${path}`, init))
 }
 
-async function member() {
-  const user = await createTestUser(db)
+async function member(role = 'user') {
+  const user = await createTestUser(db, { role })
   const shelf = await createShelf(db, { name: 'Home', ownerId: user.id })
   const headers = await testAuth.signIn(user.id)
   headers.set('content-type', 'application/json')
@@ -180,6 +182,137 @@ describe('GET /api/shelves/:shelfId/coffees/:coffeeId', () => {
     })
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
+  const details = {
+    name: 'Ayele Fulasa Natural',
+    roaster: 'Square Mile',
+    roastLevel: 'medium',
+    roastedFor: 'omni',
+    colour: '#3d5a80',
+  }
+
+  async function addedCoffee() {
+    const creator = await member()
+    const added = await add(creator.shelf.id, creator.headers)
+    const { coffee: created } = await added.json()
+
+    return { creator, coffeeId: created.id as string }
+  }
+
+  function edit(
+    shelfId: string,
+    coffeeId: string,
+    headers: Headers,
+    body: unknown = details,
+  ) {
+    return request(`/api/shelves/${shelfId}/coffees/${coffeeId}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(body),
+    })
+  }
+
+  async function canEdit(shelfId: string, coffeeId: string, headers: Headers) {
+    const response = await request(
+      `/api/shelves/${shelfId}/coffees/${coffeeId}`,
+      { headers },
+    )
+
+    return (await response.json()).canEdit
+  }
+
+  it('lets the person who added it change its details', async () => {
+    const { creator, coffeeId } = await addedCoffee()
+
+    const response = await edit(creator.shelf.id, coffeeId, creator.headers)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ id: coffeeId, ...details })
+    expect(await canEdit(creator.shelf.id, coffeeId, creator.headers)).toBe(
+      true,
+    )
+  })
+
+  it('lets an admin change it from their own shelf', async () => {
+    const { coffeeId } = await addedCoffee()
+    const admin = await member('admin')
+
+    const response = await edit(admin.shelf.id, coffeeId, admin.headers)
+
+    expect(response.status).toBe(200)
+    expect(await canEdit(admin.shelf.id, coffeeId, admin.headers)).toBe(true)
+  })
+
+  it('refuses anyone else', async () => {
+    const { coffeeId } = await addedCoffee()
+    const other = await member()
+
+    const response = await edit(other.shelf.id, coffeeId, other.headers)
+
+    expect(response.status).toBe(403)
+    expect((await response.json()).statusMessage).toBe(
+      'Only the person who added this coffee or an admin can edit it',
+    )
+    expect(await canEdit(other.shelf.id, coffeeId, other.headers)).toBe(false)
+  })
+
+  it('refuses a roaster and name that already exist with a clear message', async () => {
+    const { creator, coffeeId } = await addedCoffee()
+    await add(creator.shelf.id, creator.headers, {
+      ...coffee,
+      name: 'Red Brick',
+    })
+
+    const response = await edit(creator.shelf.id, coffeeId, creator.headers, {
+      ...details,
+      name: 'red brick',
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(body.data).toEqual({
+      errors: { name: 'Square Mile already has a coffee called Red Brick' },
+    })
+  })
+
+  it('explains what is wrong in plain words', async () => {
+    const { creator, coffeeId } = await addedCoffee()
+
+    const response = await edit(creator.shelf.id, coffeeId, creator.headers, {
+      ...details,
+      roastLevel: 'burnt',
+    })
+
+    expect(response.status).toBe(400)
+    expect((await response.json()).statusMessage).toBe('Pick a roast level')
+  })
+
+  it('says when there is no such coffee', async () => {
+    const { creator } = await addedCoffee()
+
+    const response = await edit(creator.shelf.id, 'nope', creator.headers)
+
+    expect(response.status).toBe(404)
+  })
+
+  it('refuses a shelf the editor is not a member of', async () => {
+    const { creator, coffeeId } = await addedCoffee()
+    const admin = await member('admin')
+
+    const response = await edit(creator.shelf.id, coffeeId, admin.headers)
+
+    expect(response.status).toBe(404)
+  })
+
+  it('refuses anonymous requests', async () => {
+    const { creator, coffeeId } = await addedCoffee()
+
+    const response = await edit(creator.shelf.id, coffeeId, new Headers())
+
+    expect(response.status).toBe(401)
   })
 })
 

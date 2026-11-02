@@ -108,3 +108,61 @@ test('explains missing details and clears them once fixed', async ({
   await expect(sheet.getByText('Pick a roast level')).toBeHidden()
   await expect(sheet.getByText('Pick a roaster or add a new one')).toBeVisible()
 })
+
+test('lets the person who added a coffee fix its details', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  const newRoaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await page
+    .getByRole('list', { name: 'Current stock' })
+    .getByRole('link')
+    .click()
+  await expect(page).toHaveURL(/\/coffees\//)
+
+  await page.getByRole('button', { name: 'Edit' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Edit coffee' })
+  await expect(sheet.getByLabel('Coffee')).toHaveValue('Ayele Fulasa')
+  await sheet.getByLabel('Coffee').fill('Ayele Fulasa Natural')
+  await sheet.getByRole('combobox', { name: 'Roaster' }).fill(newRoaster)
+  await page.getByRole('option', { name: `Add “${newRoaster}”` }).click()
+  await sheet.getByText('Medium', { exact: true }).click()
+  await sheet.getByRole('button', { name: 'Save changes' }).click()
+
+  await expect(sheet).toBeHidden()
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Ayele Fulasa Natural' }),
+  ).toBeVisible()
+  await expect(page.getByRole('main')).toContainText(newRoaster)
+  await expect(page.getByText('250 g · €16.50')).toBeVisible()
+
+  await page.getByRole('main').getByRole('link', { name: 'Stock' }).click()
+
+  await expect(
+    page.getByRole('list', { name: 'Current stock' }).getByRole('link'),
+  ).toContainText('Medium · Filter')
+})
+
+test('refuses a name the roaster already has', async ({ page, member }) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await addCoffee(page, { name: 'Red Brick', roaster, newRoaster: false })
+  await page
+    .getByRole('list', { name: 'Current stock' })
+    .getByRole('link', { name: /Ayele Fulasa/ })
+    .click()
+  await expect(page).toHaveURL(/\/coffees\//)
+
+  await page.getByRole('button', { name: 'Edit' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Edit coffee' })
+  await sheet.getByLabel('Coffee').fill('red brick')
+  await sheet.getByRole('button', { name: 'Save changes' }).click()
+
+  await expect(
+    sheet.getByText(`${roaster} already has a coffee called Red Brick`),
+  ).toBeVisible()
+})

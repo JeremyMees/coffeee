@@ -4,9 +4,9 @@ import {
   getRouterParam,
   sendNoContent,
 } from 'h3'
-import { useDb } from '../../utils/db'
-import { revokeInvite } from '../../utils/invites'
-import { requireAdmin } from '../../utils/session'
+import { useDb } from '#server/utils/db'
+import { revokeInvite } from '#server/utils/invites'
+import { requireAdmin } from '#server/utils/session'
 
 export default defineEventHandler(async event => {
   await requireAdmin(event)

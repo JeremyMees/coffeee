@@ -1,9 +1,9 @@
 import { defineEventHandler, setResponseStatus } from 'h3'
 import { newCoffeeSchema } from '#shared/utils/schemas'
-import { addCoffee } from '../../../../utils/coffees'
-import { useDb } from '../../../../utils/db'
-import { requireShelf } from '../../../../utils/session'
-import { readValidBody } from '../../../../utils/validation'
+import { addCoffee } from '#server/utils/coffees'
+import { useDb } from '#server/utils/db'
+import { requireShelf } from '#server/utils/session'
+import { readValidBody } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
   const { user, shelf } = await requireShelf(event)

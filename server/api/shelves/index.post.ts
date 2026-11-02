@@ -1,9 +1,9 @@
 import { defineEventHandler, setResponseStatus } from 'h3'
 import { newShelfSchema } from '#shared/utils/schemas'
-import { useDb } from '../../utils/db'
-import { requireUser } from '../../utils/session'
-import { createShelf } from '../../utils/shelves'
-import { readValidBody } from '../../utils/validation'
+import { useDb } from '#server/utils/db'
+import { requireUser } from '#server/utils/session'
+import { createShelf } from '#server/utils/shelves'
+import { readValidBody } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
   const user = await requireUser(event)

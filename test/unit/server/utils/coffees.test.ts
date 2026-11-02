@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { coffee, purchase, roaster } from '#server/db/schemas'
 import {
   addCoffee,
+  editCoffee,
   findShelfCoffee,
   listRoasters,
   listStock,
@@ -235,6 +236,7 @@ describe('a coffee on a shelf', () => {
     const found = await findShelfCoffee(db, {
       shelfId: home.id,
       coffeeId: added.id,
+      viewer: sarah,
     })
 
     expect(found).toMatchObject({
@@ -253,10 +255,14 @@ describe('a coffee on a shelf', () => {
   })
 
   it('is not found when it does not exist', async () => {
-    const { db, home } = await setup()
+    const { db, sarah, home } = await setup()
 
     expect(
-      await findShelfCoffee(db, { shelfId: home.id, coffeeId: 'unknown' }),
+      await findShelfCoffee(db, {
+        shelfId: home.id,
+        coffeeId: 'unknown',
+        viewer: sarah,
+      }),
     ).toBeUndefined()
   })
 
@@ -274,12 +280,183 @@ describe('a coffee on a shelf', () => {
     const found = await findShelfCoffee(db, {
       shelfId: home.id,
       coffeeId: only!.id,
+      viewer: sarah,
     })
 
     expect(found!.purchases.map(item => item.purchasedOn)).toEqual([
       '2026-11-01',
       '2026-09-01',
     ])
+  })
+
+  it('can be edited by the person who added it and by admins only', async () => {
+    const { db, sarah, tom, home } = await setup()
+    const admin = await createTestUser(db, { role: 'admin' })
+    const { coffee: added } = await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee(),
+    })
+
+    const canEdit = async (viewer: { id: string; role: string | null }) =>
+      (await findShelfCoffee(db, {
+        shelfId: home.id,
+        coffeeId: added.id,
+        viewer,
+      }))!.canEdit
+
+    expect(await canEdit(sarah)).toBe(true)
+    expect(await canEdit(admin)).toBe(true)
+    expect(await canEdit(tom)).toBe(false)
+  })
+})
+
+describe('editing a coffee', () => {
+  async function withCoffee() {
+    const context = await setup()
+    const { coffee: added } = await addCoffee(context.db, {
+      shelfId: context.home.id,
+      userId: context.sarah.id,
+      coffee: newCoffee(),
+    })
+
+    return { ...context, added }
+  }
+
+  const details = {
+    name: 'Ayele Fulasa Natural',
+    roaster: 'Square Mile',
+    roastLevel: 'medium',
+    roastedFor: 'omni',
+    colour: '#3d5a80',
+  } as const
+
+  it('changes its shared details for the person who added it', async () => {
+    const { db, sarah, added } = await withCoffee()
+
+    const result = await editCoffee(db, {
+      coffeeId: added.id,
+      editor: sarah,
+      details,
+    })
+
+    expect(result).toEqual({
+      outcome: 'edited',
+      coffee: { id: added.id, ...details },
+    })
+  })
+
+  it('lets an admin change it', async () => {
+    const { db, added } = await withCoffee()
+    const admin = await createTestUser(db, { role: 'admin' })
+
+    const result = await editCoffee(db, {
+      coffeeId: added.id,
+      editor: admin,
+      details,
+    })
+
+    expect(result.outcome).toBe('edited')
+  })
+
+  it('refuses everyone else and leaves the coffee as it was', async () => {
+    const { db, tom, added } = await withCoffee()
+
+    const result = await editCoffee(db, {
+      coffeeId: added.id,
+      editor: tom,
+      details,
+    })
+
+    expect(result).toEqual({ outcome: 'forbidden' })
+    expect(await db.select({ name: coffee.name }).from(coffee)).toEqual([
+      { name: 'Ayele Fulasa' },
+    ])
+  })
+
+  it('says when the coffee does not exist', async () => {
+    const { db, sarah } = await withCoffee()
+
+    const result = await editCoffee(db, {
+      coffeeId: 'unknown',
+      editor: sarah,
+      details,
+    })
+
+    expect(result).toEqual({ outcome: 'notFound' })
+  })
+
+  it('refuses a roaster and name that another coffee already has', async () => {
+    const { db, sarah, home, added } = await withCoffee()
+    await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee({ name: 'Red Brick' }),
+    })
+
+    const result = await editCoffee(db, {
+      coffeeId: added.id,
+      editor: sarah,
+      details: { ...details, name: 'red-brick', roaster: 'square mile' },
+    })
+
+    expect(result).toEqual({
+      outcome: 'taken',
+      taken: { roaster: 'Square Mile', name: 'Red Brick' },
+    })
+    expect(
+      await db.select({ name: coffee.name }).from(coffee).orderBy(coffee.name),
+    ).toEqual([{ name: 'Ayele Fulasa' }, { name: 'Red Brick' }])
+  })
+
+  it('allows fixing the case of its own name', async () => {
+    const { db, sarah, added } = await withCoffee()
+
+    const result = await editCoffee(db, {
+      coffeeId: added.id,
+      editor: sarah,
+      details: { ...details, name: 'AYELE FULASA' },
+    })
+
+    expect(result).toMatchObject({
+      outcome: 'edited',
+      coffee: { name: 'AYELE FULASA' },
+    })
+  })
+
+  it('moves it to a roaster that does not exist yet', async () => {
+    const { db, sarah, added } = await withCoffee()
+
+    await editCoffee(db, {
+      coffeeId: added.id,
+      editor: sarah,
+      details: { ...details, roaster: 'April' },
+    })
+
+    expect((await listRoasters(db)).map(item => item.name)).toEqual([
+      'April',
+      'Square Mile',
+    ])
+  })
+
+  it('never touches anyone’s purchases', async () => {
+    const { db, sarah, tom, work, added } = await withCoffee()
+    await addCoffee(db, {
+      shelfId: work.id,
+      userId: tom.id,
+      coffee: newCoffee({ purchasedOn: '2026-10-01', price: 12 }),
+    })
+    const before = await db.select().from(purchase).orderBy(purchase.id)
+
+    await editCoffee(db, {
+      coffeeId: added.id,
+      editor: sarah,
+      details: { ...details, roaster: 'April' },
+    })
+
+    expect(await db.select().from(purchase).orderBy(purchase.id)).toEqual(
+      before,
+    )
   })
 })
 

@@ -9,6 +9,8 @@ import { forgetLastShelf, testUser } from './fixtures'
 const server = vi.hoisted(() => ({
   stock: [] as unknown[],
   added: [] as unknown[],
+  edits: [] as unknown[],
+  coffee: {} as Record<string, unknown>,
 }))
 
 function daysAgo(days: number) {
@@ -44,32 +46,62 @@ registerEndpoint('/api/shelves/home/coffees', {
   },
 })
 
-registerEndpoint('/api/shelves/home/coffees/c1', () => ({
-  id: 'c1',
-  name: 'Ayele Fulasa',
-  roaster: 'Square Mile',
-  roastLevel: 'light',
-  roastedFor: 'filter',
-  colour: '#2f6f4f',
-  purchases: [
-    {
-      id: 'p2',
-      purchasedOn: '2026-11-01',
-      roastedOn: '2026-10-28',
-      sizeGrams: 250,
-      priceCents: 1650,
-      finishedAt: null,
-    },
-    {
-      id: 'p1',
-      purchasedOn: '2026-09-01',
-      roastedOn: null,
-      sizeGrams: null,
-      priceCents: null,
-      finishedAt: '2026-09-20T10:00:00.000Z',
-    },
-  ],
-}))
+function ayele() {
+  return {
+    id: 'c1',
+    name: 'Ayele Fulasa',
+    roaster: 'Square Mile',
+    roastLevel: 'light',
+    roastedFor: 'filter',
+    colour: '#2f6f4f',
+    canEdit: true,
+    purchases: [
+      {
+        id: 'p2',
+        purchasedOn: '2026-11-01',
+        roastedOn: '2026-10-28',
+        sizeGrams: 250,
+        priceCents: 1650,
+        finishedAt: null,
+      },
+      {
+        id: 'p1',
+        purchasedOn: '2026-09-01',
+        roastedOn: null,
+        sizeGrams: null,
+        priceCents: null,
+        finishedAt: '2026-09-20T10:00:00.000Z',
+      },
+    ],
+  }
+}
+
+registerEndpoint('/api/shelves/home/coffees/c1', {
+  method: 'GET',
+  handler: () => server.coffee,
+})
+
+registerEndpoint('/api/shelves/home/coffees/c1', {
+  method: 'PATCH',
+  handler: async event => {
+    const body = await readBody(event)
+
+    if (body.name === 'Red Brick') {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Square Mile already has a coffee called Red Brick',
+        data: {
+          errors: { name: 'Square Mile already has a coffee called Red Brick' },
+        },
+      })
+    }
+
+    server.edits.push(body)
+    server.coffee = { ...server.coffee, ...body }
+
+    return { id: 'c1', ...body }
+  },
+})
 
 beforeEach(() => {
   forgetLastShelf()
@@ -79,6 +111,8 @@ beforeEach(() => {
   useAddCoffee().value = false
   server.stock = []
   server.added = []
+  server.edits = []
+  server.coffee = ayele()
 })
 
 describe('the Stock page', () => {
@@ -152,10 +186,110 @@ describe('a coffee page', () => {
     expect(page.text()).toContain('Price unknown')
   })
 
+  it('offers no edit to someone who can only read it', async () => {
+    server.coffee = { ...ayele(), canEdit: false }
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.find('main header button').exists()).toBe(false)
+  })
+
   it('is not found when the shelf has no such coffee', async () => {
     await mountSuspended(App, { route: '/shelves/home/coffees/nope' })
 
     expect(useError().value).toMatchObject({ statusCode: 404 })
+  })
+})
+
+function dialog() {
+  return document.body.querySelector<HTMLElement>('[role="dialog"]')!
+}
+
+function field(selector: string) {
+  return dialog().querySelector<HTMLInputElement>(selector)!
+}
+
+async function type(selector: string, value: string) {
+  const input = field(selector)
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  await flushPromises()
+}
+
+async function submit() {
+  dialog()
+    .querySelector('form')!
+    .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+  await flushPromises()
+}
+
+describe('the edit coffee sheet', () => {
+  async function openSheet() {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+      attachTo: document.body,
+    })
+
+    await page.get('main header button').trigger('click')
+    await flushPromises()
+
+    return page
+  }
+
+  it('opens with the current details filled in', async () => {
+    const page = await openSheet()
+
+    expect(dialog().textContent).toContain('Edit coffee')
+    expect(field('#coffee-name').value).toBe('Ayele Fulasa')
+    expect(field('#coffee-roaster').value).toBe('Square Mile')
+    expect(field('input[name="roastLevel"][value="light"]').checked).toBe(true)
+    expect(field('input[name="roastedFor"][value="filter"]').checked).toBe(true)
+    expect(field('input[name="colour"][value="#2f6f4f"]').checked).toBe(true)
+
+    page.unmount()
+  })
+
+  it('saves the new details and shows them on the page', async () => {
+    const page = await openSheet()
+
+    await type('#coffee-name', 'Ayele Fulasa Natural')
+    field('input[name="roastLevel"][value="medium"]').click()
+    await submit()
+
+    await vi.waitFor(() => expect(server.edits).toHaveLength(1))
+    expect(server.edits).toEqual([
+      {
+        name: 'Ayele Fulasa Natural',
+        roaster: 'Square Mile',
+        roastLevel: 'medium',
+        roastedFor: 'filter',
+        colour: '#2f6f4f',
+      },
+    ])
+    await vi.waitFor(() =>
+      expect(page.get('h1').text()).toBe('Ayele Fulasa Natural'),
+    )
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+
+    page.unmount()
+  })
+
+  it('shows a name that is taken next to the field', async () => {
+    const page = await openSheet()
+
+    await type('#coffee-name', 'Red Brick')
+    await submit()
+
+    await vi.waitFor(() =>
+      expect(dialog().textContent).toContain(
+        'Square Mile already has a coffee called Red Brick',
+      ),
+    )
+    expect(server.edits).toEqual([])
+
+    page.unmount()
   })
 })
 
@@ -172,28 +306,6 @@ describe('the add coffee sheet', () => {
     await flushPromises()
 
     return page
-  }
-
-  function dialog() {
-    return document.body.querySelector<HTMLElement>('[role="dialog"]')!
-  }
-
-  function field(selector: string) {
-    return dialog().querySelector<HTMLInputElement>(selector)!
-  }
-
-  async function type(selector: string, value: string) {
-    const input = field(selector)
-    input.value = value
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    await flushPromises()
-  }
-
-  async function submit() {
-    dialog()
-      .querySelector('form')!
-      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
-    await flushPromises()
   }
 
   async function pickRoaster(search: string, option: string) {
@@ -320,6 +432,7 @@ describe('the add coffee sheet', () => {
 
     page.unmount()
   })
+
   it('shows what the server refused next to the field', async () => {
     const page = await openSheet()
 

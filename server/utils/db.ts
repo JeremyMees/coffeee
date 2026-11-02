@@ -2,7 +2,7 @@ import { attachDatabasePool } from '@vercel/functions'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { useRuntimeConfig } from 'nitropack/runtime'
-import * as schema from '../db/schemas'
+import * as schema from '#server/db/schemas'
 
 let db: ReturnType<typeof createDb> | undefined
 

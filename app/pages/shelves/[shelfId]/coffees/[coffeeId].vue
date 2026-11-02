@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ArrowLeftIcon } from '@lucide/vue'
+import { ArrowLeftIcon, PencilIcon } from '@lucide/vue'
 
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
 const shelfId = computed(() => route.params.shelfId)
 const coffeeId = computed(() => route.params.coffeeId)
 
+const editing = ref(false)
+
 const { data: coffee, error } = await useFetch(
   () => `/api/shelves/${shelfId.value}/coffees/${coffeeId.value}`,
+  { key: `coffee:${shelfId.value}:${coffeeId.value}` },
 )
 
 if (error.value || !coffee.value) {
@@ -20,6 +23,14 @@ const latestRoastedOn = computed(
     coffee.value?.purchases.find(purchase => purchase.roastedOn)?.roastedOn ??
     null,
 )
+
+async function refreshEdited() {
+  await refreshNuxtData([
+    `coffee:${shelfId.value}:${coffeeId.value}`,
+    `stock:${shelfId.value}`,
+    'roasters',
+  ])
+}
 
 const euros = new Intl.NumberFormat(undefined, {
   style: 'currency',
@@ -44,9 +55,20 @@ function formatDate(date: string) {
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
       Stock
     </NuxtLink>
-    <header class="mt-4">
-      <p class="text-xs uppercase">{{ coffee.roaster }}</p>
-      <h1 class="mt-2 text-[48px] lg:text-[72px]">{{ coffee.name }}</h1>
+    <header class="mt-4 flex items-end justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase">{{ coffee.roaster }}</p>
+        <h1 class="mt-2 text-[48px] lg:text-[72px]">{{ coffee.name }}</h1>
+      </div>
+      <button
+        v-if="coffee.canEdit"
+        type="button"
+        class="mb-2 flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground"
+        @click="editing = true"
+      >
+        <PencilIcon class="size-4" aria-hidden="true" />
+        Edit
+      </button>
     </header>
     <CoffeeCard
       class="mt-8"
@@ -88,5 +110,12 @@ function formatDate(date: string) {
         </li>
       </ul>
     </section>
+    <EditCoffeeSheet
+      v-if="coffee.canEdit"
+      v-model:open="editing"
+      :shelf-id="shelfId"
+      :coffee="coffee"
+      @saved="refreshEdited"
+    />
   </main>
 </template>
