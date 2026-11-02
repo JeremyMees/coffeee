@@ -1,6 +1,7 @@
 export * from './auth.schema'
 export * from './catalog.schema'
 export * from './flavor-note.schema'
+export * from './grinder.schema'
 export * from './invite.schema'
 export * from './origin.schema'
 export * from './process.schema'

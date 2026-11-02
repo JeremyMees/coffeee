@@ -13,15 +13,19 @@ import {
 
 const known = { processes: [] as { id: string; name: string }[] }
 const searches: string[] = []
+const queries: Record<string, string>[] = []
 
 registerEndpoint('/api/processes', event => {
-  searches.push(new URL(event.path, 'http://test').searchParams.get('search')!)
+  const params = new URL(event.path, 'http://test').searchParams
+  searches.push(params.get('search')!)
+  queries.push(Object.fromEntries(params))
 
   return fakeList(() => known.processes)(event)
 })
 
 beforeEach(() => {
   searches.length = 0
+  queries.length = 0
   known.processes = [
     { id: 'p1', name: 'Co fermentation' },
     { id: 'p2', name: 'Washed' },
@@ -61,6 +65,16 @@ describe('ListPicker', () => {
       expect(searches).toContain('co ferm')
       expect(pickerOptions()).toEqual(['Co fermentation', 'Add “co ferm”'])
     })
+  })
+
+  it('narrows the list with extra params', async () => {
+    await mountPicker({ params: { brand: 'Fellow' } })
+
+    await type('process', 'wa')
+
+    await vi.waitFor(() =>
+      expect(queries).toContainEqual({ brand: 'Fellow', search: 'wa' }),
+    )
   })
 
   it('waits for typing to pause before asking the list', async () => {

@@ -120,6 +120,23 @@ describe('a coffee page', () => {
     expect(api.verdicts).toEqual([{ rating: 5 }, { wouldBuyAgain: true }])
   })
 
+  it('keeps a grind setting for the coffee, not on its card', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    await page.get(tid('grind-setting-input')).setValue('12')
+    await page.get(tid('grind-setting-form')).trigger('submit')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('grind-setting-for')).text()).toBe(
+        'Fellow Opus Gen 2 · Espresso',
+      ),
+    )
+    expect(page.get(tid('grind-setting-value')).text()).toBe('12')
+    expect(page.get(tid('coffee-card')).text()).not.toContain('Opus')
+  })
+
   it('is not found when the shelf has no such coffee', async () => {
     await mountSuspended(App, { route: '/shelves/home/coffees/nope' })
 

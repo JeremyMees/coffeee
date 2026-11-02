@@ -6,18 +6,26 @@ defineOptions({ inheritAttrs: false })
 
 const model = defineModel<string>({ default: '' })
 
-const props = defineProps<{
-  id: string
-  endpoint: string
-  placeholder: string
-  hint: string
-  invalid?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    id: string
+    endpoint: string
+    placeholder: string
+    hint: string
+    invalid?: boolean
+    params?: Record<string, string>
+  }>(),
+  { params: () => ({}) },
+)
 
 const search = ref(model.value)
 const searched = refDebounced(search, 150)
 
-const { data } = useListSearch(() => props.endpoint, searched)
+const { data } = useListSearch(
+  () => props.endpoint,
+  searched,
+  () => props.params,
+)
 const entries = computed(() => data.value ?? [])
 
 const key = computed(() => nameKey(search.value))

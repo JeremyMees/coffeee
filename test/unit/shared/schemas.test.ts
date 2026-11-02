@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
 import {
   coffeeDetailsSchema,
+  grinderModelSearchSchema,
+  grindSettingSchema,
   inviteEmailSchema,
+  newBrewMethodSchema,
   newCoffeeSchema,
+  newGrinderSchema,
   originListSearchSchema,
   newShelfSchema,
   purchaseSchema,
@@ -414,6 +418,91 @@ describe('verdictSchema', () => {
   it('explains an empty change', () => {
     expect(errorsOf(verdictSchema, {})).toEqual({
       form: 'Change the rating or whether you would buy it again',
+    })
+  })
+})
+
+describe('newGrinderSchema', () => {
+  it('takes a trimmed brand and model', () => {
+    expect(
+      newGrinderSchema.parse({ brand: ' Fellow ', model: 'Opus Gen 2 ' }),
+    ).toEqual({ brand: 'Fellow', model: 'Opus Gen 2' })
+  })
+
+  it('asks for a brand and a model', () => {
+    expect(errorsOf(newGrinderSchema, { brand: '', model: ' ' })).toEqual({
+      brand: 'Pick a brand or add a new one',
+      model: 'Pick a model or add a new one',
+    })
+  })
+
+  it('explains a brand or model that is too long', () => {
+    expect(
+      errorsOf(newGrinderSchema, {
+        brand: 'b'.repeat(61),
+        model: 'm'.repeat(61),
+      }),
+    ).toEqual({
+      brand: 'Keep the brand to 60 characters or fewer',
+      model: 'Keep the model to 60 characters or fewer',
+    })
+  })
+})
+
+describe('grinderModelSearchSchema', () => {
+  it('searches all models when no brand is picked', () => {
+    expect(grinderModelSearchSchema.parse({})).toEqual({
+      search: '',
+      brand: '',
+    })
+  })
+})
+
+describe('newBrewMethodSchema', () => {
+  it('asks for a name of 40 characters or fewer', () => {
+    expect(newBrewMethodSchema.parse({ name: ' Siphon ' })).toEqual({
+      name: 'Siphon',
+    })
+    expect(errorsOf(newBrewMethodSchema, { name: '' })).toEqual({
+      name: 'Give the brew method a name',
+    })
+    expect(errorsOf(newBrewMethodSchema, { name: 'x'.repeat(41) })).toEqual({
+      name: 'Keep the name to 40 characters or fewer',
+    })
+  })
+})
+
+describe('grindSettingSchema', () => {
+  const target = { grinderId: 'g1', brewMethodId: 'b1' }
+
+  it('takes a trimmed setting as free text', () => {
+    expect(grindSettingSchema.parse({ ...target, setting: ' 1.2.3 ' })).toEqual(
+      { ...target, setting: '1.2.3' },
+    )
+  })
+
+  it('clears a blank setting', () => {
+    for (const setting of ['', '  ', null, undefined]) {
+      expect(grindSettingSchema.parse({ ...target, setting })).toEqual({
+        ...target,
+        setting: null,
+      })
+    }
+  })
+
+  it('asks for a grinder and a brew method', () => {
+    expect(errorsOf(grindSettingSchema, { setting: '12' })).toEqual({
+      grinderId: 'Pick a grinder',
+      brewMethodId: 'Pick a brew method',
+    })
+  })
+
+  it('explains a setting that is too long or not text', () => {
+    expect(
+      errorsOf(grindSettingSchema, { ...target, setting: '1'.repeat(31) }),
+    ).toEqual({ setting: 'Keep the setting to 30 characters or fewer' })
+    expect(errorsOf(grindSettingSchema, { ...target, setting: 12 })).toEqual({
+      setting: 'Write the setting as text',
     })
   })
 })

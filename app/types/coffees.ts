@@ -8,7 +8,12 @@ export type StockCoffee =
 
 export type EditableCoffee = Omit<
   ShelfCoffee,
-  'canEdit' | 'purchases' | 'photoUrl' | 'rating' | 'wouldBuyAgain'
+  | 'canEdit'
+  | 'purchases'
+  | 'photoUrl'
+  | 'rating'
+  | 'wouldBuyAgain'
+  | 'grindSettings'
 >
 
 export type CardCoffee = Pick<

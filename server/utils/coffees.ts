@@ -32,6 +32,7 @@ import type { CoffeeList } from '#server/types/lists'
 import type { EditableCoffeePhoto } from '#server/types/photos'
 import { describeOrigins, originsOf } from '#server/utils/origins'
 import { deletePhoto } from '#server/utils/photos'
+import { grindSettingsOf } from '#server/utils/grind-settings'
 import { addPurchase, purchaseColumns } from '#server/utils/purchases'
 import { findVerdict, verdictOn } from '#server/utils/verdicts'
 
@@ -274,6 +275,7 @@ export async function findShelfCoffee(
     ...(await findVerdict(db, input)),
     canEdit: canEditCoffee(input.viewer, createdBy),
     purchases,
+    grindSettings: await grindSettingsOf(db, input),
   }
 }
 

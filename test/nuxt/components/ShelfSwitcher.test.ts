@@ -53,6 +53,9 @@ describe('ShelfSwitcher', () => {
     expect(byTestId('shelf-menu-new')!.getAttribute('href')).toBe(
       '/shelves/new',
     )
+    expect(byTestId('shelf-menu-settings')!.getAttribute('href')).toBe(
+      '/shelves/work/settings',
+    )
     expect(menu.querySelector('[aria-current="page"]')?.textContent).toBe(
       'Work',
     )

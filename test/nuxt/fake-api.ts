@@ -45,6 +45,7 @@ export function ayele() {
     rating: null as number | null,
     wouldBuyAgain: false,
     canEdit: true,
+    grindSettings: [] as ShelfGrindSetting[],
     purchases: [
       {
         id: 'p2',
@@ -66,6 +67,17 @@ export function ayele() {
   }
 }
 
+export function opus() {
+  return { id: 'opus', brand: 'Fellow', model: 'Opus Gen 2' }
+}
+
+export function brewMethods() {
+  return [
+    { id: 'espresso', name: 'Espresso' },
+    { id: 'pour-over', name: 'Pour over' },
+  ]
+}
+
 export const api = {
   stock: [] as unknown[],
   added: [] as unknown[],
@@ -77,6 +89,13 @@ export const api = {
   purchaseFails: false,
   verdicts: [] as unknown[],
   verdictFails: false,
+  grinders: [opus()] as OwnedGrinder[],
+  grinderCalls: [] as unknown[],
+  grinderFails: false,
+  brewMethods: brewMethods() as ListedBrewMethod[],
+  brewMethodCalls: [] as unknown[],
+  grindSettingCalls: [] as unknown[],
+  grindSettingFails: false,
   coffee: ayele() as Record<string, unknown>,
 }
 
@@ -120,6 +139,13 @@ export function resetApi() {
   api.purchaseFails = false
   api.verdicts = []
   api.verdictFails = false
+  api.grinders = [opus()]
+  api.grinderCalls = []
+  api.grinderFails = false
+  api.brewMethods = brewMethods()
+  api.brewMethodCalls = []
+  api.grindSettingCalls = []
+  api.grindSettingFails = false
   api.coffee = ayele()
 }
 
@@ -335,6 +361,136 @@ export function fakeApi() {
         rating: api.coffee.rating,
         wouldBuyAgain: api.coffee.wouldBuyAgain,
       }
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/coffees/c1/grind-settings', {
+    method: 'PUT',
+    handler: async event => {
+      const body = await readBody(event)
+      api.grindSettingCalls.push(body)
+
+      if (api.grindSettingFails) {
+        throw createError({
+          statusCode: 404,
+          statusMessage: 'This shelf does not own that grinder',
+        })
+      }
+
+      const grinder = api.grinders.find(owned => owned.id === body.grinderId)!
+      const method = api.brewMethods.find(
+        listed => listed.id === body.brewMethodId,
+      )!
+      const others = (api.coffee.grindSettings as ShelfGrindSetting[]).filter(
+        saved =>
+          saved.grinderId !== body.grinderId ||
+          saved.brewMethodId !== body.brewMethodId,
+      )
+      const saved = body.setting
+        ? [
+            {
+              grinderId: grinder.id,
+              brand: grinder.brand,
+              model: grinder.model,
+              brewMethodId: method.id,
+              brewMethod: method.name,
+              setting: body.setting,
+            },
+          ]
+        : []
+      api.coffee = { ...api.coffee, grindSettings: [...others, ...saved] }
+
+      return body
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/grinders', {
+    method: 'GET',
+    handler: () => api.grinders,
+  })
+
+  registerEndpoint('/api/shelves/home/grinders', {
+    method: 'POST',
+    handler: async event => {
+      const body = await readBody(event)
+      api.grinderCalls.push({ own: body })
+
+      if (api.grinderFails) {
+        throw createError({
+          statusCode: 500,
+          statusMessage: 'The grinder could not be added',
+        })
+      }
+
+      const owned = { id: `g${api.grinders.length + 1}`, ...body }
+      api.grinders = [...api.grinders, owned]
+
+      return owned
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/grinders/opus', {
+    method: 'DELETE',
+    handler: () => {
+      api.grinderCalls.push({ disown: 'opus' })
+
+      if (api.grinderFails) {
+        throw createError({
+          statusCode: 404,
+          statusMessage: 'This shelf does not own that grinder',
+        })
+      }
+
+      api.grinders = api.grinders.filter(owned => owned.id !== 'opus')
+
+      return { id: 'opus' }
+    },
+  })
+
+  registerEndpoint(
+    '/api/grinder-brands',
+    fakeList(() => [
+      { id: 'b1', name: 'Fellow' },
+      { id: 'b2', name: 'Niche' },
+    ]),
+  )
+
+  registerEndpoint('/api/grinders', event => {
+    const models: Record<string, ListEntry[]> = {
+      fellow: [
+        { id: 'opus', name: 'Opus Gen 2' },
+        { id: 'ode', name: 'Ode Gen 2' },
+      ],
+    }
+
+    return fakeList(
+      () => models[nameKey(String(getQuery(event).brand ?? ''))] ?? [],
+    )(event)
+  })
+
+  registerEndpoint('/api/brew-methods', {
+    method: 'GET',
+    handler: () => api.brewMethods,
+  })
+
+  registerEndpoint('/api/brew-methods', {
+    method: 'POST',
+    handler: async event => {
+      const body = await readBody(event)
+      api.brewMethodCalls.push(body)
+
+      if (body.name === 'Espresso') {
+        throw createError({
+          statusCode: 409,
+          statusMessage: 'Espresso is already a brew method',
+          data: { errors: { name: 'Espresso is already a brew method' } },
+        })
+      }
+
+      const added = { id: nameKey(body.name), name: body.name }
+      api.brewMethods = [...api.brewMethods, added]
+
+      return added
     },
   })
 

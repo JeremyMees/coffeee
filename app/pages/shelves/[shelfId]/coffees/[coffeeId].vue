@@ -152,6 +152,11 @@ const outlined =
         <dd :data-testid="`detail-${row.key}`">{{ row.value }}</dd>
       </template>
     </dl>
+    <CoffeeGrindSettings
+      :shelf-id="shelfId"
+      :coffee-id="coffee.id"
+      :grind-settings="coffee.grindSettings"
+    />
     <section class="mt-10">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <h2 class="text-[28px]">Bags on this shelf</h2>

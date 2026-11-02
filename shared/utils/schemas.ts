@@ -270,3 +270,43 @@ export const verdictSchema = z
     change => change.rating !== undefined || change.wouldBuyAgain !== undefined,
     'Change the rating or whether you would buy it again',
   )
+
+export const newGrinderSchema = z.object({
+  brand: requiredText(
+    'Pick a brand or add a new one',
+    60,
+    'Keep the brand to 60 characters or fewer',
+  ),
+  model: requiredText(
+    'Pick a model or add a new one',
+    60,
+    'Keep the model to 60 characters or fewer',
+  ),
+})
+
+export const grinderModelSearchSchema = listSearchSchema.extend({
+  brand: z
+    .string({ error: 'Pick a brand as a single piece of text' })
+    .max(60, 'Keep the brand to 60 characters or fewer')
+    .default(''),
+})
+
+export const newBrewMethodSchema = z.object({
+  name: requiredText(
+    'Give the brew method a name',
+    40,
+    'Keep the name to 40 characters or fewer',
+  ),
+})
+
+export const grindSettingSchema = z.object({
+  grinderId: requiredText('Pick a grinder', 100, 'Pick a grinder'),
+  brewMethodId: requiredText('Pick a brew method', 100, 'Pick a brew method'),
+  setting: z.preprocess(
+    value => blankToNull(typeof value === 'string' ? value.trim() : value),
+    z
+      .string({ error: 'Write the setting as text' })
+      .max(30, 'Keep the setting to 30 characters or fewer')
+      .nullable(),
+  ),
+})

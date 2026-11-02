@@ -698,3 +698,48 @@ test('rates a coffee, says it would be bought again and shows it in Stock', asyn
     stockCard(page, 'Ayele Fulasa').getByLabel('4 stars'),
   ).toBeVisible()
 })
+
+test('keeps a grind setting per grinder and brew method on the coffee only', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  const brand = uniqueName('Brand')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page).toHaveURL(/\/coffees\//)
+  const coffeeUrl = page.url()
+
+  await expect(page.getByTestId('grind-no-grinders')).toContainText(
+    'This shelf owns no grinders yet.',
+  )
+  await page.getByTestId('grind-add-grinder').click()
+  await expect(page).toHaveURL(/\/settings$/)
+
+  await page.getByTestId('grinder-brand').fill(brand)
+  await page.getByTestId('list-option-new').filter({ hasText: brand }).click()
+  await page.getByTestId('grinder-model').fill('Opus Gen 2')
+  await page
+    .getByTestId('list-option-new')
+    .filter({ hasText: 'Opus Gen 2' })
+    .click()
+  await page.getByTestId('grinder-submit').click()
+  await expect(page.getByTestId('shelf-grinder-name')).toHaveText(
+    `${brand} Opus Gen 2`,
+  )
+
+  await page.goto(coffeeUrl)
+  await page.getByTestId('grind-brew-method').selectOption('Espresso')
+  await page.getByTestId('grind-setting-input').fill('12')
+  await page.getByTestId('grind-setting-save').click()
+  await expect(page.getByTestId('grind-setting-for')).toHaveText(
+    `${brand} Opus Gen 2 · Espresso`,
+  )
+
+  await page.reload()
+  await expect(page.getByTestId('grind-setting-value')).toHaveText('12')
+
+  await page.getByTestId('coffee-back').click()
+  await expect(stockCard(page, 'Ayele Fulasa')).not.toContainText(brand)
+})

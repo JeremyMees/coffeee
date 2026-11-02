@@ -9,6 +9,8 @@ export const queryKeys = {
     'coffees',
     coffeeId,
   ],
+  shelfGrinders: (shelfId: string) => ['shelves', shelfId, 'grinders'],
+  brewMethods: () => ['brew-methods'],
   invites: () => ['invites'],
   lists: () => ['lists'],
   listSearch: (

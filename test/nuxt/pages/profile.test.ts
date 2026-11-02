@@ -27,6 +27,7 @@ describe('profile page', () => {
     const page = await mountSuspended(App, { route: '/profile' })
 
     expect(page.find(tid('profile-invites')).exists()).toBe(false)
+    expect(page.find(tid('profile-brew-methods')).exists()).toBe(false)
   })
 
   it('shows admins the invites link', async () => {
@@ -38,6 +39,17 @@ describe('profile page', () => {
 
     expect(invites.text()).toBe('Invites')
     expect(invites.attributes('href')).toBe('/admin/invites')
+  })
+
+  it('shows admins the brew methods link', async () => {
+    signInAs('admin')
+
+    const page = await mountSuspended(App, { route: '/profile' })
+
+    const brewMethods = page.get(tid('profile-brew-methods'))
+
+    expect(brewMethods.text()).toBe('Brew methods')
+    expect(brewMethods.attributes('href')).toBe('/admin/brew-methods')
   })
 
   it('forgets the pages cached for offline use when signing out', async () => {

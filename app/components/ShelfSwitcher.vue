@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from '@lucide/vue'
+import {
+  CheckIcon,
+  ChevronsUpDownIcon,
+  PlusIcon,
+  SettingsIcon,
+} from '@lucide/vue'
 import type { DropdownMenuContentProps } from 'reka-ui'
 
 defineOptions({ inheritAttrs: false })
@@ -64,6 +69,15 @@ function pathOn(shelfId: string) {
         </NuxtLink>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
+      <DropdownMenuItem v-if="current" class="rounded-full px-3 py-2" as-child>
+        <NuxtLink
+          :to="`/shelves/${current.id}/settings`"
+          data-testid="shelf-menu-settings"
+        >
+          <SettingsIcon aria-hidden="true" />
+          Shelf settings
+        </NuxtLink>
+      </DropdownMenuItem>
       <DropdownMenuItem class="rounded-full px-3 py-2" as-child>
         <NuxtLink to="/shelves/new" data-testid="shelf-menu-new">
           <PlusIcon aria-hidden="true" />

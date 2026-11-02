@@ -71,6 +71,13 @@
       "when": 1793629341842,
       "tag": "0009_rating_and_would_buy_again",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793630050696,
+      "tag": "0010_grinders_brew_methods_and_grind_settings",
+      "breakpoints": true
     }
   ]
 }
