@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import { useStock } from '~/queries/coffees'
+
 useHead({ title: 'Stock · Coffeee' })
 
 const route = useRoute('shelves-shelfId')
 const shelfId = computed(() => route.params.shelfId)
 const addCoffee = useAddCoffee()
 
-const { data: stock } = await useFetch(
-  () => `/api/shelves/${shelfId.value}/stock`,
-  { key: () => `stock:${shelfId.value}`, default: () => [] },
-)
+const { data, suspense } = useStock(shelfId)
+await suspense()
+const stock = computed(() => data.value ?? [])
 </script>
 
 <template>

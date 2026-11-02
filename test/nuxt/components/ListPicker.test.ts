@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import ListPicker from '~/components/ListPicker.vue'
-import { clearNuxtData } from '#imports'
+import { nameKey } from '#imports'
 import { fakeList } from '../fake-api'
 import {
   byTestId,
@@ -21,7 +21,6 @@ registerEndpoint('/api/processes', event => {
 })
 
 beforeEach(() => {
-  clearNuxtData()
   searches.length = 0
   known.processes = [
     { id: 'p1', name: 'Co fermentation' },
@@ -74,6 +73,21 @@ describe('ListPicker', () => {
     await vi.waitFor(() => expect(searches).toContain('was'))
     expect(searches).not.toContain('w')
     expect(searches).not.toContain('wa')
+  })
+
+  it('reuses an earlier search instead of asking again', async () => {
+    await mountPicker()
+
+    await type('process', 'washed')
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Washed']))
+    await type('process', 'co')
+    await vi.waitFor(() => expect(searches).toContain('co'))
+    await type('process', 'Washed')
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Washed']))
+
+    expect(searches.filter(search => nameKey(search) === 'washed')).toEqual([
+      'washed',
+    ])
   })
 
   it('offers to add an entry only when none has that name', async () => {

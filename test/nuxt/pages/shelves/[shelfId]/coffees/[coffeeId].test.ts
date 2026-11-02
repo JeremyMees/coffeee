@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { clearError, clearNuxtData, useCurrentUser, useError } from '#imports'
+import { clearError, useCurrentUser, useError } from '#imports'
 import { api, ayele, fakeApi, resetApi } from '../../../../fake-api'
 import {
   byTestId,
@@ -17,7 +17,6 @@ fakeApi()
 beforeEach(() => {
   forgetLastShelf()
   clearError()
-  clearNuxtData()
   resetApi()
   useCurrentUser().value = testUser()
 })

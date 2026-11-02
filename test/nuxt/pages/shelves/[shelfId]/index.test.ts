@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { clearNuxtData, useAddCoffee, useCurrentUser } from '#imports'
+import { useAddCoffee, useCurrentUser } from '#imports'
 import { api, fakeApi, resetApi } from '../../../fake-api'
 import { daysAgo, forgetLastShelf, testUser, tid } from '../../../fixtures'
 
@@ -9,7 +9,6 @@ fakeApi()
 
 beforeEach(() => {
   forgetLastShelf()
-  clearNuxtData()
   resetApi()
   useCurrentUser().value = testUser()
   useAddCoffee().value = false

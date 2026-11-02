@@ -117,4 +117,21 @@ export default defineNuxtConfig({
       ],
     },
   },
+
+  hooks: {
+    close: nuxt => {
+      const analyze = nuxt.options.build.analyze
+      const analyzing =
+        analyze === true || (typeof analyze === 'object' && analyze.enabled)
+
+      if (
+        !nuxt.options.dev &&
+        !nuxt.options.test &&
+        !nuxt.options._prepare &&
+        !analyzing
+      ) {
+        process.exit(0)
+      }
+    },
+  },
 })

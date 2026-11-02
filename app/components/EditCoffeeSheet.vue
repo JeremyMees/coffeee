@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
+import { useCoffeeUpdate } from '~/queries/coffees'
 
 const props = defineProps<{
   shelfId: string
@@ -13,10 +14,9 @@ const props = defineProps<{
   }
 }>()
 
-const emit = defineEmits<{ saved: [] }>()
-
 const open = defineModel<boolean>('open', { default: false })
 const formError = ref('')
+const { mutateAsync: updateCoffee } = useCoffeeUpdate()
 
 function currentDetails() {
   return {
@@ -44,13 +44,13 @@ const save = handleSubmit(async details => {
   formError.value = ''
 
   try {
-    await $fetch(`/api/shelves/${props.shelfId}/coffees/${props.coffee.id}`, {
-      method: 'PATCH',
-      body: details,
+    await updateCoffee({
+      shelfId: props.shelfId,
+      coffeeId: props.coffee.id,
+      details,
     })
 
     open.value = false
-    emit('saved')
   } catch (error) {
     const { fields, message } = serverErrors(error)
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AddCoffeeSheet from '~/components/AddCoffeeSheet.vue'
-import { clearNuxtData, useAddCoffee, useCurrentUser } from '#imports'
+import { useAddCoffee, useCurrentUser } from '#imports'
 import { api, fakeApi, resetApi } from '../fake-api'
 import {
   byTestId,
@@ -23,7 +23,6 @@ fakeApi()
 
 beforeEach(() => {
   forgetLastShelf()
-  clearNuxtData()
   resetApi()
   useCurrentUser().value = testUser()
   useAddCoffee().value = false

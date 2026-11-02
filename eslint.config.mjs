@@ -1,7 +1,9 @@
 // @ts-check
+import pluginQuery from '@tanstack/eslint-plugin-query'
 import withNuxt from './.nuxt/eslint.config.mjs'
 
 export default withNuxt(
+  ...pluginQuery.configs['flat/recommended'],
   {
     files: ['app/components/ui/**/*.vue'],
     rules: { 'vue/require-default-prop': 'off' },

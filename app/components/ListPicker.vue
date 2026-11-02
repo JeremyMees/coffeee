@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core'
+import { useListSearch } from '~/queries/lists'
 
 defineOptions({ inheritAttrs: false })
 
@@ -16,13 +17,8 @@ const props = defineProps<{
 const search = ref(model.value)
 const searched = refDebounced(search, 150)
 
-const { data: entries } = useFetch<{ id: string; name: string }[]>(
-  () => props.endpoint,
-  {
-    query: { search: searched },
-    default: () => [],
-  },
-)
+const { data } = useListSearch(() => props.endpoint, searched)
+const entries = computed(() => data.value ?? [])
 
 const key = computed(() => nameKey(search.value))
 const canCreate = computed(

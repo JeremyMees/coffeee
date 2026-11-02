@@ -101,7 +101,7 @@ export async function pickOption(text: string) {
     if (!found) throw new Error(`No option “${text}”`)
 
     return found
-  })
+  }, 3000)
   option.click()
   await flushPromises()
 }

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Field as VeeField, useForm } from 'vee-validate'
+import { useCoffeeCreate } from '~/queries/coffees'
 
 const open = useAddCoffee()
 const shelf = useCurrentShelf()
 const formError = ref('')
+const { mutateAsync: createCoffee } = useCoffeeCreate()
 
 function emptyForm() {
   return {
@@ -35,15 +37,11 @@ const add = handleSubmit(async coffee => {
   formError.value = ''
 
   try {
-    await $fetch(`/api/shelves/${shelf.value.id}/coffees`, {
-      method: 'POST',
-      body: coffee,
-    })
+    await createCoffee({ shelfId: shelf.value.id, coffee })
 
     open.value = false
 
     await navigateTo(`/shelves/${shelf.value.id}`)
-    await refreshNuxtData(`stock:${shelf.value.id}`)
   } catch (error) {
     const { fields, message } = serverErrors(error)
 

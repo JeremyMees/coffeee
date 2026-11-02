@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, PencilIcon } from '@lucide/vue'
+import { useShelfCoffee } from '~/queries/coffees'
 
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
 const shelfId = computed(() => route.params.shelfId)
@@ -7,10 +8,8 @@ const coffeeId = computed(() => route.params.coffeeId)
 
 const editing = ref(false)
 
-const { data: coffee, error } = await useFetch(
-  () => `/api/shelves/${shelfId.value}/coffees/${coffeeId.value}`,
-  { key: `coffee:${shelfId.value}:${coffeeId.value}` },
-)
+const { data: coffee, error, suspense } = useShelfCoffee(shelfId, coffeeId)
+await suspense()
 
 if (error.value || !coffee.value) {
   showError({ statusCode: 404, statusMessage: 'Coffee not found' })
@@ -23,13 +22,6 @@ const latestRoastedOn = computed(
     coffee.value?.purchases.find(purchase => purchase.roastedOn)?.roastedOn ??
     null,
 )
-
-async function refreshEdited() {
-  await refreshNuxtData([
-    `coffee:${shelfId.value}:${coffeeId.value}`,
-    `stock:${shelfId.value}`,
-  ])
-}
 
 const euros = new Intl.NumberFormat(undefined, {
   style: 'currency',
@@ -123,7 +115,6 @@ const euros = new Intl.NumberFormat(undefined, {
       v-model:open="editing"
       :shelf-id="shelfId"
       :coffee="coffee"
-      @saved="refreshEdited"
     />
   </main>
 </template>

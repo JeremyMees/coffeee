@@ -61,7 +61,7 @@ describe('EditCoffeeSheet', () => {
     expect(isChecked('coffee-colour', 'colour-forest')).toBe(true)
   })
 
-  it('saves the new details, closes and says so', async () => {
+  it('saves the new details and closes', async () => {
     const sheet = await openSheet()
 
     await type('coffee-name', 'Ayele Fulasa Natural')
@@ -71,7 +71,9 @@ describe('EditCoffeeSheet', () => {
     await click('coffee-colour', 'colour-ink')
     await submit('edit-coffee-form')
 
-    await vi.waitFor(() => expect(sheet.emitted('saved')).toHaveLength(1))
+    await vi.waitFor(() =>
+      expect(sheet.emitted('update:open')).toEqual([[false]]),
+    )
     expect(api.edits).toEqual([
       {
         name: 'Ayele Fulasa Natural',
@@ -81,7 +83,6 @@ describe('EditCoffeeSheet', () => {
         colour: '#1d1d1f',
       },
     ])
-    expect(sheet.emitted('update:open')).toEqual([[false]])
   })
 
   it('explains a missing name before sending anything', async () => {
@@ -107,7 +108,7 @@ describe('EditCoffeeSheet', () => {
         'Square Mile already has a coffee called Red Brick',
       ),
     )
-    expect(sheet.emitted('saved')).toBeUndefined()
+    expect(sheet.emitted('update:open')).toBeUndefined()
   })
 
   it('says something went wrong when the server gives no reason', async () => {

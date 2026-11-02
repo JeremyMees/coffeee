@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { CheckIcon, CopyIcon } from '@lucide/vue'
 import { Field as VeeField, useForm } from 'vee-validate'
+import { useInviteCreate, useInviteRevoke, useInvites } from '~/queries/invites'
 
 definePageMeta({ middleware: 'admin' })
 
 useHead({ title: 'Invites · Coffeee' })
 
-const { data: invites, refresh } = await useFetch('/api/invites', {
-  default: () => [],
-})
+const { data, suspense } = useInvites()
+await suspense()
+const invites = computed(() => data.value ?? [])
+const { mutateAsync: createInvite } = useInviteCreate()
+const { mutateAsync: revokeInvite } = useInviteRevoke()
 
 const formError = ref('')
 
@@ -24,11 +27,9 @@ const allowEmail = handleSubmit(async body => {
   formError.value = ''
 
   try {
-    await $fetch('/api/invites', { method: 'POST', body })
+    await createInvite(body)
 
     resetForm()
-
-    await refresh()
   } catch (caught) {
     const { fields, message } = serverErrors(caught)
 
@@ -38,15 +39,10 @@ const allowEmail = handleSubmit(async body => {
 })
 
 async function createLink() {
-  const created = await $fetch('/api/invites', {
-    method: 'POST',
-    body: { link: true },
-  })
+  const created = await createInvite({ link: true })
 
   link.value = 'url' in created ? created.url : ''
   copied.value = false
-
-  await refresh()
 }
 
 async function copyLink() {
@@ -56,8 +52,7 @@ async function copyLink() {
 }
 
 async function revoke(id: string) {
-  await $fetch(`/api/invites/${id}`, { method: 'DELETE' })
-  await refresh()
+  await revokeInvite(id)
 }
 
 function formatDate(date: string) {
