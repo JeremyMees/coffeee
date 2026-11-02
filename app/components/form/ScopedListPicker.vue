@@ -2,14 +2,9 @@
 import { refDebounced } from '@vueuse/core'
 import { useListSearch } from '~/queries/lists'
 
-interface Picked {
-  origin: string
-  name: string
-}
-
 defineOptions({ inheritAttrs: false })
 
-const model = defineModel<Picked[]>({ default: () => [] })
+const model = defineModel<OriginEntry[]>({ default: () => [] })
 
 const props = defineProps<{
   id: string
@@ -23,13 +18,13 @@ const props = defineProps<{
 const search = ref('')
 const searched = refDebounced(search, 150)
 
-const { data } = useListSearch<Picked & { id: string }>(
+const { data } = useListSearch<OriginListEntry>(
   () => props.endpoint,
   searched,
   () => ({ origins: props.origins.join(',') }),
 )
 
-function entryKey(entry: Picked) {
+function entryKey(entry: OriginEntry) {
   return `${entry.origin}:${nameKey(entry.name)}`
 }
 
@@ -63,7 +58,7 @@ const chips = computed(() =>
   })),
 )
 
-function pick(event: Event, entry: Picked) {
+function pick(event: Event, entry: OriginEntry) {
   event.preventDefault()
   model.value = [...model.value, { origin: entry.origin, name: entry.name }]
   search.value = ''

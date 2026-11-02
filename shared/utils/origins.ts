@@ -1,3 +1,5 @@
+import type { OriginCode } from '../types/origins'
+
 export const origins = {
   AD: 'Andorra',
   AE: 'United Arab Emirates',
@@ -250,8 +252,6 @@ export const origins = {
   ZW: 'Zimbabwe',
 } as const
 
-export type OriginCode = keyof typeof origins
-
 export const originCodes = Object.keys(origins) as OriginCode[]
 
 export function isOriginCode(code: string): code is OriginCode {
@@ -273,10 +273,3 @@ export function formatAltitude(from: number | null, to: number | null) {
 }
 
 export const originListFields = ['regions', 'farms', 'washingStations'] as const
-
-export type OriginListField = (typeof originListFields)[number]
-
-export interface OriginEntry {
-  origin: string
-  name: string
-}

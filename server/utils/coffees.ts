@@ -1,9 +1,13 @@
 import { and, desc, eq, isNull, max, ne } from 'drizzle-orm'
 import { coffeeListFields } from '#shared/utils/coffee'
-import type { CoffeeListField } from '#shared/utils/coffee'
+import type { ListEntry } from '#shared/types/catalog'
+import type {
+  CoffeeDetails,
+  CoffeeListField,
+  NewCoffee,
+} from '#shared/types/coffee'
 import { nameKey } from '#shared/utils/names'
-import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
-import type { Database } from '#server/db/database'
+import type { Database } from '#server/types/database'
 import {
   coffee,
   coffeeProcess,
@@ -20,13 +24,9 @@ import {
   entriesOf,
   findOrCreateEntry,
 } from '#server/utils/lists'
-import type { CoffeeList } from '#server/utils/lists'
+import type { Viewer } from '#server/types/coffees'
+import type { CoffeeList } from '#server/types/lists'
 import { describeOrigins, originsOf } from '#server/utils/origins'
-
-interface Viewer {
-  id: string
-  role?: string | null
-}
 
 const coffeeColumns = {
   id: coffee.id,
@@ -78,7 +78,7 @@ async function describeCoffee(
 }
 
 async function describedOf(db: Database, coffeeId: string) {
-  const entries = {} as Record<CoffeeListField, { id: string; name: string }[]>
+  const entries = {} as Record<CoffeeListField, ListEntry[]>
 
   for (const field of coffeeListFields) {
     entries[field] = await entriesOf(db, coffeeLists[field], coffeeId)

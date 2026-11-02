@@ -1,8 +1,5 @@
 <script setup lang="ts">
-const listPickers: Record<
-  CoffeeListField,
-  { label: string; endpoint: string; noun: string; id: string }
-> = {
+const listPickers: Record<CoffeeListField, ListPickerConfig> = {
   processes: {
     label: 'Process',
     endpoint: '/api/processes',

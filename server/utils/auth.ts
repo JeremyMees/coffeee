@@ -1,23 +1,13 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { betterAuth } from 'better-auth'
-import type { BetterAuthPlugin } from 'better-auth'
 import { APIError, getOAuthState } from 'better-auth/api'
 import { admin, oAuthProxy } from 'better-auth/plugins'
 import { useRuntimeConfig } from 'nitropack/runtime'
-import type { Database } from '#server/db/database'
+import type { AuthConfig } from '#server/types/auth'
 import * as schema from '#server/db/schemas'
 import { useDb } from '#server/utils/db'
 import { claimInvite } from '#server/utils/invites'
 import { createShelf, shelfNameFor } from '#server/utils/shelves'
-
-export interface AuthConfig {
-  db: Database
-  secret: string
-  productionUrl: string
-  adminEmail: string
-  google: { clientId: string; clientSecret: string }
-  plugins?: BetterAuthPlugin[]
-}
 
 const hosts = ['localhost:*', '127.0.0.1:*', 'coffeee-*.vercel.app']
 

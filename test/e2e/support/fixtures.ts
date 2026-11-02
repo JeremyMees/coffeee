@@ -2,22 +2,9 @@ import { createHmac, randomBytes, randomUUID } from 'node:crypto'
 import { test as base } from '@playwright/test'
 import type { BrowserContext } from '@playwright/test'
 import pg from 'pg'
+import type { Member, People, Role } from './types'
 
 const secret = 'a-test-secret-that-is-long-enough-to-use'
-
-interface Member {
-  id: string
-  name: string
-  email: string
-  shelfId: string
-}
-
-type Role = 'user' | 'admin'
-
-interface People {
-  signIn: (name: string, role?: Role) => Promise<Member>
-  joinShelf: (member: Member, shelfId: string) => Promise<void>
-}
 
 function databaseUrl() {
   if (!process.env.NUXT_DATABASE_URL) process.loadEnvFile('.env')

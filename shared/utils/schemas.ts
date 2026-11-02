@@ -2,7 +2,9 @@ import { z } from 'zod'
 import { roastedForOptions, roastLevels } from './coffee'
 import { bagColours } from './colours'
 import { isOriginCode, originListFields } from './origins'
-import type { OriginEntry, OriginListField } from './origins'
+import type { DescribedCoffee } from '../types/coffee'
+import type { OriginListField } from '../types/origins'
+import type { ListNouns } from '../types/validation'
 
 function blankToNull(value: unknown) {
   return value === '' || value === undefined ? null : value
@@ -95,19 +97,14 @@ const coffeeDetailsShape = {
   altitudeTo: altitude('highest'),
 }
 
-interface Nouns {
-  one: string
-  many: string
-}
-
-function nouns(one: string, many = `${one}s`): Nouns {
+function nouns(one: string, many = `${one}s`): ListNouns {
   return { one, many }
 }
 
 function namedEntries<Entry extends z.ZodType>(
   entry: Entry,
   nameOf: (entry: z.output<Entry>) => string,
-  noun: Nouns,
+  noun: ListNouns,
   max: number,
   maxLength: number,
   missing = `Pick ${noun.many} from the list`,
@@ -125,7 +122,7 @@ function namedEntries<Entry extends z.ZodType>(
     )
 }
 
-function listEntries(noun: Nouns, max: number, maxLength: number) {
+function listEntries(noun: ListNouns, max: number, maxLength: number) {
   return namedEntries(
     z.string().trim(),
     name => name,
@@ -136,7 +133,7 @@ function listEntries(noun: Nouns, max: number, maxLength: number) {
 }
 
 function requiredListEntries(
-  noun: Nouns,
+  noun: ListNouns,
   max: number,
   maxLength: number,
   missing: string,
@@ -151,7 +148,7 @@ function requiredListEntries(
   ).min(1, missing)
 }
 
-function originEntries(noun: Nouns, max: number, maxLength: number) {
+function originEntries(noun: ListNouns, max: number, maxLength: number) {
   return namedEntries(
     z.object({ origin: z.string(), name: z.string().trim() }),
     picked => picked.name,
@@ -177,12 +174,6 @@ function altitude(end: string) {
       .max(6000, 'Keep the altitude to 6000 m or less')
       .nullable(),
   )
-}
-
-type DescribedCoffee = Record<OriginListField, OriginEntry[]> & {
-  origins: string[]
-  altitudeFrom: number | null
-  altitudeTo: number | null
 }
 
 function validFields(...fields: string[]) {
@@ -257,6 +248,3 @@ export const newCoffeeSchema = describedCoffee(
     ),
   }),
 )
-
-export type CoffeeDetails = z.output<typeof coffeeDetailsSchema>
-export type NewCoffee = z.output<typeof newCoffeeSchema>

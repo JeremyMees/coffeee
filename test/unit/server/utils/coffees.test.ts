@@ -17,7 +17,7 @@ import {
 import { findSimilar } from '#server/utils/lists'
 import { createShelf } from '#server/utils/shelves'
 import { seededProcesses } from '#shared/utils/coffee'
-import type { CoffeeDetails, NewCoffee } from '#shared/utils/schemas'
+import type { CoffeeDetails, NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
 async function setup() {

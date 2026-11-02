@@ -1,17 +1,7 @@
 <script setup lang="ts">
 import { NuxtLink } from '#components'
 
-const props = defineProps<{
-  coffee: {
-    name: string
-    roaster: string
-    roastLevel: RoastLevel
-    roastedFor: RoastedFor
-    colour: string
-    roastedOn: string | null
-  }
-  to?: string
-}>()
+const props = defineProps<{ coffee: CardCoffee; to?: string }>()
 
 const ink = computed(() => inkOn(props.coffee.colour))
 const labelColour = computed(() =>

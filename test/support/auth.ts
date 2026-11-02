@@ -1,11 +1,9 @@
 import { testUtils } from 'better-auth/plugins'
 import type { TestHelpers } from 'better-auth/plugins'
 import { createAuth } from '#server/utils/auth'
-import type { createTestDatabase } from './database'
+import type { TestDatabase } from '#test/support/types'
 
-export async function createTestAuth(
-  db: Awaited<ReturnType<typeof createTestDatabase>>['db'],
-) {
+export async function createTestAuth(db: TestDatabase) {
   const auth = createAuth({
     db,
     secret: 'a-test-secret-that-is-long-enough-to-use',

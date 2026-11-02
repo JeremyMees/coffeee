@@ -1,7 +1,7 @@
 import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
-import type { ListEntry } from '~/queries/lists'
+import type { ListEntry, OriginListEntry } from '#shared/types/catalog'
 import { nameKey } from '#imports'
 
 export function fakeList<Entry extends ListEntry>(entries: () => Entry[]) {
@@ -12,7 +12,7 @@ export function fakeList<Entry extends ListEntry>(entries: () => Entry[]) {
   }
 }
 
-export function fakeRegions(regions: () => (ListEntry & { origin: string })[]) {
+export function fakeRegions(regions: () => OriginListEntry[]) {
   return (event: H3Event) => {
     const origins = String(getQuery(event).origins ?? '').split(',')
 
@@ -32,7 +32,7 @@ export function ayele() {
     colour: '#2f6f4f',
     origins: [{ code: 'ET', name: 'Ethiopia' }],
     regions: [{ id: 'g1', name: 'Guji', origin: 'ET' }],
-    farms: [] as (ListEntry & { origin: string })[],
+    farms: [] as OriginListEntry[],
     washingStations: [{ id: 'w1', name: 'Hambela', origin: 'ET' }],
     producers: [] as ListEntry[],
     processes: [{ id: 's1', name: 'Washed' }],

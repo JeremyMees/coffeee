@@ -3,6 +3,7 @@ import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm'
 import { drizzle } from 'drizzle-orm/pglite'
 import { migrate } from 'drizzle-orm/pglite/migrator'
 import * as schema from '#server/db/schemas'
+import type { TestDatabase } from '#test/support/types'
 
 export async function createTestDatabase() {
   const client = new PGlite({ extensions: { pg_trgm } })
@@ -13,7 +14,7 @@ export async function createTestDatabase() {
 }
 
 export async function createTestUser(
-  db: Awaited<ReturnType<typeof createTestDatabase>>['db'],
+  db: TestDatabase,
   overrides: Partial<typeof schema.user.$inferInsert> = {},
 ) {
   const [created] = await db

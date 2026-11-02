@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { useFieldValue, useSetFieldValue } from 'vee-validate'
 
-const originListPickers: Record<
-  OriginListField,
-  { label: string; endpoint: string; noun: string; id: string }
-> = {
+const originListPickers: Record<OriginListField, ListPickerConfig> = {
   regions: {
     label: 'Region',
     endpoint: '/api/regions',

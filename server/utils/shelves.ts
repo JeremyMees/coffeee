@@ -1,5 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm'
-import type { Database } from '#server/db/database'
+import type { Database } from '#server/types/database'
 import { shelf, shelfMember } from '#server/db/schemas'
 
 const columns = { id: shelf.id, name: shelf.name, ownerId: shelf.ownerId }

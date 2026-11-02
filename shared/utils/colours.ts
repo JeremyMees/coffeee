@@ -1,3 +1,5 @@
+import type { BagColour } from '../types/colours'
+
 export const bagColours = [
   '#e4572e',
   '#f2c14e',
@@ -31,8 +33,6 @@ export function inkOn(colour: string) {
 
   return onLight >= onDark ? lightInk : darkInk
 }
-
-export type BagColour = (typeof bagColours)[number]
 
 export const bagColourNames: Record<BagColour, string> = {
   '#e4572e': 'Orange',

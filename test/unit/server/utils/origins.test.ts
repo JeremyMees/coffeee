@@ -4,7 +4,7 @@ import { addCoffee, editCoffee, findShelfCoffee } from '#server/utils/coffees'
 import { findSimilarInOrigins } from '#server/utils/origins'
 import { createShelf } from '#server/utils/shelves'
 import { originCodes, origins } from '#shared/utils/origins'
-import type { NewCoffee } from '#shared/utils/schemas'
+import type { NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
 async function setup() {

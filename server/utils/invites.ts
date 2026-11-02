@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { and, desc, eq, gt, isNull, or } from 'drizzle-orm'
-import type { Database } from '#server/db/database'
+import type { Database } from '#server/types/database'
 import { invite } from '#server/db/schemas'
 
 const linkLifetime = 7 * 24 * 60 * 60 * 1000

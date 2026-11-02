@@ -1,13 +1,5 @@
 import { sql } from 'drizzle-orm'
-import type { SQL } from 'drizzle-orm'
-
-interface Queryable {
-  execute: (query: SQL) => PromiseLike<unknown>
-}
-
-export type Health =
-  | { status: 'ok'; database: 'reachable' }
-  | { status: 'error'; database: 'unreachable' }
+import type { Health, Queryable } from '#server/types/health'
 
 export async function checkHealth(db: Queryable): Promise<Health> {
   try {

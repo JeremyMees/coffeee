@@ -13,9 +13,8 @@ import varietalsHandler from '#server/api/varietals.get'
 import washingStationsHandler from '#server/api/washing-stations.get'
 import { createShelf } from '#server/utils/shelves'
 import { createTestAuth } from '#test/support/auth'
+import type { TestAuth, TestDatabase } from '#test/support/types'
 import { createTestDatabase, createTestUser } from '#test/support/database'
-
-type TestAuth = Awaited<ReturnType<typeof createTestAuth>>
 
 const current = vi.hoisted(() => ({
   auth: undefined as unknown,
@@ -32,7 +31,7 @@ vi.mock('#server/utils/db', () => ({
 }))
 
 let testAuth: TestAuth
-let db: Awaited<ReturnType<typeof createTestDatabase>>['db']
+let db: TestDatabase
 
 beforeEach(async () => {
   db = (await createTestDatabase()).db

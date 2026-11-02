@@ -5,7 +5,7 @@ import { useForm } from 'vee-validate'
 import { vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import type { Component } from 'vue'
-import type { CurrentUser } from '~/composables/useCurrentUser'
+import type { CurrentUser } from '#imports'
 import { coffeeDetailsSchema, localDate, useRouter, zodSchema } from '#imports'
 
 export function testUser(overrides: Partial<CurrentUser> = {}): CurrentUser {

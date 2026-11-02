@@ -23,7 +23,7 @@ const latestRoastedOn = computed(
     null,
 )
 
-function names(entries: { name: string }[]) {
+function names(entries: ListEntry[]) {
   return entries.map(entry => entry.name).join(', ')
 }
 

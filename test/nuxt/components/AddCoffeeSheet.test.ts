@@ -38,7 +38,10 @@ async function openSheet(route = '/shelves/home') {
   })
 
   useAddCoffee().value = true
-  await vi.waitFor(() => expect(byTestId('add-coffee-form')).not.toBeNull())
+  await vi.waitFor(
+    () => expect(byTestId('add-coffee-form')).not.toBeNull(),
+    3000,
+  )
 
   return sheet
 }

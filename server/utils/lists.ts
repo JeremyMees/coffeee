@@ -1,31 +1,14 @@
 import { and, asc, desc, eq, or, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
-import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
+import type { PgColumn } from 'drizzle-orm/pg-core'
 import { defineEventHandler } from 'h3'
 import { listSearchSchema } from '#shared/utils/schemas'
 import { nameKey } from '#shared/utils/names'
-import type { Database } from '#server/db/database'
+import type { Database } from '#server/types/database'
+import type { CoffeeList, NewListEntry, SharedList } from '#server/types/lists'
 import { useDb } from '#server/utils/db'
 import { requireUser } from '#server/utils/session'
 import { readValidQuery } from '#server/utils/validation'
-
-export type SharedList = PgTable & {
-  id: PgColumn
-  name: PgColumn
-  nameKey: PgColumn
-  originCode?: PgColumn
-}
-
-export interface CoffeeList<List extends SharedList = SharedList> {
-  list: List
-  link: PgTable & { coffeeId: PgColumn; position: PgColumn }
-  entryId: PgColumn
-}
-
-export interface ListEntry {
-  name: string
-  originCode?: string
-}
 
 const similarityThreshold = 0.3
 const suggestionLimit = 8
@@ -85,7 +68,7 @@ export function listSearchHandler(list: SharedList) {
 export async function findOrCreateEntry(
   db: Database,
   list: SharedList,
-  entry: ListEntry & { createdBy: string },
+  entry: NewListEntry & { createdBy: string },
 ) {
   const key = nameKey(entry.name)
   const scope = list.originCode && entry.originCode ? list.originCode : null
@@ -113,7 +96,7 @@ export async function findOrCreateEntry(
 export async function describeEntries(
   db: Database,
   { list, link, entryId }: CoffeeList,
-  input: { coffeeId: string; userId: string; entries: ListEntry[] },
+  input: { coffeeId: string; userId: string; entries: NewListEntry[] },
 ) {
   const ids = new Set<string>()
 

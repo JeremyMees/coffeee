@@ -2,27 +2,7 @@
 import { useForm } from 'vee-validate'
 import { useCoffeeUpdate } from '~/queries/coffees'
 
-const props = defineProps<{
-  shelfId: string
-  coffee: {
-    id: string
-    name: string
-    roaster: string
-    roastLevel: RoastLevel
-    roastedFor: RoastedFor
-    colour: string
-    origins: { code: string; name: string }[]
-    regions: OriginEntry[]
-    farms: OriginEntry[]
-    washingStations: OriginEntry[]
-    producers: { name: string }[]
-    processes: { name: string }[]
-    varietals: { name: string }[]
-    link: string | null
-    altitudeFrom: number | null
-    altitudeTo: number | null
-  }
-}>()
+const props = defineProps<{ shelfId: string; coffee: EditableCoffee }>()
 
 const open = defineModel<boolean>('open', { default: false })
 const formError = ref('')
@@ -32,7 +12,7 @@ function originEntries(entries: OriginEntry[]) {
   return entries.map(({ origin, name }) => ({ origin, name }))
 }
 
-function names(entries: { name: string }[]) {
+function names(entries: ListEntry[]) {
   return entries.map(entry => entry.name)
 }
 

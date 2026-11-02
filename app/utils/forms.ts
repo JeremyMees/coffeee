@@ -1,11 +1,6 @@
 import type { TypedSchema, TypedSchemaError } from 'vee-validate'
 import type { z } from 'zod'
 
-interface FetchFailure {
-  statusMessage?: string
-  data?: { data?: { errors?: Record<string, string> } }
-}
-
 export function zodSchema<Schema extends z.ZodType>(
   schema: Schema,
 ): TypedSchema<z.input<Schema>, z.output<Schema>> {

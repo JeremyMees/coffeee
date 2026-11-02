@@ -2,8 +2,7 @@ import { createApp, toWebHandler } from 'h3'
 import { describe, expect, it, vi } from 'vitest'
 import handler from '#server/api/health.get'
 import { createTestDatabase } from '#test/support/database'
-
-type TestDatabase = Awaited<ReturnType<typeof createTestDatabase>>['db']
+import type { TestDatabase } from '#test/support/types'
 
 const database = vi.hoisted(() => ({
   current: undefined as TestDatabase | undefined,

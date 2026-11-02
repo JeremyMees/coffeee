@@ -43,6 +43,8 @@ export default defineNuxtConfig({
     googleClientSecret: '',
   },
 
+  imports: { dirs: ['types/*.ts'] },
+
   components: [
     { path: '~/components/form', pathPrefix: false },
     '~/components',

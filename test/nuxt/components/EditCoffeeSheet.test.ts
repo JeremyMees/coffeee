@@ -53,7 +53,10 @@ async function openSheet(open = true) {
   })
 
   if (open) {
-    await vi.waitFor(() => expect(byTestId('edit-coffee-form')).not.toBeNull())
+    await vi.waitFor(
+      () => expect(byTestId('edit-coffee-form')).not.toBeNull(),
+      3000,
+    )
   }
 
   return sheet

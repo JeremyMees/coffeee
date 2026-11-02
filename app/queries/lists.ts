@@ -1,11 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
-export interface ListEntry {
-  id: string
-  name: string
-}
-
 export function useListSearch<Entry = ListEntry>(
   endpoint: MaybeRefOrGetter<string>,
   search: MaybeRefOrGetter<string>,

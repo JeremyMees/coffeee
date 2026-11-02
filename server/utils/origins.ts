@@ -1,9 +1,10 @@
 import { asc, eq, inArray } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
 import { originListFields } from '#shared/utils/origins'
-import type { OriginEntry, OriginListField } from '#shared/utils/origins'
+import type { CoffeeDetails } from '#shared/types/coffee'
+import type { OriginListField } from '#shared/types/origins'
 import { originListSearchSchema } from '#shared/utils/schemas'
-import type { Database } from '#server/db/database'
+import type { Database } from '#server/types/database'
 import {
   coffeeFarm,
   coffeeOrigin,
@@ -16,11 +17,9 @@ import {
 } from '#server/db/schemas'
 import { useDb } from '#server/utils/db'
 import { describeEntries, entriesOf, findSimilar } from '#server/utils/lists'
-import type { CoffeeList } from '#server/utils/lists'
+import type { CoffeeList, OriginList } from '#server/types/lists'
 import { requireUser } from '#server/utils/session'
 import { readValidQuery } from '#server/utils/validation'
-
-type OriginList = typeof region | typeof farm | typeof washingStation
 
 const originLists: Record<OriginListField, CoffeeList<OriginList>> = {
   regions: { list: region, link: coffeeRegion, entryId: coffeeRegion.regionId },
@@ -32,13 +31,13 @@ const originLists: Record<OriginListField, CoffeeList<OriginList>> = {
   },
 }
 
-type Described = Record<OriginListField, OriginEntry[]> & {
-  origins: string[]
-}
-
 export async function describeOrigins(
   db: Database,
-  input: { coffeeId: string; userId: string; details: Described },
+  input: {
+    coffeeId: string
+    userId: string
+    details: Pick<CoffeeDetails, 'origins' | OriginListField>
+  },
 ) {
   const { coffeeId, details } = input
 
