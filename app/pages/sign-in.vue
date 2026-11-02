@@ -32,20 +32,31 @@ useHead({ title: 'Sign in · Coffeee' })
     <Card class="w-full max-w-sm">
       <CardHeader>
         <CardTitle>
-          <h1 class="text-3xl font-bold">Coffeee</h1>
+          <h1 class="text-3xl font-bold" data-testid="sign-in-title">
+            Coffeee
+          </h1>
         </CardTitle>
         <CardDescription>
           Your coffee shelf, and every coffee you ever bought.
         </CardDescription>
       </CardHeader>
       <CardContent class="flex flex-col gap-4">
-        <Alert v-if="refused" variant="destructive">
+        <Alert
+          v-if="refused"
+          variant="destructive"
+          data-testid="sign-in-refused"
+        >
           <AlertTitle>Coffeee is invite-only</AlertTitle>
           <AlertDescription>
             Ask an admin to invite you, or open the invite link you were sent.
           </AlertDescription>
         </Alert>
-        <Button size="lg" :disabled="signingIn" @click="continueWithGoogle">
+        <Button
+          size="lg"
+          data-testid="sign-in-google"
+          :disabled="signingIn"
+          @click="continueWithGoogle"
+        >
           Continue with Google
         </Button>
       </CardContent>

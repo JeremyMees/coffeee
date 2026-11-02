@@ -71,7 +71,7 @@ function formatDate(date: string) {
 <template>
   <main class="mx-auto flex max-w-xl flex-col gap-6 px-6 py-10">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-3xl font-bold">Invites</h1>
+      <h1 class="text-3xl font-bold" data-testid="invites-title">Invites</h1>
       <Button variant="ghost" as-child>
         <NuxtLink to="/profile">Done</NuxtLink>
       </Button>
@@ -86,7 +86,12 @@ function formatDate(date: string) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form class="flex flex-col gap-3" novalidate @submit="allowEmail">
+        <form
+          class="flex flex-col gap-3"
+          novalidate
+          data-testid="invite-email-form"
+          @submit="allowEmail"
+        >
           <FieldGroup>
             <VeeField v-slot="{ componentField, errors }" name="email">
               <Field
@@ -96,6 +101,7 @@ function formatDate(date: string) {
                 <Input
                   id="invite-email"
                   v-bind="componentField"
+                  data-testid="invite-email"
                   type="email"
                   autocomplete="off"
                   :aria-invalid="errors.length || formError ? true : undefined"
@@ -104,7 +110,13 @@ function formatDate(date: string) {
               </Field>
             </VeeField>
           </FieldGroup>
-          <Button type="submit" :disabled="isSubmitting">Allow email</Button>
+          <Button
+            type="submit"
+            data-testid="invite-email-submit"
+            :disabled="isSubmitting"
+          >
+            Allow email
+          </Button>
         </form>
       </CardContent>
     </Card>
@@ -119,10 +131,16 @@ function formatDate(date: string) {
       </CardHeader>
       <CardContent class="flex flex-col gap-3">
         <div v-if="link" class="flex gap-2">
-          <Input :model-value="link" readonly aria-label="Invite link" />
+          <Input
+            :model-value="link"
+            readonly
+            aria-label="Invite link"
+            data-testid="invite-link"
+          />
           <Button
             variant="outline"
             size="icon"
+            data-testid="invite-link-copy"
             :aria-label="copied ? 'Copied' : 'Copy link'"
             @click="copyLink"
           >
@@ -130,19 +148,34 @@ function formatDate(date: string) {
             <CopyIcon v-else />
           </Button>
         </div>
-        <Button variant="outline" @click="createLink">Create a link</Button>
+        <Button
+          variant="outline"
+          data-testid="invite-link-create"
+          @click="createLink"
+        >
+          Create a link
+        </Button>
       </CardContent>
     </Card>
 
     <section class="flex flex-col gap-2">
       <h2 class="text-lg font-semibold">Pending</h2>
-      <p v-if="!invites.length" class="text-sm text-muted-foreground">
+      <p
+        v-if="!invites.length"
+        class="text-sm text-muted-foreground"
+        data-testid="invites-empty"
+      >
         No pending invites.
       </p>
-      <ul v-else class="flex flex-col divide-y rounded-lg border">
+      <ul
+        v-else
+        class="flex flex-col divide-y rounded-lg border"
+        data-testid="invites-pending"
+      >
         <li
           v-for="invite in invites"
           :key="invite.id"
+          data-testid="invite"
           class="flex items-center justify-between gap-4 px-4 py-3"
         >
           <span class="min-w-0 truncate">
@@ -151,7 +184,12 @@ function formatDate(date: string) {
               · expires {{ formatDate(invite.expiresAt) }}
             </span>
           </span>
-          <Button variant="ghost" size="sm" @click="revoke(invite.id)">
+          <Button
+            variant="ghost"
+            size="sm"
+            data-testid="invite-revoke"
+            @click="revoke(invite.id)"
+          >
             Revoke
           </Button>
         </li>

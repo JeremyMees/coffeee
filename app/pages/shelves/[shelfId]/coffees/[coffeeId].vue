@@ -42,6 +42,7 @@ const euros = new Intl.NumberFormat(undefined, {
   <main v-if="coffee" class="max-w-2xl">
     <NuxtLink
       :to="`/shelves/${shelfId}`"
+      data-testid="coffee-back"
       class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -49,12 +50,17 @@ const euros = new Intl.NumberFormat(undefined, {
     </NuxtLink>
     <header class="mt-4 flex items-end justify-between gap-4">
       <div>
-        <p class="text-xs uppercase">{{ coffee.roaster }}</p>
-        <h1 class="mt-2 text-[48px] lg:text-[72px]">{{ coffee.name }}</h1>
+        <p class="text-xs uppercase" data-testid="coffee-roaster-name">
+          {{ coffee.roaster }}
+        </p>
+        <h1 class="mt-2 text-[48px] lg:text-[72px]" data-testid="coffee-title">
+          {{ coffee.name }}
+        </h1>
       </div>
       <button
         v-if="coffee.canEdit"
         type="button"
+        data-testid="coffee-edit"
         class="mb-2 flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground"
         @click="editing = true"
       >
@@ -68,24 +74,35 @@ const euros = new Intl.NumberFormat(undefined, {
     />
     <section class="mt-10">
       <h2 class="text-[28px]">Bags on this shelf</h2>
-      <p v-if="!coffee.purchases.length" class="mt-3 text-xs">
+      <p
+        v-if="!coffee.purchases.length"
+        class="mt-3 text-xs"
+        data-testid="purchases-empty"
+      >
         Nobody on this shelf has bought it yet.
       </p>
-      <ul v-else class="mt-4 divide-y rounded-[18px] border">
+      <ul
+        v-else
+        class="mt-4 divide-y rounded-[18px] border"
+        data-testid="purchases"
+      >
         <li
           v-for="purchase in coffee.purchases"
           :key="purchase.id"
+          data-testid="purchase"
           class="grid grid-cols-2 gap-x-4 gap-y-1 p-4 text-xs sm:grid-cols-4"
         >
-          <span>Bought {{ formatDate(purchase.purchasedOn) }}</span>
-          <span>
+          <span data-testid="purchase-bought"
+            >Bought {{ formatDate(purchase.purchasedOn) }}</span
+          >
+          <span data-testid="purchase-roasted">
             {{
               purchase.roastedOn
                 ? `Roasted ${formatDate(purchase.roastedOn)}`
                 : 'No roast date'
             }}
           </span>
-          <span>
+          <span data-testid="purchase-size-price">
             {{
               purchase.sizeGrams ? `${purchase.sizeGrams} g` : 'Size unknown'
             }}
@@ -96,7 +113,7 @@ const euros = new Intl.NumberFormat(undefined, {
                 : euros.format(purchase.priceCents / 100)
             }}
           </span>
-          <span class="uppercase sm:text-right">
+          <span class="uppercase sm:text-right" data-testid="purchase-status">
             {{ purchase.finishedAt ? 'Finished' : 'In stock' }}
           </span>
         </li>

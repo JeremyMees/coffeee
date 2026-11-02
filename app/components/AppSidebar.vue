@@ -4,13 +4,22 @@ const destinations = useDestinations()
 
 <template>
   <aside
+    data-testid="sidebar"
     class="sticky top-0 hidden h-dvh flex-col border-r [view-transition-name:sidebar] lg:flex"
   >
-    <NuxtLink to="/" class="border-b px-6 pt-8 pb-6 text-[44px]">
+    <NuxtLink
+      to="/"
+      class="border-b px-6 pt-8 pb-6 text-[44px]"
+      data-testid="sidebar-home"
+    >
       <AppWordmark stacked aria-hidden="true" />
       <span class="sr-only">Coffeee</span>
     </NuxtLink>
-    <nav aria-label="Sidebar" class="flex flex-col gap-1 p-3 text-[13px]">
+    <nav
+      aria-label="Sidebar"
+      data-testid="sidebar-nav"
+      class="flex flex-col gap-1 p-3 text-[13px]"
+    >
       <NuxtLink
         v-for="item in destinations"
         :key="item.to"
@@ -21,6 +30,7 @@ const destinations = useDestinations()
         <a
           :href="href ?? undefined"
           :aria-current="isExactActive ? 'page' : undefined"
+          data-testid="sidebar-link"
           class="flex items-center gap-3 rounded-full px-4 py-2.5 uppercase"
           :class="
             isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
@@ -33,7 +43,11 @@ const destinations = useDestinations()
       </NuxtLink>
     </nav>
     <div class="mt-auto border-t p-3">
-      <ShelfSwitcher side="top" class="w-full" />
+      <ShelfSwitcher
+        side="top"
+        class="w-full"
+        data-testid="sidebar-shelf-switcher"
+      />
     </div>
   </aside>
 </template>

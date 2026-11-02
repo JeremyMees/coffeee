@@ -13,10 +13,10 @@ useHead({ title: () => `${notFound.value ? 'Not found' : 'Error'} · Coffeee` })
     class="flex min-h-dvh flex-col justify-center gap-6 px-6 py-[max(2rem,env(safe-area-inset-top))] lg:px-16"
   >
     <span class="text-[30px]"><AppWordmark /></span>
-    <h1 class="text-[64px] lg:text-[88px]">
+    <h1 class="text-[64px] lg:text-[88px]" data-testid="error-title">
       {{ notFound ? 'Not found' : 'Something broke' }}
     </h1>
-    <p class="max-w-md text-xs">
+    <p class="max-w-md text-xs" data-testid="error-message">
       {{
         notFound
           ? (error.statusMessage ?? 'There is nothing here.')
@@ -26,6 +26,7 @@ useHead({ title: () => `${notFound.value ? 'Not found' : 'Error'} · Coffeee` })
     <Button
       variant="outline"
       class="self-start"
+      data-testid="error-back"
       @click="clearError({ redirect: '/' })"
     >
       Back to your shelf

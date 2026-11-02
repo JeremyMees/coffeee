@@ -19,6 +19,7 @@ const roastedForChoices = roastedForOptions.map(value => ({
         <Input
           id="coffee-name"
           v-bind="componentField"
+          data-testid="coffee-name"
           autocomplete="off"
           :aria-invalid="errors.length ? true : undefined"
         />
@@ -32,6 +33,7 @@ const roastedForChoices = roastedForOptions.map(value => ({
         <RoasterPicker
           id="coffee-roaster"
           v-bind="componentField"
+          data-testid="coffee-roaster"
           :invalid="errors.length > 0"
         />
         <FieldError :errors="errors" />
@@ -44,6 +46,7 @@ const roastedForChoices = roastedForOptions.map(value => ({
         <OptionPills
           v-bind="componentField"
           name="roastLevel"
+          data-testid="coffee-roast-level"
           :options="roastLevelOptions"
           :invalid="errors.length > 0"
         />
@@ -57,6 +60,7 @@ const roastedForChoices = roastedForOptions.map(value => ({
         <OptionPills
           v-bind="componentField"
           name="roastedFor"
+          data-testid="coffee-roasted-for"
           :options="roastedForChoices"
           :invalid="errors.length > 0"
         />
@@ -67,7 +71,7 @@ const roastedForChoices = roastedForOptions.map(value => ({
     <VeeField v-slot="{ value, handleChange, errors }" name="colour">
       <FieldSet :data-invalid="errors.length ? true : undefined">
         <FieldLegend variant="label">Bag colour</FieldLegend>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2" data-testid="coffee-colour">
           <label
             v-for="colour in bagColours"
             :key="colour"
@@ -82,6 +86,7 @@ const roastedForChoices = roastedForOptions.map(value => ({
               :value="colour"
               :checked="value === colour"
               :aria-label="bagColourNames[colour]"
+              :data-testid="`colour-${bagColourNames[colour].toLowerCase()}`"
               @change="handleChange(colour)"
             />
           </label>

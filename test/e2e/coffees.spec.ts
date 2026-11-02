@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test, uniqueName } from './support/fixtures'
 
 function daysAgo(days: number) {
@@ -11,45 +11,66 @@ function daysAgo(days: number) {
   return `${date.getFullYear()}-${month}-${day}`
 }
 
-async function pickDate(page: Page, label: string, isoDate: string) {
-  await page.getByRole('dialog').getByLabel(label).click()
+async function choose(sheet: Locator, group: string, option: string) {
+  await sheet.getByTestId(group).getByTestId(option).check({ force: true })
+}
 
-  const day = page.locator(
-    `[data-slot="calendar-cell-trigger"][data-value="${isoDate}"]:not([data-outside-view])`,
+async function pickDate(page: Page, picker: string, isoDate: string) {
+  await page.getByTestId(picker).getByTestId('date-picker-trigger').click()
+
+  const calendar = page.getByTestId('date-picker-calendar')
+  const day = calendar.locator(
+    `[data-value="${isoDate}"]:not([data-outside-view])`,
   )
 
   while (!(await day.isVisible())) {
-    await page.getByRole('button', { name: 'Previous page' }).click()
+    await calendar.locator('[data-slot="calendar-prev-button"]').click()
   }
 
   await day.click()
+}
+
+async function pickRoaster(page: Page, name: string, isNew: boolean) {
+  await page.getByTestId('coffee-roaster').fill(name)
+  await page
+    .getByTestId(isNew ? 'roaster-option-new' : 'roaster-option')
+    .filter({ hasText: name })
+    .first()
+    .click()
 }
 
 async function addCoffee(
   page: Page,
   coffee: { name: string; roaster: string; newRoaster: boolean },
 ) {
-  await page
-    .getByRole('main')
-    .getByRole('button', { name: 'Add coffee' })
-    .click()
+  await page.getByTestId('page-add-coffee').click()
 
-  const sheet = page.getByRole('dialog', { name: 'Add coffee' })
-  await sheet.getByLabel('Coffee').fill(coffee.name)
-  await sheet.getByRole('combobox', { name: 'Roaster' }).fill(coffee.roaster)
-  await page
-    .getByRole('option', {
-      name: coffee.newRoaster ? `Add “${coffee.roaster}”` : coffee.roaster,
-    })
-    .click()
-  await sheet.getByText('Light', { exact: true }).click()
-  await sheet.getByText('Filter', { exact: true }).click()
-  await pickDate(page, 'Roasted on', daysAgo(10))
-  await sheet.getByLabel('Size (g)').fill('250')
-  await sheet.getByLabel('Price (€)').fill('16.50')
-  await sheet.getByRole('button', { name: 'Add coffee' }).click()
+  const sheet = page.getByTestId('add-coffee-sheet')
+  await sheet.getByTestId('coffee-name').fill(coffee.name)
+  await pickRoaster(page, coffee.roaster, coffee.newRoaster)
+  await choose(sheet, 'coffee-roast-level', 'option-light')
+  await choose(sheet, 'coffee-roasted-for', 'option-filter')
+  await pickDate(page, 'coffee-roasted-on', daysAgo(10))
+  await sheet.getByTestId('coffee-size').fill('250')
+  await sheet.getByTestId('coffee-price').fill('16.50')
+  await sheet.getByTestId('add-coffee-submit').click()
 
   await expect(sheet).toBeHidden()
+}
+
+function stockCard(page: Page, name: string | RegExp) {
+  return page
+    .getByTestId('stock')
+    .getByTestId('coffee-card')
+    .filter({ has: page.getByTestId('coffee-card-name').getByText(name) })
+}
+
+async function editCoffee(page: Page, name: string) {
+  await stockCard(page, name).click()
+  await expect(page).toHaveURL(/\/coffees\//)
+  await page.getByTestId('coffee-edit').click()
+
+  return page.getByTestId('edit-coffee-sheet')
 }
 
 test('adds a coffee with its first bag and shows it in Stock', async ({
@@ -61,20 +82,20 @@ test('adds a coffee with its first bag and shows it in Stock', async ({
 
   await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
 
-  const card = page
-    .getByRole('list', { name: 'Current stock' })
-    .getByRole('link', { name: /Ayele Fulasa/ })
-  await expect(card).toContainText(roaster)
-  await expect(card).toContainText('Light · Filter')
-  await expect(card).toContainText('10')
-  await expect(card).toContainText('Peak')
+  const card = stockCard(page, 'Ayele Fulasa')
+  await expect(card.getByTestId('coffee-card-roaster')).toHaveText(roaster)
+  await expect(card.getByTestId('coffee-card-roast')).toHaveText(
+    'Light · Filter',
+  )
+  await expect(card.getByTestId('coffee-card-days')).toContainText('10')
+  await expect(card.getByTestId('coffee-card-freshness')).toHaveText('Peak')
 
   await card.click()
 
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Ayele Fulasa' }),
-  ).toBeVisible()
-  await expect(page.getByText('250 g · €16.50')).toBeVisible()
+  await expect(page.getByTestId('coffee-title')).toHaveText('Ayele Fulasa')
+  await expect(page.getByTestId('purchase-size-price')).toHaveText(
+    '250 g · €16.50',
+  )
 })
 
 test('adds a purchase instead of a duplicate when the coffee exists', async ({
@@ -91,12 +112,14 @@ test('adds a purchase instead of a duplicate when the coffee exists', async ({
     newRoaster: false,
   })
 
-  const stock = page.getByRole('list', { name: 'Current stock' })
-  await expect(stock.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByTestId('coffee-card')).toHaveCount(1)
 
-  await stock.getByRole('link').click()
+  await page.getByTestId('coffee-card').click()
 
-  await expect(page.getByText('In stock')).toHaveCount(2)
+  await expect(page.getByTestId('purchase-status')).toHaveText([
+    'In stock',
+    'In stock',
+  ])
 })
 
 test('explains missing details and clears them once fixed', async ({
@@ -104,19 +127,16 @@ test('explains missing details and clears them once fixed', async ({
   member,
 }) => {
   await page.goto(`/shelves/${member.shelfId}`)
-  await page
-    .getByRole('main')
-    .getByRole('button', { name: 'Add coffee' })
-    .click()
-  const sheet = page.getByRole('dialog', { name: 'Add coffee' })
+  await page.getByTestId('page-add-coffee').click()
+  const sheet = page.getByTestId('add-coffee-sheet')
 
-  await sheet.getByRole('button', { name: 'Add coffee' }).click()
+  await sheet.getByTestId('add-coffee-submit').click()
 
   await expect(sheet.getByText('Give the coffee a name')).toBeVisible()
   await expect(sheet.getByText('Pick a roast level')).toBeVisible()
 
-  await sheet.getByLabel('Coffee').fill('Halo')
-  await sheet.getByText('Light', { exact: true }).click()
+  await sheet.getByTestId('coffee-name').fill('Halo')
+  await choose(sheet, 'coffee-roast-level', 'option-light')
 
   await expect(sheet.getByText('Give the coffee a name')).toBeHidden()
   await expect(sheet.getByText('Pick a roast level')).toBeHidden()
@@ -131,33 +151,28 @@ test('lets the person who added a coffee fix its details', async ({
   const newRoaster = uniqueName('Roaster')
   await page.goto(`/shelves/${member.shelfId}`)
   await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
-  await page
-    .getByRole('list', { name: 'Current stock' })
-    .getByRole('link')
-    .click()
-  await expect(page).toHaveURL(/\/coffees\//)
 
-  await page.getByRole('button', { name: 'Edit' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Edit coffee' })
-  await expect(sheet.getByLabel('Coffee')).toHaveValue('Ayele Fulasa')
-  await sheet.getByLabel('Coffee').fill('Ayele Fulasa Natural')
-  await sheet.getByRole('combobox', { name: 'Roaster' }).fill(newRoaster)
-  await page.getByRole('option', { name: `Add “${newRoaster}”` }).click()
-  await sheet.getByText('Medium', { exact: true }).click()
-  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  const sheet = await editCoffee(page, 'Ayele Fulasa')
+  await expect(sheet.getByTestId('coffee-name')).toHaveValue('Ayele Fulasa')
+  await sheet.getByTestId('coffee-name').fill('Ayele Fulasa Natural')
+  await pickRoaster(page, newRoaster, true)
+  await choose(sheet, 'coffee-roast-level', 'option-medium')
+  await sheet.getByTestId('edit-coffee-submit').click()
 
   await expect(sheet).toBeHidden()
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Ayele Fulasa Natural' }),
-  ).toBeVisible()
-  await expect(page.getByRole('main')).toContainText(newRoaster)
-  await expect(page.getByText('250 g · €16.50')).toBeVisible()
+  await expect(page.getByTestId('coffee-title')).toHaveText(
+    'Ayele Fulasa Natural',
+  )
+  await expect(page.getByTestId('coffee-roaster-name')).toHaveText(newRoaster)
+  await expect(page.getByTestId('purchase-size-price')).toHaveText(
+    '250 g · €16.50',
+  )
 
-  await page.getByRole('main').getByRole('link', { name: 'Stock' }).click()
+  await page.getByTestId('coffee-back').click()
 
   await expect(
-    page.getByRole('list', { name: 'Current stock' }).getByRole('link'),
-  ).toContainText('Medium · Filter')
+    stockCard(page, 'Ayele Fulasa Natural').getByTestId('coffee-card-roast'),
+  ).toHaveText('Medium · Filter')
 })
 
 test('refuses a name the roaster already has', async ({ page, member }) => {
@@ -165,16 +180,10 @@ test('refuses a name the roaster already has', async ({ page, member }) => {
   await page.goto(`/shelves/${member.shelfId}`)
   await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
   await addCoffee(page, { name: 'Red Brick', roaster, newRoaster: false })
-  await page
-    .getByRole('list', { name: 'Current stock' })
-    .getByRole('link', { name: /Ayele Fulasa/ })
-    .click()
-  await expect(page).toHaveURL(/\/coffees\//)
 
-  await page.getByRole('button', { name: 'Edit' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Edit coffee' })
-  await sheet.getByLabel('Coffee').fill('red brick')
-  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  const sheet = await editCoffee(page, 'Ayele Fulasa')
+  await sheet.getByTestId('coffee-name').fill('red brick')
+  await sheet.getByTestId('edit-coffee-submit').click()
 
   await expect(
     sheet.getByText(`${roaster} already has a coffee called Red Brick`),

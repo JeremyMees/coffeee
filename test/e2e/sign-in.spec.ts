@@ -4,9 +4,7 @@ test('sends anonymous visitors to sign in with Google', async ({ page }) => {
   await page.goto('/')
 
   await expect(page).toHaveURL(/\/sign-in$/)
-  await expect(
-    page.getByRole('button', { name: 'Continue with Google' }),
-  ).toBeVisible()
+  await expect(page.getByTestId('sign-in-google')).toBeVisible()
 })
 
 test('tells someone without an invite that Coffeee is invite-only', async ({
@@ -14,5 +12,7 @@ test('tells someone without an invite that Coffeee is invite-only', async ({
 }) => {
   await page.goto('/sign-in?error=invite')
 
-  await expect(page.getByText('Coffeee is invite-only')).toBeVisible()
+  await expect(page.getByTestId('sign-in-refused')).toContainText(
+    'Coffeee is invite-only',
+  )
 })

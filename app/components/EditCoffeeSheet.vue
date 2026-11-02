@@ -63,22 +63,25 @@ const save = handleSubmit(async details => {
 <template>
   <FormSheet
     v-model:open="open"
+    data-testid="edit-coffee-sheet"
     title="Edit coffee"
     description="Fix its details for everyone who has it on a shelf."
   >
     <form
       class="flex flex-col gap-6 px-5 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:px-8"
       novalidate
+      data-testid="edit-coffee-form"
       @submit="save"
     >
       <CoffeeDetailsFields />
 
-      <Alert v-if="formError" variant="destructive">
+      <Alert v-if="formError" variant="destructive" data-testid="form-error">
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
 
       <button
         type="submit"
+        data-testid="edit-coffee-submit"
         class="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
         :disabled="isSubmitting"
       >

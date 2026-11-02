@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineOptions({ inheritAttrs: false })
+
 const model = defineModel<string>({ default: '' })
 
 defineProps<{ id: string; invalid?: boolean }>()
@@ -24,6 +26,7 @@ const canCreate = computed(
   <Combobox v-model="model" ignore-filter open-on-focus>
     <ComboboxAnchor>
       <ComboboxInput
+        v-bind="$attrs"
         :id="id"
         v-model="search"
         placeholder="Search or add a roaster"
@@ -37,6 +40,7 @@ const canCreate = computed(
           v-for="roaster in matches"
           :key="roaster.id"
           :value="roaster.name"
+          data-testid="roaster-option"
           class="rounded-full px-3 py-2"
         >
           {{ roaster.name }}
@@ -44,11 +48,16 @@ const canCreate = computed(
         <ComboboxItem
           v-if="canCreate"
           :value="search.trim()"
+          data-testid="roaster-option-new"
           class="rounded-full px-3 py-2"
         >
           Add “{{ search.trim() }}”
         </ComboboxItem>
-        <p v-if="!matches.length && !canCreate" class="px-3 py-2 text-xs">
+        <p
+          v-if="!matches.length && !canCreate"
+          data-testid="roaster-hint"
+          class="px-3 py-2 text-xs"
+        >
           Type the roaster's name
         </p>
       </ComboboxViewport>

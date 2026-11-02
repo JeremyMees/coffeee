@@ -26,6 +26,7 @@ function pathOn(shelfId: string) {
   <DropdownMenu>
     <DropdownMenuTrigger as-child>
       <button
+        data-testid="shelf-switcher"
         v-bind="$attrs"
         type="button"
         class="flex min-w-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-[13px] uppercase hover:bg-accent"
@@ -41,6 +42,7 @@ function pathOn(shelfId: string) {
     <DropdownMenuContent
       :side="side"
       :align="align"
+      data-testid="shelf-menu"
       class="min-w-56 rounded-[18px] p-1.5 font-mono ring-primary"
     >
       <DropdownMenuLabel class="text-[10px] uppercase"
@@ -55,6 +57,7 @@ function pathOn(shelfId: string) {
         <NuxtLink
           :to="pathOn(shelf.id)"
           :aria-current="shelf.id === current?.id ? 'page' : undefined"
+          data-testid="shelf-menu-shelf"
         >
           <span class="flex-1 truncate">{{ shelf.name }}</span>
           <CheckIcon v-if="shelf.id === current?.id" aria-hidden="true" />
@@ -62,7 +65,7 @@ function pathOn(shelfId: string) {
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem class="rounded-full px-3 py-2" as-child>
-        <NuxtLink to="/shelves/new">
+        <NuxtLink to="/shelves/new" data-testid="shelf-menu-new">
           <PlusIcon aria-hidden="true" />
           New shelf
         </NuxtLink>

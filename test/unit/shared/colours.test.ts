@@ -7,6 +7,11 @@ describe('inkOn', () => {
     expect(inkOn('#2f6f4f')).toBe('#fffaf5')
   })
 
+  it('handles the darkest colours too', () => {
+    expect(inkOn('#000000')).toBe('#fffaf5')
+    expect(inkOn('#0a0a0a')).toBe('#fffaf5')
+  })
+
   it('switches to dark text on light bags', () => {
     expect(inkOn('#f2c14e')).toBe('#1d1d1f')
     expect(inkOn('#f4c7c3')).toBe('#1d1d1f')

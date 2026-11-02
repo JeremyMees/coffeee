@@ -36,23 +36,34 @@ const create = handleSubmit(async body => {
       A shelf keeps coffee apart, such as Home and Work. You can share it with
       other people later.
     </p>
-    <form class="mt-8 flex max-w-md flex-col gap-4" novalidate @submit="create">
+    <form
+      class="mt-8 flex max-w-md flex-col gap-4"
+      novalidate
+      data-testid="new-shelf-form"
+      @submit="create"
+    >
       <VeeField v-slot="{ componentField, errors }" name="name">
         <Field :data-invalid="errors.length ? true : undefined">
           <FieldLabel for="shelf-name">Name</FieldLabel>
           <Input
             id="shelf-name"
             v-bind="componentField"
+            data-testid="shelf-name"
             autocomplete="off"
             :aria-invalid="errors.length ? true : undefined"
           />
           <FieldError :errors="errors" />
         </Field>
       </VeeField>
-      <Alert v-if="formError" variant="destructive">
+      <Alert v-if="formError" variant="destructive" data-testid="form-error">
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
-      <Button type="submit" class="self-start" :disabled="isSubmitting">
+      <Button
+        type="submit"
+        class="self-start"
+        data-testid="new-shelf-submit"
+        :disabled="isSubmitting"
+      >
         Create shelf
       </Button>
     </form>

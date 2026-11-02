@@ -28,6 +28,7 @@ const date = computed({
       <PopoverTrigger as-child>
         <Button
           :id="id"
+          data-testid="date-picker-trigger"
           variant="outline"
           :class="[
             'w-full justify-start rounded-lg px-2.5 text-left font-normal',
@@ -40,7 +41,11 @@ const date = computed({
           {{ model ? formatDate(model) : 'Pick a date' }}
         </Button>
       </PopoverTrigger>
-      <PopoverContent class="w-auto p-0" align="start">
+      <PopoverContent
+        class="w-auto p-0"
+        align="start"
+        data-testid="date-picker-calendar"
+      >
         <Calendar
           v-model="date"
           :default-placeholder="date ?? latest"
@@ -55,6 +60,7 @@ const date = computed({
     <button
       v-if="clearable && date"
       type="button"
+      data-testid="date-picker-clear"
       class="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-full hover:bg-muted"
       :aria-label="`Clear ${props.label.toLowerCase()}`"
       @click="model = ''"

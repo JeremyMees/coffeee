@@ -21,6 +21,7 @@ defineProps<{
         class="sr-only"
         :name="name"
         :value="option.value"
+        :data-testid="`option-${option.value}`"
         :aria-invalid="invalid ? true : undefined"
       />
       {{ option.label }}

@@ -1,13 +1,30 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAuth, useAuth } from '#server/utils/auth'
-import { inviteEmail } from '#server/utils/invites'
+import { createInviteLink, inviteEmail } from '#server/utils/invites'
 import { listShelves } from '#server/utils/shelves'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 import { runtimeConfig } from '#test/support/nitro'
 
-const current = vi.hoisted(() => ({ db: undefined as unknown }))
+const current = vi.hoisted(() => ({
+  db: undefined as unknown,
+  oauthState: undefined as
+    { additionalData?: Record<string, unknown> } | undefined,
+}))
 
 vi.mock('#server/utils/db', () => ({ useDb: () => current.db }))
+
+vi.mock('better-auth/api', async importOriginal => ({
+  ...(await importOriginal<object>()),
+  getOAuthState: async () => {
+    if (!current.oauthState) throw new Error('No OAuth state outside a request')
+
+    return current.oauthState
+  },
+}))
+
+beforeEach(() => {
+  current.oauthState = undefined
+})
 
 async function setup() {
   const { db } = await createTestDatabase()
@@ -47,6 +64,26 @@ describe('signing up', () => {
     const { user } = await signUpWithGoogle('Sarah@example.com')
 
     expect(user).toMatchObject({ email: 'sarah@example.com', role: 'user' })
+  })
+
+  it('lets someone in with an invite link', async () => {
+    const { db, signUpWithGoogle } = await setup()
+    const admin = await createTestUser(db, { role: 'admin' })
+    const { token } = await createInviteLink(db, { createdBy: admin.id })
+    current.oauthState = { additionalData: { inviteToken: token } }
+
+    const { user } = await signUpWithGoogle('tom@example.com')
+
+    expect(user).toMatchObject({ email: 'tom@example.com', role: 'user' })
+  })
+
+  it('ignores an invite token that is not text', async () => {
+    const { signUpWithGoogle } = await setup()
+    current.oauthState = { additionalData: { inviteToken: 42 } }
+
+    await expect(signUpWithGoogle('tom@example.com')).rejects.toThrow(
+      'You need an invite to join Coffeee',
+    )
   })
 
   it('gives a new user a shelf of their own', async () => {

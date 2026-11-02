@@ -14,12 +14,17 @@ const { data: stock } = await useFetch(
 <template>
   <main>
     <PageHeader title="Stock" />
-    <div v-if="!stock.length" class="mt-3 flex flex-col items-start gap-4">
+    <div
+      v-if="!stock.length"
+      class="mt-3 flex flex-col items-start gap-4"
+      data-testid="stock-empty"
+    >
       <p class="text-xs">
         Nothing in stock yet. Add the coffee you're drinking now.
       </p>
       <button
         type="button"
+        data-testid="stock-empty-add-coffee"
         class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase lg:hidden"
         @click="addCoffee = true"
       >
@@ -29,6 +34,7 @@ const { data: stock } = await useFetch(
     <ul
       v-else
       aria-label="Current stock"
+      data-testid="stock"
       class="mt-8 flex flex-col lg:grid lg:grid-cols-2 lg:gap-5 2xl:grid-cols-3"
     >
       <li

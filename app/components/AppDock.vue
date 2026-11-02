@@ -8,6 +8,7 @@ const addCoffee = useAddCoffee()
 <template>
   <nav
     aria-label="Dock"
+    data-testid="dock"
     class="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] [view-transition-name:dock] lg:hidden"
   >
     <Dock
@@ -24,6 +25,7 @@ const addCoffee = useAddCoffee()
           <a
             :href="href ?? undefined"
             :aria-label="item.label"
+            data-testid="dock-link"
             :title="item.label"
             :aria-current="isExactActive ? 'page' : undefined"
             class="grid size-full place-items-center rounded-full"
@@ -39,6 +41,7 @@ const addCoffee = useAddCoffee()
         <button
           type="button"
           aria-label="Add coffee"
+          data-testid="dock-add-coffee"
           title="Add coffee"
           class="grid size-full place-items-center rounded-full border border-primary"
           @click="addCoffee = true"

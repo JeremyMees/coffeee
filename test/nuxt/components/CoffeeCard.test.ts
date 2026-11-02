@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
+import CoffeeCard from '~/components/CoffeeCard.vue'
+import { daysAgo, tid } from '../fixtures'
+
+const coffee = {
+  name: 'Ayele Fulasa',
+  roaster: 'Square Mile',
+  roastLevel: 'medium-dark',
+  roastedFor: 'espresso',
+  colour: '#2f6f4f',
+  roastedOn: daysAgo(3),
+} as const
+
+function mountCard(props: Record<string, unknown> = {}) {
+  return mountSuspended(CoffeeCard, { props: { coffee, ...props } })
+}
+
+describe('CoffeeCard', () => {
+  it('shows the roaster, the name and how it was roasted', async () => {
+    const card = await mountCard()
+
+    expect(card.get(tid('coffee-card-roaster')).text()).toBe('Square Mile')
+    expect(card.get(tid('coffee-card-name')).text()).toBe('Ayele Fulasa')
+    expect(card.get(tid('coffee-card-roast')).text()).toBe(
+      'Medium-Dark · Espresso',
+    )
+  })
+
+  it('counts the days off roast and how fresh that is', async () => {
+    const card = await mountCard()
+
+    expect(card.get(tid('coffee-card-days')).text()).toMatch(
+      /^3\s*days off roast$/,
+    )
+    expect(card.get(tid('coffee-card-freshness')).text()).toBe('Resting')
+  })
+
+  it('says when there is no roast date', async () => {
+    const card = await mountCard({ coffee: { ...coffee, roastedOn: null } })
+
+    expect(card.get(tid('coffee-card-days')).text()).toMatch(
+      /^–\s*no roast date$/,
+    )
+    expect(card.get(tid('coffee-card-freshness')).text()).toBe('Unknown')
+  })
+
+  it('opens the coffee when it has somewhere to go', async () => {
+    const card = await mountCard({ to: '/shelves/home/coffees/c1' })
+
+    expect(card.element.tagName).toBe('A')
+    expect(card.attributes('href')).toBe('/shelves/home/coffees/c1')
+  })
+
+  it('is just a card otherwise', async () => {
+    const card = await mountCard()
+
+    expect(card.element.tagName).toBe('ARTICLE')
+  })
+
+  it('writes on the bag in the colour that reads best', async () => {
+    const dark = await mountCard()
+    const light = await mountCard({ coffee: { ...coffee, colour: '#f2c14e' } })
+
+    expect((dark.element as HTMLElement).style.color).toMatch(
+      /#fffaf5|rgb\(255, 250, 245\)/,
+    )
+    expect((light.element as HTMLElement).style.color).toMatch(
+      /#1d1d1f|rgb\(29, 29, 31\)/,
+    )
+  })
+})

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-definePageMeta({
-  middleware: () => navigateTo(lastShelfPath(), { replace: true }),
-})
+definePageMeta({ middleware: 'last-shelf' })
 </script>
 
 <template>

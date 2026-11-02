@@ -13,20 +13,29 @@ useHead({ title: 'Profile · Coffeee' })
     >
       <div>
         <dt class="text-[10px] uppercase">Name</dt>
-        <dd class="mt-0.5 font-sans font-semibold">{{ user.name }}</dd>
+        <dd class="mt-0.5 font-sans font-semibold" data-testid="profile-name">
+          {{ user.name }}
+        </dd>
       </div>
       <div class="min-w-0">
         <dt class="text-[10px] uppercase">Email</dt>
-        <dd class="mt-0.5 truncate font-sans font-semibold">
+        <dd
+          class="mt-0.5 truncate font-sans font-semibold"
+          data-testid="profile-email"
+        >
           {{ user.email }}
         </dd>
       </div>
     </dl>
     <div class="mt-6 flex gap-2">
       <Button v-if="user?.role === 'admin'" variant="outline" as-child>
-        <NuxtLink to="/admin/invites">Invites</NuxtLink>
+        <NuxtLink to="/admin/invites" data-testid="profile-invites">
+          Invites
+        </NuxtLink>
       </Button>
-      <Button variant="outline" @click="signOut">Sign out</Button>
+      <Button variant="outline" data-testid="sign-out" @click="signOut">
+        Sign out
+      </Button>
     </div>
   </main>
 </template>

@@ -1,13 +1,22 @@
 import { randomUUID } from 'node:crypto'
+import type { Page } from '@playwright/test'
 import { expect, test } from './support/fixtures'
+
+function switcher(page: Page) {
+  return page.getByTestId('sidebar-shelf-switcher')
+}
+
+async function createShelf(page: Page, name: string) {
+  await page.getByTestId('shelf-name').fill(name)
+  await page.getByTestId('new-shelf-submit').click()
+  await expect(switcher(page)).toHaveText(`Shelf: ${name}`)
+}
 
 test('opens on your own shelf', async ({ page, member }) => {
   await page.goto('/')
 
   await expect(page).toHaveURL(`/shelves/${member.shelfId}`)
-  await expect(
-    page.getByRole('button', { name: "Shelf: Tess's shelf" }),
-  ).toBeVisible()
+  await expect(switcher(page)).toHaveText("Shelf: Tess's shelf")
 })
 
 test('creates a shelf and comes back to it next time', async ({
@@ -16,12 +25,10 @@ test('creates a shelf and comes back to it next time', async ({
 }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: "Shelf: Tess's shelf" }).click()
-  await page.getByRole('menuitem', { name: 'New shelf' }).click()
-  await page.getByLabel('Name').fill('Work')
-  await page.getByRole('button', { name: 'Create shelf' }).click()
+  await switcher(page).click()
+  await page.getByTestId('shelf-menu-new').click()
+  await createShelf(page, 'Work')
 
-  await expect(page.getByRole('button', { name: 'Shelf: Work' })).toBeVisible()
   await expect(page).not.toHaveURL(/\/shelves\/new$/)
   const workPath = new URL(page.url()).pathname
   expect(workPath).not.toBe(`/shelves/${member.shelfId}`)
@@ -33,14 +40,15 @@ test('creates a shelf and comes back to it next time', async ({
 
 test('switches to the same page on another shelf', async ({ page, member }) => {
   await page.goto('/shelves/new')
-  await page.getByLabel('Name').fill('Work')
-  await page.getByRole('button', { name: 'Create shelf' }).click()
-  await expect(page.getByRole('button', { name: 'Shelf: Work' })).toBeVisible()
-  await page.getByRole('link', { name: 'Library' }).click()
+  await createShelf(page, 'Work')
+  await page.getByTestId('sidebar-link').filter({ hasText: 'Library' }).click()
   await expect(page).toHaveURL(/\/library$/)
 
-  await page.getByRole('button', { name: 'Shelf: Work' }).click()
-  await page.getByRole('menuitem', { name: "Tess's shelf" }).click()
+  await switcher(page).click()
+  await page
+    .getByTestId('shelf-menu-shelf')
+    .filter({ hasText: "Tess's shelf" })
+    .click()
 
   await expect(page).toHaveURL(`/shelves/${member.shelfId}/library`)
 })
@@ -48,9 +56,11 @@ test('switches to the same page on another shelf', async ({ page, member }) => {
 test('explains a shelf without a name', async ({ page }) => {
   await page.goto('/shelves/new')
 
-  await page.getByRole('button', { name: 'Create shelf' }).click()
+  await page.getByTestId('new-shelf-submit').click()
 
-  await expect(page.getByText('Give the shelf a name')).toBeVisible()
+  await expect(page.getByTestId('new-shelf-form')).toContainText(
+    'Give the shelf a name',
+  )
 })
 
 test('keeps people out of shelves they are not a member of', async ({
@@ -58,5 +68,5 @@ test('keeps people out of shelves they are not a member of', async ({
 }) => {
   await page.goto(`/shelves/${randomUUID()}`)
 
-  await expect(page.getByRole('heading', { name: 'Not found' })).toBeVisible()
+  await expect(page.getByTestId('error-title')).toHaveText('Not found')
 })

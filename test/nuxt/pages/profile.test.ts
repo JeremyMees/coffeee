@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
-import { testUser } from '../fixtures'
+import { testUser, tid } from '../fixtures'
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }))
 
@@ -18,15 +18,15 @@ describe('profile page', () => {
   it('shows who is signed in', async () => {
     const page = await mountSuspended(App, { route: '/profile' })
 
-    expect(page.get('h1').text()).toBe('Profile')
-    expect(page.text()).toContain('Sarah')
-    expect(page.text()).toContain('sarah@example.com')
+    expect(page.get(tid('page-title')).text()).toBe('Profile')
+    expect(page.get(tid('profile-name')).text()).toBe('Sarah')
+    expect(page.get(tid('profile-email')).text()).toBe('sarah@example.com')
   })
 
   it('hides the invites link from users who are not admins', async () => {
     const page = await mountSuspended(App, { route: '/profile' })
 
-    expect(page.find('a[href="/admin/invites"]').exists()).toBe(false)
+    expect(page.find(tid('profile-invites')).exists()).toBe(false)
   })
 
   it('shows admins the invites link', async () => {
@@ -34,7 +34,10 @@ describe('profile page', () => {
 
     const page = await mountSuspended(App, { route: '/profile' })
 
-    expect(page.get('a[href="/admin/invites"]').text()).toBe('Invites')
+    const invites = page.get(tid('profile-invites'))
+
+    expect(invites.text()).toBe('Invites')
+    expect(invites.attributes('href')).toBe('/admin/invites')
   })
 
   it('forgets the pages cached for offline use when signing out', async () => {
@@ -43,8 +46,7 @@ describe('profile page', () => {
 
     const page = await mountSuspended(App, { route: '/profile' })
 
-    const button = page.findAll('button').find(b => b.text() === 'Sign out')
-    await button!.trigger('click')
+    await page.get(tid('sign-out')).trigger('click')
 
     await vi.waitFor(() => expect(caches.delete).toHaveBeenCalledWith('pages'))
 
@@ -54,8 +56,7 @@ describe('profile page', () => {
   it('signs out and goes to the sign-in page', async () => {
     const page = await mountSuspended(App, { route: '/profile' })
 
-    const button = page.findAll('button').find(b => b.text() === 'Sign out')
-    await button!.trigger('click')
+    await page.get(tid('sign-out')).trigger('click')
 
     await vi.waitFor(() => {
       expect(signOut).toHaveBeenCalled()

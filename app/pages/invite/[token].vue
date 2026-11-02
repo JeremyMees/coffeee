@@ -23,7 +23,9 @@ useHead({ title: 'Your invite · Coffeee' })
     <Card class="w-full max-w-sm">
       <CardHeader>
         <CardTitle>
-          <h1 class="text-3xl font-bold">You're invited</h1>
+          <h1 class="text-3xl font-bold" data-testid="invite-title">
+            You're invited
+          </h1>
         </CardTitle>
         <CardDescription>
           Join Coffeee to keep track of your coffee shelf. This link works once
@@ -34,6 +36,7 @@ useHead({ title: 'Your invite · Coffeee' })
         <Button
           size="lg"
           class="w-full"
+          data-testid="invite-google"
           :disabled="signingIn"
           @click="acceptWithGoogle"
         >
