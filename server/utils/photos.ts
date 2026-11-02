@@ -46,11 +46,15 @@ export async function readPhoto(event: H3Event): Promise<Photo> {
   return { data: photo.data, type: photo.type }
 }
 
-export async function storePhoto(photo: Photo, folder: PhotoFolder) {
+export async function storePhoto(
+  photo: Photo,
+  folder: PhotoFolder,
+  scope = blobScope(),
+) {
   const pathname = `${folder}/${crypto.randomUUID()}.${photoExtensions[photo.type]}`
 
   if (onBlob()) {
-    const { url } = await put(`${blobScope()}/${pathname}`, photo.data, {
+    const { url } = await put(`${scope}/${pathname}`, photo.data, {
       access: 'public',
       contentType: photo.type,
     })
@@ -61,6 +65,23 @@ export async function storePhoto(photo: Photo, folder: PhotoFolder) {
   await useStorage('photos').setItemRaw(pathname, photo.data)
 
   return `${localPhotos}${pathname}`
+}
+
+export async function copyPhoto(
+  url: string,
+  folder: PhotoFolder,
+  scope?: string,
+) {
+  const response = await fetch(url)
+  const type = response.headers.get('content-type')?.split(';')[0]?.trim()
+
+  if (!response.ok || !isPhotoType(type)) return null
+
+  const data = Buffer.from(await response.arrayBuffer())
+
+  if (data.byteLength > photoMaxBytes) return null
+
+  return storePhoto({ data, type }, folder, scope)
 }
 
 export async function deletePhoto(url: string | null) {

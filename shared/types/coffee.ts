@@ -23,3 +23,8 @@ export type DescribedCoffee = Record<OriginListField, OriginEntry[]> & {
 export type CoffeeDetails = z.output<typeof coffeeDetailsSchema>
 
 export type NewCoffee = z.output<typeof newCoffeeSchema>
+
+export type CoffeeDescription = Pick<
+  CoffeeDetails,
+  'origins' | OriginListField | CoffeeListField
+>

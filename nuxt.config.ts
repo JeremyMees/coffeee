@@ -30,6 +30,10 @@ export default defineNuxtConfig({
 
   vite: { plugins: [tailwindcss()] },
 
+  $development: {
+    nitro: { experimental: { tasks: true } },
+  },
+
   nitro: {
     storage: {
       photos: { driver: 'fs', base: './.data/photos' },

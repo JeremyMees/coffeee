@@ -4,10 +4,10 @@ import { Pool } from 'pg'
 import { useRuntimeConfig } from 'nitropack/runtime'
 import * as schema from '#server/db/schemas'
 
-let db: ReturnType<typeof createDb> | undefined
+let db: ReturnType<typeof connectDb> | undefined
 
-function createDb() {
-  const pool = new Pool({ connectionString: useRuntimeConfig().databaseUrl })
+export function connectDb(connectionString: string) {
+  const pool = new Pool({ connectionString })
 
   pool.on('error', error =>
     console.error('Idle database connection failed', error),
@@ -19,6 +19,6 @@ function createDb() {
 }
 
 export function useDb() {
-  db ??= createDb()
+  db ??= connectDb(useRuntimeConfig().databaseUrl)
   return db
 }

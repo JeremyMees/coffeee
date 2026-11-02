@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, isNull, max, ne } from 'drizzle-orm'
 import { coffeeListFields } from '#shared/utils/coffee'
 import type { ListEntry } from '#shared/types/catalog'
 import type {
+  CoffeeDescription,
   CoffeeDetails,
   CoffeeListField,
   NewCoffee,
@@ -78,9 +79,9 @@ const coffeeLists: Record<CoffeeListField, CoffeeList> = {
   },
 }
 
-async function describeCoffee(
+export async function describeCoffee(
   db: Database,
-  input: { coffeeId: string; userId: string; details: CoffeeDetails },
+  input: { coffeeId: string; userId: string; details: CoffeeDescription },
 ) {
   await describeOrigins(db, input)
 
@@ -126,7 +127,7 @@ async function flavorNotesOf(db: Database, coffeeIds: string[]) {
   return notes
 }
 
-async function findOrCreateCoffee(
+export async function findOrCreateCoffee(
   db: Database,
   input: Omit<typeof coffee.$inferInsert, 'nameKey'>,
 ) {
