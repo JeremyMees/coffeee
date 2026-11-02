@@ -2,19 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
+import { testUser } from '../fixtures'
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }))
 
 mockNuxtImport('authClient', () => ({ signOut }))
 
 function signInAs(role: 'admin' | 'user') {
-  useCurrentUser().value = {
-    id: 'user-1',
-    name: 'Sarah',
-    email: 'sarah@example.com',
-    image: null,
-    role,
-  }
+  useCurrentUser().value = testUser({ role })
 }
 
 beforeEach(() => signInAs('user'))

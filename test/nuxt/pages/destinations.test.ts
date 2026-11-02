@@ -2,21 +2,16 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
+import { testUser } from '../fixtures'
 
 beforeEach(() => {
-  useCurrentUser().value = {
-    id: 'user-1',
-    name: 'Sarah',
-    email: 'sarah@example.com',
-    image: null,
-    role: 'user',
-  }
+  useCurrentUser().value = testUser()
 })
 
 describe.each([
-  { route: '/', title: 'Stock' },
-  { route: '/library', title: 'Library' },
-  { route: '/search', title: 'Search' },
+  { route: '/shelves/home', title: 'Stock' },
+  { route: '/shelves/home/library', title: 'Library' },
+  { route: '/shelves/home/search', title: 'Search' },
 ])('$title page', ({ route, title }) => {
   it('has its title as the page heading', async () => {
     const page = await mountSuspended(App, { route })

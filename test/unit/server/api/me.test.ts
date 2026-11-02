@@ -7,11 +7,18 @@ import { createTestDatabase, createTestUser } from '#test/support/database'
 
 type TestAuth = Awaited<ReturnType<typeof createTestAuth>>
 
-const current = vi.hoisted(() => ({ auth: undefined as unknown }))
+const current = vi.hoisted(() => ({
+  auth: undefined as unknown,
+  db: undefined as unknown,
+}))
 
 vi.mock('#server/utils/auth', async importOriginal => ({
   ...(await importOriginal<object>()),
   useAuth: () => (current.auth as TestAuth).auth,
+}))
+
+vi.mock('#server/utils/db', () => ({
+  useDb: () => current.db,
 }))
 
 let testAuth: TestAuth
@@ -21,6 +28,7 @@ beforeEach(async () => {
   db = (await createTestDatabase()).db
   testAuth = await createTestAuth(db)
   current.auth = testAuth
+  current.db = db
 })
 
 function request(path: string, init: RequestInit = {}) {
@@ -49,6 +57,7 @@ describe('GET /api/me', () => {
     expect(await response.json()).toMatchObject({
       email: 'sarah@example.com',
       role: 'user',
+      shelves: [],
     })
   })
 

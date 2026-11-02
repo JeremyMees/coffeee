@@ -8,6 +8,7 @@ import type { Database } from '../db/database'
 import * as schema from '../db/schemas'
 import { useDb } from './db'
 import { claimInvite } from './invites'
+import { createShelf, shelfNameFor } from './shelves'
 
 export interface AuthConfig {
   db: Database
@@ -63,6 +64,12 @@ export function createAuth(config: AuthConfig) {
             }
 
             return { data: user }
+          },
+          after: async user => {
+            await createShelf(config.db, {
+              name: shelfNameFor(user.name),
+              ownerId: user.id,
+            })
           },
         },
       },

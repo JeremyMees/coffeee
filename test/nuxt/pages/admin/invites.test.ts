@@ -21,6 +21,7 @@ registerEndpoint('/api/me', () => ({
   email: 'jeremy@example.com',
   image: null,
   role: server.role,
+  shelves: [{ id: 'home', name: "Jeremy's shelf", ownerId: 'user-1' }],
 }))
 
 registerEndpoint('/api/invites', {
@@ -80,7 +81,7 @@ describe('admin invites page', () => {
 
     await mountSuspended(App, { route: '/admin/invites' })
 
-    expect(useRouter().currentRoute.value.path).toBe('/')
+    expect(useRouter().currentRoute.value.path).toBe('/shelves/home')
   })
 
   it('lists pending invites', async () => {

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { PlusIcon } from '@lucide/vue'
+
+const destinations = useDestinations()
 </script>
 
 <template>

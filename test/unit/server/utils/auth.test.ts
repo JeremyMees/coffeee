@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createAuth, useAuth } from '#server/utils/auth'
 import { inviteEmail } from '#server/utils/invites'
+import { listShelves } from '#server/utils/shelves'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 import { runtimeConfig } from '#test/support/nitro'
 
@@ -46,6 +47,16 @@ describe('signing up', () => {
     const { user } = await signUpWithGoogle('Sarah@example.com')
 
     expect(user).toMatchObject({ email: 'sarah@example.com', role: 'user' })
+  })
+
+  it('gives a new user a shelf of their own', async () => {
+    const { db, signUpWithGoogle } = await setup()
+
+    const { user } = await signUpWithGoogle('jeremy@example.com')
+
+    expect(await listShelves(db, user.id)).toEqual([
+      { id: expect.any(String), name: "Someone's shelf", ownerId: user.id },
+    ])
   })
 
   it('lets the admin email in without an invite, as an admin', async () => {

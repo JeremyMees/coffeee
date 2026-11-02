@@ -1,13 +1,14 @@
+<script setup lang="ts">
+const destinations = useDestinations()
+</script>
+
 <template>
   <aside
     class="sticky top-0 hidden h-dvh flex-col border-r [view-transition-name:sidebar] lg:flex"
   >
-    <NuxtLink
-      to="/"
-      aria-label="Coffeee"
-      class="border-b px-6 pt-8 pb-6 text-[44px]"
-    >
-      <AppWordmark stacked />
+    <NuxtLink to="/" class="border-b px-6 pt-8 pb-6 text-[44px]">
+      <AppWordmark stacked aria-hidden="true" />
+      <span class="sr-only">Coffeee</span>
     </NuxtLink>
     <nav aria-label="Sidebar" class="flex flex-col gap-1 p-3 text-[13px]">
       <NuxtLink
@@ -31,5 +32,8 @@
         </a>
       </NuxtLink>
     </nav>
+    <div class="mt-auto border-t p-3">
+      <ShelfSwitcher side="top" class="w-full" />
+    </div>
   </aside>
 </template>
