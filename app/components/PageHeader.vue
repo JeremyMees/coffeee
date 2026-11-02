@@ -2,6 +2,8 @@
 import { PlusIcon } from '@lucide/vue'
 
 defineProps<{ title: string }>()
+
+const addCoffee = useAddCoffee()
 </script>
 
 <template>
@@ -10,6 +12,7 @@ defineProps<{ title: string }>()
     <button
       type="button"
       class="hidden items-center gap-2 rounded-full border border-primary px-6 py-2.5 text-sm uppercase transition-colors hover:bg-primary hover:text-primary-foreground lg:flex"
+      @click="addCoffee = true"
     >
       <PlusIcon class="size-4" aria-hidden="true" />
       Add coffee

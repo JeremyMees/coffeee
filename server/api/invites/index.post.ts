@@ -5,18 +5,17 @@ import {
   readBody,
   setResponseStatus,
 } from 'h3'
+import { inviteEmailSchema } from '#shared/utils/schemas'
 import { useDb } from '../../utils/db'
 import { createInviteLink, inviteEmail } from '../../utils/invites'
 import { requireAdmin } from '../../utils/session'
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+import { readValidBody } from '../../utils/validation'
 
 export default defineEventHandler(async event => {
   const admin = await requireAdmin(event)
-  const body = await readBody<{ email?: unknown; link?: unknown }>(event)
   const db = useDb()
 
-  if (body?.link === true) {
+  if ((await readBody<{ link?: unknown }>(event))?.link === true) {
     const { invite, token } = await createInviteLink(db, {
       createdBy: admin.id,
     })
@@ -25,14 +24,8 @@ export default defineEventHandler(async event => {
     return { ...invite, url: `${getRequestURL(event).origin}/invite/${token}` }
   }
 
-  if (typeof body?.email !== 'string' || !emailPattern.test(body.email)) {
-    throw createError({ statusCode: 400, statusMessage: 'Enter a valid email' })
-  }
-
-  const invite = await inviteEmail(db, {
-    email: body.email,
-    createdBy: admin.id,
-  })
+  const { email } = await readValidBody(event, inviteEmailSchema)
+  const invite = await inviteEmail(db, { email, createdBy: admin.id })
 
   if (!invite) {
     throw createError({

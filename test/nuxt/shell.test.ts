@@ -56,7 +56,7 @@ describe('app shell', () => {
         .find('nav[aria-label="Dock"] button[aria-label="Add coffee"]')
         .exists(),
     ).toBe(true)
-    expect(page.get('header button').text()).toBe('Add coffee')
+    expect(page.get('main header button').text()).toBe('Add coffee')
   })
 
   it.each(['/sign-in', '/invite/the-token'])(

@@ -1,32 +1,32 @@
 <script setup lang="ts">
+import { Field as VeeField, useForm } from 'vee-validate'
+
 useHead({ title: 'New shelf · Coffeee' })
 
 const user = useCurrentUser()
-const name = ref('')
-const error = ref('')
-const creating = ref(false)
+const formError = ref('')
 
-async function create() {
-  creating.value = true
-  error.value = ''
+const { handleSubmit, setErrors, isSubmitting } = useForm({
+  validationSchema: zodSchema(newShelfSchema),
+  initialValues: { name: '' },
+})
+
+const create = handleSubmit(async body => {
+  formError.value = ''
 
   try {
-    const shelf = await $fetch('/api/shelves', {
-      method: 'POST',
-      body: { name: name.value },
-    })
+    const shelf = await $fetch('/api/shelves', { method: 'POST', body })
 
     user.value?.shelves.push(shelf)
 
     await navigateTo(`/shelves/${shelf.id}`)
   } catch (caught) {
-    const message = (caught as { statusMessage?: string }).statusMessage
+    const { fields, message } = serverErrors(caught)
 
-    error.value = message || 'Something went wrong. Try again.'
-  } finally {
-    creating.value = false
+    setErrors(fields)
+    formError.value = message
   }
-}
+})
 </script>
 
 <template>
@@ -36,20 +36,23 @@ async function create() {
       A shelf keeps coffee apart, such as Home and Work. You can share it with
       other people later.
     </p>
-    <form class="mt-8 flex max-w-md flex-col gap-4" @submit.prevent="create">
-      <Field :data-invalid="error ? true : undefined">
-        <FieldLabel for="shelf-name">Name</FieldLabel>
-        <Input
-          id="shelf-name"
-          v-model="name"
-          autocomplete="off"
-          maxlength="40"
-          required
-          :aria-invalid="error ? true : undefined"
-        />
-        <FieldError v-if="error">{{ error }}</FieldError>
-      </Field>
-      <Button type="submit" class="self-start" :disabled="creating">
+    <form class="mt-8 flex max-w-md flex-col gap-4" novalidate @submit="create">
+      <VeeField v-slot="{ componentField, errors }" name="name">
+        <Field :data-invalid="errors.length ? true : undefined">
+          <FieldLabel for="shelf-name">Name</FieldLabel>
+          <Input
+            id="shelf-name"
+            v-bind="componentField"
+            autocomplete="off"
+            :aria-invalid="errors.length ? true : undefined"
+          />
+          <FieldError :errors="errors" />
+        </Field>
+      </VeeField>
+      <Alert v-if="formError" variant="destructive">
+        <AlertDescription>{{ formError }}</AlertDescription>
+      </Alert>
+      <Button type="submit" class="self-start" :disabled="isSubmitting">
         Create shelf
       </Button>
     </form>

@@ -6,15 +6,18 @@ import App from '~/app.vue'
 import { clearError, useCurrentUser, useError } from '#imports'
 import { forgetLastShelf, testUser } from './fixtures'
 
+const server = vi.hoisted(() => ({ requests: [] as string[] }))
+
 registerEndpoint('/api/shelves', {
   method: 'POST',
   handler: async event => {
     const { name } = await readBody(event)
+    server.requests.push(name)
 
-    if (!name.trim()) {
+    if (name === 'Broken') {
       throw createError({
-        statusCode: 400,
-        statusMessage: 'Give the shelf a name of up to 40 characters',
+        statusCode: 409,
+        statusMessage: 'That shelf could not be made',
       })
     }
 
@@ -167,11 +170,23 @@ describe('creating a shelf', () => {
     )
   })
 
-  it('says why a shelf could not be created', async () => {
+  it('asks for a name before sending anything', async () => {
+    server.requests = []
+
     const page = await create('   ')
 
-    expect(page.text()).toContain(
-      'Give the shelf a name of up to 40 characters',
+    await vi.waitFor(() =>
+      expect(page.text()).toContain('Give the shelf a name'),
+    )
+    expect(server.requests).toEqual([])
+    expect(currentPath()).toBe('/shelves/new')
+  })
+
+  it('says why the server refused the shelf', async () => {
+    const page = await create('Broken')
+
+    await vi.waitFor(() =>
+      expect(page.text()).toContain('That shelf could not be made'),
     )
     expect(currentPath()).toBe('/shelves/new')
   })

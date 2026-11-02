@@ -2,6 +2,7 @@
 import { PlusIcon } from '@lucide/vue'
 
 const destinations = useDestinations()
+const addCoffee = useAddCoffee()
 </script>
 
 <template>
@@ -40,6 +41,7 @@ const destinations = useDestinations()
           aria-label="Add coffee"
           title="Add coffee"
           class="grid size-full place-items-center rounded-full border border-primary"
+          @click="addCoffee = true"
         >
           <PlusIcon class="size-5" aria-hidden="true" />
         </button>

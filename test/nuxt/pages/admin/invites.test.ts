@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
 import App from '~/app.vue'
@@ -107,9 +106,10 @@ describe('admin invites page', () => {
 
     await page.get('#invite-email').setValue('sarah@example.com')
     await page.get('form').trigger('submit')
-    await flushPromises()
 
-    expect(page.text()).toContain('That email is already invited')
+    await vi.waitFor(() =>
+      expect(page.text()).toContain('That email is already invited'),
+    )
   })
 
   it('shows a new invite link to copy', async () => {

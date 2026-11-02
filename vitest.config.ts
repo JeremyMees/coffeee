@@ -12,6 +12,7 @@ export default defineConfig({
         resolve: {
           alias: {
             '#server': fileURLToPath(new URL('server', import.meta.url)),
+            '#shared': fileURLToPath(new URL('shared', import.meta.url)),
             '#test': fileURLToPath(new URL('test', import.meta.url)),
             'nitropack/runtime': fileURLToPath(
               new URL('test/support/nitro.ts', import.meta.url),

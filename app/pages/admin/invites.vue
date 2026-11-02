@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CheckIcon, CopyIcon } from '@lucide/vue'
+import { Field as VeeField, useForm } from 'vee-validate'
 
 definePageMeta({ middleware: 'admin' })
 
@@ -9,33 +10,32 @@ const { data: invites, refresh } = await useFetch('/api/invites', {
   default: () => [],
 })
 
-const email = ref('')
-const emailError = ref('')
-const allowing = ref(false)
+const formError = ref('')
+
+const { handleSubmit, resetForm, setErrors, isSubmitting } = useForm({
+  validationSchema: zodSchema(inviteEmailSchema),
+  initialValues: { email: '' },
+})
+
 const link = ref('')
 const copied = ref(false)
 
-async function allowEmail() {
-  allowing.value = true
-  emailError.value = ''
+const allowEmail = handleSubmit(async body => {
+  formError.value = ''
 
   try {
-    await $fetch('/api/invites', {
-      method: 'POST',
-      body: { email: email.value },
-    })
+    await $fetch('/api/invites', { method: 'POST', body })
 
-    email.value = ''
+    resetForm()
 
     await refresh()
-  } catch (error) {
-    const message = (error as { statusMessage?: string }).statusMessage
+  } catch (caught) {
+    const { fields, message } = serverErrors(caught)
 
-    emailError.value = message || 'Something went wrong. Try again.'
-  } finally {
-    allowing.value = false
+    setErrors(fields)
+    formError.value = message
   }
-}
+})
 
 async function createLink() {
   const created = await $fetch('/api/invites', {
@@ -86,22 +86,25 @@ function formatDate(date: string) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form class="flex flex-col gap-3" @submit.prevent="allowEmail">
+        <form class="flex flex-col gap-3" novalidate @submit="allowEmail">
           <FieldGroup>
-            <Field :data-invalid="emailError ? true : undefined">
-              <FieldLabel for="invite-email">Email</FieldLabel>
-              <Input
-                id="invite-email"
-                v-model="email"
-                type="email"
-                autocomplete="off"
-                required
-                :aria-invalid="emailError ? true : undefined"
-              />
-              <FieldError v-if="emailError">{{ emailError }}</FieldError>
-            </Field>
+            <VeeField v-slot="{ componentField, errors }" name="email">
+              <Field
+                :data-invalid="errors.length || formError ? true : undefined"
+              >
+                <FieldLabel for="invite-email">Email</FieldLabel>
+                <Input
+                  id="invite-email"
+                  v-bind="componentField"
+                  type="email"
+                  autocomplete="off"
+                  :aria-invalid="errors.length || formError ? true : undefined"
+                />
+                <FieldError :errors="formError ? [formError] : errors" />
+              </Field>
+            </VeeField>
           </FieldGroup>
-          <Button type="submit" :disabled="allowing">Allow email</Button>
+          <Button type="submit" :disabled="isSubmitting">Allow email</Button>
         </form>
       </CardContent>
     </Card>

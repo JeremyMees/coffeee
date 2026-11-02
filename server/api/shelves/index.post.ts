@@ -1,26 +1,13 @@
-import {
-  createError,
-  defineEventHandler,
-  readBody,
-  setResponseStatus,
-} from 'h3'
+import { defineEventHandler, setResponseStatus } from 'h3'
+import { newShelfSchema } from '#shared/utils/schemas'
 import { useDb } from '../../utils/db'
 import { requireUser } from '../../utils/session'
 import { createShelf } from '../../utils/shelves'
-
-const maxNameLength = 40
+import { readValidBody } from '../../utils/validation'
 
 export default defineEventHandler(async event => {
   const user = await requireUser(event)
-  const body = await readBody<{ name?: unknown }>(event)
-  const name = typeof body?.name === 'string' ? body.name.trim() : ''
-
-  if (!name || name.length > maxNameLength) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: `Give the shelf a name of up to ${maxNameLength} characters`,
-    })
-  }
+  const { name } = await readValidBody(event, newShelfSchema)
 
   const shelf = await createShelf(useDb(), { name, ownerId: user.id })
   setResponseStatus(event, 201)
