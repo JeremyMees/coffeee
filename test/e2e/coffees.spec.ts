@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { Locator, Page } from '@playwright/test'
 import { expect, test, uniqueName } from './support/fixtures'
 
@@ -12,7 +13,10 @@ function daysAgo(days: number) {
 }
 
 async function choose(sheet: Locator, group: string, option: string) {
-  await sheet.getByTestId(group).getByTestId(option).check({ force: true })
+  const radio = sheet.getByTestId(group).getByTestId(option)
+
+  await radio.locator('xpath=..').click()
+  await expect(radio).toBeChecked()
 }
 
 async function pickDate(page: Page, picker: string, isoDate: string) {
@@ -188,4 +192,82 @@ test('refuses a name the roaster already has', async ({ page, member }) => {
   await expect(
     sheet.getByText(`${roaster} already has a coffee called Red Brick`),
   ).toBeVisible()
+})
+
+test('keeps a roast date optional', async ({ page, member }) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await page.getByTestId('page-add-coffee').click()
+  const sheet = page.getByTestId('add-coffee-sheet')
+
+  await sheet.getByTestId('coffee-name').fill('Halo')
+  await pickRoaster(page, roaster, true)
+  await choose(sheet, 'coffee-roast-level', 'option-light')
+  await choose(sheet, 'coffee-roasted-for', 'option-omni')
+  await pickDate(page, 'coffee-roasted-on', daysAgo(5))
+  await sheet.getByTestId('date-picker-clear').click()
+  await expect(
+    sheet.getByTestId('coffee-roasted-on').getByTestId('date-picker-trigger'),
+  ).toHaveText('Pick a date')
+  await sheet.getByTestId('add-coffee-submit').click()
+
+  const card = stockCard(page, 'Halo')
+  await expect(card.getByTestId('coffee-card-days')).toContainText(
+    'no roast date',
+  )
+  await expect(card.getByTestId('coffee-card-freshness')).toHaveText('Unknown')
+})
+
+test('shows a coffee read-only to everyone but the person who added it', async ({
+  page,
+  member,
+  people,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page).toHaveURL(/\/coffees\//)
+  await expect(page.getByTestId('coffee-edit')).toBeVisible()
+  const coffeePath = new URL(page.url()).pathname
+
+  const sam = await people.signIn('Sam')
+  await people.joinShelf(sam, member.shelfId)
+  await page.goto(coffeePath)
+
+  await expect(page.getByTestId('coffee-title')).toHaveText('Ayele Fulasa')
+  await expect(page.getByTestId('purchase')).toHaveCount(1)
+  await expect(page.getByTestId('coffee-edit')).toBeHidden()
+})
+
+test('lets an admin fix a coffee someone else added', async ({
+  page,
+  member,
+  people,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page).toHaveURL(/\/coffees\//)
+  const coffeePath = new URL(page.url()).pathname
+
+  const admin = await people.signIn('Ada', 'admin')
+  await people.joinShelf(admin, member.shelfId)
+  await page.goto(coffeePath)
+  await page.getByTestId('coffee-edit').click()
+  const sheet = page.getByTestId('edit-coffee-sheet')
+  await sheet.getByTestId('coffee-name').fill('Ayele Fulasa Washed')
+  await sheet.getByTestId('edit-coffee-submit').click()
+
+  await expect(page.getByTestId('coffee-title')).toHaveText(
+    'Ayele Fulasa Washed',
+  )
+})
+
+test('says when a shelf has no such coffee', async ({ page, member }) => {
+  await page.goto(`/shelves/${member.shelfId}/coffees/${randomUUID()}`)
+
+  await expect(page.getByTestId('error-title')).toHaveText('Not found')
+  await expect(page.getByTestId('error-message')).toHaveText('Coffee not found')
 })

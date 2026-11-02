@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto'
 import { test as base } from '@playwright/test'
+import type { BrowserContext } from '@playwright/test'
 import pg from 'pg'
 
 const secret = 'a-test-secret-that-is-long-enough-to-use'
@@ -7,7 +8,15 @@ const secret = 'a-test-secret-that-is-long-enough-to-use'
 interface Member {
   id: string
   name: string
+  email: string
   shelfId: string
+}
+
+type Role = 'user' | 'admin'
+
+interface People {
+  signIn: (name: string, role?: Role) => Promise<Member>
+  joinShelf: (member: Member, shelfId: string) => Promise<void>
 }
 
 function databaseUrl() {
@@ -16,14 +25,15 @@ function databaseUrl() {
   return process.env.NUXT_DATABASE_URL
 }
 
-async function createMember(client: pg.Client, name: string) {
+async function createMember(client: pg.Client, name: string, role: Role) {
   const id = randomUUID()
+  const email = `${id}@example.test`
   const shelfId = randomUUID()
   const token = randomBytes(24).toString('base64url')
 
   await client.query(
-    `insert into "user" ("id", "name", "email", "role") values ($1, $2, $3, 'user')`,
-    [id, name, `${id}@example.test`],
+    `insert into "user" ("id", "name", "email", "role") values ($1, $2, $3, $4)`,
+    [id, name, email, role],
   )
   await client.query(
     `insert into "shelf" ("id", "name", "ownerId") values ($1, $2, $3)`,
@@ -41,7 +51,10 @@ async function createMember(client: pg.Client, name: string) {
 
   const signature = createHmac('sha256', secret).update(token).digest('base64')
 
-  return { member: { id, name, shelfId }, cookie: `${token}.${signature}` }
+  return {
+    member: { id, name, email, shelfId },
+    cookie: `${token}.${signature}`,
+  }
 }
 
 async function removeMember(client: pg.Client, member: Member) {
@@ -54,25 +67,47 @@ async function removeMember(client: pg.Client, member: Member) {
   await client.query(`delete from "user" where "id" = $1`, [member.id])
 }
 
-export const test = base.extend<{ member: Member }>({
+async function useCookie(context: BrowserContext, url: string, cookie: string) {
+  await context.clearCookies()
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: encodeURIComponent(cookie),
+      url,
+    },
+  ])
+}
+
+export const test = base.extend<{ member: Member; people: People }>({
+  people: async ({ context, baseURL }, use) => {
+    const database = new pg.Client({ connectionString: databaseUrl() })
+    await database.connect()
+    const created: Member[] = []
+
+    await use({
+      async signIn(name, role = 'user') {
+        const { member, cookie } = await createMember(database, name, role)
+        created.push(member)
+        await useCookie(context, baseURL!, cookie)
+
+        return member
+      },
+      async joinShelf(member, shelfId) {
+        await database.query(
+          `insert into "shelfMember" ("shelfId", "userId") values ($1, $2)`,
+          [shelfId, member.id],
+        )
+      },
+    })
+
+    for (const member of created.reverse()) {
+      await removeMember(database, member)
+    }
+    await database.end()
+  },
   member: [
-    async ({ context, baseURL }, use) => {
-      const client = new pg.Client({ connectionString: databaseUrl() })
-      await client.connect()
-
-      const { member, cookie } = await createMember(client, 'Tess')
-      await context.addCookies([
-        {
-          name: 'better-auth.session_token',
-          value: encodeURIComponent(cookie),
-          url: baseURL!,
-        },
-      ])
-
-      await use(member)
-
-      await removeMember(client, member)
-      await client.end()
+    async ({ people }, use) => {
+      await use(await people.signIn('Tess'))
     },
     { auto: true },
   ],
