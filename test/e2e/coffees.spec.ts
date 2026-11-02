@@ -11,6 +11,20 @@ function daysAgo(days: number) {
   return `${date.getFullYear()}-${month}-${day}`
 }
 
+async function pickDate(page: Page, label: string, isoDate: string) {
+  await page.getByRole('dialog').getByLabel(label).click()
+
+  const day = page.locator(
+    `[data-slot="calendar-cell-trigger"][data-value="${isoDate}"]:not([data-outside-view])`,
+  )
+
+  while (!(await day.isVisible())) {
+    await page.getByRole('button', { name: 'Previous page' }).click()
+  }
+
+  await day.click()
+}
+
 async function addCoffee(
   page: Page,
   coffee: { name: string; roaster: string; newRoaster: boolean },
@@ -30,7 +44,7 @@ async function addCoffee(
     .click()
   await sheet.getByText('Light', { exact: true }).click()
   await sheet.getByText('Filter', { exact: true }).click()
-  await sheet.getByLabel('Roasted on').fill(daysAgo(10))
+  await pickDate(page, 'Roasted on', daysAgo(10))
   await sheet.getByLabel('Size (g)').fill('250')
   await sheet.getByLabel('Price (€)').fill('16.50')
   await sheet.getByRole('button', { name: 'Add coffee' }).click()

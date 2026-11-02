@@ -36,14 +36,6 @@ const euros = new Intl.NumberFormat(undefined, {
   style: 'currency',
   currency: 'EUR',
 })
-
-function formatDate(date: string) {
-  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
 </script>
 
 <template>

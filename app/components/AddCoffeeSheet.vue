@@ -72,11 +72,11 @@ const add = handleSubmit(async coffee => {
           <VeeField v-slot="{ componentField, errors }" name="purchasedOn">
             <Field :data-invalid="errors.length ? true : undefined">
               <FieldLabel for="purchased-on">Bought on</FieldLabel>
-              <Input
+              <DatePicker
                 id="purchased-on"
                 v-bind="componentField"
-                type="date"
-                :aria-invalid="errors.length ? true : undefined"
+                label="Bought on"
+                :invalid="errors.length > 0"
               />
               <FieldError :errors="errors" />
             </Field>
@@ -84,11 +84,12 @@ const add = handleSubmit(async coffee => {
           <VeeField v-slot="{ componentField, errors }" name="roastedOn">
             <Field :data-invalid="errors.length ? true : undefined">
               <FieldLabel for="roasted-on">Roasted on</FieldLabel>
-              <Input
+              <DatePicker
                 id="roasted-on"
                 v-bind="componentField"
-                type="date"
-                :aria-invalid="errors.length ? true : undefined"
+                label="Roasted on"
+                clearable
+                :invalid="errors.length > 0"
               />
               <FieldError :errors="errors" />
             </Field>

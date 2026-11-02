@@ -318,6 +318,26 @@ describe('the add coffee sheet', () => {
     await flushPromises()
   }
 
+  async function pickDate(selector: string, isoDate: string) {
+    field(selector).click()
+    await flushPromises()
+
+    const day = () =>
+      document.body.querySelector<HTMLElement>(
+        `[data-slot="calendar-cell-trigger"][data-value="${isoDate}"]:not([data-outside-view])`,
+      )
+
+    for (let page = 0; !day() && page < 24; page++) {
+      document.body
+        .querySelector<HTMLElement>('[aria-label="Previous page"]')!
+        .click()
+      await flushPromises()
+    }
+
+    day()!.click()
+    await flushPromises()
+  }
+
   function options() {
     return [...document.body.querySelectorAll('[role="option"]')].map(element =>
       element.textContent?.trim(),
@@ -336,7 +356,9 @@ describe('the add coffee sheet', () => {
     const page = await openSheet()
 
     expect(dialog().textContent).toContain('Add coffee')
-    expect(field('#purchased-on').value).toBe(localDate())
+    expect(field('#purchased-on').textContent).toContain(
+      formatDate(localDate()),
+    )
 
     page.unmount()
   })
@@ -386,7 +408,7 @@ describe('the add coffee sheet', () => {
     field('input[name="roastLevel"][value="light"]').click()
     field('input[name="roastedFor"][value="filter"]').click()
     field('input[name="colour"][value="#3d5a80"]').click()
-    await type('#roasted-on', '2026-10-28')
+    await pickDate('#roasted-on', daysAgo(10))
     await type('#size-grams', '250')
     await type('#price', '16.5')
     await submit()
@@ -400,13 +422,35 @@ describe('the add coffee sheet', () => {
         roastedFor: 'filter',
         colour: '#3d5a80',
         purchasedOn: localDate(),
-        roastedOn: '2026-10-28',
+        roastedOn: daysAgo(10),
         sizeGrams: 250,
         price: 16.5,
       },
     ])
     await vi.waitFor(() => expect(useAddCoffee().value).toBe(false))
     expect(useRouter().currentRoute.value.path).toBe('/shelves/home')
+
+    page.unmount()
+  })
+
+  it('picks dates from a calendar and can clear the roast date', async () => {
+    const page = await openSheet()
+
+    await pickDate('#purchased-on', daysAgo(40))
+    await pickDate('#roasted-on', daysAgo(45))
+
+    expect(field('#purchased-on').textContent).toContain(
+      formatDate(daysAgo(40)),
+    )
+    expect(field('#roasted-on').textContent).toContain(formatDate(daysAgo(45)))
+
+    dialog()
+      .querySelector<HTMLElement>('[aria-label="Clear roasted on"]')!
+      .click()
+    await flushPromises()
+
+    expect(field('#roasted-on').textContent).toContain('Pick a date')
+    expect(dialog().querySelector('[aria-label="Clear roasted on"]')).toBeNull()
 
     page.unmount()
   })
