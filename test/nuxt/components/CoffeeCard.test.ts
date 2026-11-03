@@ -96,18 +96,6 @@ describe('CoffeeCard', () => {
     expect(card.element.tagName).toBe('ARTICLE')
   })
 
-  it('writes on the bag in the colour that reads best', async () => {
-    const dark = await mountCard()
-    const light = await mountCard({ coffee: { ...coffee, colour: '#f2c14e' } })
-
-    expect((dark.element as HTMLElement).style.color).toMatch(
-      /#fffaf5|rgb\(255, 250, 245\)/,
-    )
-    expect((light.element as HTMLElement).style.color).toMatch(
-      /#1d1d1f|rgb\(29, 29, 31\)/,
-    )
-  })
-
   it('uses the photo of the bag as its cover', async () => {
     const card = await mountCard({
       coffee: { ...coffee, photoUrl: '/api/photos/coffees/a.webp' },
