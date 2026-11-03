@@ -41,6 +41,7 @@
     "@nuxt/test-utils": "4.3.4",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/vue-query": "^5.105.1",
+    "@tanstack/vue-table": "^8.21.3",
     "@vercel/blob": "^2.8.2",
     "@vercel/functions": "^3.10.4",
     "@vite-pwa/nuxt": "^1.1.1",
