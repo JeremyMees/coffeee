@@ -58,4 +58,26 @@ describe('CoffeeHeader', () => {
 
     expect(header.emitted('edit')).toHaveLength(1)
   })
+
+  it('offers to delete the coffee when the viewer may', async () => {
+    const header = await mountSuspended(CoffeeHeader, {
+      props: { coffee, editable: false, deletable: true },
+    })
+
+    await header.get(tid('coffee-delete')).trigger('click')
+
+    expect(header.get(tid('coffee-delete')).attributes('aria-label')).toBe(
+      'Delete coffee',
+    )
+    expect(header.emitted('delete')).toHaveLength(1)
+  })
+
+  it('hides the delete button from everyone else', async () => {
+    const header = await mountSuspended(CoffeeHeader, {
+      props: { coffee, editable: true },
+    })
+
+    expect(header.find(tid('coffee-delete')).exists()).toBe(false)
+    expect(header.find(tid('coffee-edit')).exists()).toBe(true)
+  })
 })

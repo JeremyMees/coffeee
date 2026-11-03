@@ -38,6 +38,7 @@ const refreshed = [
   { queryKey: queryKeys.coffees() },
   { queryKey: queryKeys.roasters() },
   { queryKey: queryKeys.lists() },
+  { queryKey: queryKeys.admin() },
 ]
 
 describe('useRoasterPages', () => {

@@ -13,6 +13,7 @@ export type StockCoffee =
 export type EditableCoffee = Omit<
   ShelfCoffee,
   | 'canEdit'
+  | 'canDelete'
   | 'purchases'
   | 'photoUrl'
   | 'rating'

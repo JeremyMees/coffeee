@@ -1,5 +1,6 @@
 import { createError, getRouterParam } from 'h3'
 import type { H3Event } from 'h3'
+import { isAdminList } from '#shared/utils/admin'
 import { useAuth } from '#server/utils/auth'
 import { findEditableCoffee } from '#server/utils/coffees'
 import { useDb } from '#server/utils/db'
@@ -27,6 +28,17 @@ export async function requireAdmin(event: H3Event) {
   }
 
   return user
+}
+
+export async function requireAdminList(event: H3Event) {
+  const user = await requireAdmin(event)
+  const list = getRouterParam(event, 'list')!
+
+  if (!isAdminList(list)) {
+    throw createError({ statusCode: 404, statusMessage: 'List not found' })
+  }
+
+  return { user, list, entryId: getRouterParam(event, 'entryId')! }
 }
 
 export async function requireShelf(event: H3Event) {

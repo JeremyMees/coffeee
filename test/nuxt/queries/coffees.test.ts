@@ -5,6 +5,7 @@ import { readBody, readMultipartFormData } from 'h3'
 import {
   useCoffee,
   useCoffeeCreate,
+  useCoffeeDelete,
   useCoffeePhotoRemoval,
   useCoffeePhotoUpdate,
   useCoffeeUpdate,
@@ -19,6 +20,7 @@ const calls = {
   posted: [] as unknown[],
   patched: [] as unknown[],
   photos: [] as unknown[],
+  deleted: [] as string[],
 }
 
 mockNuxtImport(
@@ -70,6 +72,15 @@ registerEndpoint('/api/shelves/cellar/coffees/c1', {
   },
 })
 
+registerEndpoint('/api/coffees/c9', {
+  method: 'DELETE',
+  handler: () => {
+    calls.deleted.push('c9')
+
+    return null
+  },
+})
+
 registerEndpoint('/api/coffees/c1', () => ({
   id: 'c1',
   name: 'Ayele Fulasa',
@@ -89,6 +100,7 @@ beforeEach(() => {
   calls.posted = []
   calls.patched = []
   calls.photos = []
+  calls.deleted = []
 })
 
 async function withClient<T>(use: () => T) {
@@ -151,6 +163,7 @@ describe('useCoffeeCreate', () => {
       { queryKey: queryKeys.shelf('cellar') },
       { queryKey: queryKeys.coffees() },
       { queryKey: queryKeys.lists() },
+      { queryKey: queryKeys.admin() },
     ])
   })
 })
@@ -170,6 +183,7 @@ describe('useCoffeeUpdate', () => {
       { queryKey: queryKeys.shelf('cellar') },
       { queryKey: queryKeys.coffees() },
       { queryKey: queryKeys.lists() },
+      { queryKey: queryKeys.admin() },
     ])
   })
 })
@@ -209,5 +223,20 @@ describe('useCoffeePhotoRemoval', () => {
     expect(invalidated()).toContainEqual({
       queryKey: queryKeys.shelf('cellar'),
     })
+  })
+})
+
+describe('useCoffeeDelete', () => {
+  it('deletes the coffee and refreshes every shelf, coffee and admin list', async () => {
+    const { result, invalidated } = await withClient(useCoffeeDelete)
+
+    await result.mutateAsync('c9')
+
+    expect(calls.deleted).toEqual(['c9'])
+    expect(invalidated()).toEqual([
+      { queryKey: queryKeys.shelves() },
+      { queryKey: queryKeys.coffees() },
+      { queryKey: queryKeys.admin() },
+    ])
   })
 })

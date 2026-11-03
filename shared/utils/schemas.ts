@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { adminListsPageSize } from './admin'
 import { catalogPageSize, catalogSorts } from './catalog'
 import { roastedForOptions, roastLevels } from './coffee'
 import {
@@ -429,4 +430,32 @@ export const roasterDetailsSchema = z.object({
       .max(80, 'Keep the city to 80 characters or fewer')
       .nullable(),
   ),
+})
+
+export const adminEntrySearchSchema = listSearchSchema.extend({
+  except: optionalId('entry'),
+  page: pageNumber(),
+  pageSize: pageSize('entry', adminListsPageSize),
+})
+
+export const entryNameSchema = z.object({
+  name: requiredText(
+    'Give it a name',
+    80,
+    'Keep the name to 80 characters or fewer',
+  ),
+})
+
+export const entryMergeSchema = z.object({
+  intoId: requiredText(
+    'Pick the entry to keep',
+    100,
+    'Pick the entry to keep by its id',
+  ),
+})
+
+export const newOriginEntrySchema = entryNameSchema.extend({
+  originCode: z
+    .string({ error: 'Pick a country from the list' })
+    .refine(isOriginCode, 'Pick a country from the list'),
 })

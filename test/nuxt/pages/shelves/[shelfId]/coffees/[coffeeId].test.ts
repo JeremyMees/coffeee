@@ -6,6 +6,8 @@ import { api, ayele, fakeApi, resetApi } from '../../../../fake-api'
 import {
   allByTestId,
   byTestId,
+  currentPath,
+  click,
   forgetLastShelf,
   submit,
   testUser,
@@ -479,5 +481,44 @@ describe('a coffee page', () => {
     expect(page.find(tid('purchase-summary')).exists()).toBe(false)
     expect(page.find(tid('coffee-finish')).exists()).toBe(false)
     expect(page.find(tid('coffee-buy-again')).exists()).toBe(true)
+  })
+
+  it('deletes the coffee and goes back', async () => {
+    api.coffee = { ...api.coffee, canDelete: true }
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    await page.get(tid('coffee-delete')).trigger('click')
+    await click('confirm-dialog-confirm')
+
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/home'))
+    expect(api.coffeeDeletes).toEqual(['c1'])
+  })
+
+  it('explains why the coffee could not be deleted', async () => {
+    api.coffee = { ...api.coffee, canDelete: true }
+    api.coffeeDeleteFails = true
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    await page.get(tid('coffee-delete')).trigger('click')
+    await click('confirm-dialog-confirm')
+
+    await vi.waitFor(() =>
+      expect(byTestId('delete-coffee', 'form-error')?.textContent).toContain(
+        'only an admin can delete it',
+      ),
+    )
+    expect(currentPath()).toBe('/shelves/home/coffees/c1')
+  })
+
+  it('offers no delete button to someone who may not delete it', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.find(tid('coffee-delete')).exists()).toBe(false)
   })
 })

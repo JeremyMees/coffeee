@@ -12,6 +12,7 @@ const { link: back, back: goBack } = useBackLink(() => ({
 }))
 
 const editing = ref(false)
+const deleting = ref(false)
 const buying = ref(false)
 const editingPurchase = ref<ShelfPurchase>()
 const editingPurchaseOpen = ref(false)
@@ -65,7 +66,9 @@ const outlined =
     <CoffeeHeader
       :coffee="coffee"
       :editable="coffee.canEdit"
+      :deletable="coffee.canDelete"
       @edit="editing = true"
+      @delete="deleting = true"
     />
     <CoffeeDetailList :coffee="coffee" />
     <CoffeeVerdict :coffee-id="coffee.id" :verdict="coffee" />
@@ -148,6 +151,12 @@ const outlined =
       :coffee-id="coffee.id"
       :purchases="coffee.purchases"
       :purchase="editingPurchase"
+    />
+    <DeleteCoffeeDialog
+      v-if="coffee.canDelete"
+      v-model:open="deleting"
+      :coffee="coffee"
+      @deleted="navigateTo(back.to)"
     />
     <EditCoffeeSheet
       v-if="coffee.canEdit"

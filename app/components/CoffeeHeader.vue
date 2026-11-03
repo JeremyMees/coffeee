@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ArrowUpRightIcon, PencilIcon } from '@lucide/vue'
+import { ArrowUpRightIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
 
 const props = defineProps<{
   coffee: Pick<SharedCoffee, 'id' | 'name' | 'roaster' | 'link'> & {
     roasterDetails: Pick<ShelfRoaster, 'id'>
   }
   editable: boolean
+  deletable?: boolean
 }>()
 
-defineEmits<{ edit: [] }>()
+defineEmits<{ edit: []; delete: [] }>()
 
 const morph = useMorph('coffee', () => props.coffee.id)
 </script>
@@ -42,15 +43,28 @@ const morph = useMorph('coffee', () => props.coffee.id)
         <ArrowUpRightIcon class="size-4" aria-hidden="true" />
       </a>
     </div>
-    <button
-      v-if="editable"
-      type="button"
-      data-testid="coffee-edit"
-      class="mb-2 flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
-      @click="$emit('edit')"
-    >
-      <PencilIcon class="size-4" aria-hidden="true" />
-      Edit
-    </button>
+    <div v-if="editable || deletable" class="mb-2 flex shrink-0 gap-2">
+      <button
+        v-if="deletable"
+        type="button"
+        data-testid="coffee-delete"
+        aria-label="Delete coffee"
+        title="Delete coffee"
+        class="flex items-center rounded-full border border-primary p-2 transition-colors hover:bg-primary hover:text-primary-foreground"
+        @click="$emit('delete')"
+      >
+        <Trash2Icon class="size-4" aria-hidden="true" />
+      </button>
+      <button
+        v-if="editable"
+        type="button"
+        data-testid="coffee-edit"
+        class="flex items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
+        @click="$emit('edit')"
+      >
+        <PencilIcon class="size-4" aria-hidden="true" />
+        Edit
+      </button>
+    </div>
   </header>
 </template>

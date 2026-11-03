@@ -23,33 +23,14 @@ describe('profile page', () => {
     expect(page.get(tid('profile-email')).text()).toBe('sarah@example.com')
   })
 
-  it('hides the invites link from users who are not admins', async () => {
+  it('keeps the admin tools off the profile, even for admins', async () => {
+    signInAs('admin')
+
     const page = await mountSuspended(App, { route: '/profile' })
 
     expect(page.find(tid('profile-invites')).exists()).toBe(false)
     expect(page.find(tid('profile-brew-methods')).exists()).toBe(false)
-  })
-
-  it('shows admins the invites link', async () => {
-    signInAs('admin')
-
-    const page = await mountSuspended(App, { route: '/profile' })
-
-    const invites = page.get(tid('profile-invites'))
-
-    expect(invites.text()).toBe('Invites')
-    expect(invites.attributes('href')).toBe('/admin/invites')
-  })
-
-  it('shows admins the brew methods link', async () => {
-    signInAs('admin')
-
-    const page = await mountSuspended(App, { route: '/profile' })
-
-    const brewMethods = page.get(tid('profile-brew-methods'))
-
-    expect(brewMethods.text()).toBe('Brew methods')
-    expect(brewMethods.attributes('href')).toBe('/admin/brew-methods')
+    expect(page.find(tid('sign-out')).exists()).toBe(true)
   })
 
   it('forgets the pages cached for offline use when signing out', async () => {

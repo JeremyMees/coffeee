@@ -11,6 +11,7 @@ const { link: back, back: goBack } = useBackLink(() => ({
 }))
 
 const editing = ref(false)
+const deleting = ref(false)
 
 const { data: coffee, error, suspense } = useCoffee(coffeeId)
 await suspense()
@@ -37,7 +38,9 @@ useHead({ title: () => `${coffee.value?.name} · Coffeee` })
     <CoffeeHeader
       :coffee="coffee"
       :editable="coffee.canEdit"
+      :deletable="coffee.canDelete"
       @edit="editing = true"
+      @delete="deleting = true"
     />
     <CoffeeDetailList :coffee="coffee" />
     <CoffeeVerdict :coffee-id="coffee.id" :verdict="coffee" />
@@ -47,6 +50,12 @@ useHead({ title: () => `${coffee.value?.name} · Coffeee` })
     />
     <RoasterDetails :shelf-id="shelf.id" :roaster="coffee.roasterDetails" />
     <CoffeeShelves :coffee-id="coffee.id" :shelves="coffee.shelves" />
+    <DeleteCoffeeDialog
+      v-if="coffee.canDelete"
+      v-model:open="deleting"
+      :coffee="coffee"
+      @deleted="navigateTo(back.to)"
+    />
     <EditCoffeeSheet
       v-if="coffee.canEdit"
       v-model:open="editing"

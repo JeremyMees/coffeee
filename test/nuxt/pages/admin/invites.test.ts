@@ -3,7 +3,7 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
-import { tid } from '../../fixtures'
+import { byTestId, submit, tid, type } from '../../fixtures'
 
 const server = vi.hoisted(() => ({
   role: 'admin',
@@ -84,12 +84,14 @@ describe('admin invites page', () => {
     expect(useRouter().currentRoute.value.path).toBe('/shelves/home')
   })
 
-  it('lists pending invites', async () => {
+  it('lists pending invites and leads back to the admin page', async () => {
     const page = await mountSuspended(App, { route: '/admin/invites' })
 
+    expect(page.get(tid('page-title')).text()).toBe('Invites')
     expect(page.findAll(tid('invite'))[0]!.text()).toContain(
       'sarah@example.com',
     )
+    expect(page.get(tid('admin-back')).attributes('href')).toBe('/admin')
   })
 
   it('says when nothing is pending', async () => {
@@ -100,44 +102,12 @@ describe('admin invites page', () => {
     expect(page.get(tid('invites-empty')).text()).toBe('No pending invites.')
   })
 
-  it('allows an email and lists it as pending', async () => {
+  it('shows when a link invite expires', async () => {
     const page = await mountSuspended(App, { route: '/admin/invites' })
 
-    await page.get(tid('invite-email')).setValue('tom@example.com')
-    await page.get(tid('invite-email-form')).trigger('submit')
-
-    await vi.waitFor(() => {
-      expect(page.get(tid('invites-pending')).text()).toContain(
-        'tom@example.com',
-      )
-      expect(
-        page.get<HTMLInputElement>(tid('invite-email')).element.value,
-      ).toBe('')
-    })
-  })
-
-  it('shows why an email could not be allowed', async () => {
-    const page = await mountSuspended(App, { route: '/admin/invites' })
-
-    await page.get(tid('invite-email')).setValue('sarah@example.com')
-    await page.get(tid('invite-email-form')).trigger('submit')
-
-    await vi.waitFor(() =>
-      expect(page.get(tid('invite-email-form')).text()).toContain(
-        'That email is already invited',
-      ),
+    expect(page.findAll(tid('invite'))[1]!.text()).toMatch(
+      /Invite link\s*· expires Nov 9/,
     )
-  })
-
-  it('shows a new invite link to copy', async () => {
-    const page = await mountSuspended(App, { route: '/admin/invites' })
-
-    await page.get(tid('invite-link-create')).trigger('click')
-
-    await vi.waitFor(() => {
-      const link = page.get<HTMLInputElement>(tid('invite-link'))
-      expect(link.element.value).toBe('http://localhost:3000/invite/the-token')
-    })
   })
 
   it('revokes a pending invite', async () => {
@@ -148,44 +118,19 @@ describe('admin invites page', () => {
     await vi.waitFor(() => expect(server.revoked).toEqual(['invite-1']))
   })
 
-  it('shows when a link invite expires', async () => {
+  it('allows an email from the button in the header and lists it as pending', async () => {
     const page = await mountSuspended(App, { route: '/admin/invites' })
 
-    expect(page.findAll(tid('invite'))[1]!.text()).toMatch(
-      /Invite link\s*· expires Nov 9/,
-    )
-  })
-
-  it('explains a failure the server gave no reason for', async () => {
-    const page = await mountSuspended(App, { route: '/admin/invites' })
-
-    await page.get(tid('invite-email')).setValue('broken@example.com')
-    await page.get(tid('invite-email-form')).trigger('submit')
+    expect(page.get(tid('page-add')).text()).toBe('Add invite')
+    await page.get(tid('page-add')).trigger('click')
+    await vi.waitFor(() => expect(byTestId('invite-email')).not.toBeNull())
+    await type('invite-email', 'tom@example.com')
+    await submit('invite-email-form')
 
     await vi.waitFor(() =>
-      expect(page.get(tid('invite-email-form')).text()).toContain(
-        'Something went wrong. Try again.',
+      expect(page.get(tid('invites-pending')).text()).toContain(
+        'tom@example.com',
       ),
     )
-  })
-
-  it('copies a new invite link', async () => {
-    const writeText = vi.fn()
-    vi.stubGlobal('navigator', { clipboard: { writeText } })
-    const page = await mountSuspended(App, { route: '/admin/invites' })
-    await page.get(tid('invite-link-create')).trigger('click')
-    await vi.waitFor(() => page.get(tid('invite-link-copy')))
-
-    await page.get(tid('invite-link-copy')).trigger('click')
-
-    await vi.waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(
-        'http://localhost:3000/invite/the-token',
-      )
-      expect(page.get(tid('invite-link-copy')).attributes('aria-label')).toBe(
-        'Copied',
-      )
-    })
-    vi.unstubAllGlobals()
   })
 })

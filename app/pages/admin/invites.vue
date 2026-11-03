@@ -1,55 +1,16 @@
 <script setup lang="ts">
-import { CheckIcon, CopyIcon } from '@lucide/vue'
-import { Field as VeeField, useForm } from 'vee-validate'
-import { useInviteCreate, useInviteRevoke, useInvites } from '~/queries/invites'
+import { ArrowLeftIcon } from '@lucide/vue'
+import { useInviteRevoke, useInvites } from '~/queries/invites'
 
 definePageMeta({ middleware: 'admin' })
 
-useHead({ title: 'Invites · Coffeee' })
+useHead({ title: 'Invites · Admin · Coffeee' })
 
 const { data, suspense } = useInvites()
 await suspense()
 const invites = computed(() => data.value ?? [])
-const { mutateAsync: createInvite } = useInviteCreate()
 const { mutateAsync: revokeInvite } = useInviteRevoke()
-
-const formError = ref('')
-
-const { handleSubmit, resetForm, setErrors, isSubmitting } = useForm({
-  validationSchema: zodSchema(inviteEmailSchema),
-  initialValues: { email: '' },
-})
-
-const link = ref('')
-const copied = ref(false)
-
-const allowEmail = handleSubmit(async body => {
-  formError.value = ''
-
-  try {
-    await createInvite(body)
-
-    resetForm()
-  } catch (caught) {
-    const { fields, message } = serverErrors(caught)
-
-    setErrors(fields)
-    formError.value = message
-  }
-})
-
-async function createLink() {
-  const created = await createInvite({ link: true })
-
-  link.value = 'url' in created ? created.url : ''
-  copied.value = false
-}
-
-async function copyLink() {
-  await navigator.clipboard.writeText(link.value)
-
-  copied.value = true
-}
+const adding = ref(false)
 
 async function revoke(id: string) {
   await revokeInvite(id)
@@ -64,107 +25,32 @@ function formatDate(date: string) {
 </script>
 
 <template>
-  <main class="mx-auto flex max-w-xl flex-col gap-6 px-6 py-10">
-    <div class="flex items-center justify-between gap-4">
-      <h1 class="text-3xl font-bold" data-testid="invites-title">Invites</h1>
-      <Button variant="ghost" as-child>
-        <NuxtLink to="/profile">Done</NuxtLink>
-      </Button>
-    </div>
-
-    <Card>
-      <CardHeader>
-        <CardTitle>Allow an email</CardTitle>
-        <CardDescription>
-          That person can sign in with Google using this address. It stays
-          allowed until they sign up or you revoke it.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          class="flex flex-col gap-3"
-          novalidate
-          data-testid="invite-email-form"
-          @submit="allowEmail"
-        >
-          <FieldGroup>
-            <VeeField v-slot="{ componentField, errors }" name="email">
-              <Field
-                :data-invalid="errors.length || formError ? true : undefined"
-              >
-                <FieldLabel for="invite-email">Email</FieldLabel>
-                <Input
-                  id="invite-email"
-                  v-bind="componentField"
-                  data-testid="invite-email"
-                  type="email"
-                  autocomplete="off"
-                  :aria-invalid="errors.length || formError ? true : undefined"
-                />
-                <FieldError :errors="formError ? [formError] : errors" />
-              </Field>
-            </VeeField>
-          </FieldGroup>
-          <Button
-            type="submit"
-            data-testid="invite-email-submit"
-            :disabled="isSubmitting"
-          >
-            Allow email
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-
-    <Card>
-      <CardHeader>
-        <CardTitle>Invite link</CardTitle>
-        <CardDescription>
-          Anyone with the link can join once, within seven days. You can only
-          copy it now.
-        </CardDescription>
-      </CardHeader>
-      <CardContent class="flex flex-col gap-3">
-        <div v-if="link" class="flex gap-2">
-          <Input
-            :model-value="link"
-            readonly
-            aria-label="Invite link"
-            data-testid="invite-link"
-          />
-          <Button
-            variant="outline"
-            size="icon"
-            data-testid="invite-link-copy"
-            :aria-label="copied ? 'Copied' : 'Copy link'"
-            @click="copyLink"
-          >
-            <CheckIcon v-if="copied" />
-            <CopyIcon v-else />
-          </Button>
-        </div>
-        <Button
-          variant="outline"
-          data-testid="invite-link-create"
-          @click="createLink"
-        >
-          Create a link
-        </Button>
-      </CardContent>
-    </Card>
-
-    <section class="flex flex-col gap-2">
-      <h2 class="text-lg font-semibold">Pending</h2>
+  <main>
+    <NuxtLink
+      to="/admin"
+      data-testid="admin-back"
+      class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+    >
+      <ArrowLeftIcon class="size-4" aria-hidden="true" />
+      Admin
+    </NuxtLink>
+    <PageHeader title="Invites" add-label="Add invite" @add="adding = true" />
+    <p class="mt-3 text-xs">
+      Emails and links that let someone sign up, until they do or you revoke
+      them.
+    </p>
+    <section class="mt-8 max-w-xl">
+      <h2 class="text-xs uppercase">Pending</h2>
       <p
         v-if="!invites.length"
-        class="text-sm text-muted-foreground"
+        class="mt-3 text-xs"
         data-testid="invites-empty"
       >
         No pending invites.
       </p>
       <ul
         v-else
-        class="flex flex-col divide-y rounded-lg border"
+        class="mt-3 flex flex-col divide-y rounded-[18px] border"
         data-testid="invites-pending"
       >
         <li
@@ -173,22 +59,23 @@ function formatDate(date: string) {
           data-testid="invite"
           class="flex items-center justify-between gap-4 px-4 py-3"
         >
-          <span class="min-w-0 truncate">
+          <span class="min-w-0 truncate font-sans font-semibold">
             {{ invite.email ?? 'Invite link' }}
-            <span v-if="invite.expiresAt" class="text-sm text-muted-foreground">
+            <span v-if="invite.expiresAt" class="font-mono text-xs font-normal">
               · expires {{ formatDate(invite.expiresAt) }}
             </span>
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             data-testid="invite-revoke"
+            class="rounded-full px-3 py-1.5 text-xs uppercase transition-colors hover:bg-accent"
             @click="revoke(invite.id)"
           >
             Revoke
-          </Button>
+          </button>
         </li>
       </ul>
     </section>
+    <AddInviteSheet v-model:open="adding" />
   </main>
 </template>

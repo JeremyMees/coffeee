@@ -1,5 +1,17 @@
 <script setup lang="ts">
+import { ShieldIcon } from '@lucide/vue'
+
 const destinations = useDestinations()
+const user = useCurrentUser()
+
+const links = computed(() =>
+  user.value?.role === 'admin'
+    ? [
+        ...destinations.value,
+        { label: 'Admin', to: '/admin', icon: ShieldIcon },
+      ]
+    : destinations.value,
+)
 </script>
 
 <template>
@@ -21,7 +33,7 @@ const destinations = useDestinations()
       class="flex flex-col gap-1 p-3 text-[13px]"
     >
       <NuxtLink
-        v-for="item in destinations"
+        v-for="item in links"
         :key="item.to"
         v-slot="{ href, navigate, isActive, isExactActive }"
         :to="item.to"

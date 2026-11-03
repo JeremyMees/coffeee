@@ -48,6 +48,7 @@ function useRoasterSaved() {
       queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.roasters() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.lists() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin() }),
     ])
 }
 

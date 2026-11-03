@@ -52,6 +52,12 @@ export const queryKeys = {
   shelfGrinders: (shelfId: string) => ['shelves', shelfId, 'grinders'],
   brewMethods: () => ['brew-methods'],
   invites: () => ['invites'],
+  admin: () => ['admin'],
+  adminEntries: (list: AdminList, query: Record<string, string>) => [
+    'admin',
+    list,
+    query,
+  ],
   lists: () => ['lists'],
   listSearch: (
     endpoint: string,

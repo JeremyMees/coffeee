@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, max, ne } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, max, ne, sql } from 'drizzle-orm'
 import { coffeeListFields } from '#shared/utils/coffee'
 import type { ListEntry } from '#shared/types/catalog'
 import type {
@@ -286,6 +286,13 @@ async function findCatalogCoffee(
       userId: input.viewer.id,
     }),
     canEdit: canEditCatalogEntry(input.viewer, createdBy),
+    canDelete:
+      (
+        await findDeletableCoffee(db, {
+          coffeeId: input.coffeeId,
+          deleter: input.viewer,
+        })
+      ).outcome === 'deletable',
     roasterDetails: (await findRoaster(db, {
       roasterId,
       viewer: input.viewer,
@@ -405,4 +412,66 @@ export function editCoffee(
       coffee: { ...edited!, ...(await describedOf(tx, input.coffeeId)) },
     }
   })
+}
+
+export async function findDeletableCoffee(
+  db: Database,
+  input: { coffeeId: string; deleter: Viewer },
+) {
+  const [current] = await db
+    .select({ createdBy: coffee.createdBy, photoUrl: coffee.photoUrl })
+    .from(coffee)
+    .where(eq(coffee.id, input.coffeeId))
+
+  if (!current) return { outcome: 'notFound' as const }
+
+  const deletable = {
+    outcome: 'deletable' as const,
+    photoUrl: current.photoUrl,
+  }
+
+  if (input.deleter.role === 'admin') return deletable
+
+  if (current.createdBy !== input.deleter.id) {
+    return { outcome: 'forbidden' as const }
+  }
+
+  const [boughtByOthers] = await db
+    .select({ id: purchase.id })
+    .from(purchase)
+    .where(
+      and(
+        eq(purchase.coffeeId, input.coffeeId),
+        sql`${purchase.addedBy} is distinct from ${input.deleter.id}`,
+      ),
+    )
+    .limit(1)
+
+  if (boughtByOthers) return { outcome: 'boughtByOthers' as const }
+
+  return deletable
+}
+
+export async function removeCoffee(db: Database, coffeeId: string) {
+  await db.delete(purchase).where(eq(purchase.coffeeId, coffeeId))
+  await db.delete(coffee).where(eq(coffee.id, coffeeId))
+}
+
+export async function deleteCoffee(
+  db: Database,
+  input: { coffeeId: string; deleter: Viewer },
+) {
+  const result = await db.transaction(async tx => {
+    const current = await findDeletableCoffee(tx, input)
+
+    if (current.outcome !== 'deletable') return current
+
+    await removeCoffee(tx, input.coffeeId)
+
+    return { outcome: 'deleted' as const, photoUrl: current.photoUrl }
+  })
+
+  if (result.outcome === 'deleted') await deletePhoto(result.photoUrl)
+
+  return result
 }

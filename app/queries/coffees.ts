@@ -42,6 +42,7 @@ function useCoffeeSaved() {
       queryClient.invalidateQueries({ queryKey: queryKeys.shelf(shelfId) }),
       queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.lists() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin() }),
     ])
 }
 
@@ -104,5 +105,20 @@ export function useCoffeePhotoRemoval() {
     mutationFn: (input: { shelfId: string; coffeeId: string }) =>
       $fetch(photoPath(input), { method: 'DELETE' }),
     onSuccess: (_data, input) => saved(input.shelfId),
+  })
+}
+
+export function useCoffeeDelete() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (coffeeId: string) =>
+      $fetch(`/api/coffees/${coffeeId}`, { method: 'DELETE' }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.shelves() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.admin() }),
+      ]),
   })
 }

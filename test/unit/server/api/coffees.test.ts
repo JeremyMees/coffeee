@@ -7,6 +7,7 @@ import producersHandler from '#server/api/producers.get'
 import regionsHandler from '#server/api/regions.get'
 import roastersHandler from '#server/api/roasters.get'
 import coffeeHandler from '#server/api/coffees/[coffeeId].get'
+import deleteCoffeeHandler from '#server/api/coffees/[coffeeId].delete'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
 import removePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/photo.delete'
@@ -67,6 +68,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/catalog/:filter', catalogFilterHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/coffees/:coffeeId', coffeeHandler)
+    .delete('/api/coffees/:coffeeId', deleteCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
     .put('/api/shelves/:shelfId/coffees/:coffeeId/photo', replacePhotoHandler)
@@ -1036,5 +1038,80 @@ describe('the photo of a coffee', () => {
     const response = await request('/api/photos/coffees/missing.webp')
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('deleting a coffee', () => {
+  async function addedBy(owner: Awaited<ReturnType<typeof member>>) {
+    const added = await (await add(owner.shelf.id, owner.headers)).json()
+
+    return added.coffee.id as string
+  }
+
+  function remove(coffeeId: string, headers: Headers) {
+    return request(`/api/coffees/${coffeeId}`, { method: 'DELETE', headers })
+  }
+
+  it('lets the person who added it delete it while only they bought it', async () => {
+    const sarah = await member()
+    const coffeeId = await addedBy(sarah)
+
+    const shown = await request(`/api/coffees/${coffeeId}`, {
+      headers: sarah.headers,
+    })
+    const response = await remove(coffeeId, sarah.headers)
+
+    expect((await shown.json()).canDelete).toBe(true)
+    expect(response.status).toBe(204)
+    expect(
+      (await request(`/api/coffees/${coffeeId}`, { headers: sarah.headers }))
+        .status,
+    ).toBe(404)
+  })
+
+  it('keeps it once someone else bought it too', async () => {
+    const sarah = await member()
+    const tom = await member()
+    const coffeeId = await addedBy(sarah)
+    await add(tom.shelf.id, tom.headers)
+
+    const shown = await request(`/api/coffees/${coffeeId}`, {
+      headers: sarah.headers,
+    })
+    const response = await remove(coffeeId, sarah.headers)
+
+    expect((await shown.json()).canDelete).toBe(false)
+    expect(response.status).toBe(409)
+    expect((await response.json()).statusMessage).toBe(
+      'Someone else has bought this coffee too, so only an admin can delete it',
+    )
+  })
+
+  it('refuses anyone else who is not an admin', async () => {
+    const sarah = await member()
+    const tom = await member()
+    const coffeeId = await addedBy(sarah)
+
+    expect((await remove(coffeeId, tom.headers)).status).toBe(403)
+  })
+
+  it('lets an admin always delete it, with every bag', async () => {
+    const sarah = await member()
+    const tom = await member()
+    const admin = await member('admin')
+    const coffeeId = await addedBy(sarah)
+    await add(tom.shelf.id, tom.headers)
+
+    expect((await remove(coffeeId, admin.headers)).status).toBe(204)
+    const stock = await request(`/api/shelves/${tom.shelf.id}/stock`, {
+      headers: tom.headers,
+    })
+    expect(await stock.json()).toEqual([])
+  })
+
+  it('finds no coffee that does not exist', async () => {
+    const sarah = await member()
+
+    expect((await remove('nope', sarah.headers)).status).toBe(404)
   })
 })

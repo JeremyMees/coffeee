@@ -26,4 +26,28 @@ describe('PageHeader', () => {
 
     expect(useAddCoffee().value).toBe(true)
   })
+
+  it('leaves out the add button when asked', async () => {
+    const header = await mountSuspended(PageHeader, {
+      props: { title: 'Admin', hideAdd: true },
+    })
+
+    expect(header.find(tid('page-add-coffee')).exists()).toBe(false)
+    expect(header.find(tid('page-add')).exists()).toBe(false)
+  })
+
+  it('adds something else in the same place when given a label', async () => {
+    const header = await mountSuspended(PageHeader, {
+      props: { title: 'Grinders', addLabel: 'Add grinder' },
+    })
+
+    await header.get(tid('page-add')).trigger('click')
+
+    expect(header.get(tid('page-add')).text()).toBe('Add grinder')
+    expect(header.get(tid('page-add')).attributes('aria-keyshortcuts')).toBe(
+      undefined,
+    )
+    expect(header.emitted('add')).toHaveLength(1)
+    expect(useAddCoffee().value).toBe(false)
+  })
 })

@@ -57,6 +57,7 @@ export function ayele() {
     },
     reviews: [] as Review[],
     canEdit: true,
+    canDelete: false,
     grindSettings: [] as OwnGrindSetting[],
     otherGrindSettings: [] as OtherGrindSetting[],
     roasterDetails: squareMile(),
@@ -394,6 +395,14 @@ function fakeFilter(
   }
 }
 
+export function flavorNoteEntries(): AdminEntry[] {
+  return [
+    { id: 'n1', name: 'Lime', detail: null, detailId: null, uses: 3 },
+    { id: 'n2', name: 'Limes', detail: null, detailId: null, uses: 1 },
+    { id: 'n3', name: 'Jasmine', detail: null, detailId: null, uses: 0 },
+  ]
+}
+
 export const api = {
   stock: [] as unknown[],
   library: [] as LibraryCoffee[],
@@ -418,13 +427,18 @@ export const api = {
   grinderCalls: [] as unknown[],
   grinderFails: false,
   brewMethods: brewMethods() as ListedBrewMethod[],
-  brewMethodCalls: [] as unknown[],
   grindSettingCalls: [] as unknown[],
   grindSettingFails: false,
   roasterCalls: [] as unknown[],
   roasterFails: false,
   coffee: ayele() as Record<string, unknown>,
   coffeeShelves: coffeeShelves() as CoffeeShelf[],
+  coffeeDeletes: [] as string[],
+  coffeeDeleteFails: false,
+  adminEntries: flavorNoteEntries(),
+  adminQueries: [] as Record<string, string>[],
+  adminCalls: [] as unknown[],
+  adminFails: '',
 }
 
 function roaster() {
@@ -488,16 +502,192 @@ export function resetApi() {
   api.grinderCalls = []
   api.grinderFails = false
   api.brewMethods = brewMethods()
-  api.brewMethodCalls = []
   api.grindSettingCalls = []
   api.grindSettingFails = false
   api.roasterCalls = []
   api.roasterFails = false
   api.coffee = ayele()
   api.coffeeShelves = coffeeShelves()
+  api.coffeeDeletes = []
+  api.coffeeDeleteFails = false
+  api.adminEntries = flavorNoteEntries()
+  api.adminQueries = []
+  api.adminCalls = []
+  api.adminFails = ''
+}
+
+function failAdmin() {
+  if (api.adminFails) {
+    throw createError({ statusCode: 409, statusMessage: api.adminFails })
+  }
+}
+
+function fakeAdminEntries(event: H3Event) {
+  const query = getQuery(event) as Record<string, string>
+  api.adminQueries.push(query)
+  const key = nameKey(query.search ?? '')
+  const found = api.adminEntries.filter(
+    entry => entry.id !== query.except && nameKey(entry.name).includes(key),
+  )
+
+  return { total: found.length, entries: found }
+}
+
+const otherAdminEntries: Record<string, AdminEntry[]> = {
+  coffees: [
+    {
+      id: 'c1',
+      name: 'Ayele Fulasa',
+      detail: 'Square Mile',
+      detailId: 'r2',
+      uses: 2,
+    },
+  ],
+  roasters: [
+    { id: 'r2', name: 'Square Mile', detail: null, detailId: null, uses: 1 },
+  ],
+}
+
+function registerAdminEndpoints() {
+  registerEndpoint('/api/roasters/new-3/logo', {
+    method: 'PUT',
+    handler: () => {
+      api.adminCalls.push({ logo: 'new-3' })
+
+      if (api.roasterFails) {
+        throw createError({
+          statusCode: 413,
+          statusMessage: 'That photo is too large',
+        })
+      }
+
+      return { logoUrl: '/api/photos/roasters/new.webp' }
+    },
+  })
+
+  const path = '/api/admin/lists/flavorNotes'
+
+  registerEndpoint(path, { method: 'GET', handler: fakeAdminEntries })
+
+  for (const list of [
+    'flavorNotes',
+    'coffees',
+    'roasters',
+    'regions',
+    'grinders',
+  ]) {
+    if (list !== 'flavorNotes') {
+      registerEndpoint(`/api/admin/lists/${list}`, {
+        method: 'GET',
+        handler: () => {
+          const entries = otherAdminEntries[list] ?? []
+
+          return { total: entries.length, entries }
+        },
+      })
+    }
+
+    registerEndpoint(`/api/admin/lists/${list}`, {
+      method: 'POST',
+      handler: async event => {
+        const body = await readBody(event)
+        api.adminCalls.push({ add: list, body })
+        failAdmin()
+        const field = 'model' in body ? 'model' : 'name'
+
+        if (body[field] === 'Taken') {
+          throw createError({
+            statusCode: 409,
+            statusMessage: 'Taken is already on the list',
+            data: { errors: { [field]: 'Taken is already on the list' } },
+          })
+        }
+
+        const added = {
+          id: `new-${api.adminEntries.length}`,
+          name: body[field],
+          detail: null,
+          detailId: null,
+          uses: 0,
+        }
+
+        if (list === 'flavorNotes') {
+          api.adminEntries = [...api.adminEntries, added]
+        }
+
+        return { id: added.id, name: added.name }
+      },
+    })
+  }
+
+  for (const id of ['n1', 'n2', 'n3']) {
+    registerEndpoint(`${path}/${id}`, {
+      method: 'PATCH',
+      handler: async event => {
+        const body = await readBody(event)
+        const { name } = body
+        api.adminCalls.push({ update: id, body })
+        failAdmin()
+        api.adminEntries = api.adminEntries.map(entry =>
+          entry.id === id ? { ...entry, name } : entry,
+        )
+
+        return { id, name }
+      },
+    })
+
+    registerEndpoint(`${path}/${id}/merge`, {
+      method: 'POST',
+      handler: async event => {
+        const { intoId } = await readBody(event)
+        api.adminCalls.push({ merge: id, intoId })
+        failAdmin()
+        const from = api.adminEntries.find(entry => entry.id === id)!
+        api.adminEntries = api.adminEntries
+          .filter(entry => entry.id !== id)
+          .map(entry =>
+            entry.id === intoId
+              ? { ...entry, uses: entry.uses + from.uses }
+              : entry,
+          )
+
+        return api.adminEntries.find(entry => entry.id === intoId)
+      },
+    })
+
+    registerEndpoint(`${path}/${id}`, {
+      method: 'DELETE',
+      handler: () => {
+        api.adminCalls.push({ delete: id })
+        failAdmin()
+        api.adminEntries = api.adminEntries.filter(entry => entry.id !== id)
+
+        return null
+      },
+    })
+  }
 }
 
 export function fakeApi() {
+  registerAdminEndpoints()
+
+  registerEndpoint('/api/coffees/c1', {
+    method: 'DELETE',
+    handler: () => {
+      api.coffeeDeletes.push('c1')
+
+      if (api.coffeeDeleteFails) {
+        throw createError({
+          statusCode: 409,
+          statusMessage:
+            'Someone else has bought this coffee too, so only an admin can delete it',
+        })
+      }
+
+      return null
+    },
+  })
+
   registerEndpoint('/api/shelves', {
     method: 'POST',
     handler: async event => {
@@ -634,10 +824,13 @@ export function fakeApi() {
     },
   })
 
-  registerEndpoint('/api/coffees/c1', () => {
-    const { purchases, ...shared } = api.coffee
+  registerEndpoint('/api/coffees/c1', {
+    method: 'GET',
+    handler: () => {
+      const { purchases, ...shared } = api.coffee
 
-    return { ...shared, shelves: api.coffeeShelves }
+      return { ...shared, shelves: api.coffeeShelves }
+    },
   })
 
   registerEndpoint('/api/shelves/home/coffees/c1', {
@@ -910,27 +1103,6 @@ export function fakeApi() {
   registerEndpoint('/api/brew-methods', {
     method: 'GET',
     handler: () => api.brewMethods,
-  })
-
-  registerEndpoint('/api/brew-methods', {
-    method: 'POST',
-    handler: async event => {
-      const body = await readBody(event)
-      api.brewMethodCalls.push(body)
-
-      if (body.name === 'Espresso') {
-        throw createError({
-          statusCode: 409,
-          statusMessage: 'Espresso is already a brew method',
-          data: { errors: { name: 'Espresso is already a brew method' } },
-        })
-      }
-
-      const added = { id: nameKey(body.name), name: body.name }
-      api.brewMethods = [...api.brewMethods, added]
-
-      return added
-    },
   })
 
   registerEndpoint('/api/shelves/home/coffees/c1/finish', {

@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, or, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
-import type { PgColumn } from 'drizzle-orm/pg-core'
+import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import { defineEventHandler } from 'h3'
 import { listSearchSchema } from '#shared/utils/schemas'
 import { nameKey } from '#shared/utils/names'
@@ -135,4 +135,30 @@ export function entriesOf<Columns extends Record<string, PgColumn>>(
     .innerJoin(list, eq(list.id, entryId))
     .where(eq(link.coffeeId, coffeeId))
     .orderBy(asc(link.position))
+}
+
+export async function moveReferences(
+  db: Database,
+  table: PgTable,
+  column: PgColumn,
+  move: { from: string; to: string },
+) {
+  const rows = await db
+    .select()
+    .from(table as never)
+    .where(eq(column, move.from))
+
+  if (rows.length) {
+    await db
+      .insert(table)
+      .values(
+        rows.map(row => ({
+          ...(row as object),
+          [column.name]: move.to,
+        })) as never,
+      )
+      .onConflictDoNothing()
+  }
+
+  await db.delete(table).where(eq(column, move.from))
 }

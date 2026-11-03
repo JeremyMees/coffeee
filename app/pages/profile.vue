@@ -28,18 +28,6 @@ useHead({ title: 'Profile · Coffeee' })
       </div>
     </dl>
     <div class="mt-6 flex gap-2">
-      <template v-if="user?.role === 'admin'">
-        <Button variant="outline" as-child>
-          <NuxtLink to="/admin/invites" data-testid="profile-invites">
-            Invites
-          </NuxtLink>
-        </Button>
-        <Button variant="outline" as-child>
-          <NuxtLink to="/admin/brew-methods" data-testid="profile-brew-methods">
-            Brew methods
-          </NuxtLink>
-        </Button>
-      </template>
       <Button variant="outline" data-testid="sign-out" @click="signOut">
         Sign out
       </Button>

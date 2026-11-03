@@ -35,6 +35,24 @@ describe('AppSidebar', () => {
     ])
   })
 
+  it('links admins to the admin page', async () => {
+    useCurrentUser().value = testUser({ role: 'admin' })
+
+    const sidebar = await mountSidebar()
+    const admin = sidebar.findAll(tid('sidebar-link')).at(-1)!
+
+    expect(admin.text()).toBe('Admin')
+    expect(admin.attributes('href')).toBe('/admin')
+  })
+
+  it('shows the admin link to admins only', async () => {
+    const sidebar = await mountSidebar()
+
+    expect(
+      sidebar.findAll(tid('sidebar-link')).map(link => link.text()),
+    ).not.toContain('Admin')
+  })
+
   it('marks the page that is open', async () => {
     const sidebar = await mountSidebar()
 
