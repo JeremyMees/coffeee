@@ -65,7 +65,6 @@ describe('a coffee page', () => {
     expect(page.get(tid('purchases-empty')).text()).toBe(
       'Nobody on this shelf has bought it yet.',
     )
-    expect(page.get(tid('coffee-card-days')).text()).toContain('no roast date')
     expect(page.get(tid('coffee-buy-again')).text()).toBe('Add to shelf')
   })
 
@@ -127,17 +126,10 @@ describe('a coffee page', () => {
       route: '/shelves/home/coffees/c1',
     })
 
-    expect(page.get(tid('coffee-card-rating')).text()).toBe('Not yet rated')
-
     await page.get(tid('verdict-star-5')).trigger('click')
     await vi.waitFor(() =>
       expect(page.get(tid('verdict-rating')).text()).toBe('5 stars'),
     )
-    expect(
-      page
-        .get(tid('coffee-card-rating', 'rating-stars'))
-        .attributes('aria-label'),
-    ).toBe('5 stars')
     expect(page.find(tid('verdict-favourite')).exists()).toBe(false)
 
     await page.get(tid('verdict-buy-again')).trigger('click')
@@ -164,7 +156,7 @@ describe('a coffee page', () => {
     ).toBe('2')
   })
 
-  it('keeps a grind setting for the coffee, not on its card', async () => {
+  it('keeps a grind setting for the coffee, not in its details', async () => {
     const page = await mountSuspended(App, {
       route: '/shelves/home/coffees/c1',
     })
@@ -178,7 +170,7 @@ describe('a coffee page', () => {
       ),
     )
     expect(page.get(tid('grind-setting-value')).text()).toBe('12')
-    expect(page.get(tid('coffee-card')).text()).not.toContain('Opus')
+    expect(page.get(tid('coffee-details')).text()).not.toContain('Opus')
   })
 
   it('shows the grind settings other people use for the coffee', async () => {
@@ -262,11 +254,21 @@ describe('a coffee page', () => {
 
     expect(page.get(tid('detail-processes')).text()).toBe('Washed, Anaerobic')
     expect(page.get(tid('detail-varietals')).text()).toBe('Geisha')
-    expect(page.get(tid('coffee-card-flavor-note')).text()).toBe('Lime')
+    expect(page.get(tid('detail-flavor-notes')).text()).toBe('Lime')
     const link = page.get(tid('coffee-link-out'))
     expect(link.attributes('href')).toBe('https://example.com/ayele')
     expect(link.attributes('target')).toBe('_blank')
     expect(link.attributes('rel')).toBe('noopener noreferrer')
+  })
+
+  it('says how it was roasted', async () => {
+    api.coffee = { ...ayele(), roastLevel: 'light', roastedFor: 'filter' }
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('detail-roast')).text()).toBe('Light · Filter')
   })
 
   it('says who grew it', async () => {
@@ -335,7 +337,12 @@ describe('a coffee page', () => {
       route: '/shelves/home/coffees/c1',
     })
 
-    expect(page.find(tid('coffee-details')).exists()).toBe(false)
+    expect(
+      page
+        .get(tid('coffee-details'))
+        .findAll('dt')
+        .map(term => term.text()),
+    ).toEqual(['Roast'])
     expect(page.find(tid('coffee-link-out')).exists()).toBe(false)
   })
 
@@ -349,7 +356,7 @@ describe('a coffee page', () => {
     expect(page.get(tid('coffee-photo-image')).attributes('src')).toBe(
       '/api/photos/coffees/a.webp',
     )
-    expect(page.find(tid('coffee-card-cover')).exists()).toBe(false)
+    expect(page.find(tid('coffee-card')).exists()).toBe(false)
   })
 
   it('shows a new photo once it is uploaded', async () => {
@@ -379,9 +386,6 @@ describe('a coffee page', () => {
       formatDate('2026-11-01'),
     )
     expect(page.get(tid('summary-times-bought')).text()).toBe('2 times')
-    expect(page.get(tid('coffee-card-days')).text()).not.toContain(
-      'no roast date',
-    )
   })
 
   it('buys the coffee again from the last purchase', async () => {

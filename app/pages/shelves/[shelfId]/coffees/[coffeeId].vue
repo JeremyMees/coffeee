@@ -78,6 +78,16 @@ function detailRows(shown: NonNullable<typeof coffee.value>) {
 
   return [
     {
+      key: 'roast',
+      label: 'Roast',
+      value: `${roastLevelLabels[shown.roastLevel]} · ${roastedForLabels[shown.roastedFor]}`,
+    },
+    {
+      key: 'flavor-notes',
+      label: 'Flavor notes',
+      value: names(shown.flavorNotes),
+    },
+    {
       key: 'origins',
       label: 'Origin',
       value: shown.origins.map(origin => origin.name).join(', '),
@@ -146,15 +156,8 @@ const outlined =
         Edit
       </button>
     </header>
-    <CoffeeCard
-      class="mt-8"
-      :cover="false"
-      :coffee="{ ...coffee, roastedOn: latestRoastDate(coffee.purchases) }"
-    />
-    <CoffeeVerdict :coffee-id="coffee.id" :verdict="coffee" />
-    <MemberVerdicts :verdicts="coffee.memberVerdicts" />
+
     <dl
-      v-if="detailRows(coffee).length"
       class="mt-8 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-xs"
       data-testid="coffee-details"
     >
@@ -163,6 +166,8 @@ const outlined =
         <dd :data-testid="`detail-${row.key}`">{{ row.value }}</dd>
       </template>
     </dl>
+    <CoffeeVerdict :coffee-id="coffee.id" :verdict="coffee" />
+    <MemberVerdicts :verdicts="coffee.memberVerdicts" />
     <RoasterDetails :shelf-id="shelfId" :roaster="coffee.roasterDetails" />
     <CoffeeGrindSettings
       :shelf-id="shelfId"

@@ -2,10 +2,9 @@
 import { ImageIcon } from '@lucide/vue'
 import { NuxtLink } from '#components'
 
-const props = withDefaults(
-  defineProps<{ coffee: CardCoffee; to?: string; cover?: boolean }>(),
-  { to: undefined, cover: true },
-)
+const props = withDefaults(defineProps<{ coffee: CardCoffee; to?: string }>(), {
+  to: undefined,
+})
 
 const ink = computed(() => inkOn(props.coffee.colour))
 const labelColour = computed(() =>
@@ -28,7 +27,7 @@ const roast = computed(
     class="flex flex-col overflow-hidden rounded-[28px] shadow-[0_-6px_24px_rgb(31_79_216/0.12)]"
     :style="{ backgroundColor: coffee.colour, color: ink }"
   >
-    <div v-if="cover" class="h-44 shrink-0" data-testid="coffee-card-cover">
+    <div class="h-44 shrink-0" data-testid="coffee-card-cover">
       <NuxtImg
         v-if="coffee.photoUrl"
         :src="coffee.photoUrl"

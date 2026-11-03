@@ -125,10 +125,4 @@ describe('CoffeeCard', () => {
     expect(card.find(tid('coffee-card-placeholder')).exists()).toBe(true)
     expect(card.find(tid('coffee-card-photo')).exists()).toBe(false)
   })
-
-  it('can leave the cover out', async () => {
-    const card = await mountCard({ cover: false })
-
-    expect(card.find(tid('coffee-card-cover')).exists()).toBe(false)
-  })
 })

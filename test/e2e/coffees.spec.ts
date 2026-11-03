@@ -441,7 +441,7 @@ test('says how a coffee was made and links to the roaster', async ({
     'Washed, Anaerobic',
   )
   await expect(page.getByTestId('detail-varietals')).toHaveText(varietal)
-  await expect(page.getByTestId('coffee-card-flavor-note')).toHaveText(flavor)
+  await expect(page.getByTestId('detail-flavor-notes')).toHaveText(flavor)
   await expect(page.getByTestId('coffee-link-out')).toHaveAttribute(
     'href',
     'https://example.com/thermal',
@@ -462,7 +462,7 @@ test('says how a coffee was made and links to the roaster', async ({
 
   await expect(page.getByTestId('detail-processes')).toHaveText('Anaerobic')
   await expect(page.getByTestId('coffee-link-out')).toBeHidden()
-  await expect(page.getByTestId('coffee-card-flavor-notes')).toBeHidden()
+  await expect(page.getByTestId('detail-flavor-notes')).toBeHidden()
 })
 
 test('keeps a roast date optional', async ({ page, member }) => {
