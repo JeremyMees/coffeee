@@ -1,10 +1,10 @@
-import { and, eq, ne } from 'drizzle-orm'
-import type { RoasterDetails } from '#shared/types/roasters'
+import { and, asc, eq, ne, sql } from 'drizzle-orm'
+import type { RoasterDetails, RoasterSearch } from '#shared/types/roasters'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
 import type { Viewer } from '#server/types/coffees'
 import type { EditableRoasterLogo } from '#server/types/photos'
-import { roaster } from '#server/db/schemas'
+import { coffee, purchase, roaster } from '#server/db/schemas'
 import { canEditCatalogEntry } from '#server/utils/catalog'
 import { deletePhoto } from '#server/utils/photos'
 
@@ -15,6 +15,41 @@ const roasterColumns = {
   countryCode: roaster.countryCode,
   city: roaster.city,
   logoUrl: roaster.logoUrl,
+}
+
+function boughtFrom(shelfId: string) {
+  return sql`from ${purchase}
+    inner join ${coffee} on ${coffee.id} = ${purchase.coffeeId}
+    where ${purchase.shelfId} = ${shelfId}
+      and ${coffee.roasterId} = ${roaster.id}`
+}
+
+export async function listRoasters(
+  db: Database,
+  input: { shelfId: string; search: RoasterSearch },
+) {
+  const { search } = input
+  const bought = boughtFrom(input.shelfId)
+
+  const rows = await db
+    .select({
+      ...roasterColumns,
+      shelfCoffees: sql<number>`(select cast(count(distinct ${purchase.coffeeId}) as integer) ${bought})`,
+      lastBought: sql<
+        string | null
+      >`(select max(${purchase.purchasedOn}) ${bought})`,
+      total: sql<number>`cast(count(*) over () as integer)`,
+    })
+    .from(roaster)
+    .where(search.boughtFrom ? sql`exists (select 1 ${bought})` : undefined)
+    .orderBy(asc(roaster.nameKey), asc(roaster.id))
+    .limit(search.pageSize)
+    .offset(search.page * search.pageSize)
+
+  return {
+    total: rows[0]?.total ?? 0,
+    roasters: rows.map(({ total: _total, ...row }) => row),
+  }
 }
 
 export async function findRoaster(

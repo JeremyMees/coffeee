@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { shelfMember } from '#server/db/schemas'
 import photoHandler from '#server/api/photos/[...pathname].get'
 import editRoasterHandler from '#server/api/roasters/[roasterId].patch'
+import showRoasterHandler from '#server/api/roasters/[roasterId].get'
+import roastersHandler from '#server/api/shelves/[shelfId]/roasters/index.get'
 import removeLogoHandler from '#server/api/roasters/[roasterId]/logo.delete'
 import replaceLogoHandler from '#server/api/roasters/[roasterId]/logo.put'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
@@ -40,6 +42,8 @@ function request(path: string, init: RequestInit = {}) {
   const router = createRouter()
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
+    .get('/api/shelves/:shelfId/roasters', roastersHandler)
+    .get('/api/roasters/:roasterId', showRoasterHandler)
     .patch('/api/roasters/:roasterId', editRoasterHandler)
     .put('/api/roasters/:roasterId/logo', replaceLogoHandler)
     .delete('/api/roasters/:roasterId/logo', removeLogoHandler)
@@ -84,6 +88,7 @@ async function sharedShelf() {
   ).json()
 
   return {
+    shelf,
     sarah: sarahHeaders,
     tom: await signedIn(tom.id),
     admin: await signedIn(admin.id),
@@ -115,6 +120,92 @@ function uploadLogo(path: string, headers: Headers, content = 'logo') {
 async function roasterOn(coffeePath: string, headers: Headers) {
   return (await (await request(coffeePath, { headers })).json()).roasterDetails
 }
+
+describe('the roasters', () => {
+  it('lists every roaster with what the shelf bought from it, never another shelf’s purchases or prices', async () => {
+    const { shelf, sarah } = await sharedShelf()
+    const outsider = await createTestUser(db, { name: 'Ana' })
+    const work = await createShelf(db, { name: 'Work', ownerId: outsider.id })
+    const ana = await signedIn(outsider.id)
+    await request(`/api/shelves/${work.id}/coffees`, {
+      method: 'POST',
+      headers: ana,
+      body: JSON.stringify({
+        name: 'El Paraiso',
+        roaster: 'La Cabra',
+        roastLevel: 'light',
+        roastedFor: 'filter',
+        colour: '#e4572e',
+        origins: ['CO'],
+        processes: ['Washed'],
+        purchasedOn: '2026-11-02',
+        price: 24,
+      }),
+    })
+
+    const response = await request(`/api/shelves/${shelf.id}/roasters`, {
+      headers: sarah,
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(
+      body.roasters.map((found: { name: string; shelfCoffees: number }) => [
+        found.name,
+        found.shelfCoffees,
+      ]),
+    ).toEqual([
+      ['La Cabra', 0],
+      ['Square Mile', 1],
+    ])
+    expect(JSON.stringify(body)).not.toMatch(/price|purchase|2026-11-02/i)
+  })
+
+  it('keeps only the roasters the shelf bought from', async () => {
+    const { shelf, sarah } = await sharedShelf()
+
+    const body = await (
+      await request(`/api/shelves/${shelf.id}/roasters?boughtFrom=true`, {
+        headers: sarah,
+      })
+    ).json()
+
+    expect(body.total).toBe(1)
+    expect(body.roasters[0]).toMatchObject({
+      name: 'Square Mile',
+      shelfCoffees: 1,
+      lastBought: '2026-09-01',
+    })
+  })
+
+  it('refuses a shelf the viewer is not on', async () => {
+    const { shelf } = await sharedShelf()
+    const outsider = await signedIn((await createTestUser(db)).id)
+
+    const response = await request(`/api/shelves/${shelf.id}/roasters`, {
+      headers: outsider,
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('shows a roaster to anyone signed in', async () => {
+    const { roasterPath } = await sharedShelf()
+    const outsider = await signedIn((await createTestUser(db)).id)
+
+    const response = await request(roasterPath, { headers: outsider })
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      name: 'Square Mile',
+      canEdit: false,
+    })
+    expect(
+      (await request('/api/roasters/nope', { headers: outsider })).status,
+    ).toBe(404)
+    expect((await request(roasterPath)).status).toBe(401)
+  })
+})
 
 describe('the details of a roaster', () => {
   it('starts with only a name, editable by the person who added it', async () => {

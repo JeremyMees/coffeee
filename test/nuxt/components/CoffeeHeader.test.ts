@@ -7,6 +7,7 @@ const coffee = {
   name: 'Ayele Fulasa',
   roaster: 'Square Mile',
   link: 'https://example.com/ayele' as string | null,
+  roasterDetails: { id: 'r2' },
 }
 
 describe('CoffeeHeader', () => {
@@ -17,6 +18,9 @@ describe('CoffeeHeader', () => {
 
     expect(header.get(tid('coffee-title')).text()).toBe('Ayele Fulasa')
     expect(header.get(tid('coffee-roaster-name')).text()).toBe('Square Mile')
+    expect(header.get(tid('coffee-roaster-name')).attributes('href')).toBe(
+      '/roasters/r2',
+    )
     expect(header.get(tid('coffee-link-out')).attributes('href')).toBe(
       'https://example.com/ayele',
     )

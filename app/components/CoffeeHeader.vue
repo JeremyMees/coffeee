@@ -2,7 +2,9 @@
 import { ArrowUpRightIcon, PencilIcon } from '@lucide/vue'
 
 defineProps<{
-  coffee: Pick<SharedCoffee, 'name' | 'roaster' | 'link'>
+  coffee: Pick<SharedCoffee, 'name' | 'roaster' | 'link'> & {
+    roasterDetails: Pick<ShelfRoaster, 'id'>
+  }
   editable: boolean
 }>()
 
@@ -12,9 +14,13 @@ defineEmits<{ edit: [] }>()
 <template>
   <header class="mt-6 flex items-end justify-between gap-4">
     <div>
-      <p class="text-xs uppercase" data-testid="coffee-roaster-name">
+      <NuxtLink
+        :to="`/roasters/${coffee.roasterDetails.id}`"
+        class="text-xs uppercase underline-offset-4 hover:underline"
+        data-testid="coffee-roaster-name"
+      >
         {{ coffee.roaster }}
-      </p>
+      </NuxtLink>
       <h1 class="mt-2 text-[48px] lg:text-[72px]" data-testid="coffee-title">
         {{ coffee.name }}
       </h1>

@@ -1,0 +1,166 @@
+<script setup lang="ts">
+import {
+  ArrowLeftIcon,
+  ArrowUpRightIcon,
+  BookmarkIcon,
+  PencilIcon,
+} from '@lucide/vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { useCatalogPages } from '~/queries/catalog'
+import { useRoaster } from '~/queries/roasters'
+
+const route = useRoute('roasters-roasterId')
+const roasterId = computed(() => route.params.roasterId)
+const shelf = useCurrentShelf()
+const shelfId = computed(() => shelf.value?.id ?? '')
+
+const editing = ref(false)
+const mine = ref(false)
+
+const { data: roaster, error, suspense } = useRoaster(roasterId)
+await suspense()
+
+if (error.value || !roaster.value) {
+  showError({ statusCode: 404, statusMessage: 'Roaster not found' })
+}
+
+useHead({ title: () => `${roaster.value?.name} · Coffeee` })
+
+const catalog = useCatalogPages(shelfId, () => ({
+  roasterId: roasterId.value,
+  ...(mine.value && { mine: 'true' }),
+}))
+await catalog.suspense()
+
+const coffees = computed(
+  () => catalog.data.value?.pages.flatMap(loaded => loaded.coffees) ?? [],
+)
+
+const more = useTemplateRef<HTMLElement>('more')
+
+function loadMore() {
+  if (catalog.hasNextPage.value && !catalog.isFetchingNextPage.value) {
+    catalog.fetchNextPage()
+  }
+}
+
+useIntersectionObserver(more, ([entry]) => {
+  if (entry?.isIntersecting) loadMore()
+})
+</script>
+
+<template>
+  <main v-if="roaster && shelf" class="max-w-2xl">
+    <NuxtLink
+      to="/roasters"
+      data-testid="roaster-back"
+      class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+    >
+      <ArrowLeftIcon class="size-4" aria-hidden="true" />
+      Roasters
+    </NuxtLink>
+    <header class="mt-6 flex items-end justify-between gap-4">
+      <div class="flex min-w-0 items-center gap-4">
+        <RoasterLogoImage :roaster="roaster" class="size-20" />
+        <div class="min-w-0">
+          <h1
+            class="text-[40px] leading-none lg:text-[56px]"
+            data-testid="roaster-title"
+          >
+            {{ roaster.name }}
+          </h1>
+          <p
+            v-if="roasterPlace(roaster)"
+            class="mt-2 text-xs"
+            data-testid="roaster-place"
+          >
+            {{ roasterPlace(roaster) }}
+          </p>
+          <a
+            v-if="roaster.website"
+            :href="roaster.website"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="roaster-website"
+            class="mt-1 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
+          >
+            {{ websiteHost(roaster.website) }}
+            <ArrowUpRightIcon class="size-4" aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+      <button
+        v-if="roaster.canEdit"
+        type="button"
+        data-testid="roaster-edit"
+        class="mb-2 flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground"
+        @click="editing = true"
+      >
+        <PencilIcon class="size-4" aria-hidden="true" />
+        Edit
+      </button>
+    </header>
+    <section class="mt-10">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <h2 class="text-[28px]">Coffees</h2>
+        <button
+          type="button"
+          data-testid="roaster-filter-mine"
+          :aria-pressed="mine"
+          :class="[
+            'flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+            mine
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-transparent bg-accent hover:border-primary',
+          ]"
+          @click="mine = !mine"
+        >
+          <BookmarkIcon
+            :class="['size-3.5', mine && 'fill-current']"
+            aria-hidden="true"
+          />
+          Mine
+        </button>
+      </div>
+      <p
+        v-if="!coffees.length"
+        class="mt-4 text-xs"
+        data-testid="roaster-coffees-empty"
+      >
+        {{
+          mine
+            ? 'Your shelf has not bought a coffee from this roaster yet.'
+            : 'Nobody has added a coffee from this roaster yet.'
+        }}
+      </p>
+      <template v-else>
+        <ul
+          aria-label="Coffees"
+          data-testid="roaster-coffees"
+          class="mt-4 flex flex-col gap-3"
+        >
+          <li v-for="coffee in coffees" :key="coffee.id">
+            <CatalogResult :coffee="coffee" :to="`/coffees/${coffee.id}`" />
+          </li>
+        </ul>
+        <button
+          v-if="catalog.hasNextPage.value"
+          ref="more"
+          type="button"
+          class="mx-auto mt-8 flex rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
+          :disabled="catalog.isFetchingNextPage.value"
+          data-testid="roaster-coffees-more"
+          @click="loadMore"
+        >
+          {{ catalog.isFetchingNextPage.value ? 'Loading…' : 'Show more' }}
+        </button>
+      </template>
+    </section>
+    <EditRoasterSheet
+      v-if="roaster.canEdit"
+      v-model:open="editing"
+      :shelf-id="shelf.id"
+      :roaster="roaster"
+    />
+  </main>
+</template>

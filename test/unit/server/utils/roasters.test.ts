@@ -5,11 +5,13 @@ import {
   editRoaster,
   findEditableRoaster,
   findRoaster,
+  listRoasters,
   replaceRoasterLogo,
 } from '#server/utils/roasters'
 import { createShelf } from '#server/utils/shelves'
 import type { NewCoffee } from '#shared/types/coffee'
 import type { RoasterDetails } from '#shared/types/roasters'
+import { roasterSearchSchema } from '#shared/utils/schemas'
 import { storages } from '#test/support/nitro'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
@@ -54,7 +56,7 @@ async function setup() {
     .select({ id: roaster.id })
     .from(roaster)) as [{ id: string }]
 
-  return { db, sarah, tom, admin, roasterId }
+  return { db, sarah, tom, admin, home, roasterId }
 }
 
 describe('finding a roaster', () => {
@@ -78,6 +80,88 @@ describe('finding a roaster', () => {
     expect(
       await findEditableRoaster(db, { roasterId: 'nope', editor: sarah }),
     ).toEqual({ outcome: 'notFound' })
+  })
+})
+
+describe('listing the roasters', () => {
+  async function twoShelves() {
+    const context = await setup()
+    const { db, sarah, tom, home } = context
+    const work = await createShelf(db, { name: 'Work', ownerId: tom.id })
+    await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: { ...firstBag, name: 'Kamwangi', purchasedOn: '2026-10-15' },
+    })
+    await addCoffee(db, {
+      shelfId: work.id,
+      userId: tom.id,
+      coffee: { ...firstBag, purchasedOn: '2026-11-20', price: 99 },
+    })
+    await addCoffee(db, {
+      shelfId: work.id,
+      userId: tom.id,
+      coffee: { ...firstBag, name: 'El Paraiso', roaster: 'La Cabra' },
+    })
+
+    const list = (shelfId: string, query: Record<string, string> = {}) =>
+      listRoasters(db, {
+        shelfId,
+        search: roasterSearchSchema.parse(query),
+      })
+
+    return { ...context, home, work, list }
+  }
+
+  it('lists every roaster by name, with what only this shelf bought from it', async () => {
+    const { home, list } = await twoShelves()
+
+    expect(await list(home.id)).toEqual({
+      total: 2,
+      roasters: [
+        {
+          id: expect.any(String),
+          name: 'La Cabra',
+          website: null,
+          countryCode: null,
+          city: null,
+          logoUrl: null,
+          shelfCoffees: 0,
+          lastBought: null,
+        },
+        {
+          id: expect.any(String),
+          name: 'Square Mile',
+          website: null,
+          countryCode: null,
+          city: null,
+          logoUrl: null,
+          shelfCoffees: 2,
+          lastBought: '2026-10-15',
+        },
+      ],
+    })
+  })
+
+  it('keeps only the roasters the shelf bought from', async () => {
+    const { home, work, list } = await twoShelves()
+
+    const names = async (shelfId: string) =>
+      (await list(shelfId, { boughtFrom: 'true' })).roasters.map(
+        found => found.name,
+      )
+
+    expect(await names(home.id)).toEqual(['Square Mile'])
+    expect(await names(work.id)).toEqual(['La Cabra', 'Square Mile'])
+  })
+
+  it('pages through the roasters and counts them all', async () => {
+    const { home, list } = await twoShelves()
+
+    const second = await list(home.id, { page: '1', pageSize: '1' })
+
+    expect(second.total).toBe(2)
+    expect(second.roasters.map(found => found.name)).toEqual(['Square Mile'])
   })
 })
 

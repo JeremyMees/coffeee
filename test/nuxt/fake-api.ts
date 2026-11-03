@@ -205,6 +205,37 @@ export function squareMile(): ShelfRoaster {
   }
 }
 
+export function listedRoaster(
+  overrides: Partial<ListedRoaster> = {},
+): ListedRoaster {
+  return {
+    id: 'r2',
+    name: 'Square Mile',
+    website: 'https://www.squaremilecoffee.com',
+    countryCode: 'GB',
+    city: 'London',
+    logoUrl: null,
+    shelfCoffees: 2,
+    lastBought: '2026-11-01',
+    ...overrides,
+  }
+}
+
+export function listedRoasters() {
+  return [
+    listedRoaster({
+      id: 'r1',
+      name: 'La Cabra',
+      countryCode: 'DK',
+      city: 'Aarhus',
+      logoUrl: '/api/photos/roasters/la-cabra.webp',
+      shelfCoffees: 0,
+      lastBought: null,
+    }),
+    listedRoaster(),
+  ]
+}
+
 export function opus() {
   return { id: 'opus', brand: 'Fellow', model: 'Opus Gen 2' }
 }
@@ -311,6 +342,17 @@ function fakeCatalog(event: H3Event) {
   }
 }
 
+function fakeRoasters(event: H3Event) {
+  const query = getQuery(event) as Record<string, string>
+  api.roasterQueries.push(query)
+
+  const matching = api.roasters.filter(
+    roaster => query.boughtFrom !== 'true' || roaster.shelfCoffees > 0,
+  )
+
+  return { total: matching.length, roasters: matching }
+}
+
 function fakeFilter(
   options: Record<string, LibraryOption[]>,
   calls: () => Record<string, string>[],
@@ -341,6 +383,8 @@ export const api = {
   catalog: [] as CatalogCoffee[],
   catalogQueries: [] as Record<string, string>[],
   catalogFilterQueries: [] as Record<string, string>[],
+  roasters: [] as ListedRoaster[],
+  roasterQueries: [] as Record<string, string>[],
   added: [] as unknown[],
   edits: [] as unknown[],
   shelves: [] as string[],
@@ -408,6 +452,8 @@ export function resetApi() {
   api.catalog = []
   api.catalogQueries = []
   api.catalogFilterQueries = []
+  api.roasters = []
+  api.roasterQueries = []
   api.added = []
   api.edits = []
   api.shelves = []
@@ -460,6 +506,12 @@ export function fakeApi() {
   }
 
   registerEndpoint('/api/shelves/home/catalog', fakeCatalog)
+  registerEndpoint('/api/shelves/home/roasters', fakeRoasters)
+
+  registerEndpoint('/api/roasters/r2', {
+    method: 'GET',
+    handler: () => roaster(),
+  })
 
   for (const kind of catalogFilters) {
     registerEndpoint(

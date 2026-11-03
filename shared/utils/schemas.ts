@@ -9,6 +9,7 @@ import {
   sortDirections,
 } from './library'
 import { isOriginCode, originListFields } from './origins'
+import { roastersPageSize } from './roasters'
 import type { DescribedCoffee } from '../types/coffee'
 import type { OriginListField } from '../types/origins'
 import type { ListNouns } from '../types/validation'
@@ -122,6 +123,12 @@ export const catalogSearchSchema = listSearchSchema.extend({
     .default('newest'),
   page: pageNumber(),
   pageSize: pageSize('coffee', catalogPageSize),
+})
+
+export const roasterSearchSchema = z.object({
+  boughtFrom: yesOrNo('bought from'),
+  page: pageNumber(),
+  pageSize: pageSize('roaster', roastersPageSize),
 })
 
 export const libraryFilterSearchSchema = listSearchSchema.extend({

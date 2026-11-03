@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useQueryClient } from '@tanstack/vue-query'
 import {
+  useRoaster,
   useRoasterLogoRemoval,
+  useRoasterPages,
   useRoasterLogoUpdate,
   useRoasterUpdate,
 } from '~/queries/roasters'
 import type { RoasterDetails } from '#imports'
 import { queryKeys } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { api, fakeApi, listedRoasters, resetApi } from '../fake-api'
 import { runOn } from '../fixtures'
 
 fakeApi()
@@ -34,8 +36,36 @@ async function withClient<T>(use: () => T) {
 const refreshed = [
   { queryKey: queryKeys.shelf('home') },
   { queryKey: queryKeys.coffees() },
+  { queryKey: queryKeys.roasters() },
   { queryKey: queryKeys.lists() },
 ]
+
+describe('useRoasterPages', () => {
+  it('loads the roasters of the shelf with the query', async () => {
+    api.roasters = listedRoasters()
+    const pages = await runOn('/', () =>
+      useRoasterPages('home', { boughtFrom: 'true' }),
+    )
+
+    await pages.suspense()
+
+    expect(api.roasterQueries).toEqual([{ boughtFrom: 'true', page: '0' }])
+    expect(
+      pages.data.value?.pages[0]?.roasters.map(found => found.name),
+    ).toEqual(['Square Mile'])
+    expect(pages.hasNextPage.value).toBe(false)
+  })
+})
+
+describe('useRoaster', () => {
+  it('loads a roaster by its id', async () => {
+    const roaster = await runOn('/', () => useRoaster('r2'))
+
+    await roaster.suspense()
+
+    expect(roaster.data.value).toMatchObject({ id: 'r2', name: 'Square Mile' })
+  })
+})
 
 describe('useRoasterUpdate', () => {
   it('saves the roaster and refreshes the shelf and the lists', async () => {

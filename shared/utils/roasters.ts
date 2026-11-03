@@ -1,5 +1,7 @@
 import { originName } from './origins'
 
+export const roastersPageSize = 24
+
 export function roasterPlace(roaster: {
   city: string | null
   countryCode: string | null

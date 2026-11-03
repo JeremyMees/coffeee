@@ -24,12 +24,13 @@ const editing = ref(false)
     <div class="mt-4 flex items-center gap-4 rounded-[18px] border p-4 text-xs">
       <RoasterLogoImage :roaster="roaster" class="size-16" />
       <div class="flex min-w-0 flex-col gap-1">
-        <p
-          class="font-sans text-sm font-semibold"
+        <NuxtLink
+          :to="`/roasters/${roaster.id}`"
+          class="font-sans text-sm font-semibold underline-offset-4 hover:underline"
           data-testid="roaster-details-name"
         >
           {{ roaster.name }}
-        </p>
+        </NuxtLink>
         <p v-if="roasterPlace(roaster)" data-testid="roaster-details-place">
           {{ roasterPlace(roaster) }}
         </p>

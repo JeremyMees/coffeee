@@ -26,6 +26,7 @@ describe('AppDock', () => {
       ['Stock', '/shelves/work'],
       ['Library', '/shelves/work/library'],
       ['Discover', '/shelves/work/discover'],
+      ['Roasters', '/roasters'],
       ['Profile', '/profile'],
     ])
   })
