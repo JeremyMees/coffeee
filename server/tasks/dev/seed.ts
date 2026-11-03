@@ -1,6 +1,6 @@
 import { defineTask, useRuntimeConfig } from 'nitropack/runtime'
 import { useDb } from '#server/utils/db'
-import { isLocalDatabase, seedDevData } from '#server/utils/dev-seed'
+import { isLocalDatabase, seedDevData } from '#server/db/seed'
 
 export default defineTask({
   meta: {

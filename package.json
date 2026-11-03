@@ -26,7 +26,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "import:notion:dev": "nuxi task run notion:import",
-    "import:notion:prod": "nuxi task run notion:import --payload.target=production"
+    "import:notion:prod": "nuxi task run notion:import --payload.target=production",
+    "seed:dev": "nuxi task run dev:seed"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.10",
