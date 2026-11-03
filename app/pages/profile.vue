@@ -42,8 +42,10 @@ useHead({ title: 'Profile · Coffeee' })
             </dd>
           </div>
         </dl>
+        <ProfileName class="mt-8" />
+        <ProfileStats class="mt-12" />
         <Button
-          class="mt-6"
+          class="mt-12"
           variant="outline"
           data-testid="sign-out"
           @click="signOut"

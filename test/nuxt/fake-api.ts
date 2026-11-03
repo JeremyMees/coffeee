@@ -2,6 +2,7 @@ import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
 import type { ListEntry, OriginListEntry } from '#shared/types/catalog'
+import type { ProfileStats } from '#shared/types/stats'
 import {
   catalogFilters,
   catalogPageSize,
@@ -417,6 +418,18 @@ export function ownedShelves() {
   ]
 }
 
+export function profileStats(): ProfileStats {
+  return {
+    bags: 12,
+    grams: 3000,
+    spentCents: 19800,
+    rated: 9,
+    averageRating: 4.2,
+    wouldBuyAgain: 5,
+    topRoaster: 'Square Mile',
+  }
+}
+
 export function shelfInvites() {
   return [
     {
@@ -498,6 +511,8 @@ export function inviteNotification(
 
 export const api = {
   ownedShelves: ownedShelves(),
+  profileStats: profileStats(),
+  profileRenames: [] as unknown[],
   notifications: [] as ReturnType<typeof notifications>,
   notificationCalls: [] as unknown[],
   shelfMembers: shelfMembers(),
@@ -584,6 +599,8 @@ function storedPurchase(id: string, body: Record<string, unknown>) {
 
 export function resetApi() {
   api.ownedShelves = ownedShelves()
+  api.profileStats = profileStats()
+  api.profileRenames = []
   api.notifications = []
   api.notificationCalls = []
   api.shelfMembers = shelfMembers()
@@ -945,6 +962,17 @@ export function fakeApi() {
   registerShelfEndpoints()
 
   registerEndpoint('/api/me/owned-shelves', () => api.ownedShelves)
+  registerEndpoint('/api/me/stats', () => api.profileStats)
+
+  registerEndpoint('/api/me', {
+    method: 'PATCH',
+    handler: async event => {
+      const body = await readBody(event)
+      api.profileRenames.push(body)
+
+      return { name: body.name }
+    },
+  })
 
   registerEndpoint('/api/me', {
     method: 'DELETE',

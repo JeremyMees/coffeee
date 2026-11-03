@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import authHandler from '#server/api/auth/[...all]'
 import deleteHandler from '#server/api/me.delete'
 import meHandler from '#server/api/me.get'
+import patchHandler from '#server/api/me.patch'
 import ownedShelvesHandler from '#server/api/me/owned-shelves.get'
+import statsHandler from '#server/api/me/stats.get'
 import { shelf, shelfMember, user } from '#server/db/schemas'
 import { createShelf } from '#server/utils/shelves'
 import { createTestAuth } from '#test/support/auth'
@@ -39,7 +41,9 @@ function request(path: string, init: RequestInit = {}) {
   const router = createRouter()
     .get('/api/me', meHandler)
     .delete('/api/me', deleteHandler)
+    .patch('/api/me', patchHandler)
     .get('/api/me/owned-shelves', ownedShelvesHandler)
+    .get('/api/me/stats', statsHandler)
     .use('/api/auth/**', authHandler)
   const app = createApp().use(router)
 
@@ -80,6 +84,63 @@ describe('GET /api/me', () => {
 
     expect(signOut.status).toBe(200)
     expect(response.status).toBe(401)
+  })
+})
+
+describe('PATCH /api/me', () => {
+  function rename(name: unknown, headers = new Headers()) {
+    headers.set('content-type', 'application/json')
+
+    return request('/api/me', {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ name }),
+    })
+  }
+
+  it('refuses anonymous requests', async () => {
+    const response = await rename('Sarah')
+
+    expect(response.status).toBe(401)
+  })
+
+  it('changes the name of the signed-in user', async () => {
+    const sarah = await createTestUser(db, { name: 'Sarah' })
+    const headers = await testAuth.signIn(sarah.id)
+
+    const response = await rename('  Sarah Mees ', headers)
+
+    const [found] = await db.select().from(user).where(eq(user.id, sarah.id))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ name: 'Sarah Mees' })
+    expect(found?.name).toBe('Sarah Mees')
+  })
+
+  it('refuses an empty name', async () => {
+    const sarah = await createTestUser(db, { name: 'Sarah' })
+    const headers = await testAuth.signIn(sarah.id)
+
+    const response = await rename('   ', headers)
+
+    expect(response.status).toBe(400)
+  })
+})
+
+describe('GET /api/me/stats', () => {
+  it('refuses anonymous requests', async () => {
+    const response = await request('/api/me/stats')
+
+    expect(response.status).toBe(401)
+  })
+
+  it('returns the stats of the signed-in user', async () => {
+    const user = await createTestUser(db)
+    const headers = await testAuth.signIn(user.id)
+
+    const response = await request('/api/me/stats', { headers })
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ bags: 0, rated: 0 })
   })
 })
 

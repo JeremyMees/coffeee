@@ -501,3 +501,5 @@ export const signUpSchema = z.object({
 })
 
 export const newPasswordSchema = z.object({ password: passwordSchema })
+
+export const profileNameSchema = signUpSchema.pick({ name: true })

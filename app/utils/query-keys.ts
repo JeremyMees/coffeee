@@ -52,6 +52,7 @@ export const queryKeys = {
   shelfGrinders: (shelfId: string) => ['shelves', shelfId, 'grinders'],
   brewMethods: () => ['brew-methods'],
   ownedShelves: () => ['me', 'owned-shelves'],
+  profileStats: () => ['me', 'stats'],
   invites: () => ['invites'],
   shelfInvites: (shelfId: string) => ['shelves', shelfId, 'invites'],
   shelfMembers: (shelfId: string) => ['shelves', shelfId, 'members'],

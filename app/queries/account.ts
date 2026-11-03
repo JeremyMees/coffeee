@@ -11,6 +11,28 @@ export function useOwnedShelves(enabled: MaybeRefOrGetter<boolean>) {
   })
 }
 
+export function useProfileStats() {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: queryKeys.profileStats(),
+    queryFn: () => request('/api/me/stats'),
+    staleTime: 0,
+  })
+}
+
+export function useProfileRename() {
+  const user = useCurrentUser()
+
+  return useMutation({
+    mutationFn: (name: string) =>
+      $fetch('/api/me', { method: 'PATCH', body: { name } }),
+    onSuccess: ({ name }) => {
+      if (user.value) user.value = { ...user.value, name }
+    },
+  })
+}
+
 export function useAccountDelete() {
   return useMutation({
     mutationFn: (heirs: Record<string, string>) =>

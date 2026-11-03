@@ -83,6 +83,19 @@ async function findOtherAdmin(db: Database, userId: string) {
   return found
 }
 
+export async function renameUser(
+  db: Database,
+  input: { userId: string; name: string },
+) {
+  const [renamed] = await db
+    .update(user)
+    .set({ name: input.name, updatedAt: new Date() })
+    .where(eq(user.id, input.userId))
+    .returning({ name: user.name })
+
+  return renamed!
+}
+
 export async function deleteAccount(
   db: Database,
   input: { userId: string; heirs: Record<string, string> },
