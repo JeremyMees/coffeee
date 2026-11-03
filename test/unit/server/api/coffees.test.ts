@@ -6,6 +6,7 @@ import processesHandler from '#server/api/processes.get'
 import producersHandler from '#server/api/producers.get'
 import regionsHandler from '#server/api/regions.get'
 import roastersHandler from '#server/api/roasters.get'
+import coffeeHandler from '#server/api/coffees/[coffeeId].get'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
 import removePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/photo.delete'
@@ -65,6 +66,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/catalog', catalogHandler)
     .get('/api/shelves/:shelfId/catalog/:filter', catalogFilterHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
+    .get('/api/coffees/:coffeeId', coffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
     .put('/api/shelves/:shelfId/coffees/:coffeeId/photo', replacePhotoHandler)
@@ -463,6 +465,42 @@ describe('GET /api/shelves/:shelfId/coffees/:coffeeId', () => {
     })
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('GET /api/coffees/:coffeeId', () => {
+  it('shows anyone signed in a coffee from another shelf, without its bags or prices', async () => {
+    const home = await member()
+    const work = await member()
+    const added = await add(work.shelf.id, work.headers)
+    const { coffee: created } = await added.json()
+
+    const response = await request(`/api/coffees/${created.id}`, {
+      headers: home.headers,
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body).toMatchObject({
+      name: 'Ayele Fulasa',
+      shelves: [{ id: home.shelf.id, bags: 0, inStock: 0 }],
+    })
+    expect(JSON.stringify(body)).not.toMatch(/priceCents|2026-11-01/)
+    expect(JSON.stringify(body)).not.toContain(work.shelf.id)
+  })
+
+  it('says when there is no such coffee', async () => {
+    const { headers } = await member()
+
+    const response = await request('/api/coffees/nope', { headers })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('refuses anonymous requests', async () => {
+    const response = await request('/api/coffees/nope')
+
+    expect(response.status).toBe(401)
   })
 })
 

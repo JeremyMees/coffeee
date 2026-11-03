@@ -40,6 +40,7 @@ import {
 } from '#server/utils/grind-settings'
 import { addPurchase, purchaseColumns } from '#server/utils/purchases'
 import { findRoaster } from '#server/utils/roasters'
+import { shelvesHolding } from '#server/utils/shelves'
 import {
   findVerdict,
   memberVerdictsOf,
@@ -255,9 +256,9 @@ export async function replaceCoffeePhoto(
   return { photoUrl }
 }
 
-export async function findShelfCoffee(
+async function findCatalogCoffee(
   db: Database,
-  input: { shelfId: string; coffeeId: string; viewer: Viewer },
+  input: { coffeeId: string; viewer: Viewer },
 ) {
   const [found] = await db
     .select({
@@ -273,6 +274,46 @@ export async function findShelfCoffee(
 
   const { roasterId, createdBy, ...details } = found
 
+  return {
+    ...details,
+    ...(await describedOf(db, input.coffeeId)),
+    ...(await findVerdict(db, {
+      userId: input.viewer.id,
+      coffeeId: input.coffeeId,
+    })),
+    canEdit: canEditCatalogEntry(input.viewer, createdBy),
+    roasterDetails: (await findRoaster(db, {
+      roasterId,
+      viewer: input.viewer,
+    }))!,
+  }
+}
+
+export async function findCoffee(
+  db: Database,
+  input: { coffeeId: string; viewer: Viewer },
+) {
+  const found = await findCatalogCoffee(db, input)
+
+  if (!found) return undefined
+
+  return {
+    ...found,
+    shelves: await shelvesHolding(db, {
+      coffeeId: input.coffeeId,
+      userId: input.viewer.id,
+    }),
+  }
+}
+
+export async function findShelfCoffee(
+  db: Database,
+  input: { shelfId: string; coffeeId: string; viewer: Viewer },
+) {
+  const found = await findCatalogCoffee(db, input)
+
+  if (!found) return undefined
+
   const purchases = await db
     .select(purchaseColumns)
     .from(purchase)
@@ -285,18 +326,12 @@ export async function findShelfCoffee(
     .orderBy(desc(purchase.purchasedOn), desc(purchase.createdAt))
 
   return {
-    ...details,
-    ...(await describedOf(db, input.coffeeId)),
-    ...(await findVerdict(db, {
-      userId: input.viewer.id,
-      coffeeId: input.coffeeId,
-    })),
+    ...found,
     memberVerdicts: await memberVerdictsOf(db, {
       shelfId: input.shelfId,
       coffeeId: input.coffeeId,
       userId: input.viewer.id,
     }),
-    canEdit: canEditCatalogEntry(input.viewer, createdBy),
     purchases,
     grindSettings: await grindSettingsOf(db, {
       userId: input.viewer.id,
@@ -307,10 +342,6 @@ export async function findShelfCoffee(
       userId: input.viewer.id,
       coffeeId: input.coffeeId,
     }),
-    roasterDetails: (await findRoaster(db, {
-      roasterId,
-      viewer: input.viewer,
-    }))!,
   }
 }
 

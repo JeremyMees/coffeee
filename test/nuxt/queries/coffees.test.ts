@@ -3,6 +3,7 @@ import { mockNuxtImport, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { useQueryClient } from '@tanstack/vue-query'
 import { readBody, readMultipartFormData } from 'h3'
 import {
+  useCoffee,
   useCoffeeCreate,
   useCoffeePhotoRemoval,
   useCoffeePhotoUpdate,
@@ -69,6 +70,11 @@ registerEndpoint('/api/shelves/cellar/coffees/c1', {
   },
 })
 
+registerEndpoint('/api/coffees/c1', () => ({
+  id: 'c1',
+  name: 'Ayele Fulasa',
+}))
+
 registerEndpoint('/api/shelves/cellar/coffees', {
   method: 'POST',
   handler: async event => {
@@ -121,8 +127,18 @@ describe('useShelfCoffee', () => {
   })
 })
 
+describe('useCoffee', () => {
+  it('fetches a coffee outside any shelf', async () => {
+    const { data, suspense } = await runOn('/', () => useCoffee('c1'))
+
+    await suspense()
+
+    expect(data.value).toMatchObject({ id: 'c1', name: 'Ayele Fulasa' })
+  })
+})
+
 describe('useCoffeeCreate', () => {
-  it('adds the coffee and refreshes that shelf and every list', async () => {
+  it('adds the coffee and refreshes that shelf, every coffee and every list', async () => {
     const { result, invalidated } = await withClient(useCoffeeCreate)
 
     await result.mutateAsync({
@@ -133,13 +149,14 @@ describe('useCoffeeCreate', () => {
     expect(calls.posted).toEqual([{ name: 'Halo' }])
     expect(invalidated()).toEqual([
       { queryKey: queryKeys.shelf('cellar') },
+      { queryKey: queryKeys.coffees() },
       { queryKey: queryKeys.lists() },
     ])
   })
 })
 
 describe('useCoffeeUpdate', () => {
-  it('saves the details and refreshes that shelf and every list', async () => {
+  it('saves the details and refreshes that shelf, every coffee and every list', async () => {
     const { result, invalidated } = await withClient(useCoffeeUpdate)
 
     await result.mutateAsync({
@@ -151,6 +168,7 @@ describe('useCoffeeUpdate', () => {
     expect(calls.patched).toEqual([{ name: 'Halo' }])
     expect(invalidated()).toEqual([
       { queryKey: queryKeys.shelf('cellar') },
+      { queryKey: queryKeys.coffees() },
       { queryKey: queryKeys.lists() },
     ])
   })

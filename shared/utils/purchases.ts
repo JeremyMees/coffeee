@@ -64,3 +64,13 @@ export function buyAgainValues(
     roastedOn: '',
   }
 }
+
+export function shelfBags(counts: { bags: number; inStock: number }) {
+  if (!counts.bags) return 'Not bought yet'
+
+  const bags = `${counts.bags} ${counts.bags === 1 ? 'bag' : 'bags'}`
+
+  return counts.inStock
+    ? `${bags} · ${counts.inStock} in stock`
+    : `${bags} · all finished`
+}

@@ -33,6 +33,7 @@ async function withClient<T>(use: () => T) {
 
 const refreshed = [
   { queryKey: queryKeys.shelf('home') },
+  { queryKey: queryKeys.coffees() },
   { queryKey: queryKeys.lists() },
 ]
 

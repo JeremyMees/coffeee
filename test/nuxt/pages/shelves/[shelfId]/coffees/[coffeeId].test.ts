@@ -76,22 +76,14 @@ describe('a coffee page', () => {
     expect(page.get(tid('coffee-buy-again')).text()).toBe('Buy again')
   })
 
-  it('leads back to Stock, or to Discover when it was found there', async () => {
-    const fromStock = await mountSuspended(App, {
+  it('leads back to Stock', async () => {
+    const page = await mountSuspended(App, {
       route: '/shelves/home/coffees/c1',
     })
-    const stockLink = fromStock.get(tid('coffee-back'))
+    const back = page.get(tid('coffee-back'))
 
-    expect(stockLink.text()).toBe('Stock')
-    expect(stockLink.attributes('href')).toBe('/shelves/home')
-
-    const fromDiscover = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1?from=discover',
-    })
-    const discoverLink = fromDiscover.get(tid('coffee-back'))
-
-    expect(discoverLink.text()).toBe('Discover')
-    expect(discoverLink.attributes('href')).toBe('/shelves/home/discover')
+    expect(back.text()).toBe('Stock')
+    expect(back.attributes('href')).toBe('/shelves/home')
   })
 
   it('offers no edit to someone who can only read it', async () => {

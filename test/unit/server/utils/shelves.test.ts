@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { addCoffee } from '#server/utils/coffees'
+import { addPurchase, finishPurchase } from '#server/utils/purchases'
 import {
   createShelf,
   findShelf,
   listShelves,
   shelfNameFor,
+  shelvesHolding,
 } from '#server/utils/shelves'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
@@ -64,5 +67,71 @@ describe('shelves', () => {
     const found = await findShelf(db, { shelfId: home.id, userId: tom.id })
 
     expect(found).toBeUndefined()
+  })
+})
+
+describe('shelvesHolding', () => {
+  const bag = {
+    purchasedOn: '2026-11-01',
+    roastedOn: null,
+    sizeGrams: null,
+    price: null,
+  }
+
+  it('counts the bags and those in stock on each shelf of the viewer, oldest shelf first', async () => {
+    const { db, sarah, tom } = await setup()
+    const home = await createShelf(db, { name: 'Home', ownerId: sarah.id })
+    const work = await createShelf(db, { name: 'Work', ownerId: sarah.id })
+    const toms = await createShelf(db, { name: "Tom's shelf", ownerId: tom.id })
+    const { coffee, purchase: first } = await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: {
+        name: 'Ayele Fulasa',
+        roaster: 'Square Mile',
+        roastLevel: 'light',
+        roastedFor: 'filter',
+        colour: '#e4572e',
+        origins: ['ET'],
+        regions: [],
+        farms: [],
+        washingStations: [],
+        producers: [],
+        processes: [],
+        varietals: [],
+        flavorNotes: [],
+        link: null,
+        altitudeFrom: null,
+        altitudeTo: null,
+        ...bag,
+      },
+    })
+    await addPurchase(db, {
+      shelfId: home.id,
+      coffeeId: coffee.id,
+      userId: sarah.id,
+      purchase: bag,
+    })
+    await finishPurchase(db, {
+      shelfId: home.id,
+      coffeeId: coffee.id,
+      purchaseId: first.id,
+    })
+    await addPurchase(db, {
+      shelfId: toms.id,
+      coffeeId: coffee.id,
+      userId: tom.id,
+      purchase: bag,
+    })
+
+    const shelves = await shelvesHolding(db, {
+      coffeeId: coffee.id,
+      userId: sarah.id,
+    })
+
+    expect(shelves).toEqual([
+      { id: home.id, name: 'Home', bags: 2, inStock: 1 },
+      { id: work.id, name: 'Work', bags: 0, inStock: 0 },
+    ])
   })
 })

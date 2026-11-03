@@ -3,6 +3,10 @@ import type { InternalApi } from 'nitropack/types'
 export type ShelfCoffee =
   InternalApi['/api/shelves/:shelfId/coffees/:coffeeId']['get']
 
+export type SharedCoffee = InternalApi['/api/coffees/:coffeeId']['get']
+
+export type CoffeeShelf = SharedCoffee['shelves'][number]
+
 export type StockCoffee =
   InternalApi['/api/shelves/:shelfId/stock']['get'][number]
 

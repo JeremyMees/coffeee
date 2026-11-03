@@ -64,7 +64,10 @@ const bag = {
   price: 16.5,
 }
 const target = { shelfId: 'cellar', coffeeId: 'c1' }
-const refreshed = [{ queryKey: queryKeys.shelf('cellar') }]
+const refreshed = [
+  { queryKey: queryKeys.shelf('cellar') },
+  { queryKey: queryKeys.coffees() },
+]
 
 describe('useBuyAgain', () => {
   it('adds a purchase and refreshes that shelf', async () => {

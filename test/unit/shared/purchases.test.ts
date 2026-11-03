@@ -7,6 +7,7 @@ import {
   priceCents,
   pricePerGram,
   purchaseFormValues,
+  shelfBags,
   timesBought,
 } from '#shared/utils/purchases'
 import { localDate } from '#shared/utils/dates'
@@ -147,5 +148,19 @@ describe('buyAgainValues', () => {
       sizeGrams: '',
       price: '',
     })
+  })
+})
+
+describe('shelfBags', () => {
+  it('says when the shelf never bought it', () => {
+    expect(shelfBags({ bags: 0, inStock: 0 })).toBe('Not bought yet')
+  })
+
+  it('counts the bags and those still in stock', () => {
+    expect(shelfBags({ bags: 3, inStock: 1 })).toBe('3 bags · 1 in stock')
+  })
+
+  it('says when every bag is finished', () => {
+    expect(shelfBags({ bags: 1, inStock: 0 })).toBe('1 bag · all finished')
   })
 })

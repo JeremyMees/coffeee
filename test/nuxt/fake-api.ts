@@ -77,6 +77,13 @@ export function ayele() {
   }
 }
 
+export function coffeeShelves() {
+  return [
+    { id: 'home', name: "Sarah's shelf", bags: 2, inStock: 1 },
+    { id: 'work', name: 'Work', bags: 0, inStock: 0 },
+  ]
+}
+
 export function libraryCoffee(
   overrides: Partial<LibraryCoffee> = {},
 ): LibraryCoffee {
@@ -340,6 +347,7 @@ export const api = {
   roasterCalls: [] as unknown[],
   roasterFails: false,
   coffee: ayele() as Record<string, unknown>,
+  coffeeShelves: coffeeShelves() as CoffeeShelf[],
 }
 
 function roaster() {
@@ -406,6 +414,7 @@ export function resetApi() {
   api.roasterCalls = []
   api.roasterFails = false
   api.coffee = ayele()
+  api.coffeeShelves = coffeeShelves()
 }
 
 export function fakeApi() {
@@ -536,6 +545,12 @@ export function fakeApi() {
 
       return { coffee: { id: 'c9', ...body }, purchase: { id: 'p9' } }
     },
+  })
+
+  registerEndpoint('/api/coffees/c1', () => {
+    const { purchases, memberVerdicts, ...shared } = api.coffee
+
+    return { ...shared, shelves: api.coffeeShelves }
   })
 
   registerEndpoint('/api/shelves/home/coffees/c1', {

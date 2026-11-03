@@ -4,7 +4,12 @@ function usePurchaseSaved() {
   const queryClient = useQueryClient()
 
   return (input: { shelfId: string }) =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.shelf(input.shelfId) })
+    Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.shelf(input.shelfId),
+      }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
+    ])
 }
 
 function coffeePath(input: { shelfId: string; coffeeId: string }) {

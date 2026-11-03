@@ -6,6 +6,7 @@ function useRoasterSaved() {
   return (shelfId: string) =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.shelf(shelfId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.lists() }),
     ])
 }

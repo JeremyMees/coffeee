@@ -18,7 +18,7 @@ registerEndpoint('/api/coffees/c1/verdict', {
 })
 
 describe('useVerdictUpdate', () => {
-  it('saves the verdict and refreshes every shelf', async () => {
+  it('saves the verdict and refreshes every shelf and coffee', async () => {
     const { result, client } = await runOn('/', () => ({
       result: useVerdictUpdate(),
       client: useQueryClient(),
@@ -30,6 +30,7 @@ describe('useVerdictUpdate', () => {
     expect(calls).toEqual([{ rating: 4 }])
     expect(invalidate.mock.calls.map(([filters]) => filters)).toEqual([
       { queryKey: queryKeys.shelves() },
+      { queryKey: queryKeys.coffees() },
     ])
   })
 })

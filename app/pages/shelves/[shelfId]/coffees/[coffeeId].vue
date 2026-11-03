@@ -1,31 +1,11 @@
 <script setup lang="ts">
-import {
-  ArrowLeftIcon,
-  ArrowUpRightIcon,
-  CheckIcon,
-  PencilIcon,
-  PlusIcon,
-} from '@lucide/vue'
+import { ArrowLeftIcon, CheckIcon, PlusIcon } from '@lucide/vue'
 import { useShelfCoffee } from '~/queries/coffees'
 import { useCoffeeFinish } from '~/queries/purchases'
 
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
 const shelfId = computed(() => route.params.shelfId)
 const coffeeId = computed(() => route.params.coffeeId)
-const back = computed(() =>
-  route.query.from === 'discover'
-    ? { label: 'Discover', to: discoveredFrom() }
-    : { label: 'Stock', to: `/shelves/${shelfId.value}` },
-)
-
-function discoveredFrom() {
-  const discover = `/shelves/${shelfId.value}/discover`
-  const previous = import.meta.client ? window.history.state?.back : null
-
-  return typeof previous === 'string' && previous.startsWith(discover)
-    ? previous
-    : discover
-}
 
 const editing = ref(false)
 const buying = ref(false)
@@ -62,54 +42,6 @@ async function finish() {
   }
 }
 
-function names(entries: ListEntry[]) {
-  return entries.map(entry => entry.name).join(', ')
-}
-
-function detailRows(shown: NonNullable<typeof coffee.value>) {
-  const inOrigins = (entries: OriginEntry[]) =>
-    entries
-      .map(entry =>
-        shown.origins.length > 1
-          ? `${entry.name} (${originName(entry.origin)})`
-          : entry.name,
-      )
-      .join(', ')
-
-  return [
-    {
-      key: 'roast',
-      label: 'Roast',
-      value: `${roastLevelLabels[shown.roastLevel]} · ${roastedForLabels[shown.roastedFor]}`,
-    },
-    {
-      key: 'flavor-notes',
-      label: 'Flavor notes',
-      value: names(shown.flavorNotes),
-    },
-    {
-      key: 'origins',
-      label: 'Origin',
-      value: shown.origins.map(origin => origin.name).join(', '),
-    },
-    { key: 'regions', label: 'Region', value: inOrigins(shown.regions) },
-    {
-      key: 'altitude',
-      label: 'Altitude',
-      value: formatAltitude(shown.altitudeFrom, shown.altitudeTo) ?? '',
-    },
-    { key: 'producers', label: 'Producer', value: names(shown.producers) },
-    { key: 'farms', label: 'Farm', value: inOrigins(shown.farms) },
-    {
-      key: 'washing-stations',
-      label: 'Washing station',
-      value: inOrigins(shown.washingStations),
-    },
-    { key: 'processes', label: 'Process', value: names(shown.processes) },
-    { key: 'varietals', label: 'Varietal', value: names(shown.varietals) },
-  ].filter(row => row.value)
-}
-
 const outlined =
   'flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60'
 </script>
@@ -117,55 +49,20 @@ const outlined =
 <template>
   <main v-if="coffee" class="max-w-2xl">
     <NuxtLink
-      :to="back.to"
+      :to="`/shelves/${shelfId}`"
       data-testid="coffee-back"
       class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
-      {{ back.label }}
+      Stock
     </NuxtLink>
     <CoffeePhoto class="mt-4" :shelf-id="shelfId" :coffee="coffee" />
-    <header class="mt-6 flex items-end justify-between gap-4">
-      <div>
-        <p class="text-xs uppercase" data-testid="coffee-roaster-name">
-          {{ coffee.roaster }}
-        </p>
-        <h1 class="mt-2 text-[48px] lg:text-[72px]" data-testid="coffee-title">
-          {{ coffee.name }}
-        </h1>
-        <a
-          v-if="coffee.link"
-          :href="coffee.link"
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid="coffee-link-out"
-          class="mt-2 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
-        >
-          At the roaster
-          <ArrowUpRightIcon class="size-4" aria-hidden="true" />
-        </a>
-      </div>
-      <button
-        v-if="coffee.canEdit"
-        type="button"
-        data-testid="coffee-edit"
-        :class="['mb-2', outlined]"
-        @click="editing = true"
-      >
-        <PencilIcon class="size-4" aria-hidden="true" />
-        Edit
-      </button>
-    </header>
-
-    <dl
-      class="mt-8 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-xs"
-      data-testid="coffee-details"
-    >
-      <template v-for="row in detailRows(coffee)" :key="row.key">
-        <dt class="uppercase">{{ row.label }}</dt>
-        <dd :data-testid="`detail-${row.key}`">{{ row.value }}</dd>
-      </template>
-    </dl>
+    <CoffeeHeader
+      :coffee="coffee"
+      :editable="coffee.canEdit"
+      @edit="editing = true"
+    />
+    <CoffeeDetailList :coffee="coffee" />
     <CoffeeVerdict :coffee-id="coffee.id" :verdict="coffee" />
     <MemberVerdicts :verdicts="coffee.memberVerdicts" />
     <RoasterDetails :shelf-id="shelfId" :roaster="coffee.roasterDetails" />

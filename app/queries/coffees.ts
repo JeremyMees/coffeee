@@ -25,12 +25,22 @@ export function useShelfCoffee(
   })
 }
 
+export function useCoffee(coffeeId: MaybeRefOrGetter<string>) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: computed(() => queryKeys.coffee(toValue(coffeeId))),
+    queryFn: () => request(`/api/coffees/${toValue(coffeeId)}`),
+  })
+}
+
 function useCoffeeSaved() {
   const queryClient = useQueryClient()
 
   return (shelfId: string) =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.shelf(shelfId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.lists() }),
     ])
 }

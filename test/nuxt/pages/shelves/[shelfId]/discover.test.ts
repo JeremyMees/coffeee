@@ -51,7 +51,7 @@ describe('the Discover page', () => {
     )
   })
 
-  it('lists every coffee in the catalog, opening each from Discover', async () => {
+  it('lists every coffee in the catalog, opening each on its own page', async () => {
     api.catalog = catalogCoffees()
 
     const { page, names } = await discover()
@@ -59,7 +59,7 @@ describe('the Discover page', () => {
     expect(names()).toEqual(['Gesha Village', 'Ayele Fulasa', 'El Paraiso'])
     expect(page.get(tid('discover-total')).text()).toBe('3 coffees')
     expect(page.get(tid('catalog-result')).attributes('href')).toBe(
-      '/shelves/home/coffees/c4?from=discover',
+      '/coffees/c4',
     )
     expect(allByTestId('catalog-result-mine')).toHaveLength(1)
   })

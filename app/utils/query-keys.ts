@@ -33,6 +33,8 @@ export const queryKeys = {
     'coffees',
     coffeeId,
   ],
+  coffees: () => ['coffees'],
+  coffee: (coffeeId: string) => ['coffees', coffeeId],
   shelfGrinders: (shelfId: string) => ['shelves', shelfId, 'grinders'],
   brewMethods: () => ['brew-methods'],
   invites: () => ['invites'],

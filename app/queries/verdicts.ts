@@ -10,6 +10,9 @@ export function useVerdictUpdate() {
         body: input.verdict,
       }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.shelves() }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.shelves() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
+      ]),
   })
 }

@@ -129,10 +129,7 @@ useIntersectionObserver(more, ([entry]) => {
         class="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3"
       >
         <li v-for="coffee in coffees" :key="coffee.id">
-          <CatalogResult
-            :coffee="coffee"
-            :to="`/shelves/${shelfId}/coffees/${coffee.id}?from=discover`"
-          />
+          <CatalogResult :coffee="coffee" :to="`/coffees/${coffee.id}`" />
         </li>
       </ul>
       <button
