@@ -18,4 +18,6 @@ export const catalogMatchFields = [
   'process',
 ] as const
 
+export const catalogSorts = ['newest', 'communityRating'] as const
+
 export const catalogPageSize = 24

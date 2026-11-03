@@ -26,6 +26,13 @@ describe('catalogQuery', () => {
     expect(catalogQuery('  ', emptyCatalogFilter())).toEqual({})
   })
 
+  it('asks for the community rating sort, but not for the newest', () => {
+    expect(catalogQuery('', emptyCatalogFilter(), 'newest')).toEqual({})
+    expect(catalogQuery('', emptyCatalogFilter(), 'communityRating')).toEqual({
+      sort: 'communityRating',
+    })
+  })
+
   it('asks for what was typed and what the filters pick', () => {
     expect(
       catalogQuery(' lime ', {

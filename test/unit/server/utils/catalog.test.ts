@@ -90,12 +90,11 @@ async function addTo(
 }
 
 async function catalog(
-  { db, sarah, home }: Setup,
+  { db, home }: Setup,
   query: Record<string, string> = {},
 ) {
   return listCatalog(db, {
     shelfId: home.id,
-    userId: sarah.id,
     search: catalogSearchSchema.parse(query) as CatalogSearch,
   })
 }
@@ -164,7 +163,7 @@ describe('the catalog', () => {
       colour: '#e4572e',
       photoUrl: null,
       roastedOn: null,
-      rating: null,
+      communityRating: { average: null, raters: 0 },
       onShelf: false,
       flavorNotes: [{ id: expect.any(String), name: 'Strawberry' }],
       origins: [{ code: 'CO', name: 'Colombia' }],
@@ -173,19 +172,56 @@ describe('the catalog', () => {
     expect(ayele.roastedOn).toBe('2026-10-28')
   })
 
-  it('shows ratings, which are public', async () => {
+  it('shows the community rating, not the viewer’s own', async () => {
     const context = await setup()
     await twoShelvesOfCoffee(context)
     const [paraiso] = (await catalog(context, { search: 'paraiso' })).coffees
-    await judgeCoffee(context.db, {
-      userId: context.sarah.id,
-      coffeeId: paraiso!.id,
-      verdict: { rating: 4, wouldBuyAgain: true },
-    })
+    for (const [userId, rating] of [
+      [context.sarah.id, 5],
+      [context.tom.id, 2],
+    ] as const) {
+      await judgeCoffee(context.db, {
+        userId,
+        coffeeId: paraiso!.id,
+        verdict: { rating },
+      })
+    }
 
     const [rated] = (await catalog(context, { search: 'paraiso' })).coffees
 
-    expect(rated!.rating).toBe(4)
+    expect(rated).toMatchObject({
+      communityRating: { average: 3.5, raters: 2 },
+    })
+    expect(rated).not.toHaveProperty('rating')
+  })
+
+  it('sorts by community rating, with unrated coffees last', async () => {
+    const context = await setup()
+    await twoShelvesOfCoffee(context)
+    const { coffees } = await catalog(context)
+    const byName = Object.fromEntries(
+      coffees.map(coffee => [coffee.name, coffee.id]),
+    )
+    const judge = (userId: string, name: string, rating: number) =>
+      judgeCoffee(context.db, {
+        userId,
+        coffeeId: byName[name]!,
+        verdict: { rating },
+      })
+    await judge(context.sarah.id, 'Ayele Fulasa', 4)
+    await judge(context.sarah.id, 'El Paraiso', 4)
+    await judge(context.tom.id, 'El Paraiso', 5)
+
+    expect(await names(context, { sort: 'communityRating' })).toEqual([
+      'El Paraiso',
+      'Ayele Fulasa',
+      'Red Brick',
+    ])
+    expect(await names(context)).toEqual([
+      'Red Brick',
+      'El Paraiso',
+      'Ayele Fulasa',
+    ])
   })
 
   it('keeps only the shelf’s own coffees with Mine', async () => {

@@ -324,7 +324,7 @@ describe('the catalog', () => {
           colour: '#e4572e',
           photoUrl: null,
           roastedOn: null,
-          rating: null,
+          communityRating: { average: 5, raters: 1 },
           onShelf: false,
           flavorNotes: [{ id: expect.any(String), name: 'Strawberry' }],
           origins: [{ code: 'ET', name: 'Ethiopia' }],

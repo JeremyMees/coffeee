@@ -42,8 +42,9 @@ import { addPurchase, purchaseColumns } from '#server/utils/purchases'
 import { findRoaster } from '#server/utils/roasters'
 import { shelvesHolding } from '#server/utils/shelves'
 import {
+  communityRatingOf,
   findVerdict,
-  memberVerdictsOf,
+  reviewsOf,
   verdictOn,
 } from '#server/utils/verdicts'
 
@@ -281,6 +282,11 @@ async function findCatalogCoffee(
       userId: input.viewer.id,
       coffeeId: input.coffeeId,
     })),
+    communityRating: await communityRatingOf(db, input.coffeeId),
+    reviews: await reviewsOf(db, {
+      coffeeId: input.coffeeId,
+      userId: input.viewer.id,
+    }),
     canEdit: canEditCatalogEntry(input.viewer, createdBy),
     roasterDetails: (await findRoaster(db, {
       roasterId,
@@ -327,11 +333,6 @@ export async function findShelfCoffee(
 
   return {
     ...found,
-    memberVerdicts: await memberVerdictsOf(db, {
-      shelfId: input.shelfId,
-      coffeeId: input.coffeeId,
-      userId: input.viewer.id,
-    }),
     purchases,
     grindSettings: await grindSettingsOf(db, {
       userId: input.viewer.id,

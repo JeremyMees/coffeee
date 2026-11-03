@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { isFavourite, ratingLabel, ratings } from '#shared/utils/verdicts'
+import {
+  communityRatingLabel,
+  isFavourite,
+  ratingLabel,
+  ratings,
+} from '#shared/utils/verdicts'
 
 describe('isFavourite', () => {
   it('is a coffee rated four or five stars that would be bought again', () => {
@@ -27,6 +32,23 @@ describe('ratingLabel', () => {
     expect(ratingLabel(null)).toBe('Not yet rated')
     expect(ratingLabel(1)).toBe('1 star')
     expect(ratingLabel(4)).toBe('4 stars')
+  })
+})
+
+describe('communityRatingLabel', () => {
+  it('gives the average to one decimal and how many people rated it', () => {
+    expect(communityRatingLabel({ average: 4.25, raters: 4 })).toBe(
+      '4.3 from 4 people',
+    )
+    expect(communityRatingLabel({ average: 3, raters: 1 })).toBe(
+      '3.0 from 1 person',
+    )
+  })
+
+  it('says when nobody rated the coffee yet', () => {
+    expect(communityRatingLabel({ average: null, raters: 0 })).toBe(
+      'No ratings yet',
+    )
   })
 })
 

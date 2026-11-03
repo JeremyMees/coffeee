@@ -51,7 +51,12 @@ export function ayele() {
     altitudeTo: 2200,
     rating: null as number | null,
     wouldBuyAgain: false,
-    memberVerdicts: [] as MemberVerdict[],
+    communityRating: { average: null, raters: 0, wouldBuyAgain: 0 } as {
+      average: number | null
+      raters: number
+      wouldBuyAgain: number
+    },
+    reviews: [] as Review[],
     canEdit: true,
     grindSettings: [] as OwnGrindSetting[],
     otherGrindSettings: [] as OtherGrindSetting[],
@@ -152,11 +157,11 @@ export function catalogCoffee(
     colour: '#2f6f4f',
     photoUrl: null,
     roastedOn: '2026-10-28',
-    rating: null,
     onShelf: true,
     flavorNotes: [{ id: 'n1', name: 'Lime' }],
     origins: [{ code: 'ET', name: 'Ethiopia' }],
     matches: [],
+    communityRating: { average: null, raters: 0 },
     ...overrides,
   }
 }
@@ -290,11 +295,19 @@ function fakeCatalog(event: H3Event) {
         coffee.flavorNotes.some(note => note.id === query.flavorNoteId)) &&
       (!query.roastedFor || coffee.roastedFor === query.roastedFor),
   )
+  const sorted =
+    query.sort === 'communityRating'
+      ? matching.toSorted(
+          (a, b) =>
+            (b.communityRating.average ?? -1) -
+            (a.communityRating.average ?? -1),
+        )
+      : matching
   const start = Number(query.page ?? 0) * catalogPageSize
 
   return {
-    total: matching.length,
-    coffees: matching.slice(start, start + catalogPageSize),
+    total: sorted.length,
+    coffees: sorted.slice(start, start + catalogPageSize),
   }
 }
 
@@ -548,7 +561,7 @@ export function fakeApi() {
   })
 
   registerEndpoint('/api/coffees/c1', () => {
-    const { purchases, memberVerdicts, ...shared } = api.coffee
+    const { purchases, ...shared } = api.coffee
 
     return { ...shared, shelves: api.coffeeShelves }
   })

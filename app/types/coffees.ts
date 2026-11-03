@@ -17,7 +17,8 @@ export type EditableCoffee = Omit<
   | 'photoUrl'
   | 'rating'
   | 'wouldBuyAgain'
-  | 'memberVerdicts'
+  | 'communityRating'
+  | 'reviews'
   | 'grindSettings'
   | 'otherGrindSettings'
   | 'roasterDetails'
@@ -41,4 +42,6 @@ export type PhotoCoffee = Pick<
   'id' | 'name' | 'colour' | 'photoUrl' | 'canEdit'
 >
 
-export type MemberVerdict = ShelfCoffee['memberVerdicts'][number]
+export type Review = SharedCoffee['reviews'][number]
+
+export type CoffeeCommunityRating = SharedCoffee['communityRating']

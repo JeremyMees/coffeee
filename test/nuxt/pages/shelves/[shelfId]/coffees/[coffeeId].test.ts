@@ -131,21 +131,38 @@ describe('a coffee page', () => {
     expect(api.verdicts).toEqual([{ rating: 5 }, { wouldBuyAgain: true }])
   })
 
-  it('shows how the other members of the shelf judged the coffee', async () => {
-    api.coffee.memberVerdicts = [
-      { userId: 'tom', name: 'Tom', rating: 2, wouldBuyAgain: false },
+  it('shows the community rating and everyone’s reviews', async () => {
+    api.coffee.communityRating = { average: 3.5, raters: 2, wouldBuyAgain: 1 }
+    api.coffee.reviews = [
+      {
+        userId: 'tom',
+        name: 'Tom',
+        rating: 2,
+        wouldBuyAgain: false,
+        mine: false,
+        updatedAt: '2026-10-01T10:00:00.000Z',
+      },
     ]
 
     const page = await mountSuspended(App, {
       route: '/shelves/home/coffees/c1',
     })
 
-    expect(page.get(tid('member-verdict-tom')).text()).toContain('Tom')
+    expect(page.get(tid('coffee-reviews-average')).text()).toContain('3.5')
+    expect(page.get(tid('review-tom')).text()).toContain('Tom')
     expect(
-      page
-        .get(tid('member-verdict-tom', 'rating-stars'))
-        .attributes('data-rating'),
+      page.get(tid('review-tom', 'rating-stars')).attributes('data-rating'),
     ).toBe('2')
+  })
+
+  it('says when nobody has rated the coffee yet', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('coffee-reviews-unrated')).text()).toBe(
+      'Nobody has rated this coffee yet.',
+    )
   })
 
   it('keeps a grind setting for the coffee, not in its details', async () => {

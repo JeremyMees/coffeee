@@ -789,7 +789,10 @@ describe('findCoffee', () => {
       shelves: [{ id: home.id, name: 'Home', bags: 0, inStock: 0 }],
     })
     expect(found).not.toHaveProperty('purchases')
-    expect(found).not.toHaveProperty('memberVerdicts')
+    expect(found).toMatchObject({
+      communityRating: { average: null, raters: 0, wouldBuyAgain: 0 },
+      reviews: [],
+    })
   })
 
   it('is not found when it does not exist', async () => {

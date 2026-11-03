@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { catalogPageSize } from './catalog'
+import { catalogPageSize, catalogSorts } from './catalog'
 import { roastedForOptions, roastLevels } from './coffee'
 import { bagColours } from './colours'
 import {
@@ -117,6 +117,9 @@ export const catalogSearchSchema = listSearchSchema.extend({
   roastedFor: z
     .enum(roastedForOptions, { error: 'Pick espresso, filter or omni' })
     .optional(),
+  sort: z
+    .enum(catalogSorts, { error: 'Sort by newest or community rating' })
+    .default('newest'),
   page: pageNumber(),
   pageSize: pageSize('coffee', catalogPageSize),
 })

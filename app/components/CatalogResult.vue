@@ -59,6 +59,9 @@ const described = computed(() =>
       <p class="mt-1 truncate text-xs" data-testid="catalog-result-described">
         {{ described }}
       </p>
+      <p class="mt-1.5" data-testid="catalog-result-community-rating">
+        <CommunityRating :rating="coffee.communityRating" />
+      </p>
       <ul
         v-if="matches.length"
         class="mt-2 flex flex-wrap gap-1.5"

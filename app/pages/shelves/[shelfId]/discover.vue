@@ -11,9 +11,10 @@ const shelfId = computed(() => route.params.shelfId)
 const search = ref(String(route.query.q ?? ''))
 const searched = refDebounced(search, 200)
 const filter = ref(emptyCatalogFilter())
+const sort = ref<CatalogSort>('newest')
 
 const catalog = useCatalogPages(shelfId, () =>
-  catalogQuery(searched.value, filter.value),
+  catalogQuery(searched.value, filter.value, sort.value),
 )
 await catalog.suspense()
 
@@ -119,10 +120,13 @@ useIntersectionObserver(more, ([entry]) => {
       </button>
     </div>
     <template v-else>
-      <p class="mt-8 text-xs uppercase" data-testid="discover-total">
-        {{ catalog.data.value?.pages[0]?.total }}
-        {{ catalog.data.value?.pages[0]?.total === 1 ? 'coffee' : 'coffees' }}
-      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs uppercase" data-testid="discover-total">
+          {{ catalog.data.value?.pages[0]?.total }}
+          {{ catalog.data.value?.pages[0]?.total === 1 ? 'coffee' : 'coffees' }}
+        </p>
+        <CatalogSortPicker v-model="sort" />
+      </div>
       <ul
         aria-label="Coffees"
         data-testid="discover-results"

@@ -64,7 +64,10 @@ const outlined =
     />
     <CoffeeDetailList :coffee="coffee" />
     <CoffeeVerdict :coffee-id="coffee.id" :verdict="coffee" />
-    <MemberVerdicts :verdicts="coffee.memberVerdicts" />
+    <CoffeeReviews
+      :community-rating="coffee.communityRating"
+      :reviews="coffee.reviews"
+    />
     <RoasterDetails :shelf-id="shelfId" :roaster="coffee.roasterDetails" />
     <CoffeeGrindSettings
       :shelf-id="shelfId"

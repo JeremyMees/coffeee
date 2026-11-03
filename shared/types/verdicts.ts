@@ -8,6 +8,11 @@ export type UserVerdict = InferSelectModel<typeof coffeeVerdict>
 
 export type Verdict = Pick<UserVerdict, 'rating' | 'wouldBuyAgain'>
 
+export interface CommunityRating {
+  average: number | null
+  raters: number
+}
+
 export type Rating = (typeof ratings)[number]
 
 export type VerdictChange = z.output<typeof verdictSchema>

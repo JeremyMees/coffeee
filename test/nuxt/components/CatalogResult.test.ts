@@ -26,6 +26,18 @@ describe('CatalogResult', () => {
     )
   })
 
+  it('shows only the community rating', async () => {
+    const wrapper = await result({
+      communityRating: { average: 3.5, raters: 2 },
+    })
+    const rating = wrapper.get(tid('catalog-result-community-rating'))
+
+    expect(rating.get(tid('community-rating')).attributes('aria-label')).toBe(
+      'Community rating 3.5 from 2 people',
+    )
+    expect(wrapper.find(tid('rating-stars')).exists()).toBe(false)
+  })
+
   it('marks a coffee on the shelf', async () => {
     expect((await result()).get(tid('catalog-result-mine')).text()).toBe(
       'On your shelf',

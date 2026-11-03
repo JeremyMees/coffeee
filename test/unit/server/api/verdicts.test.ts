@@ -2,6 +2,7 @@ import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { shelfMember } from '#server/db/schemas'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
+import sharedCoffeeHandler from '#server/api/coffees/[coffeeId].get'
 import verdictHandler from '#server/api/coffees/[coffeeId]/verdict.patch'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
@@ -41,6 +42,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/stock', stockHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get(coffeePath, showCoffeeHandler)
+    .get('/api/coffees/:coffeeId', sharedCoffeeHandler)
     .patch('/api/coffees/:coffeeId/verdict', verdictHandler)
   const app = createApp().use(router)
 
@@ -126,16 +128,20 @@ describe('PATCH /api/coffees/:coffeeId/verdict', () => {
     expect(asSarah).toMatchObject({
       rating: 5,
       wouldBuyAgain: true,
-      memberVerdicts: [
-        { userId: tomId, name: 'Tom', rating: 2, wouldBuyAgain: false },
-      ],
+      communityRating: { average: 3.5, raters: 2, wouldBuyAgain: 1 },
     })
-    expect(asTom).toMatchObject({
+    expect(asSarah.reviews).toHaveLength(2)
+    expect(asSarah.reviews[1]).toMatchObject({
+      userId: tomId,
+      name: 'Tom',
       rating: 2,
       wouldBuyAgain: false,
-      memberVerdicts: [{ name: 'Sarah', rating: 5, wouldBuyAgain: true }],
+      mine: false,
     })
+    expect(asTom).toMatchObject({ rating: 2, wouldBuyAgain: false })
+    expect(asTom.reviews[0]).toMatchObject({ name: 'Tom', mine: true })
     expect(tomStock[0]).toMatchObject({ rating: 2 })
+    expect(tomStock[0]).not.toHaveProperty('communityRating')
   })
 
   it('never changes another member’s verdict', async () => {
@@ -159,11 +165,12 @@ describe('PATCH /api/coffees/:coffeeId/verdict', () => {
     expect(coffee).toMatchObject({
       rating: null,
       wouldBuyAgain: false,
-      memberVerdicts: [],
+      communityRating: { average: null, raters: 0, wouldBuyAgain: 0 },
+      reviews: [],
     })
   })
 
-  it('lets someone off the shelf judge the coffee without the shelf seeing it', async () => {
+  it('lets someone off the shelf review the coffee without touching the shelf’s verdicts', async () => {
     const { coffeeId, sarah, path } = await sharedShelf()
     const outsider = await stranger()
 
@@ -171,8 +178,37 @@ describe('PATCH /api/coffees/:coffeeId/verdict', () => {
     const coffee = await (await request(path, { headers: sarah })).json()
 
     expect(judged.status).toBe(200)
-    expect(coffee).toMatchObject({ rating: null, memberVerdicts: [] })
+    expect(coffee).toMatchObject({
+      rating: null,
+      communityRating: { average: 1, raters: 1 },
+      reviews: [{ rating: 1, mine: false }],
+    })
     expect((await request(path, { headers: outsider })).status).toBe(404)
+  })
+
+  it('shows reviews to everyone but keeps purchases and prices on the shelf', async () => {
+    const { coffeeId, sarah, tom } = await sharedShelf()
+    const outsider = await stranger()
+
+    await judge(coffeeId, sarah, { rating: 5, wouldBuyAgain: true })
+    await judge(coffeeId, tom, { rating: 3 })
+
+    const response = await request(`/api/coffees/${coffeeId}`, {
+      headers: outsider,
+    })
+    const coffee = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(coffee).toMatchObject({
+      rating: null,
+      communityRating: { average: 4, raters: 2, wouldBuyAgain: 1 },
+      shelves: [],
+    })
+    expect(
+      coffee.reviews.map((review: { name: string }) => review.name).sort(),
+    ).toEqual(['Sarah', 'Tom'])
+    expect(coffee).not.toHaveProperty('purchases')
+    expect(JSON.stringify(coffee)).not.toContain('priceCents')
   })
 
   it('asks to sign in first', async () => {

@@ -98,6 +98,23 @@ describe('the Discover page', () => {
     expect(api.catalogQueries.at(-1)).toMatchObject({ mine: 'true' })
   })
 
+  it('sorts by community rating', async () => {
+    api.catalog = catalogCoffees().map((coffee, index) => ({
+      ...coffee,
+      communityRating: { average: index + 2, raters: 1 },
+    }))
+    const { names } = await discover()
+
+    await click('catalog-sort-communityRating')
+
+    await vi.waitFor(() =>
+      expect(names()).toEqual(['El Paraiso', 'Ayele Fulasa', 'Gesha Village']),
+    )
+    expect(api.catalogQueries.at(-1)).toMatchObject({
+      sort: 'communityRating',
+    })
+  })
+
   it('says when nothing matches and clears the search', async () => {
     api.catalog = catalogCoffees()
     const { page, names } = await discover()

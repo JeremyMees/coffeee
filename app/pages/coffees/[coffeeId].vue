@@ -44,6 +44,10 @@ useHead({ title: () => `${coffee.value?.name} · Coffeee` })
     />
     <CoffeeDetailList :coffee="coffee" />
     <CoffeeVerdict :coffee-id="coffee.id" :verdict="coffee" />
+    <CoffeeReviews
+      :community-rating="coffee.communityRating"
+      :reviews="coffee.reviews"
+    />
     <RoasterDetails :shelf-id="shelf.id" :roaster="coffee.roasterDetails" />
     <CoffeeShelves :coffee-id="coffee.id" :shelves="coffee.shelves" />
     <EditCoffeeSheet

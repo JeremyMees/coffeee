@@ -27,6 +27,11 @@ export const catalogMatchLabels: Record<CatalogMatchField, string> = {
   process: 'Process',
 }
 
+export const catalogSortLabels: Record<CatalogSort, string> = {
+  newest: 'Newest',
+  communityRating: 'Community rating',
+}
+
 export function emptyCatalogFilter(): CatalogFilter {
   return {
     mine: false,
@@ -45,11 +50,16 @@ export function isCatalogFiltered(filter: CatalogFilter) {
   )
 }
 
-export function catalogQuery(search: string, filter: CatalogFilter) {
+export function catalogQuery(
+  search: string,
+  filter: CatalogFilter,
+  sort: CatalogSort = 'newest',
+) {
   const query: Record<string, string> = {}
 
   if (search.trim()) query.search = search.trim()
   if (filter.mine) query.mine = 'true'
+  if (sort !== 'newest') query.sort = sort
 
   for (const picker of catalogPickers) {
     const picked = filter[picker.key]

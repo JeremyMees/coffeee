@@ -20,7 +20,6 @@ import {
   coffeeProcess,
   coffeeProducer,
   coffeeRegion,
-  coffeeVerdict,
   farm,
   flavorNote,
   origin,
@@ -32,7 +31,10 @@ import {
 } from '#server/db/schemas'
 import { coffeeColumns, flavorNotesOf } from '#server/utils/coffees'
 import { originNamesOf } from '#server/utils/origins'
-import { verdictOn } from '#server/utils/verdicts'
+import {
+  byCommunityRating,
+  communityRatingColumns,
+} from '#server/utils/verdicts'
 
 type ListMatchField = Exclude<CatalogMatchField, 'name' | 'roaster' | 'origin'>
 
@@ -172,7 +174,7 @@ async function listMatchesOf(db: Database, coffeeIds: string[], key: string) {
 
 export async function listCatalog(
   db: Database,
-  input: { shelfId: string; userId: string; search: CatalogSearch },
+  input: { shelfId: string; search: CatalogSearch },
 ) {
   const { search } = input
   const key = nameKey(search.search)
@@ -183,15 +185,18 @@ export async function listCatalog(
       ...coffeeColumns,
       roasterId: coffee.roasterId,
       roastedOn: latestRoastOn(input.shelfId),
-      rating: coffeeVerdict.rating,
+      communityRating: communityRatingColumns,
       onShelf: onShelf(input.shelfId),
       total: sql<number>`cast(count(*) over () as integer)`,
     })
     .from(coffee)
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
-    .leftJoin(coffeeVerdict, verdictOn(input.userId))
     .where(catalogWhere({ ...input, key, originCodes }))
-    .orderBy(desc(coffee.createdAt), asc(coffee.id))
+    .orderBy(
+      ...(search.sort === 'communityRating' ? byCommunityRating() : []),
+      desc(coffee.createdAt),
+      asc(coffee.id),
+    )
     .limit(search.pageSize)
     .offset(search.page * search.pageSize)
   const coffeeIds = rows.map(row => row.id)
