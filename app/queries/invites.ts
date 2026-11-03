@@ -76,24 +76,15 @@ export function useShelfInviteCancel() {
   })
 }
 
-export function useMyInvites() {
-  const request = useRequestFetch()
-
-  return useQuery({
-    queryKey: queryKeys.myInvites(),
-    queryFn: () => request('/api/me/invites'),
-  })
-}
-
-function useMyInvitesChanged() {
+function useNotificationsChanged() {
   const queryClient = useQueryClient()
 
   return () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.myInvites() })
+    queryClient.invalidateQueries({ queryKey: queryKeys.notifications() })
 }
 
 export function useMyInviteAccept() {
-  const changed = useMyInvitesChanged()
+  const changed = useNotificationsChanged()
 
   return useMutation({
     mutationFn: (inviteId: string) =>
@@ -103,7 +94,7 @@ export function useMyInviteAccept() {
 }
 
 export function useMyInviteDecline() {
-  const changed = useMyInvitesChanged()
+  const changed = useNotificationsChanged()
 
   return useMutation({
     mutationFn: (inviteId: string) =>

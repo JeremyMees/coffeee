@@ -81,6 +81,8 @@ describe('notifyShelf', () => {
           shelf: 'Home',
           coffeeId: coffee.id,
           coffee: 'Ayele Fulasa',
+          inviteId: null,
+          inviteStatus: null,
           createdAt: expect.any(Date),
           readAt: null,
         },
@@ -153,6 +155,31 @@ describe('notifyInvited', () => {
     expect(await listNotifications(db, anna.id)).toMatchObject([
       { kind: 'invited', actor: 'Sarah', shelf: 'Work', coffee: null },
     ])
+  })
+
+  it('says whether the invite is still open, accepted or expired', async () => {
+    const { db, notify, inviteId } = await inviteToWork('anna@example.com')
+    const anna = await createTestUser(db, { email: 'anna@example.com' })
+    await notify()
+    const statusOf = async () =>
+      (await listNotifications(db, anna.id)).map(found => [
+        found.inviteId,
+        found.inviteStatus,
+      ])
+
+    expect(await statusOf()).toEqual([[inviteId, 'pending']])
+
+    await db
+      .update(invite)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(invite.id, inviteId))
+    expect(await statusOf()).toEqual([[inviteId, 'expired']])
+
+    await db
+      .update(invite)
+      .set({ usedAt: new Date() })
+      .where(eq(invite.id, inviteId))
+    expect(await statusOf()).toEqual([[inviteId, 'accepted']])
   })
 
   it('tells nobody when the email has no account yet', async () => {

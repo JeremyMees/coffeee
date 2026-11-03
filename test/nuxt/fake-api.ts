@@ -429,17 +429,6 @@ export function shelfInvites() {
   ]
 }
 
-export function myInvites() {
-  return [
-    {
-      id: 'mi1',
-      shelf: 'Office',
-      invitedBy: 'Tom',
-      expiresAt: '2026-11-08T10:00:00.000Z',
-    },
-  ]
-}
-
 export function shelfMembers() {
   return [
     {
@@ -469,6 +458,8 @@ export function notifications() {
       shelf: "Sarah's shelf",
       coffeeId: 'c1' as string | null,
       coffee: 'Ayele Fulasa' as string | null,
+      inviteId: null as string | null,
+      inviteStatus: null as InviteStatus | null,
       createdAt: '2026-11-02T10:00:00.000Z',
       readAt: null as string | null,
     },
@@ -480,10 +471,29 @@ export function notifications() {
       shelf: "Sarah's shelf",
       coffeeId: null as string | null,
       coffee: null as string | null,
+      inviteId: null as string | null,
+      inviteStatus: null as InviteStatus | null,
       createdAt: '2026-11-01T10:00:00.000Z',
       readAt: '2026-11-01T12:00:00.000Z' as string | null,
     },
   ]
+}
+
+export function inviteNotification(
+  overrides: Partial<ReturnType<typeof notifications>[number]> = {},
+) {
+  return {
+    ...notifications()[0]!,
+    id: 'n3',
+    kind: 'invited' as NotificationKind,
+    shelfId: 'office',
+    shelf: 'Office',
+    coffeeId: null,
+    coffee: null,
+    inviteId: 'mi1',
+    inviteStatus: 'pending' as InviteStatus | null,
+    ...overrides,
+  }
 }
 
 export const api = {
@@ -494,7 +504,6 @@ export const api = {
   shelfCalls: [] as unknown[],
   shelfFails: '',
   shelfInvites: shelfInvites(),
-  myInvites: [] as ReturnType<typeof myInvites>,
   inviteCalls: [] as unknown[],
   inviteFails: '',
   accountDeletes: [] as unknown[],
@@ -581,7 +590,6 @@ export function resetApi() {
   api.shelfCalls = []
   api.shelfFails = ''
   api.shelfInvites = shelfInvites()
-  api.myInvites = []
   api.inviteCalls = []
   api.inviteFails = ''
   api.accountDeletes = []
@@ -817,14 +825,16 @@ function registerInviteEndpoints() {
     },
   })
 
-  registerEndpoint('/api/me/invites', () => api.myInvites)
-
   registerEndpoint('/api/me/invites/mi1/accept', {
     method: 'POST',
     handler: () => {
       api.inviteCalls.push({ accept: 'mi1' })
       failInvite()
-      api.myInvites = []
+      api.notifications = api.notifications.map(found =>
+        found.inviteId === 'mi1'
+          ? { ...found, inviteStatus: 'accepted' as InviteStatus }
+          : found,
+      )
 
       return { id: 'office', name: 'Office', ownerId: 'tom' }
     },
@@ -835,7 +845,9 @@ function registerInviteEndpoints() {
     handler: () => {
       api.inviteCalls.push({ decline: 'mi1' })
       failInvite()
-      api.myInvites = []
+      api.notifications = api.notifications.filter(
+        found => found.inviteId !== 'mi1',
+      )
 
       return null
     },

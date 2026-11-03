@@ -15,15 +15,6 @@ onMounted(() => {
     markRead()
   }
 })
-
-function formatWhen(date: string) {
-  return new Date(date).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
 </script>
 
 <template>
@@ -35,33 +26,12 @@ function formatWhen(date: string) {
       class="mt-8 text-xs"
       data-testid="notifications-empty"
     >
-      Nothing yet. When someone on your shelves adds a coffee, finishes a bag or
-      joins, you see it here.
+      Nothing yet. When someone invites you to a shelf, or adds a coffee,
+      finishes a bag or joins, you see it here.
     </p>
     <ul v-else class="mt-8 divide-y rounded-[18px] border text-xs">
       <li v-for="notification in notifications" :key="notification.id">
-        <NuxtLink
-          :to="notificationLink(notification)"
-          data-testid="notification"
-          :data-unread="notification.readAt ? undefined : true"
-          class="flex items-start gap-3 px-4 py-3 hover:bg-accent"
-        >
-          <span
-            class="mt-1 size-2 shrink-0 rounded-full"
-            :class="notification.readAt ? 'bg-transparent' : 'bg-destructive'"
-            aria-hidden="true"
-          />
-          <span class="min-w-0">
-            <span
-              class="block font-sans font-semibold"
-              data-testid="notification-text"
-            >
-              <span v-if="!notification.readAt" class="sr-only">New:</span>
-              {{ notificationText(notification) }}
-            </span>
-            <span class="block">{{ formatWhen(notification.createdAt) }}</span>
-          </span>
-        </NuxtLink>
+        <NotificationItem :notification="notification" />
       </li>
     </ul>
   </main>

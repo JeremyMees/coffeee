@@ -2,8 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
-import { api, fakeApi, notifications, resetApi } from '../fake-api'
-import { testUser, tid } from '../fixtures'
+import {
+  api,
+  fakeApi,
+  inviteNotification,
+  notifications,
+  resetApi,
+} from '../fake-api'
+import { currentPath, testUser, tid } from '../fixtures'
 
 fakeApi()
 
@@ -24,10 +30,9 @@ describe('the notifications page', () => {
       "New: Tom added Ayele Fulasa to Sarah's shelf",
       "Tom joined Sarah's shelf",
     ])
-    expect(rows.map(row => row.attributes('href'))).toEqual([
-      '/shelves/home/coffees/c1',
-      '/shelves/home/settings',
-    ])
+    expect(
+      rows.map(row => row.get(tid('notification-link')).attributes('href')),
+    ).toEqual(['/shelves/home/coffees/c1', '/shelves/home/settings'])
     expect(rows[0]?.attributes('data-unread')).toBe('true')
   })
 
@@ -49,5 +54,29 @@ describe('the notifications page', () => {
       'Nothing yet.',
     )
     expect(api.notificationCalls).toEqual([])
+  })
+
+  it('answers an invite right in the list', async () => {
+    api.notifications = [inviteNotification(), ...notifications()]
+
+    const page = await mountSuspended(App, { route: '/notifications' })
+
+    expect(page.get(tid('notification-text')).text()).toContain(
+      'Tom invited you to Office',
+    )
+
+    await page.get(tid('notification-accept')).trigger('click')
+
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/office'))
+    expect(api.inviteCalls).toEqual([{ accept: 'mi1' }])
+  })
+
+  it('shows no invite banner on other pages', async () => {
+    api.notifications = [inviteNotification()]
+
+    const page = await mountSuspended(App, { route: '/profile' })
+
+    expect(page.find('[data-testid^="invite-for-you"]').exists()).toBe(false)
+    expect(page.find(tid('notification-accept')).exists()).toBe(false)
   })
 })

@@ -40,11 +40,31 @@ describe('notificationLink', () => {
     ).toBe('/shelves/home/settings')
   })
 
-  it('links an invite to the app, where it can be answered', () => {
+  it('links an accepted invite to the shelf it joined', () => {
     expect(
       notificationLink(
-        notification({ kind: 'invited', coffeeId: null, coffee: null }),
+        notification({
+          kind: 'invited',
+          coffeeId: null,
+          coffee: null,
+          inviteId: 'mi1',
+          inviteStatus: 'accepted',
+        }),
       ),
-    ).toBe('/')
+    ).toBe('/shelves/home')
+  })
+
+  it('gives an unanswered invite no link, since it is answered in place', () => {
+    expect(
+      notificationLink(
+        notification({
+          kind: 'invited',
+          coffeeId: null,
+          coffee: null,
+          inviteId: 'mi1',
+          inviteStatus: 'pending',
+        }),
+      ),
+    ).toBeNull()
   })
 })

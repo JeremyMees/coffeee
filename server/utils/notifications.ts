@@ -1,9 +1,13 @@
-import { and, count, desc, eq, isNull, ne } from 'drizzle-orm'
+import { and, count, desc, eq, isNull, ne, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '#server/types/database'
-import type { NotificationKind } from '#shared/types/notifications'
+import type {
+  InviteStatus,
+  NotificationKind,
+} from '#shared/types/notifications'
 import {
   coffee,
+  invite,
   notification,
   shelf,
   shelfMember,
@@ -78,6 +82,13 @@ export function listNotifications(db: Database, userId: string) {
       shelf: shelf.name,
       coffeeId: coffee.id,
       coffee: coffee.name,
+      inviteId: invite.id,
+      inviteStatus: sql<InviteStatus | null>`case
+        when ${invite.id} is null then null
+        when ${invite.usedAt} is not null then 'accepted'
+        when ${invite.expiresAt} <= now() then 'expired'
+        else 'pending'
+      end`,
       createdAt: notification.createdAt,
       readAt: notification.readAt,
     })
@@ -85,6 +96,7 @@ export function listNotifications(db: Database, userId: string) {
     .innerJoin(shelf, eq(shelf.id, notification.shelfId))
     .leftJoin(actor, eq(actor.id, notification.actorId))
     .leftJoin(coffee, eq(coffee.id, notification.coffeeId))
+    .leftJoin(invite, eq(invite.id, notification.inviteId))
     .where(eq(notification.userId, userId))
     .orderBy(desc(notification.createdAt))
     .limit(notificationsShown)
