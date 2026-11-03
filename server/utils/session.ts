@@ -55,6 +55,19 @@ export async function requireShelf(event: H3Event) {
   return { user, shelf }
 }
 
+export async function requireShelfOwner(event: H3Event) {
+  const found = await requireShelf(event)
+
+  if (found.shelf.ownerId !== found.user.id) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Only the shelf owner can do that',
+    })
+  }
+
+  return found
+}
+
 export function refuseCoffeeEdit(outcome: 'notFound' | 'forbidden'): never {
   if (outcome === 'notFound') {
     throw createError({ statusCode: 404, statusMessage: 'Coffee not found' })

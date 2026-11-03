@@ -440,8 +440,30 @@ export function myInvites() {
   ]
 }
 
+export function shelfMembers() {
+  return [
+    {
+      id: 'user-1',
+      name: 'Sarah',
+      email: 'sarah@example.com',
+      image: null as string | null,
+      joinedAt: '2026-10-01T10:00:00.000Z',
+    },
+    {
+      id: 'tom',
+      name: 'Tom',
+      email: 'tom@example.com',
+      image: null as string | null,
+      joinedAt: '2026-10-02T10:00:00.000Z',
+    },
+  ]
+}
+
 export const api = {
   ownedShelves: ownedShelves(),
+  shelfMembers: shelfMembers(),
+  shelfCalls: [] as unknown[],
+  shelfFails: '',
   shelfInvites: shelfInvites(),
   myInvites: [] as ReturnType<typeof myInvites>,
   inviteCalls: [] as unknown[],
@@ -524,6 +546,9 @@ function storedPurchase(id: string, body: Record<string, unknown>) {
 
 export function resetApi() {
   api.ownedShelves = ownedShelves()
+  api.shelfMembers = shelfMembers()
+  api.shelfCalls = []
+  api.shelfFails = ''
   api.shelfInvites = shelfInvites()
   api.myInvites = []
   api.inviteCalls = []
@@ -786,9 +811,73 @@ function registerInviteEndpoints() {
   })
 }
 
+function failShelf() {
+  if (api.shelfFails) {
+    throw createError({ statusCode: 409, statusMessage: api.shelfFails })
+  }
+}
+
+function registerShelfEndpoints() {
+  registerEndpoint('/api/shelves/home/members', () => api.shelfMembers)
+
+  registerEndpoint('/api/shelves/home', {
+    method: 'PATCH',
+    handler: async event => {
+      const body = await readBody(event)
+      api.shelfCalls.push({ rename: body })
+      failShelf()
+
+      return { id: 'home', name: body.name, ownerId: 'user-1' }
+    },
+  })
+
+  registerEndpoint('/api/shelves/home', {
+    method: 'DELETE',
+    handler: () => {
+      api.shelfCalls.push({ delete: 'home' })
+      failShelf()
+
+      return null
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/members/tom', {
+    method: 'DELETE',
+    handler: () => {
+      api.shelfCalls.push({ remove: 'tom' })
+      failShelf()
+      api.shelfMembers = api.shelfMembers.filter(found => found.id !== 'tom')
+
+      return null
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/owner', {
+    method: 'PUT',
+    handler: async event => {
+      const body = await readBody(event)
+      api.shelfCalls.push({ handOver: body })
+      failShelf()
+
+      return { id: 'home', name: "Sarah's shelf", ownerId: body.ownerId }
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/leave', {
+    method: 'POST',
+    handler: () => {
+      api.shelfCalls.push({ leave: 'home' })
+      failShelf()
+
+      return null
+    },
+  })
+}
+
 export function fakeApi() {
   registerAdminEndpoints()
   registerInviteEndpoints()
+  registerShelfEndpoints()
 
   registerEndpoint('/api/me/owned-shelves', () => api.ownedShelves)
 

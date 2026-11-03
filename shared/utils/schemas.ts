@@ -53,6 +53,12 @@ export const newShelfSchema = z.object({
   ),
 })
 
+export const shelfHandOverSchema = z.object({
+  ownerId: z
+    .string({ error: 'Choose who takes over the shelf' })
+    .min(1, { error: 'Choose who takes over the shelf' }),
+})
+
 export const listSearchSchema = z.object({
   search: z
     .string({ error: 'Search with a single piece of text' })

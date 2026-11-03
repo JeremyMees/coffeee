@@ -25,4 +25,15 @@ describe('the shelf settings page', () => {
     expect(page.find(tid('shelf-invite-form')).exists()).toBe(true)
     expect(page.get(tid('shelf-invite')).text()).toContain('anna@example.com')
   })
+
+  it('lists the members and lets the shelf owner manage the shelf', async () => {
+    const page = await mountSuspended(App, { route: '/shelves/home/settings' })
+
+    expect(page.findAll(tid('shelf-member')).map(row => row.text())).toEqual([
+      expect.stringContaining('Sarah (you)'),
+      expect.stringContaining('Tom'),
+    ])
+    expect(page.find(tid('shelf-name-form')).exists()).toBe(true)
+    expect(page.find(tid('shelf-delete-button')).exists()).toBe(true)
+  })
 })

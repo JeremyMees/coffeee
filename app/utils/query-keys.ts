@@ -54,6 +54,7 @@ export const queryKeys = {
   ownedShelves: () => ['me', 'owned-shelves'],
   invites: () => ['invites'],
   shelfInvites: (shelfId: string) => ['shelves', shelfId, 'invites'],
+  shelfMembers: (shelfId: string) => ['shelves', shelfId, 'members'],
   myInvites: () => ['me', 'invites'],
   admin: () => ['admin'],
   adminEntries: (list: AdminList, query: Record<string, string>) => [

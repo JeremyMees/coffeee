@@ -1,0 +1,29 @@
+import { createError, defineEventHandler, sendNoContent } from 'h3'
+import { useDb } from '#server/utils/db'
+import { requireShelf } from '#server/utils/session'
+import { leaveShelf } from '#server/utils/shelves'
+
+export default defineEventHandler(async event => {
+  const { user, shelf } = await requireShelf(event)
+  const { outcome } = await leaveShelf(useDb(), {
+    shelfId: shelf.id,
+    ownerId: shelf.ownerId,
+    userId: user.id,
+  })
+
+  if (outcome === 'lastShelf') {
+    throw createError({
+      statusCode: 409,
+      statusMessage: "This is your only shelf, so you can't leave it",
+    })
+  }
+
+  if (outcome === 'handOverFirst') {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'Hand the shelf to another member before you leave',
+    })
+  }
+
+  return sendNoContent(event)
+})
