@@ -37,3 +37,50 @@ export function serverErrors(caught: unknown) {
       : statusMessage || 'Something went wrong. Try again.',
   }
 }
+
+export const coffeeSteps = [
+  { title: 'Coffee', fields: ['name', 'roaster', 'link'] },
+  {
+    title: 'Origin',
+    fields: [
+      'origins',
+      'regions',
+      'farms',
+      'washingStations',
+      'altitudeFrom',
+      'altitudeTo',
+      'producers',
+    ],
+  },
+  {
+    title: 'Taste',
+    fields: [
+      'processes',
+      'varietals',
+      'flavorNotes',
+      'roastLevel',
+      'roastedFor',
+    ],
+  },
+] as const satisfies FormStep[]
+
+export const firstBagStep = {
+  title: 'First bag',
+  fields: ['purchasedOn', 'roastedOn', 'sizeGrams', 'price'],
+} as const satisfies FormStep
+
+export function coffeeFormSteps(withFirstBag: boolean): FormStep[] {
+  return withFirstBag ? [...coffeeSteps, firstBagStep] : [...coffeeSteps]
+}
+
+export function stepHasError(step: FormStep, fields: string[]) {
+  return step.fields.some(field =>
+    fields.some(error => error === field || error.startsWith(`${field}.`)),
+  )
+}
+
+export function firstStepWithError(steps: FormStep[], fields: string[]) {
+  const index = steps.findIndex(step => stepHasError(step, fields))
+
+  return index === -1 ? null : index + 1
+}

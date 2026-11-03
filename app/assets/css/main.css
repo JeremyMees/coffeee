@@ -10,6 +10,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-required: var(--required);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -55,6 +56,7 @@
   --accent: color-mix(in oklab, #1f4fd8 10%, transparent);
   --accent-foreground: #1f4fd8;
   --destructive: #c4321f;
+  --required: #d6336c;
   --border: color-mix(in oklab, #1f4fd8 35%, transparent);
   --input: color-mix(in oklab, #1f4fd8 35%, transparent);
   --ring: #1f4fd8;

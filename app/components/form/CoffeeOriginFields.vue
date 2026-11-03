@@ -43,6 +43,7 @@ watch(pickedOrigins, codes => {
     v-slot="{ value, handleChange, handleBlur, invalid }"
     name="origins"
     label="Origin"
+    required
     input-id="coffee-origins"
   >
     <OriginPicker

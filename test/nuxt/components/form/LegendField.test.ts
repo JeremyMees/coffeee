@@ -4,7 +4,7 @@ import { useForm } from 'vee-validate'
 import { defineComponent, h } from 'vue'
 import LegendField from '~/components/form/LegendField.vue'
 
-function mountField() {
+function mountField(props: Record<string, unknown> = {}) {
   let form!: ReturnType<typeof useForm>
 
   const Form = defineComponent({
@@ -14,7 +14,7 @@ function mountField() {
       return () =>
         h(
           LegendField,
-          { name: 'roastLevel', legend: 'Roast level' },
+          { name: 'roastLevel', legend: 'Roast level', ...props },
           {
             default: (field: { value: string; invalid: boolean }) =>
               h('output', { 'data-invalid': String(field.invalid) }, [
@@ -34,6 +34,14 @@ describe('LegendField', () => {
 
     expect(wrapper.get('legend').text()).toBe('Roast level')
     expect(wrapper.get('output').text()).toBe('light')
+  })
+
+  it('marks a required group', async () => {
+    const { wrapper } = await mountField({ required: true })
+
+    expect(wrapper.find('legend [data-testid="required-mark"]').exists()).toBe(
+      true,
+    )
   })
 
   it('shows its error and marks the group invalid', async () => {

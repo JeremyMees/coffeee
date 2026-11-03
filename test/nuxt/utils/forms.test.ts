@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import { serverErrors, zodSchema } from '~/utils/forms'
+import {
+  coffeeFormSteps,
+  firstStepWithError,
+  stepHasError,
+  serverErrors,
+  zodSchema,
+} from '~/utils/forms'
 
 const schema = zodSchema(
   z.object({
@@ -57,5 +63,48 @@ describe('serverErrors', () => {
       fields: {},
       message: 'Something went wrong. Try again.',
     })
+  })
+})
+
+describe('coffeeFormSteps', () => {
+  it('asks for every field of a new coffee exactly once', () => {
+    const fields = coffeeFormSteps(true).flatMap(step => [...step.fields])
+
+    expect(new Set(fields).size).toBe(fields.length)
+    expect(fields.toSorted()).toEqual(
+      Object.keys(newCoffeeSchema.in.shape).toSorted(),
+    )
+  })
+
+  it('leaves out the first bag when editing', () => {
+    expect(coffeeFormSteps(false).map(step => step.title)).toEqual([
+      'Coffee',
+      'Origin',
+      'Taste',
+    ])
+  })
+})
+
+describe('stepHasError', () => {
+  it('knows a step by its fields, nested ones too', () => {
+    const [, origin] = coffeeFormSteps(true)
+
+    expect(stepHasError(origin!, ['regions.0.name'])).toBe(true)
+    expect(stepHasError(origin!, ['name'])).toBe(false)
+  })
+})
+
+describe('firstStepWithError', () => {
+  const steps = coffeeFormSteps(true)
+
+  it('finds the earliest step with a field in error', () => {
+    expect(firstStepWithError(steps, ['price', 'roastLevel'])).toBe(3)
+    expect(firstStepWithError(steps, ['name'])).toBe(1)
+  })
+
+  it('finds no step without errors it knows', () => {
+    expect(firstStepWithError(steps, [])).toBeNull()
+    expect(firstStepWithError(steps, ['shelf'])).toBeNull()
+    expect(firstStepWithError(coffeeFormSteps(false), ['price'])).toBeNull()
   })
 })

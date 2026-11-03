@@ -6,7 +6,10 @@ import { Field as VeeField } from 'vee-validate'
   <FieldGroup class="grid grid-cols-2 gap-4">
     <VeeField v-slot="{ componentField, errors }" name="purchasedOn">
       <Field :data-invalid="errors.length ? true : undefined">
-        <FieldLabel for="purchased-on">Bought on</FieldLabel>
+        <FieldLabel for="purchased-on">
+          Bought on
+          <RequiredMark />
+        </FieldLabel>
         <DatePicker
           id="purchased-on"
           v-bind="componentField"

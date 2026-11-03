@@ -13,6 +13,7 @@ const roastedForChoices = roastedForOptions.map(value => ({
   <LegendField
     v-slot="{ componentField, invalid }"
     name="roastLevel"
+    required
     legend="Roast level"
   >
     <OptionPills
@@ -27,6 +28,7 @@ const roastedForChoices = roastedForOptions.map(value => ({
   <LegendField
     v-slot="{ componentField, invalid }"
     name="roastedFor"
+    required
     legend="Roasted for"
   >
     <OptionPills

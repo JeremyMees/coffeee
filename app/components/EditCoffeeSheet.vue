@@ -6,6 +6,8 @@ const props = defineProps<{ shelfId: string; coffee: EditableCoffee }>()
 
 const open = defineModel<boolean>('open', { default: false })
 const formError = ref('')
+const step = ref(1)
+const steps = coffeeFormSteps(false)
 const { mutateAsync: updateCoffee } = useCoffeeUpdate()
 
 function originEntries(entries: OriginEntry[]) {
@@ -45,27 +47,36 @@ watch(open, isOpen => {
   if (!isOpen) return
 
   formError.value = ''
+  step.value = 1
   resetForm({ values: currentDetails() })
 })
 
-const save = handleSubmit(async details => {
-  formError.value = ''
+function showErrors(fields: string[]) {
+  step.value = firstStepWithError(steps, fields) ?? step.value
+}
 
-  try {
-    await updateCoffee({
-      shelfId: props.shelfId,
-      coffeeId: props.coffee.id,
-      details,
-    })
+const save = handleSubmit(
+  async details => {
+    formError.value = ''
 
-    open.value = false
-  } catch (error) {
-    const { fields, message } = serverErrors(error)
+    try {
+      await updateCoffee({
+        shelfId: props.shelfId,
+        coffeeId: props.coffee.id,
+        details,
+      })
 
-    setErrors(fields)
-    formError.value = message
-  }
-})
+      open.value = false
+    } catch (error) {
+      const { fields, message } = serverErrors(error)
+
+      setErrors(fields)
+      showErrors(Object.keys(fields))
+      formError.value = message
+    }
+  },
+  ({ errors }) => showErrors(Object.keys(errors)),
+)
 </script>
 
 <template>
@@ -76,25 +87,32 @@ const save = handleSubmit(async details => {
     description="Fix its details for everyone who has it on a shelf."
   >
     <form
-      class="flex flex-col gap-6 px-5 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:px-8"
+      class="px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:px-8"
       novalidate
       data-testid="edit-coffee-form"
       @submit="save"
     >
-      <CoffeeDetailsFields />
-
-      <Alert v-if="formError" variant="destructive" data-testid="form-error">
-        <AlertDescription>{{ formError }}</AlertDescription>
-      </Alert>
-
-      <button
-        type="submit"
-        data-testid="edit-coffee-submit"
-        class="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
-        :disabled="isSubmitting"
-      >
-        Save changes
-      </button>
+      <CoffeeFormSteps v-model="step" :steps="steps" prefix="edit-coffee">
+        <template #error>
+          <Alert
+            v-if="formError"
+            variant="destructive"
+            data-testid="form-error"
+          >
+            <AlertDescription>{{ formError }}</AlertDescription>
+          </Alert>
+        </template>
+        <template #submit>
+          <button
+            type="submit"
+            data-testid="edit-coffee-submit"
+            class="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+            :disabled="isSubmitting"
+          >
+            Save changes
+          </button>
+        </template>
+      </CoffeeFormSteps>
     </form>
   </FormSheet>
 </template>

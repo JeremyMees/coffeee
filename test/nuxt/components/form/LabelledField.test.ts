@@ -39,6 +39,18 @@ describe('LabelledField', () => {
     expect(wrapper.get<HTMLInputElement>('input').element.value).toBe('Halo')
   })
 
+  it('marks a required field', async () => {
+    const plain = await mountField()
+    const required = await mountField({ required: true })
+
+    expect(plain.wrapper.find('[data-testid="required-mark"]').exists()).toBe(
+      false,
+    )
+    expect(
+      required.wrapper.find('label [data-testid="required-mark"]').exists(),
+    ).toBe(true)
+  })
+
   it('can use a small label', async () => {
     const { wrapper } = await mountField({ small: true })
 

@@ -9,3 +9,8 @@ export interface FetchFailure {
   statusMessage?: string
   data?: { data?: { errors?: Record<string, string> } }
 }
+
+export interface FormStep {
+  title: string
+  fields: readonly (keyof NewCoffee)[]
+}

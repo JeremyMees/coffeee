@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import CoffeeListFields from '~/components/form/CoffeeListFields.vue'
 import { fakeApi } from '../../fake-api'
 import { mountInForm, pickMulti, tid, type } from '../../fixtures'
@@ -7,15 +8,25 @@ import { mountInForm, pickMulti, tid, type } from '../../fixtures'
 fakeApi()
 
 describe('CoffeeListFields', () => {
-  it('asks for processes, varietals, flavor notes and producers', async () => {
+  it('asks only for the lists it is given, in that order', async () => {
+    const { wrapper } = await mountInForm(
+      defineComponent({
+        render: () =>
+          h(CoffeeListFields, { fields: ['flavorNotes', 'processes'] }),
+      }),
+    )
+
+    expect(
+      wrapper.findAll('label').map(label => label.text().replace(/\s+/g, ' ')),
+    ).toEqual(['Flavor note', 'Process * (required)'])
+  })
+
+  it('asks for processes, which are required, varietals, flavor notes and producers', async () => {
     const { wrapper } = await mountInForm(CoffeeListFields)
 
-    expect(wrapper.findAll('label').map(label => label.text())).toEqual([
-      'Process',
-      'Varietal',
-      'Flavor note',
-      'Producer',
-    ])
+    expect(
+      wrapper.findAll('label').map(label => label.text().replace(/\s+/g, ' ')),
+    ).toEqual(['Process * (required)', 'Varietal', 'Flavor note', 'Producer'])
   })
 
   it('fills each list as entries are picked or added', async () => {

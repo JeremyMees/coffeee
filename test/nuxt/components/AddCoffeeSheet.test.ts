@@ -59,6 +59,45 @@ async function fillRequired(name = 'Ayele Fulasa') {
   await click('coffee-roasted-for', 'option-filter')
 }
 
+function onStep(testId: string) {
+  return byTestId(testId)!.style.display !== 'none'
+}
+
+const panes = {
+  'add-coffee-pane-1': 'add-coffee-step-coffee',
+  'add-coffee-pane-2': 'add-coffee-step-origin',
+  'add-coffee-pane-3': 'add-coffee-step-taste',
+  'add-coffee-pane-4': 'add-coffee-step-bag',
+}
+
+function currentStep() {
+  const pane = Object.keys(panes).find(onStep) as keyof typeof panes
+
+  return panes[pane]
+}
+
+function failingSteps() {
+  return [1, 2, 3, 4].filter(
+    number => byTestId(`add-coffee-step-${number}`)!.dataset.failing,
+  )
+}
+
+async function toBag() {
+  for (const next of [
+    'add-coffee-step-origin',
+    'add-coffee-step-taste',
+    'add-coffee-step-bag',
+  ]) {
+    await click('add-coffee-next')
+    await vi.waitFor(() => expect(currentStep()).toBe(next))
+  }
+}
+
+async function addCoffee() {
+  await toBag()
+  await submit('add-coffee-form')
+}
+
 async function addedAndGone(stockPath: string) {
   await vi.waitFor(() => {
     expect(useAddCoffee().value).toBe(false)
@@ -84,24 +123,74 @@ describe('AddCoffeeSheet', () => {
     ).toContain(formatDate(localDate()))
   })
 
-  it('explains every missing detail before sending anything', async () => {
+  it('starts on the first of four steps', async () => {
     await openSheet()
 
-    await submit('add-coffee-form')
+    expect(currentStep()).toBe('add-coffee-step-coffee')
+    expect(byTestId('add-coffee-steps')!.textContent).toContain('Coffee')
+    expect(byTestId('add-coffee-steps')!.textContent).toContain('First bag')
+    expect(byTestId('add-coffee-back')).toBeNull()
+    expect(byTestId('add-coffee-submit')).toBeNull()
+  })
 
-    await vi.waitFor(() => {
-      expect(sheetText()).toContain('Give the coffee a name')
-      expect(sheetText()).toContain('Pick a roaster or add a new one')
-      expect(sheetText()).toContain('Pick a roast level')
-      expect(sheetText()).toContain('Pick what it was roasted for')
-      expect(sheetText()).toContain('Pick where it was grown')
-    })
+  it('moves between steps without asking for anything first', async () => {
+    await openSheet()
+
+    await click('add-coffee-next')
+    expect(currentStep()).toBe('add-coffee-step-origin')
+
+    byTestId('add-coffee-step-4')!
+      .querySelector('button')!
+      .dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    await flushPromises()
+    expect(currentStep()).toBe('add-coffee-step-bag')
+
+    await click('add-coffee-back')
+    expect(currentStep()).toBe('add-coffee-step-taste')
+    expect(sheetText()).not.toContain('Give the coffee a name')
+  })
+
+  it('goes back to the first step with a problem when adding', async () => {
+    await openSheet()
+    await type('coffee-name', 'Ayele Fulasa')
+    await pickRoaster('square', 'Square Mile')
+
+    await addCoffee()
+
+    await vi.waitFor(() => expect(currentStep()).toBe('add-coffee-step-origin'))
+    expect(sheetText()).toContain('Pick where it was grown')
+    expect(sheetText()).toContain('Pick a roast level')
+    expect(failingSteps()).toEqual([2, 3])
     expect(api.added).toEqual([])
+  })
+
+  it('explains every missing detail, starting from the first step', async () => {
+    await openSheet()
+
+    await addCoffee()
+
+    await vi.waitFor(() => expect(currentStep()).toBe('add-coffee-step-coffee'))
+    expect(sheetText()).toContain('Give the coffee a name')
+    expect(sheetText()).toContain('Pick a roaster or add a new one')
+    expect(failingSteps()).toEqual([1, 2, 3])
+  })
+
+  it('keeps what was filled in when moving between steps', async () => {
+    await openSheet()
+    await type('coffee-name', 'Ayele Fulasa')
+
+    await click('add-coffee-next')
+    await click('add-coffee-back')
+
+    expect(currentStep()).toBe('add-coffee-step-coffee')
+    expect(inputValue('coffee-name')).toBe('Ayele Fulasa')
   })
 
   it('explains a size or price that makes no sense', async () => {
     await openSheet()
 
+    await fillRequired()
+    await toBag()
     await type('coffee-size', '0')
     await type('coffee-price', '-2')
     await submit('add-coffee-form')
@@ -132,7 +221,7 @@ describe('AddCoffeeSheet', () => {
     await pickDate('coffee-roasted-on', daysAgo(10))
     await type('coffee-size', '250')
     await type('coffee-price', '16.5')
-    await submit('add-coffee-form')
+    await addCoffee()
 
     await vi.waitFor(() => expect(api.added).toHaveLength(1))
     expect(api.added).toEqual([
@@ -170,7 +259,7 @@ describe('AddCoffeeSheet', () => {
     await pickMulti('coffee-processes', 'Thermal shock', 'Add “Thermal shock”')
     await click('coffee-roast-level', 'option-light')
     await click('coffee-roasted-for', 'option-omni')
-    await submit('add-coffee-form')
+    await addCoffee()
 
     await vi.waitFor(() => expect(api.added).toHaveLength(1))
     expect(api.added).toEqual([
@@ -196,11 +285,12 @@ describe('AddCoffeeSheet', () => {
     await openSheet()
 
     await fillRequired('Broken')
-    await submit('add-coffee-form')
+    await addCoffee()
 
     await vi.waitFor(() =>
       expect(sheetText()).toContain('That name is taken by a ghost'),
     )
+    expect(currentStep()).toBe('add-coffee-step-coffee')
     expect(useAddCoffee().value).toBe(true)
   })
 
@@ -208,7 +298,7 @@ describe('AddCoffeeSheet', () => {
     await openSheet()
 
     await fillRequired('Dates')
-    await submit('add-coffee-form')
+    await addCoffee()
 
     await vi.waitFor(() =>
       expect(sheetText()).toContain('Enter the date you bought it'),
@@ -226,7 +316,7 @@ describe('AddCoffeeSheet', () => {
     await openSheet()
 
     await fillRequired('Crash')
-    await submit('add-coffee-form')
+    await addCoffee()
 
     await vi.waitFor(() =>
       expect(byTestId('form-error')!.textContent?.trim()).toBe(
@@ -241,7 +331,7 @@ describe('AddCoffeeSheet', () => {
     await openSheet('/profile')
 
     await fillRequired()
-    await submit('add-coffee-form')
+    await addCoffee()
 
     await new Promise(resolve => setTimeout(resolve, 50))
     expect(api.added).toEqual([])
@@ -258,9 +348,10 @@ describe('AddCoffeeSheet', () => {
     expect(useAddCoffee().value).toBe(false)
   })
 
-  it('starts empty again the next time it opens', async () => {
+  it('starts empty on the first step again the next time it opens', async () => {
     await openSheet()
-    await type('coffee-name', 'Half typed')
+    await fillRequired('Half typed')
+    await toBag()
 
     useAddCoffee().value = false
     await flushPromises()
@@ -268,5 +359,6 @@ describe('AddCoffeeSheet', () => {
     await flushPromises()
 
     expect(inputValue('coffee-name')).toBe('')
+    expect(currentStep()).toBe('add-coffee-step-coffee')
   })
 })

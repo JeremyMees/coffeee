@@ -151,6 +151,33 @@ describe('EditCoffeeSheet', () => {
     expect(api.edits).toEqual([])
   })
 
+  it('has the steps of a coffee without a first bag, saving from any of them', async () => {
+    await openSheet()
+
+    expect(byTestId('edit-coffee-steps')!.textContent).not.toContain(
+      'First bag',
+    )
+    await click('edit-coffee-next')
+
+    expect(byTestId('edit-coffee-pane-2')!.style.display).toBe('')
+    expect(byTestId('edit-coffee-submit')).not.toBeNull()
+  })
+
+  it('goes back to the step with a problem when saving', async () => {
+    await openSheet()
+    await type('coffee-name', ' ')
+    await click('edit-coffee-next')
+    await click('edit-coffee-next')
+
+    await submit('edit-coffee-form')
+
+    await vi.waitFor(() =>
+      expect(byTestId('edit-coffee-pane-1')!.style.display).toBe(''),
+    )
+    expect(byTestId('edit-coffee-pane-3')!.style.display).toBe('none')
+    expect(byTestId('edit-coffee-step-1')!.dataset.failing).toBe('true')
+  })
+
   it('shows a name that is taken next to the field', async () => {
     const sheet = await openSheet()
 

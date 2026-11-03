@@ -1,4 +1,8 @@
 <script setup lang="ts">
+const props = withDefaults(defineProps<{ fields?: CoffeeListField[] }>(), {
+  fields: () => ['processes', 'varietals', 'flavorNotes', 'producers'],
+})
+
 const listPickers: Record<CoffeeListField, ListPickerConfig> = {
   processes: {
     label: 'Process',
@@ -25,15 +29,20 @@ const listPickers: Record<CoffeeListField, ListPickerConfig> = {
     id: 'coffee-producers',
   },
 }
+
+const shown = computed(() =>
+  props.fields.map(field => ({ field, picker: listPickers[field] })),
+)
 </script>
 
 <template>
   <LabelledField
-    v-for="(picker, field) in listPickers"
+    v-for="{ field, picker } in shown"
     :key="field"
     v-slot="{ value, handleChange, handleBlur, invalid }"
     :name="field"
     :label="picker.label"
+    :required="field === 'processes'"
     :input-id="picker.id"
   >
     <MultiListPicker

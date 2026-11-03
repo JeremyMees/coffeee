@@ -89,10 +89,13 @@ async function addCoffee(
   const sheet = page.getByTestId('add-coffee-sheet')
   await sheet.getByTestId('coffee-name').fill(coffee.name)
   await pickRoaster(page, coffee.roaster, coffee.newRoaster)
+  await sheet.getByTestId('add-coffee-next').click()
   await pickOrigin(page, 'Ethiopia')
+  await sheet.getByTestId('add-coffee-next').click()
   await pickProcess(page, 'Washed')
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-filter')
+  await sheet.getByTestId('add-coffee-next').click()
   await pickDate(page, 'coffee-roasted-on', daysAgo(10))
   await sheet.getByTestId('coffee-size').fill('250')
   await sheet.getByTestId('coffee-price').fill('16.50')
@@ -173,17 +176,26 @@ test('explains missing details and clears them once fixed', async ({
   await page.getByTestId('page-add-coffee').click()
   const sheet = page.getByTestId('add-coffee-sheet')
 
+  for (let step = 0; step < 3; step++) {
+    await sheet.getByTestId('add-coffee-next').click()
+  }
   await sheet.getByTestId('add-coffee-submit').click()
 
   await expect(sheet.getByText('Give the coffee a name')).toBeVisible()
-  await expect(sheet.getByText('Pick a roast level')).toBeVisible()
+  await expect(sheet.getByTestId('add-coffee-step-3')).toHaveAttribute(
+    'data-failing',
+    'true',
+  )
 
   await sheet.getByTestId('coffee-name').fill('Halo')
-  await choose(sheet, 'coffee-roast-level', 'option-light')
-
   await expect(sheet.getByText('Give the coffee a name')).toBeHidden()
-  await expect(sheet.getByText('Pick a roast level')).toBeHidden()
   await expect(sheet.getByText('Pick a roaster or add a new one')).toBeVisible()
+
+  await sheet.getByTestId('add-coffee-next').click()
+  await sheet.getByTestId('add-coffee-next').click()
+  await expect(sheet.getByText('Pick a roast level')).toBeVisible()
+  await choose(sheet, 'coffee-roast-level', 'option-light')
+  await expect(sheet.getByText('Pick a roast level')).toBeHidden()
 })
 
 test('lets the person who added a coffee fix its details', async ({
@@ -199,6 +211,8 @@ test('lets the person who added a coffee fix its details', async ({
   await expect(sheet.getByTestId('coffee-name')).toHaveValue('Ayele Fulasa')
   await sheet.getByTestId('coffee-name').fill('Ayele Fulasa Natural')
   await pickRoaster(page, newRoaster, true)
+  await sheet.getByTestId('edit-coffee-next').click()
+  await sheet.getByTestId('edit-coffee-next').click()
   await choose(sheet, 'coffee-roast-level', 'option-medium')
   await sheet.getByTestId('edit-coffee-submit').click()
 
