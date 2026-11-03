@@ -4,9 +4,9 @@ import type { coffeeVerdict } from '#server/db/schemas'
 import type { verdictSchema } from '../utils/schemas'
 import type { ratings } from '../utils/verdicts'
 
-export type ShelfVerdict = InferSelectModel<typeof coffeeVerdict>
+export type UserVerdict = InferSelectModel<typeof coffeeVerdict>
 
-export type Verdict = Pick<ShelfVerdict, 'rating' | 'wouldBuyAgain'>
+export type Verdict = Pick<UserVerdict, 'rating' | 'wouldBuyAgain'>
 
 export type Rating = (typeof ratings)[number]
 

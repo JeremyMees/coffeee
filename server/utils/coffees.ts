@@ -37,7 +37,11 @@ import { deletePhoto } from '#server/utils/photos'
 import { grindSettingsOf } from '#server/utils/grind-settings'
 import { addPurchase, purchaseColumns } from '#server/utils/purchases'
 import { findRoaster } from '#server/utils/roasters'
-import { findVerdict, verdictOn } from '#server/utils/verdicts'
+import {
+  findVerdict,
+  memberVerdictsOf,
+  verdictOn,
+} from '#server/utils/verdicts'
 
 const coffeeColumns = {
   id: coffee.id,
@@ -189,7 +193,10 @@ export function addCoffee(
   })
 }
 
-export async function listStock(db: Database, shelfId: string) {
+export async function listStock(
+  db: Database,
+  input: { shelfId: string; userId: string },
+) {
   const stock = await db
     .select({
       ...coffeeColumns,
@@ -199,8 +206,10 @@ export async function listStock(db: Database, shelfId: string) {
     .from(purchase)
     .innerJoin(coffee, eq(coffee.id, purchase.coffeeId))
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
-    .leftJoin(coffeeVerdict, verdictOn(shelfId))
-    .where(and(eq(purchase.shelfId, shelfId), isNull(purchase.finishedAt)))
+    .leftJoin(coffeeVerdict, verdictOn(input.userId))
+    .where(
+      and(eq(purchase.shelfId, input.shelfId), isNull(purchase.finishedAt)),
+    )
     .groupBy(coffee.id, roaster.id, coffeeVerdict.rating)
     .orderBy(desc(max(purchase.purchasedOn)), desc(max(purchase.createdAt)))
   const notes = await flavorNotesOf(
@@ -275,7 +284,15 @@ export async function findShelfCoffee(
   return {
     ...details,
     ...(await describedOf(db, input.coffeeId)),
-    ...(await findVerdict(db, input)),
+    ...(await findVerdict(db, {
+      userId: input.viewer.id,
+      coffeeId: input.coffeeId,
+    })),
+    memberVerdicts: await memberVerdictsOf(db, {
+      shelfId: input.shelfId,
+      coffeeId: input.coffeeId,
+      userId: input.viewer.id,
+    }),
     canEdit: canEditCatalogEntry(input.viewer, createdBy),
     purchases,
     grindSettings: await grindSettingsOf(db, input),

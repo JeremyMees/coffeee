@@ -13,7 +13,7 @@ function mountVerdict(
   verdict: Verdict = { rating: null, wouldBuyAgain: false },
 ) {
   return mountSuspended(CoffeeVerdict, {
-    props: { shelfId: 'home', coffeeId: 'c1', verdict },
+    props: { coffeeId: 'c1', verdict },
   })
 }
 

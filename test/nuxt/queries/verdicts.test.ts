@@ -8,7 +8,7 @@ import { runOn } from '../fixtures'
 
 const calls: unknown[] = []
 
-registerEndpoint('/api/shelves/cellar/coffees/c1/verdict', {
+registerEndpoint('/api/coffees/c1/verdict', {
   method: 'PATCH',
   handler: async event => {
     calls.push(await readBody(event))
@@ -18,22 +18,18 @@ registerEndpoint('/api/shelves/cellar/coffees/c1/verdict', {
 })
 
 describe('useVerdictUpdate', () => {
-  it('saves the verdict and refreshes that shelf', async () => {
+  it('saves the verdict and refreshes every shelf', async () => {
     const { result, client } = await runOn('/', () => ({
       result: useVerdictUpdate(),
       client: useQueryClient(),
     }))
     const invalidate = vi.spyOn(client, 'invalidateQueries')
 
-    await result.mutateAsync({
-      shelfId: 'cellar',
-      coffeeId: 'c1',
-      verdict: { rating: 4 },
-    })
+    await result.mutateAsync({ coffeeId: 'c1', verdict: { rating: 4 } })
 
     expect(calls).toEqual([{ rating: 4 }])
     expect(invalidate.mock.calls.map(([filters]) => filters)).toEqual([
-      { queryKey: queryKeys.shelf('cellar') },
+      { queryKey: queryKeys.shelves() },
     ])
   })
 })

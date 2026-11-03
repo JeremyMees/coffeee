@@ -44,6 +44,7 @@ export function ayele() {
     altitudeTo: 2200,
     rating: null as number | null,
     wouldBuyAgain: false,
+    memberVerdicts: [] as MemberVerdict[],
     canEdit: true,
     grindSettings: [] as ShelfGrindSetting[],
     roasterDetails: squareMile(),
@@ -367,7 +368,7 @@ export function fakeApi() {
     },
   })
 
-  registerEndpoint('/api/shelves/home/coffees/c1/verdict', {
+  registerEndpoint('/api/coffees/c1/verdict', {
     method: 'PATCH',
     handler: async event => {
       const body = await readBody(event)

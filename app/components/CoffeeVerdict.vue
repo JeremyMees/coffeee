@@ -3,7 +3,6 @@ import { CheckIcon, HeartIcon, StarIcon } from '@lucide/vue'
 import { useVerdictUpdate } from '~/queries/verdicts'
 
 const props = defineProps<{
-  shelfId: string
   coffeeId: string
   verdict: Verdict
 }>()
@@ -18,7 +17,6 @@ async function judge(verdict: VerdictChange) {
 
   try {
     await updateVerdict({
-      shelfId: props.shelfId,
       coffeeId: props.coffeeId,
       verdict,
     })

@@ -120,6 +120,23 @@ describe('a coffee page', () => {
     expect(api.verdicts).toEqual([{ rating: 5 }, { wouldBuyAgain: true }])
   })
 
+  it('shows how the other members of the shelf judged the coffee', async () => {
+    api.coffee.memberVerdicts = [
+      { userId: 'tom', name: 'Tom', rating: 2, wouldBuyAgain: false },
+    ]
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(page.get(tid('member-verdict-tom')).text()).toContain('Tom')
+    expect(
+      page
+        .get(tid('member-verdict-tom', 'rating-stars'))
+        .attributes('data-rating'),
+    ).toBe('2')
+  })
+
   it('keeps a grind setting for the coffee, not on its card', async () => {
     const page = await mountSuspended(App, {
       route: '/shelves/home/coffees/c1',

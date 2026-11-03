@@ -85,6 +85,20 @@
       "when": 1793631030679,
       "tag": "0011_roaster_details",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793687460625,
+      "tag": "0012_personal_verdicts",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793687473810,
+      "tag": "0013_verdicts_belong_to_users",
+      "breakpoints": true
     }
   ]
 }

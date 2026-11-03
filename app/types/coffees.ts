@@ -13,6 +13,7 @@ export type EditableCoffee = Omit<
   | 'photoUrl'
   | 'rating'
   | 'wouldBuyAgain'
+  | 'memberVerdicts'
   | 'grindSettings'
   | 'roasterDetails'
 >
@@ -34,3 +35,5 @@ export type PhotoCoffee = Pick<
   ShelfCoffee,
   'id' | 'name' | 'colour' | 'photoUrl' | 'canEdit'
 >
+
+export type MemberVerdict = ShelfCoffee['memberVerdicts'][number]

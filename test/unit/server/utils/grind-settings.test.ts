@@ -224,8 +224,8 @@ describe('grind settings', () => {
 
     const coffee = await findShelfCoffee(db, { ...ref, viewer: sarah })
     expect(coffee?.grindSettings.map(saved => saved.setting)).toEqual(['12'])
-    expect((await listStock(db, home.id))[0]).not.toHaveProperty(
-      'grindSettings',
-    )
+    expect(
+      (await listStock(db, { shelfId: home.id, userId: sarah.id }))[0],
+    ).not.toHaveProperty('grindSettings')
   })
 })

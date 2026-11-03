@@ -1,6 +1,7 @@
 import type { QueryKey } from '@tanstack/vue-query'
 
 export const queryKeys = {
+  shelves: () => ['shelves'],
   shelf: (shelfId: string) => ['shelves', shelfId],
   stock: (shelfId: string) => ['shelves', shelfId, 'stock'],
   shelfCoffee: (shelfId: string, coffeeId: string) => [

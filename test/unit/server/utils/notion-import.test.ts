@@ -273,7 +273,7 @@ describe('importing the Notion inventory', () => {
   })
 
   it('merges duplicate rows into one coffee with several purchases', async () => {
-    const { db, run } = await setup()
+    const { db, jeremy, run } = await setup()
 
     await run([
       notionCoffee({ link: 'https://mok/gascon', rating: 4 }),
@@ -293,7 +293,11 @@ describe('importing the Notion inventory', () => {
     expect(coffees[0]!.link).toBe('https://mok/gascon')
     expect(await db.select().from(purchase)).toHaveLength(2)
     expect(verdicts).toEqual([
-      expect.objectContaining({ rating: 4, wouldBuyAgain: true }),
+      expect.objectContaining({
+        userId: jeremy.id,
+        rating: 4,
+        wouldBuyAgain: true,
+      }),
     ])
   })
 

@@ -181,7 +181,7 @@ describe('current stock', () => {
       coffee: newCoffee({ name: 'Red Brick' }),
     })
 
-    const stock = await listStock(db, home.id)
+    const stock = await listStock(db, { shelfId: home.id, userId: sarah.id })
 
     expect(stock).toEqual([
       {
@@ -208,7 +208,9 @@ describe('current stock', () => {
     })
     await db.update(purchase).set({ finishedAt: new Date() })
 
-    expect(await listStock(db, home.id)).toEqual([])
+    expect(await listStock(db, { shelfId: home.id, userId: sarah.id })).toEqual(
+      [],
+    )
   })
 
   it('shows a coffee once, with the newest roast date of its bags in stock', async () => {
@@ -221,7 +223,7 @@ describe('current stock', () => {
       })
     }
 
-    const stock = await listStock(db, home.id)
+    const stock = await listStock(db, { shelfId: home.id, userId: sarah.id })
 
     expect(stock).toHaveLength(1)
     expect(stock[0]!.roastedOn).toBe('2026-10-28')
@@ -237,7 +239,7 @@ describe('current stock', () => {
       })
     }
 
-    const stock = await listStock(db, home.id)
+    const stock = await listStock(db, { shelfId: home.id, userId: sarah.id })
 
     expect(stock.map(item => item.name)).toEqual(['Second', 'First'])
   })
@@ -647,7 +649,7 @@ describe('flavor notes', () => {
       coffee: newCoffee({ name: 'Red Brick' }),
     })
 
-    const stock = await listStock(db, home.id)
+    const stock = await listStock(db, { shelfId: home.id, userId: sarah.id })
 
     expect(
       Object.fromEntries(

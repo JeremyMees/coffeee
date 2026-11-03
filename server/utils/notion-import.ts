@@ -223,7 +223,6 @@ async function importCoffee(
     })
     await storePurchases(tx, { ...input, coffeeId: found.id }, bought)
     await judgeCoffee(tx, {
-      shelfId: input.shelfId,
       coffeeId: found.id,
       userId: input.userId,
       verdict: {

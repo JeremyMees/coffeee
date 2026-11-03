@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { coffeeVerdict } from '#server/db/schemas'
+import { coffeeVerdict, shelfMember } from '#server/db/schemas'
 import { addCoffee, findShelfCoffee, listStock } from '#server/utils/coffees'
 import { createShelf } from '#server/utils/shelves'
-import { findVerdict, judgeCoffee } from '#server/utils/verdicts'
+import {
+  findVerdict,
+  judgeCoffee,
+  memberVerdictsOf,
+} from '#server/utils/verdicts'
 import type { NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
@@ -32,107 +36,174 @@ const firstBag: NewCoffee = {
 async function setup() {
   const { db } = await createTestDatabase()
   const sarah = await createTestUser(db, { name: 'Sarah' })
+  const tom = await createTestUser(db, { name: 'Tom' })
   const home = await createShelf(db, { name: 'Home', ownerId: sarah.id })
-  const work = await createShelf(db, { name: 'Work', ownerId: sarah.id })
+  await db.insert(shelfMember).values({ shelfId: home.id, userId: tom.id })
   const added = await addCoffee(db, {
     shelfId: home.id,
     userId: sarah.id,
     coffee: firstBag,
   })
-  const ref = { shelfId: home.id, coffeeId: added.coffee.id }
+  const coffeeId = added.coffee.id
 
-  return { db, sarah, home, work, ref }
+  function judge(
+    userId: string,
+    verdict: Parameters<typeof judgeCoffee>[1]['verdict'],
+  ) {
+    return judgeCoffee(db, { userId, coffeeId, verdict })
+  }
+
+  return { db, sarah, tom, home, coffeeId, judge }
 }
 
 describe('judging a coffee', () => {
   it('starts out not yet rated and not to be bought again', async () => {
-    const { db, ref } = await setup()
+    const { db, sarah, coffeeId } = await setup()
 
-    expect(await findVerdict(db, ref)).toEqual({
+    expect(await findVerdict(db, { userId: sarah.id, coffeeId })).toEqual({
       rating: null,
       wouldBuyAgain: false,
     })
   })
 
   it('keeps the rating when only would buy again changes', async () => {
-    const { db, sarah, ref } = await setup()
+    const { db, sarah, coffeeId, judge } = await setup()
 
-    await judgeCoffee(db, { ...ref, userId: sarah.id, verdict: { rating: 4 } })
-    const judged = await judgeCoffee(db, {
-      ...ref,
-      userId: sarah.id,
-      verdict: { wouldBuyAgain: true },
-    })
+    await judge(sarah.id, { rating: 4 })
+    const judged = await judge(sarah.id, { wouldBuyAgain: true })
 
     expect(judged).toEqual({ rating: 4, wouldBuyAgain: true })
-    expect(await findVerdict(db, ref)).toEqual(judged)
+    expect(await findVerdict(db, { userId: sarah.id, coffeeId })).toEqual(
+      judged,
+    )
   })
 
   it('clears the rating back to not yet rated', async () => {
-    const { db, sarah, ref } = await setup()
+    const { db, sarah, coffeeId, judge } = await setup()
 
-    await judgeCoffee(db, { ...ref, userId: sarah.id, verdict: { rating: 5 } })
-    await judgeCoffee(db, {
-      ...ref,
-      userId: sarah.id,
-      verdict: { rating: null },
-    })
+    await judge(sarah.id, { rating: 5 })
+    await judge(sarah.id, { rating: null })
 
-    expect((await findVerdict(db, ref)).rating).toBeNull()
+    expect(
+      (await findVerdict(db, { userId: sarah.id, coffeeId })).rating,
+    ).toBeNull()
   })
 
-  it('keeps who changed it last', async () => {
-    const { db, sarah, ref } = await setup()
+  it('stores the verdict on the person who gave it', async () => {
+    const { db, sarah, coffeeId, judge } = await setup()
 
-    await judgeCoffee(db, { ...ref, userId: sarah.id, verdict: { rating: 3 } })
+    await judge(sarah.id, { rating: 3 })
 
-    const [stored] = await db.select().from(coffeeVerdict)
-    expect(stored).toMatchObject({ ...ref, rating: 3, updatedBy: sarah.id })
+    expect(await db.select().from(coffeeVerdict)).toEqual([
+      expect.objectContaining({ userId: sarah.id, coffeeId, rating: 3 }),
+    ])
   })
 
   it('judges nothing for a coffee that does not exist', async () => {
-    const { db, sarah, home } = await setup()
+    const { db, sarah } = await setup()
 
     expect(
       await judgeCoffee(db, {
-        shelfId: home.id,
-        coffeeId: 'missing',
         userId: sarah.id,
+        coffeeId: 'missing',
         verdict: { rating: 3 },
       }),
     ).toBeUndefined()
     expect(await db.select().from(coffeeVerdict)).toEqual([])
   })
 
-  it('keeps each shelf its own verdict', async () => {
-    const { db, sarah, work, ref } = await setup()
+  it('lets two members of one shelf judge the same coffee differently', async () => {
+    const { db, sarah, tom, coffeeId, judge } = await setup()
 
-    await judgeCoffee(db, { ...ref, userId: sarah.id, verdict: { rating: 5 } })
+    await judge(sarah.id, { rating: 5, wouldBuyAgain: true })
+    await judge(tom.id, { rating: 2 })
 
-    expect(
-      await findVerdict(db, { shelfId: work.id, coffeeId: ref.coffeeId }),
-    ).toEqual({ rating: null, wouldBuyAgain: false })
+    expect(await findVerdict(db, { userId: sarah.id, coffeeId })).toEqual({
+      rating: 5,
+      wouldBuyAgain: true,
+    })
+    expect(await findVerdict(db, { userId: tom.id, coffeeId })).toEqual({
+      rating: 2,
+      wouldBuyAgain: false,
+    })
   })
 
-  it('shows the verdict in stock and on the coffee', async () => {
-    const { db, sarah, home, work, ref } = await setup()
-    await addCoffee(db, {
-      shelfId: work.id,
-      userId: sarah.id,
-      coffee: firstBag,
-    })
+  it('lets anyone judge a coffee their shelf has not bought', async () => {
+    const { db, coffeeId } = await setup()
+    const ana = await createTestUser(db, { name: 'Ana' })
 
-    await judgeCoffee(db, {
-      ...ref,
-      userId: sarah.id,
-      verdict: { rating: 4, wouldBuyAgain: true },
-    })
+    expect(
+      await judgeCoffee(db, {
+        userId: ana.id,
+        coffeeId,
+        verdict: { rating: 4 },
+      }),
+    ).toEqual({ rating: 4, wouldBuyAgain: false })
+  })
 
-    expect((await listStock(db, home.id))[0]).toMatchObject({ rating: 4 })
-    expect((await listStock(db, work.id))[0]).toMatchObject({ rating: null })
-    expect(await findShelfCoffee(db, { ...ref, viewer: sarah })).toMatchObject({
-      rating: 4,
-      wouldBuyAgain: true,
+  it('shows the viewer their own verdict in stock and on the coffee', async () => {
+    const { db, sarah, tom, home, coffeeId, judge } = await setup()
+
+    await judge(sarah.id, { rating: 4, wouldBuyAgain: true })
+    await judge(tom.id, { rating: 1 })
+
+    expect(
+      (await listStock(db, { shelfId: home.id, userId: sarah.id }))[0],
+    ).toMatchObject({ rating: 4 })
+    expect(
+      (await listStock(db, { shelfId: home.id, userId: tom.id }))[0],
+    ).toMatchObject({ rating: 1 })
+    expect(
+      await findShelfCoffee(db, { shelfId: home.id, coffeeId, viewer: tom }),
+    ).toMatchObject({ rating: 1, wouldBuyAgain: false })
+  })
+})
+
+describe('the other members’ verdicts', () => {
+  it('lists the other members of the shelf who judged the coffee', async () => {
+    const { db, sarah, tom, home, coffeeId, judge } = await setup()
+
+    await judge(sarah.id, { rating: 5 })
+    await judge(tom.id, { wouldBuyAgain: true })
+
+    expect(
+      await memberVerdictsOf(db, {
+        shelfId: home.id,
+        coffeeId,
+        userId: sarah.id,
+      }),
+    ).toEqual([
+      { userId: tom.id, name: 'Tom', rating: null, wouldBuyAgain: true },
+    ])
+  })
+
+  it('leaves out people off the shelf and members with no verdict left', async () => {
+    const { db, sarah, tom, home, coffeeId, judge } = await setup()
+    const ana = await createTestUser(db, { name: 'Ana' })
+
+    await judgeCoffee(db, { userId: ana.id, coffeeId, verdict: { rating: 3 } })
+    await judge(tom.id, { rating: 4 })
+    await judge(tom.id, { rating: null })
+
+    expect(
+      await memberVerdictsOf(db, {
+        shelfId: home.id,
+        coffeeId,
+        userId: sarah.id,
+      }),
+    ).toEqual([])
+  })
+
+  it('shows them on the coffee', async () => {
+    const { db, sarah, tom, home, coffeeId, judge } = await setup()
+
+    await judge(tom.id, { rating: 2 })
+
+    expect(
+      await findShelfCoffee(db, { shelfId: home.id, coffeeId, viewer: sarah }),
+    ).toMatchObject({
+      rating: null,
+      memberVerdicts: [{ name: 'Tom', rating: 2, wouldBuyAgain: false }],
     })
   })
 })
