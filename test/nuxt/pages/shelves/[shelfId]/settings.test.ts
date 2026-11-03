@@ -13,12 +13,32 @@ beforeEach(() => {
 })
 
 describe('the shelf settings page', () => {
-  it('shows the grinders the shelf owns', async () => {
+  it('opens on the shelf tab', async () => {
     const page = await mountSuspended(App, { route: '/shelves/home/settings' })
 
     expect(page.get(tid('page-title')).text()).toBe('Settings')
+    expect(page.get(tid('settings-tab-shelf')).attributes('data-state')).toBe(
+      'active',
+    )
+    expect(page.get(tid('shelf-name-form')).isVisible()).toBe(true)
+    expect(page.get(tid('shelf-members')).isVisible()).toBe(false)
+  })
+
+  it('opens the tab the address names', async () => {
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/settings?tab=grinders',
+    })
+
+    expect(page.get(tid('shelf-grinders')).isVisible()).toBe(true)
+    expect(page.get(tid('shelf-name-form')).isVisible()).toBe(false)
+  })
+
+  it('shows the grinders the shelf owns', async () => {
+    const page = await mountSuspended(App, { route: '/shelves/home/settings' })
+
     expect(page.get(tid('shelf-grinder-name')).text()).toBe('Fellow Opus Gen 2')
   })
+
   it('lets members invite people and see pending invites', async () => {
     const page = await mountSuspended(App, { route: '/shelves/home/settings' })
 

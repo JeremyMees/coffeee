@@ -34,6 +34,7 @@ test('deletes the account after handing a shared shelf to a member', async ({
   await people.joinShelf(member, sam.shelfId)
   await page.goto('/profile')
 
+  await page.getByTestId('profile-tab-danger').click()
   await page.getByTestId('delete-account-open').click()
   await page.getByTestId('confirm-dialog-confirm').click()
 

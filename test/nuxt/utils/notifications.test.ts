@@ -37,7 +37,7 @@ describe('notificationLink', () => {
       notificationLink(
         notification({ kind: 'memberLeft', coffeeId: null, coffee: null }),
       ),
-    ).toBe('/shelves/home/settings')
+    ).toBe('/shelves/home/settings?tab=members')
   })
 
   it('links an accepted invite to the shelf it joined', () => {

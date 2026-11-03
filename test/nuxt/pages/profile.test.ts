@@ -60,9 +60,21 @@ describe('profile page', () => {
     })
   })
 
+  it('keeps deleting the account on its own tab', async () => {
+    const page = await mountSuspended(App, { route: '/profile' })
+
+    expect(page.get(tid('sign-out')).isVisible()).toBe(true)
+    expect(page.get(tid('delete-account-open')).isVisible()).toBe(false)
+
+    const danger = await mountSuspended(App, { route: '/profile?tab=danger' })
+
+    expect(danger.get(tid('delete-account-open')).isVisible()).toBe(true)
+    expect(danger.get(tid('sign-out')).isVisible()).toBe(false)
+  })
+
   it('asks before deleting the account', async () => {
     const page = await mountSuspended(App, {
-      route: '/profile',
+      route: '/profile?tab=danger',
       attachTo: document.body,
     })
 

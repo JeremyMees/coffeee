@@ -32,7 +32,10 @@ describe('the notifications page', () => {
     ])
     expect(
       rows.map(row => row.get(tid('notification-link')).attributes('href')),
-    ).toEqual(['/shelves/home/coffees/c1', '/shelves/home/settings'])
+    ).toEqual([
+      '/shelves/home/coffees/c1',
+      '/shelves/home/settings?tab=members',
+    ])
     expect(rows[0]?.attributes('data-unread')).toBe('true')
   })
 

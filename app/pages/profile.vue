@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const user = useCurrentUser()
 const deleting = ref(false)
+const tab = useTab(['account', 'danger'])
 
 useHead({ title: 'Profile · Coffeee' })
 </script>
@@ -8,38 +9,67 @@ useHead({ title: 'Profile · Coffeee' })
 <template>
   <main>
     <PageHeader title="Profile" />
-    <dl
-      v-if="user"
-      class="mt-8 grid max-w-md gap-x-4 gap-y-3 rounded-[18px] border p-4 sm:grid-cols-2"
-    >
-      <div>
-        <dt class="text-[10px] uppercase">Name</dt>
-        <dd class="mt-0.5 font-sans font-semibold" data-testid="profile-name">
-          {{ user.name }}
-        </dd>
-      </div>
-      <div class="min-w-0">
-        <dt class="text-[10px] uppercase">Email</dt>
-        <dd
-          class="mt-0.5 truncate font-sans font-semibold"
-          data-testid="profile-email"
+    <Tabs v-model="tab" class="mt-8 max-w-md" :unmount-on-hide="false">
+      <TabsList>
+        <TabsTrigger value="account" data-testid="profile-tab-account">
+          Account
+        </TabsTrigger>
+        <TabsTrigger value="danger" data-testid="profile-tab-danger">
+          Danger zone
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="account" class="mt-6">
+        <dl
+          v-if="user"
+          class="grid gap-x-4 gap-y-3 rounded-[18px] border p-4 sm:grid-cols-2"
         >
-          {{ user.email }}
-        </dd>
-      </div>
-    </dl>
-    <div class="mt-6 flex gap-2">
-      <Button variant="outline" data-testid="sign-out" @click="signOut">
-        Sign out
-      </Button>
-      <Button
-        variant="destructive"
-        data-testid="delete-account-open"
-        @click="deleting = true"
-      >
-        Delete account
-      </Button>
-    </div>
+          <div>
+            <dt class="text-[10px] uppercase">Name</dt>
+            <dd
+              class="mt-0.5 font-sans font-semibold"
+              data-testid="profile-name"
+            >
+              {{ user.name }}
+            </dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-[10px] uppercase">Email</dt>
+            <dd
+              class="mt-0.5 truncate font-sans font-semibold"
+              data-testid="profile-email"
+            >
+              {{ user.email }}
+            </dd>
+          </div>
+        </dl>
+        <Button
+          class="mt-6"
+          variant="outline"
+          data-testid="sign-out"
+          @click="signOut"
+        >
+          Sign out
+        </Button>
+      </TabsContent>
+      <TabsContent value="danger" class="mt-6">
+        <section class="flex flex-col items-start gap-4">
+          <div>
+            <h2 class="text-[28px]">Delete account</h2>
+            <p class="mt-1 text-xs">
+              Your ratings, verdicts and grind settings go with it. A shelf you
+              share is handed to another member first.
+            </p>
+          </div>
+          <Button
+            variant="destructive"
+            data-testid="delete-account-open"
+            @click="deleting = true"
+          >
+            Delete account
+          </Button>
+        </section>
+      </TabsContent>
+    </Tabs>
     <DeleteAccountDialog v-model:open="deleting" />
   </main>
 </template>

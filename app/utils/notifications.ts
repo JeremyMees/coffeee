@@ -30,5 +30,5 @@ export function notificationLink(notification: ShelfNotification) {
     return `/shelves/${notification.shelfId}/coffees/${notification.coffeeId}`
   }
 
-  return `/shelves/${notification.shelfId}/settings`
+  return `/shelves/${notification.shelfId}/settings?tab=members`
 }

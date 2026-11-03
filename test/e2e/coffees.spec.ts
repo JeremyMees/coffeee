@@ -748,7 +748,7 @@ test('keeps a grind setting per grinder and brew method on the coffee only', asy
     'This shelf owns no grinders yet.',
   )
   await page.getByTestId('grind-add-grinder').click()
-  await expect(page).toHaveURL(/\/settings$/)
+  await expect(page).toHaveURL(/\/settings\?tab=grinders$/)
 
   await page.getByTestId('grinder-brand').fill(brand)
   await page.getByTestId('list-option-new').filter({ hasText: brand }).click()

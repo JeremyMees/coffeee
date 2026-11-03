@@ -107,7 +107,7 @@ const action =
     >
       This shelf owns no grinders yet.
       <NuxtLink
-        :to="`/shelves/${shelfId}/settings`"
+        :to="`/shelves/${shelfId}/settings?tab=grinders`"
         data-testid="grind-add-grinder"
         class="underline underline-offset-4"
       >

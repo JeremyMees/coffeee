@@ -52,7 +52,7 @@ describe('CoffeeGrindSettings', () => {
       'This shelf owns no grinders yet.',
     )
     expect(settings.get(tid('grind-add-grinder')).attributes('href')).toBe(
-      '/shelves/home/settings',
+      '/shelves/home/settings?tab=grinders',
     )
     expect(settings.find(tid('grind-setting-form')).exists()).toBe(false)
   })
