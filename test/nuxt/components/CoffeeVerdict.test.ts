@@ -61,6 +61,20 @@ describe('CoffeeVerdict', () => {
     )
   })
 
+  it('shows a cross when it would not be bought again', async () => {
+    const verdict = await mountVerdict({ rating: null, wouldBuyAgain: false })
+
+    expect(verdict.find(tid('verdict-buy-again-no')).exists()).toBe(true)
+    expect(verdict.find(tid('verdict-buy-again-yes')).exists()).toBe(false)
+  })
+
+  it('shows a check when it would be bought again', async () => {
+    const verdict = await mountVerdict({ rating: null, wouldBuyAgain: true })
+
+    expect(verdict.find(tid('verdict-buy-again-yes')).exists()).toBe(true)
+    expect(verdict.find(tid('verdict-buy-again-no')).exists()).toBe(false)
+  })
+
   it('marks a favourite', async () => {
     const verdict = await mountVerdict({ rating: 5, wouldBuyAgain: true })
 

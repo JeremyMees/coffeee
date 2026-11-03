@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckIcon, HeartIcon, StarIcon } from '@lucide/vue'
+import { CheckIcon, HeartIcon, StarIcon, XIcon } from '@lucide/vue'
 import { useVerdictUpdate } from '~/queries/verdicts'
 
 const props = defineProps<{
@@ -90,7 +90,15 @@ function starLabel(star: Rating) {
       @click="judge({ wouldBuyAgain: !verdict.wouldBuyAgain })"
     >
       <CheckIcon
-        :class="['size-4', !verdict.wouldBuyAgain && 'opacity-0']"
+        v-if="verdict.wouldBuyAgain"
+        data-testid="verdict-buy-again-yes"
+        class="size-4"
+        aria-hidden="true"
+      />
+      <XIcon
+        v-else
+        data-testid="verdict-buy-again-no"
+        class="size-4"
         aria-hidden="true"
       />
       Would buy again
