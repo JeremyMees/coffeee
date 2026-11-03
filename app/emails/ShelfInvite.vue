@@ -18,5 +18,6 @@
     <Text class="mt-6 mb-0 text-xs">
       Don't know who sent this? You can ignore this email.
     </Text>
+    <EmailSettingsLink />
   </EmailLayout>
 </template>

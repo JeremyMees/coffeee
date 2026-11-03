@@ -1,4 +1,9 @@
-import { createError, defineEventHandler, getRouterParam } from 'h3'
+import {
+  createError,
+  defineEventHandler,
+  getRequestURL,
+  getRouterParam,
+} from 'h3'
 import { useDb } from '#server/utils/db'
 import { notifyShelf } from '#server/utils/notifications'
 import { finishCoffee } from '#server/utils/purchases'
@@ -22,6 +27,7 @@ export default defineEventHandler(async event => {
     actorId: user.id,
     kind: 'bagFinished',
     coffeeId,
+    origin: getRequestURL(event).origin,
   })
 
   return finished

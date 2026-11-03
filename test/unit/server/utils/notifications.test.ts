@@ -1,18 +1,36 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
+import type { Email } from '#server/types/email'
 import { invite, shelfMember, user } from '#server/db/schemas'
 import { addCoffee } from '#server/utils/coffees'
 import { inviteToShelf } from '#server/utils/invites'
 import {
   countUnreadNotifications,
+  listEmailedKinds,
   listNotifications,
   markNotificationsRead,
   notifyInvited,
   notifyShelf,
+  setEmailedKinds,
 } from '#server/utils/notifications'
 import { createShelf } from '#server/utils/shelves'
 import type { NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+
+const sending = vi.hoisted(() => ({
+  sent: [] as Email[],
+  failFor: '',
+}))
+
+vi.mock('#server/utils/email', () => ({
+  sendEmail: async (email: Email) => {
+    if (email.to === sending.failFor) throw new Error('Plunk is down')
+
+    sending.sent.push(email)
+  },
+}))
+
+const origin = 'https://coffeee.example'
 
 const firstBag: NewCoffee = {
   name: 'Ayele Fulasa',
@@ -50,6 +68,11 @@ async function setup() {
   return { db, sarah, tom, lisa, home }
 }
 
+beforeEach(() => {
+  sending.sent = []
+  sending.failFor = ''
+})
+
 afterEach(() => {
   vi.useRealTimers()
 })
@@ -68,6 +91,7 @@ describe('notifyShelf', () => {
       actorId: sarah.id,
       kind: 'coffeeAdded',
       coffeeId: coffee.id,
+      origin,
     })
 
     expect(await listNotifications(db, sarah.id)).toEqual([])
@@ -98,6 +122,7 @@ describe('notifyShelf', () => {
       actorId: tom.id,
       kind: 'memberLeft',
       skip: sarah.id,
+      origin,
     })
 
     expect(await listNotifications(db, sarah.id)).toEqual([])
@@ -114,9 +139,156 @@ describe('notifyShelf', () => {
       shelfId: solo.id,
       actorId: sarah.id,
       kind: 'memberJoined',
+      origin,
     })
 
     expect(await listNotifications(db, sarah.id)).toEqual([])
+  })
+})
+
+describe('emailing shelf notifications', () => {
+  it('emails nobody until they switch it on', async () => {
+    const { db, sarah, home } = await setup()
+
+    await notifyShelf(db, {
+      shelfId: home.id,
+      actorId: sarah.id,
+      kind: 'memberJoined',
+      origin,
+    })
+
+    expect(sending.sent).toEqual([])
+  })
+
+  it('emails the members who switched it on for that kind, linking to the coffee', async () => {
+    const { db, sarah, tom, lisa, home } = await setup()
+    await setEmailedKinds(db, { userId: tom.id, emailed: ['coffeeAdded'] })
+    await setEmailedKinds(db, { userId: lisa.id, emailed: ['bagFinished'] })
+    const { coffee } = await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: firstBag,
+    })
+
+    await notifyShelf(db, {
+      shelfId: home.id,
+      actorId: sarah.id,
+      kind: 'coffeeAdded',
+      coffeeId: coffee.id,
+      origin,
+    })
+
+    expect(sending.sent).toEqual([
+      {
+        to: tom.email,
+        subject: 'Sarah added Ayele Fulasa to Home',
+        template: 'ShelfNotification',
+        values: {
+          text: 'Sarah added Ayele Fulasa to Home',
+          link: `${origin}/shelves/${home.id}/coffees/${coffee.id}`,
+          settings: `${origin}/profile?tab=notifications`,
+        },
+      },
+    ])
+  })
+
+  it('links to the shelf when no coffee is involved', async () => {
+    const { db, sarah, tom, home } = await setup()
+    await setEmailedKinds(db, { userId: tom.id, emailed: ['memberLeft'] })
+
+    await notifyShelf(db, {
+      shelfId: home.id,
+      actorId: sarah.id,
+      kind: 'memberLeft',
+      origin,
+    })
+
+    expect(sending.sent).toMatchObject([
+      {
+        subject: 'Sarah left Home',
+        values: { link: `${origin}/shelves/${home.id}` },
+      },
+    ])
+  })
+
+  it('never emails the one who did it or someone it skips', async () => {
+    const { db, sarah, tom, lisa, home } = await setup()
+    for (const member of [sarah, tom, lisa]) {
+      await setEmailedKinds(db, { userId: member.id, emailed: ['memberLeft'] })
+    }
+
+    await notifyShelf(db, {
+      shelfId: home.id,
+      actorId: tom.id,
+      kind: 'memberLeft',
+      skip: sarah.id,
+      origin,
+    })
+
+    expect(sending.sent.map(email => email.to)).toEqual([lisa.email])
+  })
+
+  it('still notifies in the app and emails the others when one email fails', async () => {
+    const { db, sarah, tom, lisa, home } = await setup()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    for (const member of [tom, lisa]) {
+      await setEmailedKinds(db, {
+        userId: member.id,
+        emailed: ['memberJoined'],
+      })
+    }
+    sending.failFor = tom.email
+
+    await notifyShelf(db, {
+      shelfId: home.id,
+      actorId: sarah.id,
+      kind: 'memberJoined',
+      origin,
+    })
+
+    expect(sending.sent.map(email => email.to)).toEqual([lisa.email])
+    expect(await listNotifications(db, tom.id)).toHaveLength(1)
+    expect(console.error).toHaveBeenCalledWith(
+      'Could not send a notification email',
+      expect.any(Error),
+    )
+  })
+})
+
+describe('emailed notification kinds', () => {
+  it('has none switched on to begin with', async () => {
+    const { db, tom } = await setup()
+
+    expect(await listEmailedKinds(db, tom.id)).toEqual([])
+  })
+
+  it('replaces what was switched on, for one user only', async () => {
+    const { db, tom, lisa } = await setup()
+    await setEmailedKinds(db, { userId: lisa.id, emailed: ['memberLeft'] })
+    await setEmailedKinds(db, {
+      userId: tom.id,
+      emailed: ['coffeeAdded', 'bagFinished'],
+    })
+
+    await setEmailedKinds(db, {
+      userId: tom.id,
+      emailed: ['bagFinished', 'memberJoined', 'memberJoined'],
+    })
+
+    expect((await listEmailedKinds(db, tom.id)).sort()).toEqual([
+      'bagFinished',
+      'memberJoined',
+    ])
+    expect(await listEmailedKinds(db, lisa.id)).toEqual(['memberLeft'])
+  })
+
+  it('switches everything off', async () => {
+    const { db, tom } = await setup()
+    await setEmailedKinds(db, { userId: tom.id, emailed: ['coffeeAdded'] })
+
+    await setEmailedKinds(db, { userId: tom.id, emailed: [] })
+
+    expect(await listEmailedKinds(db, tom.id)).toEqual([])
   })
 })
 
@@ -210,12 +382,14 @@ describe('listNotifications', () => {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberJoined',
+      origin,
     })
     vi.setSystemTime(new Date('2026-11-02T10:00:00Z'))
     await notifyShelf(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberLeft',
+      origin,
     })
 
     const kinds = (await listNotifications(db, tom.id)).map(found => found.kind)
@@ -229,6 +403,7 @@ describe('listNotifications', () => {
       shelfId: home.id,
       actorId: tom.id,
       kind: 'memberJoined',
+      origin,
     })
 
     await db.delete(user).where(eq(user.id, tom.id))
@@ -246,11 +421,13 @@ describe('unread notifications', () => {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberJoined',
+      origin,
     })
     await notifyShelf(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberLeft',
+      origin,
     })
 
     expect(await countUnreadNotifications(db, tom.id)).toBe(2)

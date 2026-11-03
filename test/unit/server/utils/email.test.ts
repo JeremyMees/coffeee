@@ -81,6 +81,25 @@ describe('the email templates', () => {
     },
     30000,
   )
+
+  it.each(['ShelfInvite', 'ShelfNotification'] as const)(
+    'builds %s with a link to the notification settings',
+    async template => {
+      const { html, text } = await compile(template)
+
+      expect(html).toContain('href="{{ link }}"')
+      expect(html).toContain('href="{{ settings }}"')
+      expect(text).toContain('{{ settings }}')
+    },
+    30000,
+  )
+
+  it('builds ShelfNotification around what happened', async () => {
+    const { html, text } = await compile('ShelfNotification')
+
+    expect(html).toContain('{{ text }}')
+    expect(text).toContain('{{ text }}')
+  }, 30000)
 })
 
 describe('rendering an email', () => {

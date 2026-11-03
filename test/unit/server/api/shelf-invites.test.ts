@@ -120,6 +120,7 @@ describe('inviting someone to a shelf', () => {
           link: expect.stringMatching(
             /^http:\/\/localhost:3000\/invite\/[\w-]{43}$/,
           ),
+          settings: 'http://localhost:3000/profile?tab=notifications',
         },
       },
     ])

@@ -8,7 +8,10 @@ import { inviteEmailSchema } from '#shared/utils/schemas'
 import { useDb } from '#server/utils/db'
 import { sendEmail } from '#server/utils/email'
 import { cancelShelfInvite, inviteToShelf } from '#server/utils/invites'
-import { notifyInvited } from '#server/utils/notifications'
+import {
+  notificationSettingsLink,
+  notifyInvited,
+} from '#server/utils/notifications'
 import { requireShelf } from '#server/utils/session'
 import { readValidBody } from '#server/utils/validation'
 
@@ -36,6 +39,8 @@ export default defineEventHandler(async event => {
     })
   }
 
+  const { origin } = getRequestURL(event)
+
   try {
     await sendEmail({
       to: email,
@@ -44,7 +49,8 @@ export default defineEventHandler(async event => {
       values: {
         shelf: shelf.name,
         invitedBy: user.name,
-        link: `${getRequestURL(event).origin}/invite/${result.token}`,
+        link: `${origin}/invite/${result.token}`,
+        settings: notificationSettingsLink(origin),
       },
     })
   } catch (caught) {

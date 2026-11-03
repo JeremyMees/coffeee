@@ -1,30 +1,100 @@
-import { and, count, desc, eq, isNull, ne, sql } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '#server/types/database'
 import type {
   InviteStatus,
-  NotificationKind,
+  OptionalEmailKind,
 } from '#shared/types/notifications'
+import { notificationText } from '#shared/utils/notifications'
 import {
   coffee,
   invite,
   notification,
+  notificationEmail,
   shelf,
   shelfMember,
   user,
 } from '#server/db/schemas'
+import { sendEmail } from '#server/utils/email'
 
 const notificationsShown = 50
 
+type ShelfEvent = {
+  shelfId: string
+  actorId: string
+  kind: OptionalEmailKind
+  coffeeId?: string
+  origin: string
+}
+
+export function notificationSettingsLink(origin: string) {
+  return `${origin}/profile?tab=notifications`
+}
+
+async function emailShelfEvent(
+  db: Database,
+  input: ShelfEvent & { userIds: string[] },
+) {
+  const recipients = await db
+    .select({ email: user.email })
+    .from(notificationEmail)
+    .innerJoin(user, eq(user.id, notificationEmail.userId))
+    .where(
+      and(
+        inArray(notificationEmail.userId, input.userIds),
+        eq(notificationEmail.kind, input.kind),
+      ),
+    )
+
+  if (recipients.length === 0) return
+
+  const [found] = await db
+    .select({ shelf: shelf.name, actor: user.name })
+    .from(shelf)
+    .leftJoin(user, eq(user.id, input.actorId))
+    .where(eq(shelf.id, input.shelfId))
+  const [about] = input.coffeeId
+    ? await db
+        .select({ name: coffee.name })
+        .from(coffee)
+        .where(eq(coffee.id, input.coffeeId))
+    : []
+
+  const text = notificationText({
+    kind: input.kind,
+    actor: found!.actor,
+    shelf: found!.shelf,
+    coffee: about?.name ?? null,
+  })
+  const shelfLink = `${input.origin}/shelves/${input.shelfId}`
+
+  const sent = await Promise.allSettled(
+    recipients.map(recipient =>
+      sendEmail({
+        to: recipient.email,
+        subject: text,
+        template: 'ShelfNotification',
+        values: {
+          text,
+          link: input.coffeeId
+            ? `${shelfLink}/coffees/${input.coffeeId}`
+            : shelfLink,
+          settings: notificationSettingsLink(input.origin),
+        },
+      }),
+    ),
+  )
+
+  for (const result of sent) {
+    if (result.status === 'rejected') {
+      console.error('Could not send a notification email', result.reason)
+    }
+  }
+}
+
 export async function notifyShelf(
   db: Database,
-  input: {
-    shelfId: string
-    actorId: string
-    kind: Exclude<NotificationKind, 'invited'>
-    coffeeId?: string
-    skip?: string
-  },
+  input: ShelfEvent & { skip?: string },
 ) {
   const members = await db
     .select({ userId: shelfMember.userId })
@@ -48,6 +118,11 @@ export async function notifyShelf(
       coffeeId: input.coffeeId,
     })),
   )
+
+  await emailShelfEvent(db, {
+    ...input,
+    userIds: members.map(member => member.userId),
+  })
 }
 
 export async function notifyInvited(
@@ -116,4 +191,33 @@ export async function markNotificationsRead(db: Database, userId: string) {
     .update(notification)
     .set({ readAt: new Date() })
     .where(and(eq(notification.userId, userId), isNull(notification.readAt)))
+}
+
+export async function listEmailedKinds(db: Database, userId: string) {
+  const found = await db
+    .select({ kind: notificationEmail.kind })
+    .from(notificationEmail)
+    .where(eq(notificationEmail.userId, userId))
+
+  return found.map(row => row.kind as OptionalEmailKind)
+}
+
+export async function setEmailedKinds(
+  db: Database,
+  input: { userId: string; emailed: OptionalEmailKind[] },
+) {
+  await db.transaction(async tx => {
+    await tx
+      .delete(notificationEmail)
+      .where(eq(notificationEmail.userId, input.userId))
+
+    if (input.emailed.length === 0) return
+
+    await tx.insert(notificationEmail).values(
+      [...new Set(input.emailed)].map(kind => ({
+        userId: input.userId,
+        kind,
+      })),
+    )
+  })
 }

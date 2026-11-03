@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const user = useCurrentUser()
 const deleting = ref(false)
-const tab = useTab(['account', 'danger'])
+const tab = useTab(['account', 'notifications', 'danger'])
 
 useHead({ title: 'Profile · Coffeee' })
 </script>
@@ -13,6 +13,12 @@ useHead({ title: 'Profile · Coffeee' })
       <TabsList>
         <TabsTrigger value="account" data-testid="profile-tab-account">
           Account
+        </TabsTrigger>
+        <TabsTrigger
+          value="notifications"
+          data-testid="profile-tab-notifications"
+        >
+          Notifications
         </TabsTrigger>
         <TabsTrigger value="danger" data-testid="profile-tab-danger">
           Danger zone
@@ -52,6 +58,9 @@ useHead({ title: 'Profile · Coffeee' })
         >
           Sign out
         </Button>
+      </TabsContent>
+      <TabsContent value="notifications" class="mt-6">
+        <ProfileNotificationEmails />
       </TabsContent>
       <TabsContent value="danger" class="mt-6">
         <section class="flex flex-col items-start gap-4">

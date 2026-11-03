@@ -72,6 +72,15 @@ describe('profile page', () => {
     expect(danger.get(tid('sign-out')).isVisible()).toBe(false)
   })
 
+  it('keeps the email settings on a notifications tab', async () => {
+    const page = await mountSuspended(App, {
+      route: '/profile?tab=notifications',
+    })
+
+    expect(page.get(tid('notification-email-invited')).isVisible()).toBe(true)
+    expect(page.get(tid('sign-out')).isVisible()).toBe(false)
+  })
+
   it('asks before deleting the account', async () => {
     const page = await mountSuspended(App, {
       route: '/profile?tab=danger',

@@ -1,7 +1,17 @@
 export type EmailValues = {
   VerifyEmail: { name: string; link: string }
   ResetPassword: { name: string; link: string }
-  ShelfInvite: { shelf: string; invitedBy: string; link: string }
+  ShelfInvite: {
+    shelf: string
+    invitedBy: string
+    link: string
+    settings: string
+  }
+  ShelfNotification: {
+    text: string
+    link: string
+    settings: string
+  }
 }
 
 export type EmailTemplate = keyof EmailValues

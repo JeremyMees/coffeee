@@ -1,4 +1,9 @@
-import { defineEventHandler, getRouterParam, setResponseStatus } from 'h3'
+import {
+  defineEventHandler,
+  getRequestURL,
+  getRouterParam,
+  setResponseStatus,
+} from 'h3'
 import { purchaseSchema } from '#shared/utils/schemas'
 import { useDb } from '#server/utils/db'
 import { notifyShelf } from '#server/utils/notifications'
@@ -25,6 +30,7 @@ export default defineEventHandler(async event => {
     actorId: user.id,
     kind: 'purchaseAdded',
     coffeeId,
+    origin: getRequestURL(event).origin,
   })
   setResponseStatus(event, 201)
 

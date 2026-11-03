@@ -8,7 +8,7 @@ import {
   inviteEmail,
   inviteToShelf,
 } from '#server/utils/invites'
-import { listNotifications } from '#server/utils/notifications'
+import { listNotifications, setEmailedKinds } from '#server/utils/notifications'
 import { createShelf, listShelves } from '#server/utils/shelves'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 import { runtimeConfig } from '#test/support/nitro'
@@ -436,6 +436,29 @@ describe('signing up from a shelf invite', () => {
       { kind: 'memberJoined', shelfId: home.id, actor: user.name },
     ])
     expect(await listNotifications(db, user.id)).toEqual([])
+  })
+
+  it('emails the members who asked for it that they joined', async () => {
+    const { db, signUpWithGoogle } = await setup()
+    const { home, token } = await shelfInvite(db)
+    await setEmailedKinds(db, {
+      userId: home.ownerId,
+      emailed: ['memberJoined'],
+    })
+    current.oauthState = { additionalData: { inviteToken: token } }
+    current.sent = []
+
+    await signUpWithGoogle('tom@example.com')
+
+    expect(current.sent).toMatchObject([
+      {
+        template: 'ShelfNotification',
+        values: {
+          link: `http://localhost:3000/shelves/${home.id}`,
+          settings: 'http://localhost:3000/profile?tab=notifications',
+        },
+      },
+    ])
   })
 
   it('joins the shelf with Google from the invited email, without the link', async () => {

@@ -99,7 +99,7 @@ export function createAuth(config: AuthConfig) {
 
             return { data: { ...user, emailVerified } }
           },
-          after: async user => {
+          after: async (user, context) => {
             await createShelf(config.db, {
               name: shelfNameFor(user.name),
               ownerId: user.id,
@@ -114,6 +114,8 @@ export function createAuth(config: AuthConfig) {
                 shelfId,
                 actorId: user.id,
                 kind: 'memberJoined',
+                origin: new URL(context?.request?.url ?? config.productionUrl)
+                  .origin,
               })
             }
           },

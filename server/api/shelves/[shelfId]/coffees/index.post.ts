@@ -1,4 +1,4 @@
-import { defineEventHandler, setResponseStatus } from 'h3'
+import { defineEventHandler, getRequestURL, setResponseStatus } from 'h3'
 import { newCoffeeSchema } from '#shared/utils/schemas'
 import { addCoffee } from '#server/utils/coffees'
 import { useDb } from '#server/utils/db'
@@ -20,6 +20,7 @@ export default defineEventHandler(async event => {
     actorId: user.id,
     kind: 'coffeeAdded',
     coffeeId: added.coffee.id,
+    origin: getRequestURL(event).origin,
   })
   setResponseStatus(event, 201)
 

@@ -2,6 +2,8 @@ import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import linkAcceptHandler from '#server/api/invites/link/[token]/accept.post'
 import acceptHandler from '#server/api/me/invites/[inviteId]/accept.post'
+import emailsHandler from '#server/api/me/notifications/emails/index.get'
+import saveEmailsHandler from '#server/api/me/notifications/emails/index.put'
 import listHandler from '#server/api/me/notifications/index.get'
 import readHandler from '#server/api/me/notifications/read.post'
 import unreadHandler from '#server/api/me/notifications/unread.get'
@@ -23,6 +25,7 @@ import type { TestAuth, TestDatabase } from '#test/support/types'
 const current = vi.hoisted(() => ({
   auth: undefined as unknown,
   db: undefined as unknown,
+  sent: [] as Email[],
 }))
 
 vi.mock('#server/utils/auth', async importOriginal => ({
@@ -33,7 +36,9 @@ vi.mock('#server/utils/auth', async importOriginal => ({
 vi.mock('#server/utils/db', () => ({ useDb: () => current.db }))
 
 vi.mock('#server/utils/email', () => ({
-  sendEmail: async (_email: Email) => {},
+  sendEmail: async (email: Email) => {
+    current.sent.push(email)
+  },
 }))
 
 let testAuth: TestAuth
@@ -44,6 +49,7 @@ beforeEach(async () => {
   testAuth = await createTestAuth(db)
   current.auth = testAuth
   current.db = db
+  current.sent = []
 })
 
 const coffeePath = '/api/shelves/:shelfId/coffees/:coffeeId'
@@ -53,6 +59,8 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/me/notifications', listHandler)
     .get('/api/me/notifications/unread', unreadHandler)
     .post('/api/me/notifications/read', readHandler)
+    .get('/api/me/notifications/emails', emailsHandler)
+    .put('/api/me/notifications/emails', saveEmailsHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .post(`${coffeePath}/finish`, finishCoffeeHandler)
     .post(`${coffeePath}/purchases`, buyAgainHandler)
@@ -300,5 +308,94 @@ describe('reading notifications', () => {
     expect(await before.json()).toEqual({ unread: 2 })
     expect(read.status).toBe(204)
     expect(await after.json()).toEqual({ unread: 0 })
+  })
+})
+
+describe('choosing which notifications are emailed', () => {
+  function save(headers: Headers, emailed: unknown) {
+    return request('/api/me/notifications/emails', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ emailed }),
+    })
+  }
+
+  async function emailedOf(headers: Headers) {
+    const response = await request('/api/me/notifications/emails', {
+      headers,
+    })
+
+    return response.json()
+  }
+
+  it('refuses anonymous requests', async () => {
+    const responses = await Promise.all([
+      request('/api/me/notifications/emails'),
+      request('/api/me/notifications/emails', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ emailed: [] }),
+      }),
+    ])
+
+    expect(responses.map(response => response.status)).toEqual([401, 401])
+  })
+
+  it('has email off for everything to begin with', async () => {
+    const { tom } = await setup()
+
+    expect(await emailedOf(tom.headers)).toEqual({ emailed: [] })
+  })
+
+  it('saves the kinds someone switches on', async () => {
+    const { tom } = await setup()
+
+    const response = await save(tom.headers, ['bagFinished'])
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ emailed: ['bagFinished'] })
+    expect(await emailedOf(tom.headers)).toEqual({ emailed: ['bagFinished'] })
+  })
+
+  it('will not save invites, which are always emailed', async () => {
+    const { tom } = await setup()
+
+    const response = await save(tom.headers, ['invited'])
+
+    expect(response.status).toBe(400)
+    expect(await emailedOf(tom.headers)).toEqual({ emailed: [] })
+  })
+
+  it('emails what happened on the shelf once switched on', async () => {
+    const { tom, home, addCoffee } = await setup()
+    await save(tom.headers, ['coffeeAdded', 'bagFinished'])
+
+    const { path, coffeeId } = await addCoffee()
+    await post(`/api/shelves/${home.id}/leave`, tom.headers)
+    await post(`${path}/finish`, tom.headers)
+
+    expect(current.sent).toEqual([
+      {
+        to: 'tom@example.com',
+        subject: 'Sarah added Ayele Fulasa to Home',
+        template: 'ShelfNotification',
+        values: {
+          text: 'Sarah added Ayele Fulasa to Home',
+          link: `http://localhost:3000/shelves/${home.id}/coffees/${coffeeId}`,
+          settings: 'http://localhost:3000/profile?tab=notifications',
+        },
+      },
+    ])
+  })
+
+  it('stops emailing once switched off again', async () => {
+    const { tom, addCoffee } = await setup()
+    await save(tom.headers, ['coffeeAdded'])
+    await save(tom.headers, [])
+
+    await addCoffee()
+
+    expect(current.sent).toEqual([])
+    expect(await notificationsOf(tom.headers)).toHaveLength(1)
   })
 })

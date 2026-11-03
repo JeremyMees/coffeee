@@ -3,6 +3,7 @@ import {
   index,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
 } from 'drizzle-orm/pg-core'
@@ -58,6 +59,25 @@ export const notification = pgTable(
       name: 'notificationInviteIdFk',
       columns: [table.inviteId],
       foreignColumns: [invite.id],
+    }).onDelete('cascade'),
+  ],
+)
+
+export const notificationEmail = pgTable(
+  'notificationEmail',
+  {
+    userId: text().notNull(),
+    kind: notificationKind().notNull(),
+  },
+  table => [
+    primaryKey({
+      name: 'notificationEmailPk',
+      columns: [table.userId, table.kind],
+    }),
+    foreignKey({
+      name: 'notificationEmailUserIdFk',
+      columns: [table.userId],
+      foreignColumns: [user.id],
     }).onDelete('cascade'),
   ],
 )

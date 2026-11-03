@@ -1,4 +1,9 @@
-import { createError, defineEventHandler, sendNoContent } from 'h3'
+import {
+  createError,
+  defineEventHandler,
+  getRequestURL,
+  sendNoContent,
+} from 'h3'
 import { useDb } from '#server/utils/db'
 import { requireShelf } from '#server/utils/session'
 import { leaveShelf } from '#server/utils/shelves'
@@ -32,6 +37,7 @@ export default defineEventHandler(async event => {
       shelfId: shelf.id,
       actorId: user.id,
       kind: 'memberLeft',
+      origin: getRequestURL(event).origin,
     })
   }
 

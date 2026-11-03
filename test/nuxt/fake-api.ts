@@ -515,6 +515,8 @@ export const api = {
   profileRenames: [] as unknown[],
   notifications: [] as ReturnType<typeof notifications>,
   notificationCalls: [] as unknown[],
+  notificationEmails: [] as OptionalEmailKind[],
+  notificationEmailsFail: false,
   shelfMembers: shelfMembers(),
   shelfCalls: [] as unknown[],
   shelfFails: '',
@@ -603,6 +605,8 @@ export function resetApi() {
   api.profileRenames = []
   api.notifications = []
   api.notificationCalls = []
+  api.notificationEmails = []
+  api.notificationEmailsFail = false
   api.shelfMembers = shelfMembers()
   api.shelfCalls = []
   api.shelfFails = ''
@@ -951,6 +955,29 @@ function registerNotificationEndpoints() {
       }))
 
       return null
+    },
+  })
+
+  registerEndpoint('/api/me/notifications/emails', () => ({
+    emailed: api.notificationEmails,
+  }))
+
+  registerEndpoint('/api/me/notifications/emails', {
+    method: 'PUT',
+    handler: async event => {
+      const body = await readBody(event)
+      api.notificationCalls.push({ emails: body })
+
+      if (api.notificationEmailsFail) {
+        throw createError({
+          statusCode: 500,
+          statusMessage: 'Your settings are out of reach',
+        })
+      }
+
+      api.notificationEmails = body.emailed
+
+      return { emailed: api.notificationEmails }
     },
   })
 }

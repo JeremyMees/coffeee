@@ -1,4 +1,4 @@
-import { defineEventHandler, getRouterParam } from 'h3'
+import { defineEventHandler, getRequestURL, getRouterParam } from 'h3'
 import { useDb } from '#server/utils/db'
 import { acceptInvite } from '#server/utils/invites'
 import { notifyShelf } from '#server/utils/notifications'
@@ -20,6 +20,7 @@ export default defineEventHandler(async event => {
     shelfId: joined.id,
     actorId: user.id,
     kind: 'memberJoined',
+    origin: getRequestURL(event).origin,
   })
 
   return joined

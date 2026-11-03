@@ -1,6 +1,7 @@
 import {
   createError,
   defineEventHandler,
+  getRequestURL,
   getRouterParam,
   sendNoContent,
 } from 'h3'
@@ -35,6 +36,7 @@ export default defineEventHandler(async event => {
     actorId: userId,
     kind: 'memberLeft',
     skip: user.id,
+    origin: getRequestURL(event).origin,
   })
 
   return sendNoContent(event)

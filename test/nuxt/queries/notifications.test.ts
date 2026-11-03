@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useQueryClient } from '@tanstack/vue-query'
 import {
+  useNotificationEmails,
+  useNotificationEmailsUpdate,
   useNotifications,
   useNotificationsRead,
   useUnreadNotifications,
@@ -48,6 +50,35 @@ describe('useNotificationsRead', () => {
     expect(api.notificationCalls).toEqual(['read'])
     expect(client.getQueryData(queryKeys.unreadNotifications())).toEqual({
       unread: 0,
+    })
+  })
+})
+
+describe('useNotificationEmails', () => {
+  it('fetches which notifications are emailed', async () => {
+    api.notificationEmails = ['bagFinished']
+    const { data, suspense } = await runOn('/', useNotificationEmails)
+
+    await suspense()
+
+    expect(data.value).toEqual({ emailed: ['bagFinished'] })
+  })
+})
+
+describe('useNotificationEmailsUpdate', () => {
+  it('saves which notifications are emailed and keeps the answer', async () => {
+    const { result, client } = await runOn('/', () => ({
+      result: useNotificationEmailsUpdate(),
+      client: useQueryClient(),
+    }))
+
+    await result.mutateAsync(['coffeeAdded', 'memberJoined'])
+
+    expect(api.notificationCalls).toEqual([
+      { emails: { emailed: ['coffeeAdded', 'memberJoined'] } },
+    ])
+    expect(client.getQueryData(queryKeys.notificationEmails())).toEqual({
+      emailed: ['coffeeAdded', 'memberJoined'],
     })
   })
 })
