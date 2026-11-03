@@ -438,6 +438,14 @@ export const adminEntrySearchSchema = listSearchSchema.extend({
   pageSize: pageSize('entry', adminListsPageSize),
 })
 
+export const accountDeletionSchema = z.object({
+  heirs: z
+    .record(z.string(), z.string(), {
+      error: 'Choose who takes over each shelf you own',
+    })
+    .default({}),
+})
+
 export const entryNameSchema = z.object({
   name: requiredText(
     'Give it a name',

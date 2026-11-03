@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
-import { testUser, tid } from '../fixtures'
+import { fakeApi } from '../fake-api'
+import { byTestId, testUser, tid } from '../fixtures'
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }))
 
 mockNuxtImport('authClient', () => ({ signOut }))
+
+fakeApi()
 
 function signInAs(role: 'admin' | 'user') {
   useCurrentUser().value = testUser({ role })
@@ -55,5 +58,21 @@ describe('profile page', () => {
       expect(signOut).toHaveBeenCalled()
       expect(useRouter().currentRoute.value.path).toBe('/sign-in')
     })
+  })
+
+  it('asks before deleting the account', async () => {
+    const page = await mountSuspended(App, {
+      route: '/profile',
+      attachTo: document.body,
+    })
+
+    await page.get(tid('delete-account-open')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(byTestId('confirm-dialog-title')?.textContent).toContain(
+        'Delete your account?',
+      ),
+    )
+    page.unmount()
   })
 })

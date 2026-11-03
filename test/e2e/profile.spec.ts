@@ -23,3 +23,32 @@ test('signs out and keeps the shelf closed afterwards', async ({
   await expect(page).toHaveURL(/\/sign-in\?redirect=/)
   await expect(page.getByTestId('sign-in-google')).toBeVisible()
 })
+
+test('deletes the account after handing a shared shelf to a member', async ({
+  page,
+  member,
+  people,
+}) => {
+  await people.signIn('Ada', 'admin')
+  const sam = await people.signIn('Sam')
+  await people.joinShelf(member, sam.shelfId)
+  await page.goto('/profile')
+
+  await page.getByTestId('delete-account-open').click()
+  await page.getByTestId('confirm-dialog-confirm').click()
+
+  await expect(page.getByTestId('form-error')).toContainText(
+    "Choose who takes over Sam's shelf",
+  )
+
+  await page
+    .getByTestId(`delete-account-heir-${sam.shelfId}`)
+    .selectOption(member.id)
+  await page.getByTestId('confirm-dialog-confirm').click()
+
+  await expect(page).toHaveURL(/\/sign-in$/)
+
+  await page.goto(`/shelves/${sam.shelfId}`)
+
+  await expect(page).toHaveURL(/\/sign-in\?redirect=/)
+})

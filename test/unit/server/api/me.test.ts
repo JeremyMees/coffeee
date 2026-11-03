@@ -1,7 +1,12 @@
+import { eq } from 'drizzle-orm'
 import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import authHandler from '#server/api/auth/[...all]'
+import deleteHandler from '#server/api/me.delete'
 import meHandler from '#server/api/me.get'
+import ownedShelvesHandler from '#server/api/me/owned-shelves.get'
+import { shelf, shelfMember, user } from '#server/db/schemas'
+import { createShelf } from '#server/utils/shelves'
 import { createTestAuth } from '#test/support/auth'
 import type { TestAuth, TestDatabase } from '#test/support/types'
 import { createTestDatabase, createTestUser } from '#test/support/database'
@@ -33,6 +38,8 @@ beforeEach(async () => {
 function request(path: string, init: RequestInit = {}) {
   const router = createRouter()
     .get('/api/me', meHandler)
+    .delete('/api/me', deleteHandler)
+    .get('/api/me/owned-shelves', ownedShelvesHandler)
     .use('/api/auth/**', authHandler)
   const app = createApp().use(router)
 
@@ -73,5 +80,83 @@ describe('GET /api/me', () => {
 
     expect(signOut.status).toBe(200)
     expect(response.status).toBe(401)
+  })
+})
+
+describe('deleting an account', () => {
+  async function setup() {
+    await createTestUser(db, { name: 'Jeremy', role: 'admin' })
+    const sarah = await createTestUser(db, { name: 'Sarah' })
+    const tom = await createTestUser(db, { name: 'Tom' })
+    const home = await createShelf(db, { name: 'Home', ownerId: sarah.id })
+    await db.insert(shelfMember).values({ shelfId: home.id, userId: tom.id })
+    const headers = await testAuth.signIn(sarah.id)
+    headers.set('content-type', 'application/json')
+
+    return { sarah, tom, home, headers }
+  }
+
+  function remove(headers: Headers, heirs: Record<string, string>) {
+    return request('/api/me', {
+      method: 'DELETE',
+      headers,
+      body: JSON.stringify({ heirs }),
+    })
+  }
+
+  it('refuses anonymous requests', async () => {
+    const owned = await request('/api/me/owned-shelves')
+    const removed = await request('/api/me', { method: 'DELETE' })
+
+    expect(owned.status).toBe(401)
+    expect(removed.status).toBe(401)
+  })
+
+  it('lists the shelves to hand over', async () => {
+    const { tom, home, headers } = await setup()
+
+    const response = await request('/api/me/owned-shelves', { headers })
+
+    expect(await response.json()).toEqual([
+      { id: home.id, name: 'Home', members: [{ id: tom.id, name: 'Tom' }] },
+    ])
+  })
+
+  it('asks who takes over a shared shelf', async () => {
+    const { sarah, headers } = await setup()
+
+    const response = await remove(headers, {})
+
+    expect(response.status).toBe(400)
+    expect(response.statusText).toBe('Choose who takes over Home')
+    expect(
+      await db.select().from(user).where(eq(user.id, sarah.id)),
+    ).toHaveLength(1)
+  })
+
+  it('deletes the account, hands over the shelf and signs out', async () => {
+    const { sarah, tom, home, headers } = await setup()
+
+    const response = await remove(headers, { [home.id]: tom.id })
+    const after = await request('/api/me', { headers })
+
+    const [handed] = await db.select().from(shelf).where(eq(shelf.id, home.id))
+    expect(response.status).toBe(204)
+    expect(response.headers.getSetCookie().join()).toContain('Max-Age=0')
+    expect(after.status).toBe(401)
+    expect(handed?.ownerId).toBe(tom.id)
+    expect(await db.select().from(user).where(eq(user.id, sarah.id))).toEqual(
+      [],
+    )
+  })
+
+  it('refuses when nobody else is an admin', async () => {
+    const admin = await createTestUser(db, { name: 'Jeremy', role: 'admin' })
+    const headers = await testAuth.signIn(admin.id)
+    headers.set('content-type', 'application/json')
+
+    const response = await remove(headers, {})
+
+    expect(response.status).toBe(409)
   })
 })

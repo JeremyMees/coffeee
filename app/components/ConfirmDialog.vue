@@ -44,6 +44,7 @@ const open = defineModel<boolean>('open', { default: false })
           {{ description }}
         </AlertDialogDescription>
       </AlertDialogHeader>
+      <slot />
       <Alert
         v-if="error"
         variant="destructive"

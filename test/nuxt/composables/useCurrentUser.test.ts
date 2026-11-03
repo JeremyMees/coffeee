@@ -37,3 +37,13 @@ describe('signOut', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('forgetCurrentUser', () => {
+  it('forgets the user without signing out again', async () => {
+    await forgetCurrentUser()
+
+    expect(authSignOut).not.toHaveBeenCalled()
+    expect(useCurrentUser().value).toBeNull()
+    expect(currentPath()).toBe('/sign-in')
+  })
+})

@@ -51,6 +51,7 @@ export const queryKeys = {
   roaster: (roasterId: string) => ['roasters', roasterId],
   shelfGrinders: (shelfId: string) => ['shelves', shelfId, 'grinders'],
   brewMethods: () => ['brew-methods'],
+  ownedShelves: () => ['me', 'owned-shelves'],
   invites: () => ['invites'],
   admin: () => ['admin'],
   adminEntries: (list: AdminList, query: Record<string, string>) => [

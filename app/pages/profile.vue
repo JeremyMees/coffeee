@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const user = useCurrentUser()
+const deleting = ref(false)
 
 useHead({ title: 'Profile · Coffeee' })
 </script>
@@ -31,6 +32,14 @@ useHead({ title: 'Profile · Coffeee' })
       <Button variant="outline" data-testid="sign-out" @click="signOut">
         Sign out
       </Button>
+      <Button
+        variant="destructive"
+        data-testid="delete-account-open"
+        @click="deleting = true"
+      >
+        Delete account
+      </Button>
     </div>
+    <DeleteAccountDialog v-model:open="deleting" />
   </main>
 </template>

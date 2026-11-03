@@ -403,7 +403,24 @@ export function flavorNoteEntries(): AdminEntry[] {
   ]
 }
 
+export function ownedShelves() {
+  return [
+    { id: 'solo', name: "Sarah's shelf", members: [] as ListEntry[] },
+    {
+      id: 'home',
+      name: 'Home',
+      members: [
+        { id: 'tom', name: 'Tom' },
+        { id: 'lisa', name: 'Lisa' },
+      ],
+    },
+  ]
+}
+
 export const api = {
+  ownedShelves: ownedShelves(),
+  accountDeletes: [] as unknown[],
+  accountDeleteFails: '',
   stock: [] as unknown[],
   library: [] as LibraryCoffee[],
   libraryQueries: [] as Record<string, string>[],
@@ -479,6 +496,9 @@ function storedPurchase(id: string, body: Record<string, unknown>) {
 }
 
 export function resetApi() {
+  api.ownedShelves = ownedShelves()
+  api.accountDeletes = []
+  api.accountDeleteFails = ''
   api.stock = []
   api.library = []
   api.libraryQueries = []
@@ -670,6 +690,24 @@ function registerAdminEndpoints() {
 
 export function fakeApi() {
   registerAdminEndpoints()
+
+  registerEndpoint('/api/me/owned-shelves', () => api.ownedShelves)
+
+  registerEndpoint('/api/me', {
+    method: 'DELETE',
+    handler: async event => {
+      api.accountDeletes.push(await readBody(event))
+
+      if (api.accountDeleteFails) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: api.accountDeleteFails,
+        })
+      }
+
+      return null
+    },
+  })
 
   registerEndpoint('/api/coffees/c1', {
     method: 'DELETE',
