@@ -27,7 +27,6 @@ const coffee = {
   roaster: 'Square Mile',
   roastLevel: 'light',
   roastedFor: 'filter',
-  colour: '#e4572e',
   origins: ['ET'],
   processes: ['Washed'],
   purchasedOn: '2026-11-02',
@@ -91,7 +90,6 @@ describe('newCoffeeSchema', () => {
       roaster: 'Pick a roaster or add a new one',
       roastLevel: 'Pick a roast level',
       roastedFor: 'Pick what it was roasted for',
-      colour: 'Pick a colour',
       origins: 'Pick where it was grown',
       processes: 'Pick how it was processed',
       purchasedOn: 'Enter the date you bought it',
@@ -146,7 +144,6 @@ describe('where a coffee was grown', () => {
     roaster: 'Square Mile',
     roastLevel: 'light',
     roastedFor: 'filter',
-    colour: '#e4572e',
     origins: ['CO'],
     processes: ['Washed'],
   }
@@ -279,7 +276,6 @@ describe('how a coffee was made', () => {
     roaster: 'Square Mile',
     roastLevel: 'light',
     roastedFor: 'filter',
-    colour: '#e4572e',
     origins: ['CO'],
     processes: [' Washed '],
   }

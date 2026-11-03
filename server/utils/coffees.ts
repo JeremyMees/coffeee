@@ -54,7 +54,6 @@ export const coffeeColumns = {
   roaster: roaster.name,
   roastLevel: coffee.roastLevel,
   roastedFor: coffee.roastedFor,
-  colour: coffee.colour,
   photoUrl: coffee.photoUrl,
 }
 
@@ -173,7 +172,6 @@ export function addCoffee(
       name: details.name,
       roastLevel: details.roastLevel,
       roastedFor: details.roastedFor,
-      colour: details.colour,
       altitudeFrom: details.altitudeFrom,
       altitudeTo: details.altitudeTo,
       link: details.link,
@@ -384,7 +382,6 @@ export function editCoffee(
         nameKey: key,
         roastLevel: details.roastLevel,
         roastedFor: details.roastedFor,
-        colour: details.colour,
         altitudeFrom: details.altitudeFrom,
         altitudeTo: details.altitudeTo,
         link: details.link,

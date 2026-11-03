@@ -75,16 +75,13 @@ describe('AddCoffeeSheet', () => {
     expect(byTestId('add-coffee-sheet')).toBeNull()
   })
 
-  it('opens with today as the purchase date and a bag colour picked', async () => {
+  it('opens with today as the purchase date', async () => {
     await openSheet()
 
     expect(byTestId('form-sheet-title')!.textContent).toContain('Add coffee')
     expect(
       byTestId('coffee-purchased-on', 'date-picker-trigger')!.textContent,
     ).toContain(formatDate(localDate()))
-    expect(
-      byTestId('coffee-colour')!.querySelectorAll('input:checked'),
-    ).toHaveLength(1)
   })
 
   it('explains every missing detail before sending anything', async () => {
@@ -127,7 +124,6 @@ describe('AddCoffeeSheet', () => {
     await openSheet('/shelves/home/library')
 
     await fillRequired()
-    await click('coffee-colour', 'colour-slate')
     await pickScoped('coffee-regions', 'guj', 'Guji')
     await pickScoped('coffee-washing-stations', 'hamb', 'Hambela')
     await pickMulti('coffee-producers', 'Tesfaye', 'Add “Tesfaye”')
@@ -145,7 +141,6 @@ describe('AddCoffeeSheet', () => {
         roaster: 'Square Mile',
         roastLevel: 'light',
         roastedFor: 'filter',
-        colour: '#3d5a80',
         origins: ['ET'],
         regions: [{ origin: 'ET', name: 'Guji' }],
         farms: [],

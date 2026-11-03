@@ -17,7 +17,6 @@ beforeEach(resetApi)
 const coffee: PhotoCoffee = {
   id: 'c1',
   name: 'Ayele Fulasa',
-  colour: '#2f6f4f',
   photoUrl: null,
   canEdit: true,
 }

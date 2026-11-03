@@ -67,18 +67,10 @@ const columns: ColumnDef<LibraryCoffee, unknown>[] = [
         NuxtLink,
         {
           to: `/shelves/${props.shelfId}/coffees/${row.original.id}`,
-          class:
-            'flex items-center gap-3 font-sans text-sm font-semibold hover:underline',
+          class: 'font-sans text-sm font-semibold hover:underline',
           'data-testid': 'library-row-name',
         },
-        () => [
-          h('span', {
-            class: 'size-3 shrink-0 rounded-full',
-            style: { backgroundColor: row.original.colour },
-            'aria-hidden': 'true',
-          }),
-          row.original.name,
-        ],
+        () => row.original.name,
       ),
   },
   sortable('rating', coffee =>

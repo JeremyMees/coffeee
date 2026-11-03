@@ -70,7 +70,6 @@ async function sharedShelf() {
       roaster: 'Square Mile',
       roastLevel: 'light',
       roastedFor: 'filter',
-      colour: '#e4572e',
       origins: ['ET'],
       processes: ['Washed'],
       purchasedOn: '2026-09-01',

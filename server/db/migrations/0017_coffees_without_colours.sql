@@ -1,0 +1,1 @@
+ALTER TABLE "coffee" DROP COLUMN "colour";

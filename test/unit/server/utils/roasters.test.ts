@@ -20,7 +20,6 @@ const firstBag: NewCoffee = {
   roaster: 'Square Mile',
   roastLevel: 'light',
   roastedFor: 'filter',
-  colour: '#e4572e',
   origins: ['ET'],
   regions: [],
   farms: [],

@@ -1,7 +1,6 @@
 import { and, asc, eq, sql } from 'drizzle-orm'
 import type { RoastedFor } from '#shared/types/coffee'
 import { roastLevelLabels } from '#shared/utils/coffee'
-import { bagColours } from '#shared/utils/colours'
 import { localDate } from '#shared/utils/dates'
 import { nameKey } from '#shared/utils/names'
 import type { OriginCode } from '#shared/types/origins'
@@ -180,9 +179,7 @@ async function storePurchases(
 
 async function importCoffee(
   db: Database,
-  input: Omit<NotionImport, 'flavorNotes' | 'coffees' | 'copyPhoto'> & {
-    colour: string
-  },
+  input: Omit<NotionImport, 'flavorNotes' | 'coffees' | 'copyPhoto'>,
   bought: NotionCoffee[],
 ) {
   const latest = bought[0]!
@@ -201,7 +198,6 @@ async function importCoffee(
     const { coffee: found } = await findOrCreateCoffee(tx, {
       roasterId,
       name: latest.name,
-      colour: input.colour,
       createdBy: input.userId,
       ...described,
     })
@@ -256,12 +252,8 @@ export async function importNotion(db: Database, input: NotionImport) {
 
   const groups = groupNotionCoffees(input.coffees)
 
-  for (const [index, bought] of groups.entries()) {
-    const imported = await importCoffee(
-      db,
-      { shelfId, userId, colour: bagColours[index % bagColours.length]! },
-      bought,
-    )
+  for (const bought of groups) {
+    const imported = await importCoffee(db, { shelfId, userId }, bought)
     const photoUrl = bought.find(
       notionCoffee => notionCoffee.photoUrl,
     )?.photoUrl

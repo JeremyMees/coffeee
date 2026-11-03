@@ -21,7 +21,6 @@ function newCoffee(overrides: Partial<NewCoffee> = {}): NewCoffee {
     roaster: 'Square Mile',
     roastLevel: 'light',
     roastedFor: 'filter',
-    colour: '#e4572e',
     origins: ['CO', 'ET'],
     regions: [
       { origin: 'CO', name: 'Huila' },

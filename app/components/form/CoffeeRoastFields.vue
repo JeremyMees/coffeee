@@ -37,16 +37,4 @@ const roastedForChoices = roastedForOptions.map(value => ({
       :invalid="invalid"
     />
   </LegendField>
-
-  <LegendField
-    v-slot="{ value, handleChange }"
-    name="colour"
-    legend="Bag colour"
-  >
-    <BagColourPicker
-      :model-value="value"
-      data-testid="coffee-colour"
-      @update:model-value="handleChange"
-    />
-  </LegendField>
 </template>

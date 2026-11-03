@@ -62,12 +62,13 @@ describe('CatalogResult', () => {
     )
   })
 
-  it('shows the photo of the bag, or its colour', async () => {
+  it('shows the photo of the bag, or a placeholder', async () => {
     const wrapper = await result({ photoUrl: '/api/photos/ayele.webp' })
 
     expect(wrapper.find(tid('catalog-result-photo')).exists()).toBe(true)
+    expect(wrapper.find(tid('catalog-result-placeholder')).exists()).toBe(false)
     expect(
-      (await result()).get(tid('catalog-result-swatch')).attributes('style'),
-    ).toContain('background-color')
+      (await result()).find(tid('catalog-result-placeholder')).exists(),
+    ).toBe(true)
   })
 })

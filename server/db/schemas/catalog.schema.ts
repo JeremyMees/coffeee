@@ -61,7 +61,6 @@ export const coffee = pgTable(
     nameKey: text().notNull(),
     roastLevel: roastLevel().notNull(),
     roastedFor: roastedFor().notNull(),
-    colour: text().notNull(),
     altitudeFrom: integer(),
     altitudeTo: integer(),
     link: text(),

@@ -32,7 +32,6 @@ const coffee = {
   roaster: 'Square Mile',
   roastLevel: 'light' as const,
   roastedFor: 'filter' as const,
-  colour: '#2f6f4f',
   origins: [{ code: 'ET', name: 'Ethiopia' }],
   regions: [{ id: 'g1', name: 'Guji', origin: 'ET' }],
   farms: [],
@@ -76,7 +75,6 @@ describe('EditCoffeeSheet', () => {
     expect(inputValue('coffee-roaster')).toBe('Square Mile')
     expect(isChecked('coffee-roast-level', 'option-light')).toBe(true)
     expect(isChecked('coffee-roasted-for', 'option-filter')).toBe(true)
-    expect(isChecked('coffee-colour', 'colour-forest')).toBe(true)
     expect(chipLabels('coffee-origins-chips')).toEqual(['Ethiopia'])
     expect(chipLabels('coffee-regions-chips')).toEqual(['Guji'])
     expect(chipLabels('coffee-washing-stations-chips')).toEqual(['Hambela'])
@@ -111,7 +109,6 @@ describe('EditCoffeeSheet', () => {
     await pickRoaster('la cabra', 'La Cabra')
     await click('coffee-roast-level', 'option-medium')
     await click('coffee-roasted-for', 'option-omni')
-    await click('coffee-colour', 'colour-ink')
     await pickMulti('coffee-producers', 'dieg', 'Diego Bermudez')
     await pickMulti('coffee-processes', 'anaer', 'Anaerobic')
     await pickMulti('coffee-flavor-notes', 'jasm', 'Jasmine')
@@ -127,7 +124,6 @@ describe('EditCoffeeSheet', () => {
         roaster: 'La Cabra',
         roastLevel: 'medium',
         roastedFor: 'omni',
-        colour: '#1d1d1f',
         origins: ['ET'],
         regions: [{ origin: 'ET', name: 'Guji' }],
         farms: [],

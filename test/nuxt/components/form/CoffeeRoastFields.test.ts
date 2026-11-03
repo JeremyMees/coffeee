@@ -24,13 +24,11 @@ describe('CoffeeRoastFields', () => {
 
     await wrapper.get(tid('coffee-roast-level', 'option-dark')).setValue()
     await wrapper.get(tid('coffee-roasted-for', 'option-espresso')).setValue()
-    await wrapper.get(tid('coffee-colour', 'colour-cherry')).trigger('change')
     await flushPromises()
 
     expect(form.values).toMatchObject({
       roastLevel: 'dark',
       roastedFor: 'espresso',
-      colour: '#a4243b',
     })
   })
 
@@ -42,7 +40,6 @@ describe('CoffeeRoastFields', () => {
     await vi.waitFor(() => {
       expect(wrapper.text()).toContain('Pick a roast level')
       expect(wrapper.text()).toContain('Pick what it was roasted for')
-      expect(wrapper.text()).toContain('Pick a colour')
     })
   })
 })

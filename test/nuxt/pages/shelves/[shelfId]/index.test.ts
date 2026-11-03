@@ -29,7 +29,6 @@ describe('the Stock page', () => {
         roaster: 'Square Mile',
         roastLevel: 'medium-dark',
         roastedFor: 'espresso',
-        colour: '#2f6f4f',
         roastedOn: daysAgo(3),
         flavorNotes: [{ id: 'n1', name: 'Lime' }],
         rating: 4,

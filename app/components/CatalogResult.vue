@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ImageIcon } from '@lucide/vue'
+
 const props = defineProps<{ coffee: CatalogCoffee; to: string }>()
 
 const matches = computed(() => matchLabels(props.coffee))
@@ -20,9 +22,8 @@ const described = computed(() =>
     class="flex gap-4 rounded-[18px] border p-3 transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
   >
     <div
-      class="size-16 shrink-0 overflow-hidden rounded-[12px]"
-      :style="{ backgroundColor: coffee.colour }"
-      data-testid="catalog-result-swatch"
+      class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-[12px] bg-accent"
+      data-testid="catalog-result-thumbnail"
     >
       <NuxtImg
         v-if="coffee.photoUrl"
@@ -32,6 +33,12 @@ const described = computed(() =>
         loading="lazy"
         class="size-full object-cover"
         data-testid="catalog-result-photo"
+      />
+      <ImageIcon
+        v-else
+        class="size-5 opacity-60"
+        aria-hidden="true"
+        data-testid="catalog-result-placeholder"
       />
     </div>
     <div class="min-w-0 flex-1">

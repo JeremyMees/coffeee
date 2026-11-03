@@ -22,7 +22,6 @@ function currentDetails() {
     roaster: props.coffee.roaster,
     roastLevel: props.coffee.roastLevel,
     roastedFor: props.coffee.roastedFor,
-    colour: props.coffee.colour as BagColour,
     origins: props.coffee.origins.map(origin => origin.code),
     regions: originEntries(props.coffee.regions),
     farms: originEntries(props.coffee.farms),

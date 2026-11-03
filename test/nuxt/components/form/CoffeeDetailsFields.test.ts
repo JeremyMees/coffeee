@@ -29,7 +29,6 @@ describe('CoffeeDetailsFields', () => {
       'coffee-link',
       'coffee-roast-level',
       'coffee-roasted-for',
-      'coffee-colour',
     ]) {
       expect(wrapper.find(tid(field)).exists()).toBe(true)
     }

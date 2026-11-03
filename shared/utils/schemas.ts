@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { catalogPageSize, catalogSorts } from './catalog'
 import { roastedForOptions, roastLevels } from './coffee'
-import { bagColours } from './colours'
 import {
   libraryColumns,
   libraryFilterPageSize,
@@ -166,7 +165,6 @@ const coffeeDetailsShape = {
   roastedFor: z.enum(roastedForOptions, {
     error: 'Pick what it was roasted for',
   }),
-  colour: z.enum(bagColours, { error: 'Pick a colour' }),
   origins: z
     .array(z.string(), { error: 'Pick where it was grown' })
     .min(1, 'Pick where it was grown')

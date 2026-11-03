@@ -120,6 +120,13 @@
       "when": 1793691157067,
       "tag": "0016_coffees_added_when_first_bought",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793694661554,
+      "tag": "0017_coffees_without_colours",
+      "breakpoints": true
     }
   ]
 }

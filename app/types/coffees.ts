@@ -30,7 +30,6 @@ export type CardCoffee = Pick<
   | 'roaster'
   | 'roastLevel'
   | 'roastedFor'
-  | 'colour'
   | 'roastedOn'
   | 'flavorNotes'
   | 'photoUrl'
@@ -39,7 +38,7 @@ export type CardCoffee = Pick<
 
 export type PhotoCoffee = Pick<
   ShelfCoffee,
-  'id' | 'name' | 'colour' | 'photoUrl' | 'canEdit'
+  'id' | 'name' | 'photoUrl' | 'canEdit'
 >
 
 export type Review = SharedCoffee['reviews'][number]

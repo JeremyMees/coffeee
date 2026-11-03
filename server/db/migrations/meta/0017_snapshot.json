@@ -1,0 +1,2549 @@
+{
+  "id": "9d65d212-010d-44e7-ac68-6b96a6689560",
+  "prevId": "bd6d8846-98ff-4e95-9ad5-f7a59ffb7fcb",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.account": {
+      "name": "account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "accountId": {
+          "name": "accountId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "providerId": {
+          "name": "providerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accessToken": {
+          "name": "accessToken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refreshToken": {
+          "name": "refreshToken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "idToken": {
+          "name": "idToken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "accessTokenExpiresAt": {
+          "name": "accessTokenExpiresAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refreshTokenExpiresAt": {
+          "name": "refreshTokenExpiresAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "accountUserIdIdx": {
+          "name": "accountUserIdIdx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "accountUserIdFk": {
+          "name": "accountUserIdFk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.session": {
+      "name": "session",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ipAddress": {
+          "name": "ipAddress",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "userAgent": {
+          "name": "userAgent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "impersonatedBy": {
+          "name": "impersonatedBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "sessionUserIdIdx": {
+          "name": "sessionUserIdIdx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sessionUserIdFk": {
+          "name": "sessionUserIdFk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "sessionTokenUnique": {
+          "name": "sessionTokenUnique",
+          "nullsNotDistinct": false,
+          "columns": ["token"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user": {
+      "name": "user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emailVerified": {
+          "name": "emailVerified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "banned": {
+          "name": "banned",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "banReason": {
+          "name": "banReason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "banExpires": {
+          "name": "banExpires",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "userEmailUnique": {
+          "name": "userEmailUnique",
+          "nullsNotDistinct": false,
+          "columns": ["email"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verification": {
+      "name": "verification",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "verificationIdentifierIdx": {
+          "name": "verificationIdentifierIdx",
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee": {
+      "name": "coffee",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "roasterId": {
+          "name": "roasterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roastLevel": {
+          "name": "roastLevel",
+          "type": "roastLevel",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roastedFor": {
+          "name": "roastedFor",
+          "type": "roastedFor",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "altitudeFrom": {
+          "name": "altitudeFrom",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "altitudeTo": {
+          "name": "altitudeTo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link": {
+          "name": "link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photoUrl": {
+          "name": "photoUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "coffeeRoasterIdFk": {
+          "name": "coffeeRoasterIdFk",
+          "tableFrom": "coffee",
+          "tableTo": "roaster",
+          "columnsFrom": ["roasterId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "coffeeCreatedByFk": {
+          "name": "coffeeCreatedByFk",
+          "tableFrom": "coffee",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "coffeeRoasterIdNameKeyUnique": {
+          "name": "coffeeRoasterIdNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["roasterId", "nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "coffeeAltitudeRangeCheck": {
+          "name": "coffeeAltitudeRangeCheck",
+          "value": "(\"coffee\".\"altitudeFrom\" is null) = (\"coffee\".\"altitudeTo\" is null) and \"coffee\".\"altitudeFrom\" between 0 and \"coffee\".\"altitudeTo\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.origin": {
+      "name": "origin",
+      "schema": "",
+      "columns": {
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.roaster": {
+      "name": "roaster",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "countryCode": {
+          "name": "countryCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "logoUrl": {
+          "name": "logoUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "roasterCountryCodeFk": {
+          "name": "roasterCountryCodeFk",
+          "tableFrom": "roaster",
+          "tableTo": "origin",
+          "columnsFrom": ["countryCode"],
+          "columnsTo": ["code"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "roasterCreatedByFk": {
+          "name": "roasterCreatedByFk",
+          "tableFrom": "roaster",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "roasterNameKeyUnique": {
+          "name": "roasterNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffeeFlavorNote": {
+      "name": "coffeeFlavorNote",
+      "schema": "",
+      "columns": {
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "flavorNoteId": {
+          "name": "flavorNoteId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "coffeeFlavorNoteFlavorNoteIdIdx": {
+          "name": "coffeeFlavorNoteFlavorNoteIdIdx",
+          "columns": [
+            {
+              "expression": "flavorNoteId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeFlavorNoteCoffeeIdFk": {
+          "name": "coffeeFlavorNoteCoffeeIdFk",
+          "tableFrom": "coffeeFlavorNote",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeFlavorNoteFlavorNoteIdFk": {
+          "name": "coffeeFlavorNoteFlavorNoteIdFk",
+          "tableFrom": "coffeeFlavorNote",
+          "tableTo": "flavorNote",
+          "columnsFrom": ["flavorNoteId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeFlavorNotePk": {
+          "name": "coffeeFlavorNotePk",
+          "columns": ["coffeeId", "flavorNoteId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.flavorNote": {
+      "name": "flavorNote",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "flavorNoteCreatedByFk": {
+          "name": "flavorNoteCreatedByFk",
+          "tableFrom": "flavorNote",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "flavorNoteNameKeyUnique": {
+          "name": "flavorNoteNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.brewMethod": {
+      "name": "brewMethod",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "brewMethodCreatedByFk": {
+          "name": "brewMethodCreatedByFk",
+          "tableFrom": "brewMethod",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "brewMethodNameKeyUnique": {
+          "name": "brewMethodNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.grindSetting": {
+      "name": "grindSetting",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grinderId": {
+          "name": "grinderId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "brewMethodId": {
+          "name": "brewMethodId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "setting": {
+          "name": "setting",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "grindSettingCoffeeIdIdx": {
+          "name": "grindSettingCoffeeIdIdx",
+          "columns": [
+            {
+              "expression": "coffeeId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "grindSettingGrinderIdIdx": {
+          "name": "grindSettingGrinderIdIdx",
+          "columns": [
+            {
+              "expression": "grinderId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "grindSettingBrewMethodIdIdx": {
+          "name": "grindSettingBrewMethodIdIdx",
+          "columns": [
+            {
+              "expression": "brewMethodId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "grindSettingUserIdFk": {
+          "name": "grindSettingUserIdFk",
+          "tableFrom": "grindSetting",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "grindSettingCoffeeIdFk": {
+          "name": "grindSettingCoffeeIdFk",
+          "tableFrom": "grindSetting",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "grindSettingGrinderIdFk": {
+          "name": "grindSettingGrinderIdFk",
+          "tableFrom": "grindSetting",
+          "tableTo": "grinder",
+          "columnsFrom": ["grinderId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "grindSettingBrewMethodIdFk": {
+          "name": "grindSettingBrewMethodIdFk",
+          "tableFrom": "grindSetting",
+          "tableTo": "brewMethod",
+          "columnsFrom": ["brewMethodId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "grindSettingPk": {
+          "name": "grindSettingPk",
+          "columns": ["userId", "coffeeId", "grinderId", "brewMethodId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.grinder": {
+      "name": "grinder",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "brandId": {
+          "name": "brandId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "grinderBrandIdFk": {
+          "name": "grinderBrandIdFk",
+          "tableFrom": "grinder",
+          "tableTo": "grinderBrand",
+          "columnsFrom": ["brandId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "grinderCreatedByFk": {
+          "name": "grinderCreatedByFk",
+          "tableFrom": "grinder",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "grinderBrandIdNameKeyUnique": {
+          "name": "grinderBrandIdNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["brandId", "nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.grinderBrand": {
+      "name": "grinderBrand",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "grinderBrandCreatedByFk": {
+          "name": "grinderBrandCreatedByFk",
+          "tableFrom": "grinderBrand",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "grinderBrandNameKeyUnique": {
+          "name": "grinderBrandNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shelfGrinder": {
+      "name": "shelfGrinder",
+      "schema": "",
+      "columns": {
+        "shelfId": {
+          "name": "shelfId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grinderId": {
+          "name": "grinderId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "addedAt": {
+          "name": "addedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shelfGrinderGrinderIdIdx": {
+          "name": "shelfGrinderGrinderIdIdx",
+          "columns": [
+            {
+              "expression": "grinderId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shelfGrinderShelfIdFk": {
+          "name": "shelfGrinderShelfIdFk",
+          "tableFrom": "shelfGrinder",
+          "tableTo": "shelf",
+          "columnsFrom": ["shelfId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shelfGrinderGrinderIdFk": {
+          "name": "shelfGrinderGrinderIdFk",
+          "tableFrom": "shelfGrinder",
+          "tableTo": "grinder",
+          "columnsFrom": ["grinderId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "shelfGrinderPk": {
+          "name": "shelfGrinderPk",
+          "columns": ["shelfId", "grinderId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invite": {
+      "name": "invite",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tokenHash": {
+          "name": "tokenHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "usedAt": {
+          "name": "usedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "usedBy": {
+          "name": "usedBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "invitePendingEmailIdx": {
+          "name": "invitePendingEmailIdx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"invite\".\"usedAt\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "inviteCreatedByFk": {
+          "name": "inviteCreatedByFk",
+          "tableFrom": "invite",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "inviteTokenHashUnique": {
+          "name": "inviteTokenHashUnique",
+          "nullsNotDistinct": false,
+          "columns": ["tokenHash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "inviteEmailOrLink": {
+          "name": "inviteEmailOrLink",
+          "value": "(\"invite\".\"email\" is null) <> (\"invite\".\"tokenHash\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.coffeeFarm": {
+      "name": "coffeeFarm",
+      "schema": "",
+      "columns": {
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "farmId": {
+          "name": "farmId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "coffeeFarmFarmIdIdx": {
+          "name": "coffeeFarmFarmIdIdx",
+          "columns": [
+            {
+              "expression": "farmId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeFarmCoffeeIdFk": {
+          "name": "coffeeFarmCoffeeIdFk",
+          "tableFrom": "coffeeFarm",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeFarmFarmIdFk": {
+          "name": "coffeeFarmFarmIdFk",
+          "tableFrom": "coffeeFarm",
+          "tableTo": "farm",
+          "columnsFrom": ["farmId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeFarmPk": {
+          "name": "coffeeFarmPk",
+          "columns": ["coffeeId", "farmId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffeeOrigin": {
+      "name": "coffeeOrigin",
+      "schema": "",
+      "columns": {
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "originCode": {
+          "name": "originCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "coffeeOriginOriginCodeIdx": {
+          "name": "coffeeOriginOriginCodeIdx",
+          "columns": [
+            {
+              "expression": "originCode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeOriginCoffeeIdFk": {
+          "name": "coffeeOriginCoffeeIdFk",
+          "tableFrom": "coffeeOrigin",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeOriginOriginCodeFk": {
+          "name": "coffeeOriginOriginCodeFk",
+          "tableFrom": "coffeeOrigin",
+          "tableTo": "origin",
+          "columnsFrom": ["originCode"],
+          "columnsTo": ["code"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeOriginPk": {
+          "name": "coffeeOriginPk",
+          "columns": ["coffeeId", "originCode"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffeeRegion": {
+      "name": "coffeeRegion",
+      "schema": "",
+      "columns": {
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "regionId": {
+          "name": "regionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "coffeeRegionRegionIdIdx": {
+          "name": "coffeeRegionRegionIdIdx",
+          "columns": [
+            {
+              "expression": "regionId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeRegionCoffeeIdFk": {
+          "name": "coffeeRegionCoffeeIdFk",
+          "tableFrom": "coffeeRegion",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeRegionRegionIdFk": {
+          "name": "coffeeRegionRegionIdFk",
+          "tableFrom": "coffeeRegion",
+          "tableTo": "region",
+          "columnsFrom": ["regionId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeRegionPk": {
+          "name": "coffeeRegionPk",
+          "columns": ["coffeeId", "regionId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffeeWashingStation": {
+      "name": "coffeeWashingStation",
+      "schema": "",
+      "columns": {
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "washingStationId": {
+          "name": "washingStationId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "coffeeWashingStationWashingStationIdIdx": {
+          "name": "coffeeWashingStationWashingStationIdIdx",
+          "columns": [
+            {
+              "expression": "washingStationId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeWashingStationCoffeeIdFk": {
+          "name": "coffeeWashingStationCoffeeIdFk",
+          "tableFrom": "coffeeWashingStation",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeWashingStationWashingStationIdFk": {
+          "name": "coffeeWashingStationWashingStationIdFk",
+          "tableFrom": "coffeeWashingStation",
+          "tableTo": "washingStation",
+          "columnsFrom": ["washingStationId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeWashingStationPk": {
+          "name": "coffeeWashingStationPk",
+          "columns": ["coffeeId", "washingStationId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.farm": {
+      "name": "farm",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "originCode": {
+          "name": "originCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "farmOriginCodeFk": {
+          "name": "farmOriginCodeFk",
+          "tableFrom": "farm",
+          "tableTo": "origin",
+          "columnsFrom": ["originCode"],
+          "columnsTo": ["code"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "farmCreatedByFk": {
+          "name": "farmCreatedByFk",
+          "tableFrom": "farm",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "farmOriginCodeNameKeyUnique": {
+          "name": "farmOriginCodeNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["originCode", "nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.region": {
+      "name": "region",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "originCode": {
+          "name": "originCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "regionOriginCodeFk": {
+          "name": "regionOriginCodeFk",
+          "tableFrom": "region",
+          "tableTo": "origin",
+          "columnsFrom": ["originCode"],
+          "columnsTo": ["code"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "regionCreatedByFk": {
+          "name": "regionCreatedByFk",
+          "tableFrom": "region",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "regionOriginCodeNameKeyUnique": {
+          "name": "regionOriginCodeNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["originCode", "nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.washingStation": {
+      "name": "washingStation",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "originCode": {
+          "name": "originCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "washingStationOriginCodeFk": {
+          "name": "washingStationOriginCodeFk",
+          "tableFrom": "washingStation",
+          "tableTo": "origin",
+          "columnsFrom": ["originCode"],
+          "columnsTo": ["code"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "washingStationCreatedByFk": {
+          "name": "washingStationCreatedByFk",
+          "tableFrom": "washingStation",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "washingStationOriginCodeNameKeyUnique": {
+          "name": "washingStationOriginCodeNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["originCode", "nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffeeProcess": {
+      "name": "coffeeProcess",
+      "schema": "",
+      "columns": {
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processId": {
+          "name": "processId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "coffeeProcessProcessIdIdx": {
+          "name": "coffeeProcessProcessIdIdx",
+          "columns": [
+            {
+              "expression": "processId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeProcessCoffeeIdFk": {
+          "name": "coffeeProcessCoffeeIdFk",
+          "tableFrom": "coffeeProcess",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeProcessProcessIdFk": {
+          "name": "coffeeProcessProcessIdFk",
+          "tableFrom": "coffeeProcess",
+          "tableTo": "process",
+          "columnsFrom": ["processId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeProcessPk": {
+          "name": "coffeeProcessPk",
+          "columns": ["coffeeId", "processId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.process": {
+      "name": "process",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "processCreatedByFk": {
+          "name": "processCreatedByFk",
+          "tableFrom": "process",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "processNameKeyUnique": {
+          "name": "processNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffeeProducer": {
+      "name": "coffeeProducer",
+      "schema": "",
+      "columns": {
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "producerId": {
+          "name": "producerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "coffeeProducerProducerIdIdx": {
+          "name": "coffeeProducerProducerIdIdx",
+          "columns": [
+            {
+              "expression": "producerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeProducerCoffeeIdFk": {
+          "name": "coffeeProducerCoffeeIdFk",
+          "tableFrom": "coffeeProducer",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeProducerProducerIdFk": {
+          "name": "coffeeProducerProducerIdFk",
+          "tableFrom": "coffeeProducer",
+          "tableTo": "producer",
+          "columnsFrom": ["producerId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeProducerPk": {
+          "name": "coffeeProducerPk",
+          "columns": ["coffeeId", "producerId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.producer": {
+      "name": "producer",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "producerCreatedByFk": {
+          "name": "producerCreatedByFk",
+          "tableFrom": "producer",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "producerNameKeyUnique": {
+          "name": "producerNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.purchase": {
+      "name": "purchase",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "shelfId": {
+          "name": "shelfId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purchasedOn": {
+          "name": "purchasedOn",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roastedOn": {
+          "name": "roastedOn",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sizeGrams": {
+          "name": "sizeGrams",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "priceCents": {
+          "name": "priceCents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finishedAt": {
+          "name": "finishedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "addedBy": {
+          "name": "addedBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "purchaseShelfIdCoffeeIdIdx": {
+          "name": "purchaseShelfIdCoffeeIdIdx",
+          "columns": [
+            {
+              "expression": "shelfId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "coffeeId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "purchaseCoffeeIdIdx": {
+          "name": "purchaseCoffeeIdIdx",
+          "columns": [
+            {
+              "expression": "coffeeId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "purchaseShelfIdFk": {
+          "name": "purchaseShelfIdFk",
+          "tableFrom": "purchase",
+          "tableTo": "shelf",
+          "columnsFrom": ["shelfId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "purchaseCoffeeIdFk": {
+          "name": "purchaseCoffeeIdFk",
+          "tableFrom": "purchase",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "purchaseAddedByFk": {
+          "name": "purchaseAddedByFk",
+          "tableFrom": "purchase",
+          "tableTo": "user",
+          "columnsFrom": ["addedBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shelf": {
+      "name": "shelf",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ownerId": {
+          "name": "ownerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shelfOwnerIdIdx": {
+          "name": "shelfOwnerIdIdx",
+          "columns": [
+            {
+              "expression": "ownerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shelfOwnerIdFk": {
+          "name": "shelfOwnerIdFk",
+          "tableFrom": "shelf",
+          "tableTo": "user",
+          "columnsFrom": ["ownerId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shelfMember": {
+      "name": "shelfMember",
+      "schema": "",
+      "columns": {
+        "shelfId": {
+          "name": "shelfId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "joinedAt": {
+          "name": "joinedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shelfMemberUserIdIdx": {
+          "name": "shelfMemberUserIdIdx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shelfMemberShelfIdFk": {
+          "name": "shelfMemberShelfIdFk",
+          "tableFrom": "shelfMember",
+          "tableTo": "shelf",
+          "columnsFrom": ["shelfId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shelfMemberUserIdFk": {
+          "name": "shelfMemberUserIdFk",
+          "tableFrom": "shelfMember",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "shelfMemberPk": {
+          "name": "shelfMemberPk",
+          "columns": ["shelfId", "userId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffeeVarietal": {
+      "name": "coffeeVarietal",
+      "schema": "",
+      "columns": {
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "varietalId": {
+          "name": "varietalId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "coffeeVarietalVarietalIdIdx": {
+          "name": "coffeeVarietalVarietalIdIdx",
+          "columns": [
+            {
+              "expression": "varietalId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeVarietalCoffeeIdFk": {
+          "name": "coffeeVarietalCoffeeIdFk",
+          "tableFrom": "coffeeVarietal",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeVarietalVarietalIdFk": {
+          "name": "coffeeVarietalVarietalIdFk",
+          "tableFrom": "coffeeVarietal",
+          "tableTo": "varietal",
+          "columnsFrom": ["varietalId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeVarietalPk": {
+          "name": "coffeeVarietalPk",
+          "columns": ["coffeeId", "varietalId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.varietal": {
+      "name": "varietal",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nameKey": {
+          "name": "nameKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "varietalCreatedByFk": {
+          "name": "varietalCreatedByFk",
+          "tableFrom": "varietal",
+          "tableTo": "user",
+          "columnsFrom": ["createdBy"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "varietalNameKeyUnique": {
+          "name": "varietalNameKeyUnique",
+          "nullsNotDistinct": false,
+          "columns": ["nameKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffeeVerdict": {
+      "name": "coffeeVerdict",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coffeeId": {
+          "name": "coffeeId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rating": {
+          "name": "rating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wouldBuyAgain": {
+          "name": "wouldBuyAgain",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffeeVerdictCoffeeIdIdx": {
+          "name": "coffeeVerdictCoffeeIdIdx",
+          "columns": [
+            {
+              "expression": "coffeeId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffeeVerdictUserIdFk": {
+          "name": "coffeeVerdictUserIdFk",
+          "tableFrom": "coffeeVerdict",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffeeVerdictCoffeeIdFk": {
+          "name": "coffeeVerdictCoffeeIdFk",
+          "tableFrom": "coffeeVerdict",
+          "tableTo": "coffee",
+          "columnsFrom": ["coffeeId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffeeVerdictPk": {
+          "name": "coffeeVerdictPk",
+          "columns": ["userId", "coffeeId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "coffeeVerdictRatingCheck": {
+          "name": "coffeeVerdictRatingCheck",
+          "value": "\"coffeeVerdict\".\"rating\" between 1 and 5"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.roastLevel": {
+      "name": "roastLevel",
+      "schema": "public",
+      "values": ["light", "medium", "medium-dark", "dark"]
+    },
+    "public.roastedFor": {
+      "name": "roastedFor",
+      "schema": "public",
+      "values": ["espresso", "filter", "omni"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

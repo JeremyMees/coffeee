@@ -11,7 +11,6 @@ function emptyForm() {
   return {
     name: '',
     roaster: '',
-    colour: bagColours[Math.floor(Math.random() * bagColours.length)]!,
     origins: [] as string[],
     regions: [] as OriginEntry[],
     farms: [] as OriginEntry[],

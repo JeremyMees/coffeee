@@ -75,7 +75,6 @@ async function shelfWithCoffee() {
       roaster: 'Square Mile',
       roastLevel: 'light',
       roastedFor: 'filter',
-      colour: '#e4572e',
       origins: ['ET'],
       processes: ['Washed'],
       ...bag,

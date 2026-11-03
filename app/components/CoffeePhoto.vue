@@ -46,8 +46,7 @@ function remove() {
   <div>
     <figure
       data-testid="coffee-photo"
-      class="aspect-4/3 overflow-hidden rounded-[28px]"
-      :style="{ backgroundColor: coffee.colour, color: inkOn(coffee.colour) }"
+      class="aspect-4/3 overflow-hidden rounded-[28px] bg-accent"
     >
       <NuxtImg
         v-if="coffee.photoUrl"
