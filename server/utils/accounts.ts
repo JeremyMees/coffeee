@@ -7,6 +7,7 @@ import {
   flavorNote,
   grinder,
   grinderBrand,
+  invite,
   processList,
   producer,
   region,
@@ -126,6 +127,11 @@ export async function deleteAccount(
         .set({ createdBy: admin.id })
         .where(eq(table.createdBy, input.userId))
     }
+
+    await tx
+      .update(invite)
+      .set({ createdBy: admin.id })
+      .where(eq(invite.createdBy, input.userId))
 
     await tx.delete(user).where(eq(user.id, input.userId))
   })

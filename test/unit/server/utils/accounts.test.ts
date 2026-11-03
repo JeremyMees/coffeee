@@ -5,6 +5,7 @@ import {
   coffeeVerdict,
   flavorNote,
   grindSetting,
+  invite,
   grinder,
   grinderBrand,
   purchase,
@@ -16,6 +17,7 @@ import {
   user,
 } from '#server/db/schemas'
 import { deleteAccount, listOwnedShelves } from '#server/utils/accounts'
+import { inviteEmail } from '#server/utils/invites'
 import { listBrewMethods } from '#server/utils/brew-methods'
 import { addCoffee } from '#server/utils/coffees'
 import { ownGrinder } from '#server/utils/grinders'
@@ -257,6 +259,20 @@ describe('deleteAccount', () => {
     expect(
       await db.select().from(user).where(eq(user.id, sarah.id)),
     ).toHaveLength(1)
+  })
+
+  it('keeps the invites the user sent, sent by another admin instead', async () => {
+    const { db, admin } = await setup()
+    const ada = await createTestUser(db, { name: 'Ada', role: 'admin' })
+    await inviteEmail(db, { email: 'kim@example.com', createdBy: ada.id })
+
+    await deleteAccount(db, { userId: ada.id, heirs: {} })
+
+    expect(
+      await db
+        .select({ email: invite.email, createdBy: invite.createdBy })
+        .from(invite),
+    ).toEqual([{ email: 'kim@example.com', createdBy: admin.id }])
   })
 
   it('refuses when no other admin can look after the catalog', async () => {
