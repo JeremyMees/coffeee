@@ -1,11 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { ref } from 'vue'
-import {
-  useLibraryFilterOptions,
-  useLibraryPage,
-  useLibraryPages,
-} from '~/queries/library'
+import { useLibraryPage, useLibraryPages } from '~/queries/library'
 import { api, fakeApi, manyCoffees, resetApi } from '../fake-api'
 import { runOn } from '../fixtures'
 
@@ -54,29 +49,5 @@ describe('useLibraryPage', () => {
     expect(page.data.value?.total).toBe(30)
     expect(page.data.value?.coffees).toHaveLength(6)
     expect(api.libraryQueries).toEqual([{ sort: 'rating', page: '1' }])
-  })
-})
-
-describe('useLibraryFilterOptions', () => {
-  it('waits to be switched on, then pages through the options', async () => {
-    const enabled = ref(false)
-    const options = await runOn('/', () =>
-      useLibraryFilterOptions('home', 'roasters', '', enabled),
-    )
-    await flushPromises()
-    expect(api.libraryFilterQueries).toEqual([])
-
-    enabled.value = true
-    await vi.waitFor(() =>
-      expect(options.data.value?.pages[0]?.options).toHaveLength(2),
-    )
-    await options.fetchNextPage()
-
-    expect(
-      options.data.value?.pages.flatMap(page =>
-        page.options.map(option => option.label),
-      ),
-    ).toEqual(['La Cabra', 'Square Mile', 'Tim Wendelboe'])
-    expect(options.hasNextPage.value).toBe(false)
   })
 })

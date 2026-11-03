@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import LibraryFilterPicker from '~/components/LibraryFilterPicker.vue'
+import FilterPicker from '~/components/FilterPicker.vue'
 import { api, fakeApi, resetApi } from '../fake-api'
 import { allByTestId, byTestId, click, tid, type } from '../fixtures'
 
@@ -13,13 +13,15 @@ beforeEach(() => {
 
 async function picker(picked: LibraryOption | null = null) {
   const changes: (LibraryOption | null)[] = []
-  const wrapper = await mountSuspended(LibraryFilterPicker, {
+  const wrapper = await mountSuspended(FilterPicker, {
     props: {
       modelValue: picked,
       'onUpdate:modelValue': (changed: LibraryOption | null) =>
         changes.push(changed),
       shelfId: 'home',
+      area: 'library',
       kind: 'roasters',
+      label: 'Roaster',
     },
     attachTo: document.body,
   })
@@ -38,7 +40,7 @@ async function open() {
   await vi.waitFor(() => expect(options()).not.toEqual([]))
 }
 
-describe('LibraryFilterPicker', () => {
+describe('FilterPicker', () => {
   it('shows the filter name until something is picked', async () => {
     const { wrapper } = await picker()
     const chip = wrapper.get(tid('library-filter-roasters'))
@@ -128,5 +130,41 @@ describe('LibraryFilterPicker', () => {
     await click('library-filter-any')
 
     expect(changes).toEqual([null])
+  })
+
+  it('offers the options of the catalog under its own name', async () => {
+    await mountSuspended(FilterPicker, {
+      props: {
+        modelValue: null,
+        shelfId: 'home',
+        area: 'catalog',
+        kind: 'roast-levels',
+        label: 'Roast level',
+      },
+      attachTo: document.body,
+    })
+
+    await click('catalog-filter-roast-levels')
+    expect(
+      byTestId('catalog-filter-roast-levels-search')!.getAttribute(
+        'placeholder',
+      ),
+    ).toBe('Search roast levels')
+    await vi.waitFor(() =>
+      expect(
+        allByTestId('catalog-filter-option').map(option =>
+          option.textContent?.trim(),
+        ),
+      ).toEqual(['Light', 'Medium']),
+    )
+    await type('catalog-filter-roast-levels-search', 'dark')
+
+    await vi.waitFor(() =>
+      expect(byTestId('catalog-filter-none')!.textContent).toContain(
+        'Nothing in the catalog matches “dark”',
+      ),
+    )
+    expect(api.catalogFilterQueries[0]).toMatchObject({ kind: 'roast-levels' })
+    expect(api.libraryFilterQueries).toEqual([])
   })
 })

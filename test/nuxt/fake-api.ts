@@ -2,7 +2,14 @@ import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
 import type { ListEntry, OriginListEntry } from '#shared/types/catalog'
-import { isFavourite, libraryFilters, libraryPageSize, nameKey } from '#imports'
+import {
+  catalogFilters,
+  catalogPageSize,
+  isFavourite,
+  libraryFilters,
+  libraryPageSize,
+  nameKey,
+} from '#imports'
 
 export function fakeList<Entry extends ListEntry>(entries: () => Entry[]) {
   return (event: H3Event) => {
@@ -125,6 +132,55 @@ export function libraryCoffees() {
   ]
 }
 
+export function catalogCoffee(
+  overrides: Partial<CatalogCoffee> = {},
+): CatalogCoffee {
+  return {
+    id: 'c1',
+    name: 'Ayele Fulasa',
+    roaster: 'Square Mile',
+    roasterId: 'r2',
+    roastLevel: 'light',
+    roastedFor: 'filter',
+    colour: '#2f6f4f',
+    photoUrl: null,
+    roastedOn: '2026-10-28',
+    rating: null,
+    onShelf: true,
+    flavorNotes: [{ id: 'n1', name: 'Lime' }],
+    origins: [{ code: 'ET', name: 'Ethiopia' }],
+    matches: [],
+    ...overrides,
+  }
+}
+
+export function catalogCoffees() {
+  return [
+    catalogCoffee({
+      id: 'c4',
+      name: 'Gesha Village',
+      roaster: 'Tim Wendelboe',
+      roasterId: 'r3',
+      roastedFor: 'espresso',
+      roastedOn: null,
+      onShelf: false,
+      flavorNotes: [{ id: 'n3', name: 'Strawberry' }],
+      origins: [{ code: 'ET', name: 'Ethiopia' }],
+    }),
+    catalogCoffee(),
+    catalogCoffee({
+      id: 'c2',
+      name: 'El Paraiso',
+      roaster: 'La Cabra',
+      roasterId: 'r1',
+      roastLevel: 'medium',
+      onShelf: false,
+      flavorNotes: [{ id: 'n2', name: 'Jasmine' }],
+      origins: [{ code: 'CO', name: 'Colombia' }],
+    }),
+  ]
+}
+
 export function squareMile(): ShelfRoaster {
   return {
     id: 'r2',
@@ -170,6 +226,24 @@ export const libraryOptions = {
   ],
 } satisfies Record<LibraryFilterKind, LibraryOption[]>
 
+export const catalogOptions = {
+  ...libraryOptions,
+  'flavor-notes': [
+    { value: 'n2', label: 'Jasmine' },
+    { value: 'n1', label: 'Lime' },
+    { value: 'n3', label: 'Strawberry' },
+  ],
+  processes: [{ value: 's1', label: 'Washed' }],
+  'roast-levels': [
+    { value: 'light', label: 'Light' },
+    { value: 'medium', label: 'Medium' },
+  ],
+  'roasted-for': [
+    { value: 'espresso', label: 'Espresso' },
+    { value: 'filter', label: 'Filter' },
+  ],
+} satisfies Record<CatalogFilterKind, LibraryOption[]>
+
 const fakeFilterPageSize = 2
 
 function fakeLibrary(event: H3Event) {
@@ -193,13 +267,41 @@ function fakeLibrary(event: H3Event) {
   }
 }
 
-function fakeLibraryFilter(kind: LibraryFilterKind) {
+function fakeCatalog(event: H3Event) {
+  const query = getQuery(event) as Record<string, string>
+  api.catalogQueries.push(query)
+
+  const key = nameKey(query.search ?? '')
+  const matching = api.catalog.filter(
+    coffee =>
+      (!key ||
+        nameKey(coffee.name).includes(key) ||
+        coffee.flavorNotes.some(note => nameKey(note.name).includes(key))) &&
+      (query.mine !== 'true' || coffee.onShelf) &&
+      (!query.roasterId || coffee.roasterId === query.roasterId) &&
+      (!query.flavorNoteId ||
+        coffee.flavorNotes.some(note => note.id === query.flavorNoteId)) &&
+      (!query.roastedFor || coffee.roastedFor === query.roastedFor),
+  )
+  const start = Number(query.page ?? 0) * catalogPageSize
+
+  return {
+    total: matching.length,
+    coffees: matching.slice(start, start + catalogPageSize),
+  }
+}
+
+function fakeFilter(
+  options: Record<string, LibraryOption[]>,
+  calls: () => Record<string, string>[],
+  kind: string,
+) {
   return (event: H3Event) => {
     const query = getQuery(event) as Record<string, string>
-    api.libraryFilterQueries.push({ kind, ...query })
+    calls().push({ kind, ...query })
 
     const key = nameKey(query.search ?? '')
-    const matching = libraryOptions[kind].filter(option =>
+    const matching = options[kind]!.filter(option =>
       nameKey(option.label).includes(key),
     )
     const start = Number(query.page ?? 0) * fakeFilterPageSize
@@ -216,6 +318,9 @@ export const api = {
   library: [] as LibraryCoffee[],
   libraryQueries: [] as Record<string, string>[],
   libraryFilterQueries: [] as Record<string, string>[],
+  catalog: [] as CatalogCoffee[],
+  catalogQueries: [] as Record<string, string>[],
+  catalogFilterQueries: [] as Record<string, string>[],
   added: [] as unknown[],
   edits: [] as unknown[],
   shelves: [] as string[],
@@ -279,6 +384,9 @@ export function resetApi() {
   api.library = []
   api.libraryQueries = []
   api.libraryFilterQueries = []
+  api.catalog = []
+  api.catalogQueries = []
+  api.catalogFilterQueries = []
   api.added = []
   api.edits = []
   api.shelves = []
@@ -325,7 +433,16 @@ export function fakeApi() {
   for (const kind of libraryFilters) {
     registerEndpoint(
       `/api/shelves/home/library/${kind}`,
-      fakeLibraryFilter(kind),
+      fakeFilter(libraryOptions, () => api.libraryFilterQueries, kind),
+    )
+  }
+
+  registerEndpoint('/api/shelves/home/catalog', fakeCatalog)
+
+  for (const kind of catalogFilters) {
+    registerEndpoint(
+      `/api/shelves/home/catalog/${kind}`,
+      fakeFilter(catalogOptions, () => api.catalogFilterQueries, kind),
     )
   }
 

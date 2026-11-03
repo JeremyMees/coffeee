@@ -1,0 +1,61 @@
+import { describe, expect, it } from 'vitest'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
+import CatalogResult from '~/components/CatalogResult.vue'
+import { catalogCoffee } from '../fake-api'
+import { tid } from '../fixtures'
+
+function result(overrides: Partial<CatalogCoffee> = {}) {
+  return mountSuspended(CatalogResult, {
+    props: { coffee: catalogCoffee(overrides), to: '/shelves/home/coffees/c1' },
+  })
+}
+
+describe('CatalogResult', () => {
+  it('opens the coffee and names it, its roaster and how it is roasted', async () => {
+    const wrapper = await result()
+
+    expect(wrapper.get(tid('catalog-result')).attributes('href')).toBe(
+      '/shelves/home/coffees/c1',
+    )
+    expect(wrapper.get(tid('catalog-result-name')).text()).toBe('Ayele Fulasa')
+    expect(wrapper.get(tid('catalog-result-roaster')).text()).toBe(
+      'Square Mile',
+    )
+    expect(wrapper.get(tid('catalog-result-described')).text()).toBe(
+      'Light · Filter · Ethiopia',
+    )
+  })
+
+  it('marks a coffee on the shelf', async () => {
+    expect((await result()).get(tid('catalog-result-mine')).text()).toBe(
+      'On your shelf',
+    )
+    expect(
+      (await result({ onShelf: false }))
+        .find(tid('catalog-result-mine'))
+        .exists(),
+    ).toBe(false)
+  })
+
+  it('labels what matched the search', async () => {
+    const wrapper = await result({
+      matches: [{ field: 'flavorNote', name: 'Strawberry' }],
+    })
+
+    expect(
+      wrapper.findAll(tid('catalog-result-match')).map(match => match.text()),
+    ).toEqual(['Flavor note: Strawberry'])
+    expect((await result()).find(tid('catalog-result-matches')).exists()).toBe(
+      false,
+    )
+  })
+
+  it('shows the photo of the bag, or its colour', async () => {
+    const wrapper = await result({ photoUrl: '/api/photos/ayele.webp' })
+
+    expect(wrapper.find(tid('catalog-result-photo')).exists()).toBe(true)
+    expect(
+      (await result()).get(tid('catalog-result-swatch')).attributes('style'),
+    ).toContain('background-color')
+  })
+})

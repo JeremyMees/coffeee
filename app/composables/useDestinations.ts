@@ -1,4 +1,4 @@
-import { CoffeeIcon, LibraryIcon, SearchIcon, UserIcon } from '@lucide/vue'
+import { CoffeeIcon, CompassIcon, LibraryIcon, UserIcon } from '@lucide/vue'
 
 export function useDestinations() {
   const shelf = useCurrentShelf()
@@ -9,7 +9,7 @@ export function useDestinations() {
     return [
       { label: 'Stock', to: base, icon: CoffeeIcon },
       { label: 'Library', to: `${base}/library`, icon: LibraryIcon },
-      { label: 'Search', to: `${base}/search`, icon: SearchIcon },
+      { label: 'Discover', to: `${base}/discover`, icon: CompassIcon },
       { label: 'Profile', to: '/profile', icon: UserIcon },
     ]
   })

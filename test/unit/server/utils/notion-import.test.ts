@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { describe, expect, it, vi } from 'vitest'
 import {
   coffee,
@@ -298,6 +298,26 @@ describe('importing the Notion inventory', () => {
         rating: 4,
         wouldBuyAgain: true,
       }),
+    ])
+  })
+
+  it('dates each coffee from when it was first bought, so the newest come first', async () => {
+    const { db, run } = await setup()
+
+    await run([
+      notionCoffee({ purchasedOn: '2026-01-24' }),
+      notionCoffee({ purchasedOn: '2025-12-25' }),
+      notionCoffee({ name: 'Red Brick', purchasedOn: '2024-03-01' }),
+    ])
+
+    const coffees = await db
+      .select({ name: coffee.name, createdAt: coffee.createdAt })
+      .from(coffee)
+      .orderBy(desc(coffee.createdAt))
+
+    expect(coffees).toEqual([
+      { name: 'Finca Gascon', createdAt: new Date('2025-12-25T00:00:00Z') },
+      { name: 'Red Brick', createdAt: new Date('2024-03-01T00:00:00Z') },
     ])
   })
 

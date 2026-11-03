@@ -44,12 +44,14 @@ function change<Key extends keyof LibraryFilter>(
       />
       Favourites
     </button>
-    <LibraryFilterPicker
+    <FilterPicker
       v-for="picker in pickers"
       :key="picker.key"
       :model-value="filter[picker.key]"
       :shelf-id="shelfId"
+      area="library"
       :kind="picker.kind"
+      :label="libraryFilterLabels[picker.kind]"
       @update:model-value="change(picker.key, $event)"
     />
     <button

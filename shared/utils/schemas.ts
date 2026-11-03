@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { catalogPageSize } from './catalog'
 import { roastedForOptions, roastLevels } from './coffee'
 import { bagColours } from './colours'
 import {
@@ -73,11 +74,24 @@ function optionalId(noun: string) {
     .default('')
 }
 
-export const librarySearchSchema = z.object({
-  favourites: z
-    .enum(['true', 'false'], { error: 'Say true or false for favourites' })
+function yesOrNo(noun: string) {
+  return z
+    .enum(['true', 'false'], { error: `Say true or false for ${noun}` })
     .default('false')
-    .transform(value => value === 'true'),
+    .transform(value => value === 'true')
+}
+
+function pageSize(noun: string, fallback: number) {
+  return z.coerce
+    .number({ error: 'Ask for a page size as a number' })
+    .int('Ask for a page size as a whole number')
+    .min(1, `Ask for at least one ${noun}`)
+    .max(100, `Ask for at most 100 ${noun}s at a time`)
+    .default(fallback)
+}
+
+export const librarySearchSchema = z.object({
+  favourites: yesOrNo('favourites'),
   roasterId: optionalId('roaster'),
   flavorNoteId: optionalId('flavor note'),
   originCode: optionalId('origin'),
@@ -88,22 +102,28 @@ export const librarySearchSchema = z.object({
     .enum(sortDirections, { error: 'Sort ascending or descending' })
     .default('ascending'),
   page: pageNumber(),
-  pageSize: z.coerce
-    .number({ error: 'Ask for a page size as a number' })
-    .int('Ask for a page size as a whole number')
-    .min(1, 'Ask for at least one coffee')
-    .max(100, 'Ask for at most 100 coffees at a time')
-    .default(libraryPageSize),
+  pageSize: pageSize('coffee', libraryPageSize),
+})
+
+export const catalogSearchSchema = listSearchSchema.extend({
+  mine: yesOrNo('mine'),
+  roasterId: optionalId('roaster'),
+  flavorNoteId: optionalId('flavor note'),
+  originCode: optionalId('origin'),
+  processId: optionalId('process'),
+  roastLevel: z
+    .enum(roastLevels, { error: 'Pick one of the roast levels' })
+    .optional(),
+  roastedFor: z
+    .enum(roastedForOptions, { error: 'Pick espresso, filter or omni' })
+    .optional(),
+  page: pageNumber(),
+  pageSize: pageSize('coffee', catalogPageSize),
 })
 
 export const libraryFilterSearchSchema = listSearchSchema.extend({
   page: pageNumber(),
-  pageSize: z.coerce
-    .number({ error: 'Ask for a page size as a number' })
-    .int('Ask for a page size as a whole number')
-    .min(1, 'Ask for at least one option')
-    .max(100, 'Ask for at most 100 options at a time')
-    .default(libraryFilterPageSize),
+  pageSize: pageSize('option', libraryFilterPageSize),
 })
 
 export const originListSearchSchema = listSearchSchema.extend({

@@ -1,0 +1,67 @@
+export const catalogPickers = [
+  { key: 'flavorNote', kind: 'flavor-notes', param: 'flavorNoteId' },
+  { key: 'origin', kind: 'origins', param: 'originCode' },
+  { key: 'roaster', kind: 'roasters', param: 'roasterId' },
+  { key: 'process', kind: 'processes', param: 'processId' },
+  { key: 'roastLevel', kind: 'roast-levels', param: 'roastLevel' },
+  { key: 'roastedFor', kind: 'roasted-for', param: 'roastedFor' },
+] as const
+
+export const catalogFilterLabels: Record<CatalogFilterKind, string> = {
+  'flavor-notes': 'Flavor note',
+  origins: 'Origin',
+  roasters: 'Roaster',
+  processes: 'Process',
+  'roast-levels': 'Roast level',
+  'roasted-for': 'Roasted for',
+}
+
+export const catalogMatchLabels: Record<CatalogMatchField, string> = {
+  name: 'Name',
+  roaster: 'Roaster',
+  flavorNote: 'Flavor note',
+  origin: 'Origin',
+  region: 'Region',
+  producer: 'Producer',
+  farm: 'Farm',
+  process: 'Process',
+}
+
+export function emptyCatalogFilter(): CatalogFilter {
+  return {
+    mine: false,
+    flavorNote: null,
+    origin: null,
+    roaster: null,
+    process: null,
+    roastLevel: null,
+    roastedFor: null,
+  }
+}
+
+export function isCatalogFiltered(filter: CatalogFilter) {
+  return (
+    filter.mine || catalogPickers.some(picker => filter[picker.key] !== null)
+  )
+}
+
+export function catalogQuery(search: string, filter: CatalogFilter) {
+  const query: Record<string, string> = {}
+
+  if (search.trim()) query.search = search.trim()
+  if (filter.mine) query.mine = 'true'
+
+  for (const picker of catalogPickers) {
+    const picked = filter[picker.key]
+
+    if (picked) query[picker.param] = picked.value
+  }
+
+  return query
+}
+
+export function matchLabels(coffee: Pick<CatalogCoffee, 'matches'>) {
+  return coffee.matches
+    .filter(match => match.field !== 'name')
+    .map(match => `${catalogMatchLabels[match.field]}: ${match.name}`)
+}

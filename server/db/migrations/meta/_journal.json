@@ -113,6 +113,13 @@
       "when": 1793687963789,
       "tag": "0015_grind_settings_belong_to_users",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793691157067,
+      "tag": "0016_coffees_added_when_first_bought",
+      "breakpoints": true
     }
   ]
 }

@@ -141,3 +141,11 @@ and edit any coffee. _Avoid_: Moderator, shelf owner
 **Catalog**: Everything shared by all users: coffees, roasters, flavor notes,
 origins, regions, processes, varietals and grinders. A coffee in the catalog can
 be edited by the user who added it and by admins. _Avoid_: Database, library
+
+**Library**: Every coffee a shelf ever bought, finished or not, with its
+purchases and prices. Only members of the shelf see it. _Avoid_: History,
+collection
+
+**Discover**: Where a user browses and searches the whole catalog, including
+coffees nobody on their shelf has bought. It never shows other shelves'
+purchases or prices. _Avoid_: Search, explore, catalog page

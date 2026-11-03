@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import type { RoastedFor } from '#shared/types/coffee'
 import { roastLevelLabels } from '#shared/utils/coffee'
 import { bagColours } from '#shared/utils/colours'
@@ -222,6 +222,12 @@ async function importCoffee(
       },
     })
     await storePurchases(tx, { ...input, coffeeId: found.id }, bought)
+    await tx
+      .update(coffee)
+      .set({
+        createdAt: sql`least(${coffee.createdAt}, (select min(${purchase.purchasedOn}) from ${purchase} where ${purchase.coffeeId} = ${found.id})::timestamp)`,
+      })
+      .where(eq(coffee.id, found.id))
     await judgeCoffee(tx, {
       coffeeId: found.id,
       userId: input.userId,

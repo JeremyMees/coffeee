@@ -54,29 +54,3 @@ export function useLibraryPage(
     placeholderData: keepPreviousData,
   })
 }
-
-export function useLibraryFilterOptions(
-  shelfId: MaybeRefOrGetter<string>,
-  kind: MaybeRefOrGetter<LibraryFilterKind>,
-  search: MaybeRefOrGetter<string>,
-  enabled: MaybeRefOrGetter<boolean>,
-) {
-  return useInfiniteQuery({
-    queryKey: computed(() =>
-      queryKeys.libraryFilter(
-        toValue(shelfId),
-        toValue(kind),
-        nameKey(toValue(search)),
-      ),
-    ),
-    queryFn: ({ pageParam }) =>
-      $fetch<LibraryFilterPage>(`${libraryPath(shelfId)}/${toValue(kind)}`, {
-        query: { search: toValue(search), page: pageParam },
-      }),
-    initialPageParam: 0,
-    getNextPageParam: (last, pages) =>
-      last.hasMore ? pages.length : undefined,
-    enabled: () => toValue(enabled),
-    placeholderData: keepPreviousData,
-  })
-}

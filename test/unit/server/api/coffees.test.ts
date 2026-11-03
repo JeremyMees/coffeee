@@ -12,12 +12,15 @@ import removePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]
 import replacePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/photo.put'
 import photoHandler from '#server/api/photos/[...pathname].get'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
+import catalogFilterHandler from '#server/api/shelves/[shelfId]/catalog/[filter].get'
+import catalogHandler from '#server/api/shelves/[shelfId]/catalog/index.get'
 import libraryFilterHandler from '#server/api/shelves/[shelfId]/library/[filter].get'
 import libraryHandler from '#server/api/shelves/[shelfId]/library/index.get'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
 import varietalsHandler from '#server/api/varietals.get'
 import washingStationsHandler from '#server/api/washing-stations.get'
 import { createShelf } from '#server/utils/shelves'
+import { judgeCoffee } from '#server/utils/verdicts'
 import { createTestAuth } from '#test/support/auth'
 import type { TestAuth, TestDatabase } from '#test/support/types'
 import { createTestDatabase, createTestUser } from '#test/support/database'
@@ -59,6 +62,8 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/stock', stockHandler)
     .get('/api/shelves/:shelfId/library', libraryHandler)
     .get('/api/shelves/:shelfId/library/:filter', libraryFilterHandler)
+    .get('/api/shelves/:shelfId/catalog', catalogHandler)
+    .get('/api/shelves/:shelfId/catalog/:filter', catalogFilterHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
@@ -269,6 +274,166 @@ describe('a shelf someone is not a member of', () => {
     const response = await add(shelf.id, headers)
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('the catalog', () => {
+  async function neighbours() {
+    const home = await member()
+    const work = await member()
+    const added = await add(work.shelf.id, work.headers, {
+      ...coffee,
+      name: 'El Paraiso',
+      roaster: 'La Cabra',
+      flavorNotes: ['Strawberry'],
+      price: 24,
+    })
+    const { coffee: created } = await added.json()
+
+    return { home, work, coffeeId: created.id as string }
+  }
+
+  it('shows coffees other shelves added, without their purchases or prices', async () => {
+    const { home, work, coffeeId } = await neighbours()
+    await add(home.shelf.id, home.headers)
+    await judgeCoffee(db, {
+      userId: work.user.id,
+      coffeeId,
+      verdict: { rating: 5, wouldBuyAgain: true },
+    })
+
+    const response = await request(
+      `/api/shelves/${home.shelf.id}/catalog?search=strawberry`,
+      { headers: home.headers },
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body).toEqual({
+      total: 1,
+      coffees: [
+        {
+          id: coffeeId,
+          name: 'El Paraiso',
+          roaster: 'La Cabra',
+          roasterId: expect.any(String),
+          roastLevel: 'light',
+          roastedFor: 'filter',
+          colour: '#e4572e',
+          photoUrl: null,
+          roastedOn: null,
+          rating: null,
+          onShelf: false,
+          flavorNotes: [{ id: expect.any(String), name: 'Strawberry' }],
+          origins: [{ code: 'ET', name: 'Ethiopia' }],
+          matches: [{ field: 'flavorNote', name: 'Strawberry' }],
+        },
+      ],
+    })
+    expect(JSON.stringify(body)).not.toMatch(/price|purchase|2026-11-01/i)
+  })
+
+  it('marks the coffees the shelf bought and keeps only those with Mine', async () => {
+    const { home } = await neighbours()
+    await add(home.shelf.id, home.headers)
+
+    const all = await request(`/api/shelves/${home.shelf.id}/catalog`, {
+      headers: home.headers,
+    })
+    const mine = await request(
+      `/api/shelves/${home.shelf.id}/catalog?mine=true`,
+      { headers: home.headers },
+    )
+
+    expect(
+      (await all.json()).coffees.map(
+        (found: { name: string; onShelf: boolean }) => [
+          found.name,
+          found.onShelf,
+        ],
+      ),
+    ).toEqual([
+      ['Ayele Fulasa', true],
+      ['El Paraiso', false],
+    ])
+    expect((await mine.json()).total).toBe(1)
+  })
+
+  it('opens a coffee the shelf never bought, with public verdicts and none of the other shelf’s bags', async () => {
+    const { home, work, coffeeId } = await neighbours()
+    await judgeCoffee(db, {
+      userId: work.user.id,
+      coffeeId,
+      verdict: { rating: 5, wouldBuyAgain: true },
+    })
+
+    const response = await request(
+      `/api/shelves/${home.shelf.id}/coffees/${coffeeId}`,
+      { headers: home.headers },
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body).toMatchObject({ name: 'El Paraiso', purchases: [] })
+    expect(JSON.stringify(body)).not.toMatch(/priceCents":\d|2026-11-01/)
+  })
+
+  it('offers filter options from the whole catalog', async () => {
+    const { home } = await neighbours()
+
+    const roasters = await request(
+      `/api/shelves/${home.shelf.id}/catalog/roasters?search=cabra`,
+      { headers: home.headers },
+    )
+    const roastLevels = await request(
+      `/api/shelves/${home.shelf.id}/catalog/roast-levels?search=medium`,
+      { headers: home.headers },
+    )
+
+    expect(await roasters.json()).toEqual({
+      options: [{ value: expect.any(String), label: 'La Cabra' }],
+      hasMore: false,
+    })
+    expect((await roastLevels.json()).options).toEqual([
+      { value: 'medium', label: 'Medium' },
+      { value: 'medium-dark', label: 'Medium-Dark' },
+    ])
+  })
+
+  it('has no other catalog filters and refuses queries it cannot read', async () => {
+    const { home } = await neighbours()
+
+    const filter = await request(
+      `/api/shelves/${home.shelf.id}/catalog/varietals`,
+      { headers: home.headers },
+    )
+    const query = await request(
+      `/api/shelves/${home.shelf.id}/catalog?roastLevel=burnt`,
+      { headers: home.headers },
+    )
+
+    expect(filter.status).toBe(404)
+    expect(query.status).toBe(400)
+    expect((await query.json()).statusMessage).toBe(
+      'Pick one of the roast levels',
+    )
+  })
+
+  it('is only open to members of the shelf', async () => {
+    const { home, work } = await neighbours()
+
+    const catalog = await request(`/api/shelves/${work.shelf.id}/catalog`, {
+      headers: home.headers,
+    })
+    const options = await request(
+      `/api/shelves/${work.shelf.id}/catalog/roasters`,
+      { headers: home.headers },
+    )
+    const signedOut = await request(`/api/shelves/${home.shelf.id}/catalog`)
+
+    expect(catalog.status).toBe(404)
+    expect(options.status).toBe(404)
+    expect(signedOut.status).toBe(401)
   })
 })
 

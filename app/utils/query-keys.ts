@@ -15,13 +15,18 @@ export const queryKeys = {
     query: Record<string, string>,
     page: number,
   ) => ['shelves', shelfId, 'library', query, page],
-  libraryFilter: (shelfId: string, kind: LibraryFilterKind, search: string) => [
+  catalog: (shelfId: string, query: Record<string, string>) => [
     'shelves',
     shelfId,
-    'library',
-    kind,
-    search,
+    'catalog',
+    query,
   ],
+  filterOptions: (
+    shelfId: string,
+    area: FilterArea,
+    kind: FilterKind,
+    search: string,
+  ) => ['shelves', shelfId, area, kind, search],
   shelfCoffee: (shelfId: string, coffeeId: string) => [
     'shelves',
     shelfId,

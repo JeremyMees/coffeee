@@ -18,6 +18,3 @@ export type LibraryView = (typeof libraryViews)[number]
 export type LibraryPage = InternalApi['/api/shelves/:shelfId/library']['get']
 
 export type LibraryCoffee = LibraryPage['coffees'][number]
-
-export type LibraryFilterPage =
-  InternalApi['/api/shelves/:shelfId/library/:filter']['get']

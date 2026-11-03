@@ -12,6 +12,20 @@ import { useCoffeeFinish } from '~/queries/purchases'
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
 const shelfId = computed(() => route.params.shelfId)
 const coffeeId = computed(() => route.params.coffeeId)
+const back = computed(() =>
+  route.query.from === 'discover'
+    ? { label: 'Discover', to: discoveredFrom() }
+    : { label: 'Stock', to: `/shelves/${shelfId.value}` },
+)
+
+function discoveredFrom() {
+  const discover = `/shelves/${shelfId.value}/discover`
+  const previous = import.meta.client ? window.history.state?.back : null
+
+  return typeof previous === 'string' && previous.startsWith(discover)
+    ? previous
+    : discover
+}
 
 const editing = ref(false)
 const buying = ref(false)
@@ -93,12 +107,12 @@ const outlined =
 <template>
   <main v-if="coffee" class="max-w-2xl">
     <NuxtLink
-      :to="`/shelves/${shelfId}`"
+      :to="back.to"
       data-testid="coffee-back"
       class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
-      Stock
+      {{ back.label }}
     </NuxtLink>
     <CoffeePhoto class="mt-4" :shelf-id="shelfId" :coffee="coffee" />
     <header class="mt-6 flex items-end justify-between gap-4">
@@ -178,7 +192,7 @@ const outlined =
             @click="buying = true"
           >
             <PlusIcon class="size-4" aria-hidden="true" />
-            Buy again
+            {{ coffee.purchases.length ? 'Buy again' : 'Add to shelf' }}
           </button>
         </div>
       </div>

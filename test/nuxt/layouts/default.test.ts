@@ -13,12 +13,14 @@ describe('the app shell', () => {
   it.each(['dock-link', 'sidebar-link'])(
     'points every %s to the pages of the current shelf',
     async name => {
-      const page = await mountSuspended(App, { route: '/shelves/work/search' })
+      const page = await mountSuspended(App, {
+        route: '/shelves/work/discover',
+      })
       const link = (href: string) => page.find(`${tid(name)}[href="${href}"]`)
 
       expect(link('/shelves/work').exists()).toBe(true)
       expect(link('/shelves/work/library').exists()).toBe(true)
-      expect(link('/shelves/work/search').attributes('aria-current')).toBe(
+      expect(link('/shelves/work/discover').attributes('aria-current')).toBe(
         'page',
       )
     },
