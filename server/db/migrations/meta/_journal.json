@@ -127,6 +127,13 @@
       "when": 1793694661554,
       "tag": "0017_coffees_without_colours",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793713307472,
+      "tag": "0018_shelf_invites",
+      "breakpoints": true
     }
   ]
 }

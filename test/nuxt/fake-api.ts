@@ -417,8 +417,35 @@ export function ownedShelves() {
   ]
 }
 
+export function shelfInvites() {
+  return [
+    {
+      id: 'i1',
+      email: 'anna@example.com',
+      invitedBy: 'Sarah',
+      createdAt: '2026-11-01T10:00:00.000Z',
+      expiresAt: '2026-11-08T10:00:00.000Z',
+    },
+  ]
+}
+
+export function myInvites() {
+  return [
+    {
+      id: 'mi1',
+      shelf: 'Office',
+      invitedBy: 'Tom',
+      expiresAt: '2026-11-08T10:00:00.000Z',
+    },
+  ]
+}
+
 export const api = {
   ownedShelves: ownedShelves(),
+  shelfInvites: shelfInvites(),
+  myInvites: [] as ReturnType<typeof myInvites>,
+  inviteCalls: [] as unknown[],
+  inviteFails: '',
   accountDeletes: [] as unknown[],
   accountDeleteFails: '',
   stock: [] as unknown[],
@@ -497,6 +524,10 @@ function storedPurchase(id: string, body: Record<string, unknown>) {
 
 export function resetApi() {
   api.ownedShelves = ownedShelves()
+  api.shelfInvites = shelfInvites()
+  api.myInvites = []
+  api.inviteCalls = []
+  api.inviteFails = ''
   api.accountDeletes = []
   api.accountDeleteFails = ''
   api.stock = []
@@ -688,8 +719,76 @@ function registerAdminEndpoints() {
   }
 }
 
+function failInvite() {
+  if (api.inviteFails) {
+    throw createError({ statusCode: 409, statusMessage: api.inviteFails })
+  }
+}
+
+function registerInviteEndpoints() {
+  registerEndpoint('/api/shelves/home/invites', {
+    method: 'GET',
+    handler: () => api.shelfInvites,
+  })
+
+  registerEndpoint('/api/shelves/home/invites', {
+    method: 'POST',
+    handler: async event => {
+      const body = await readBody(event)
+      api.inviteCalls.push({ invite: body })
+      failInvite()
+
+      const created = {
+        id: `i${api.shelfInvites.length + 1}`,
+        email: body.email,
+        invitedBy: 'Sarah',
+        createdAt: '2026-11-03T10:00:00.000Z',
+        expiresAt: '2026-11-10T10:00:00.000Z',
+      }
+      api.shelfInvites = [created, ...api.shelfInvites]
+
+      return created
+    },
+  })
+
+  registerEndpoint('/api/shelves/home/invites/i1', {
+    method: 'DELETE',
+    handler: () => {
+      api.inviteCalls.push({ cancel: 'i1' })
+      api.shelfInvites = api.shelfInvites.filter(found => found.id !== 'i1')
+
+      return null
+    },
+  })
+
+  registerEndpoint('/api/me/invites', () => api.myInvites)
+
+  registerEndpoint('/api/me/invites/mi1/accept', {
+    method: 'POST',
+    handler: () => {
+      api.inviteCalls.push({ accept: 'mi1' })
+      failInvite()
+      api.myInvites = []
+
+      return { id: 'office', name: 'Office', ownerId: 'tom' }
+    },
+  })
+
+  registerEndpoint('/api/me/invites/mi1/decline', {
+    method: 'POST',
+    handler: () => {
+      api.inviteCalls.push({ decline: 'mi1' })
+      failInvite()
+      api.myInvites = []
+
+      return null
+    },
+  })
+}
+
 export function fakeApi() {
   registerAdminEndpoints()
+  registerInviteEndpoints()
 
   registerEndpoint('/api/me/owned-shelves', () => api.ownedShelves)
 

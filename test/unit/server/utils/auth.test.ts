@@ -3,8 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Email } from '#server/types/email'
 import { user as userTable } from '#server/db/schemas'
 import { createAuth, useAuth } from '#server/utils/auth'
-import { createInviteLink, inviteEmail } from '#server/utils/invites'
-import { listShelves } from '#server/utils/shelves'
+import {
+  createInviteLink,
+  inviteEmail,
+  inviteToShelf,
+} from '#server/utils/invites'
+import { createShelf, listShelves } from '#server/utils/shelves'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 import { runtimeConfig } from '#test/support/nitro'
 
@@ -349,6 +353,27 @@ describe('signing in with Google after signing up with a password', () => {
     })
   })
 
+  it('confirms the email of a password account by resetting its password', async () => {
+    const { db, auth, signUpWithPassword, signInWithPassword } = await setup()
+    const { token: link } = await invite(db)
+    await signUpWithPassword('tom@example.com', link)
+    current.sent = []
+    await auth.api.requestPasswordReset({
+      body: { email: 'tom@example.com', redirectTo: '/reset-password' },
+    })
+    const token = current.sent[0]!.values.link.match(
+      /reset-password\/([\w-]+)/,
+    )![1]!
+
+    await auth.api.resetPassword({
+      body: { token, newPassword: 'a-brand-new-password' },
+    })
+
+    expect(
+      await signInWithPassword('tom@example.com', 'a-brand-new-password'),
+    ).toMatchObject({ user: { emailVerified: true } })
+  })
+
   it('lets a Google user also sign in with a password after a reset', async () => {
     const { db, auth, signUpWithGoogle, signInWithPassword } = await setup()
     const admin = await createTestUser(db, { role: 'admin' })
@@ -368,6 +393,79 @@ describe('signing in with Google after signing up with a password', () => {
     expect(await signInWithPassword('sarah@example.com')).toMatchObject({
       user: { id: user.id },
     })
+  })
+})
+
+describe('signing up from a shelf invite', () => {
+  async function shelfInvite(db: Awaited<ReturnType<typeof setup>>['db']) {
+    const sarah = await createTestUser(db, { name: 'Sarah' })
+    const home = await createShelf(db, { name: 'Home', ownerId: sarah.id })
+    const result = await inviteToShelf(db, {
+      shelfId: home.id,
+      email: 'tom@example.com',
+      createdBy: sarah.id,
+    })
+
+    if (result.outcome !== 'invited') throw new Error(result.outcome)
+
+    return { home, token: result.token }
+  }
+
+  it('joins the shelf with Google and gets a shelf of their own', async () => {
+    const { db, signUpWithGoogle } = await setup()
+    const { home, token } = await shelfInvite(db)
+    current.oauthState = { additionalData: { inviteToken: token } }
+
+    const { user } = await signUpWithGoogle('tom@example.com')
+
+    expect(await listShelves(db, user.id)).toEqual([
+      expect.objectContaining({ name: "Someone's shelf", ownerId: user.id }),
+      expect.objectContaining({ id: home.id, name: 'Home' }),
+    ])
+  })
+
+  it('joins the shelf with Google from the invited email, without the link', async () => {
+    const { db, signUpWithGoogle } = await setup()
+    const { home } = await shelfInvite(db)
+
+    const { user } = await signUpWithGoogle('tom@example.com')
+
+    expect(await listShelves(db, user.id)).toContainEqual(
+      expect.objectContaining({ id: home.id }),
+    )
+  })
+
+  it('joins with a password and signs in at once, since the link proved the email', async () => {
+    const { db, signUpWithPassword, signInWithPassword } = await setup()
+    const { home, token } = await shelfInvite(db)
+
+    const { user } = await signUpWithPassword('tom@example.com', token)
+    const signedIn = await signInWithPassword('tom@example.com')
+
+    expect(user).toMatchObject({ emailVerified: true })
+    expect(signedIn).toMatchObject({ user: { id: user.id } })
+    expect(current.sent).toEqual([])
+    expect(await listShelves(db, user.id)).toContainEqual(
+      expect.objectContaining({ id: home.id }),
+    )
+  })
+
+  it('still asks to confirm an email the link was not sent to', async () => {
+    const { db, signUpWithPassword } = await setup()
+    const { home, token } = await shelfInvite(db)
+
+    const { user } = await signUpWithPassword('anna@example.com', token)
+
+    expect(user).toMatchObject({ emailVerified: false })
+    expect(current.sent).toEqual([
+      expect.objectContaining({
+        to: 'anna@example.com',
+        template: 'VerifyEmail',
+      }),
+    ])
+    expect(await listShelves(db, user.id)).toContainEqual(
+      expect.objectContaining({ id: home.id }),
+    )
   })
 })
 

@@ -3,13 +3,23 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import PasswordSignUpForm from '~/components/PasswordSignUpForm.vue'
 import { byTestId, submit, type } from '../fixtures'
 
-const { email } = vi.hoisted(() => ({ email: vi.fn() }))
+const { email, signInEmail, navigate } = vi.hoisted(() => ({
+  email: vi.fn(),
+  signInEmail: vi.fn(),
+  navigate: vi.fn(),
+}))
 
-mockNuxtImport('authClient', () => ({ signUp: { email } }))
+mockNuxtImport('authClient', () => ({
+  signUp: { email },
+  signIn: { email: signInEmail },
+}))
+mockNuxtImport('navigateTo', () => navigate)
 
-async function signUp(inviteToken?: string) {
+const unverified = { data: { user: { emailVerified: false } }, error: null }
+
+async function signUp(inviteToken?: string, redirect?: string) {
   await mountSuspended(PasswordSignUpForm, {
-    props: { inviteToken },
+    props: { inviteToken, redirect },
     attachTo: document.body,
   })
 
@@ -21,7 +31,7 @@ async function signUp(inviteToken?: string) {
 
 describe('PasswordSignUpForm', () => {
   it('creates the account and says where the confirmation went', async () => {
-    email.mockResolvedValue({ data: {}, error: null })
+    email.mockResolvedValue(unverified)
 
     await signUp()
 
@@ -40,7 +50,7 @@ describe('PasswordSignUpForm', () => {
   })
 
   it('carries the invite token along', async () => {
-    email.mockResolvedValue({ data: {}, error: null })
+    email.mockResolvedValue(unverified)
 
     await signUp('the-token')
 
@@ -51,6 +61,43 @@ describe('PasswordSignUpForm', () => {
         }),
       ),
     )
+  })
+
+  it('signs straight in when the invite link proved the email', async () => {
+    email.mockResolvedValue({
+      data: { user: { emailVerified: true } },
+      error: null,
+    })
+    signInEmail.mockResolvedValue({ data: {}, error: null })
+
+    await signUp('the-token', '/shelves/home')
+
+    await vi.waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith('/shelves/home'),
+    )
+    expect(email).toHaveBeenCalledWith(
+      expect.objectContaining({ callbackURL: '/shelves/home' }),
+    )
+    expect(signInEmail).toHaveBeenCalledWith({
+      email: 'tom@example.com',
+      password: 'a-long-password',
+    })
+    expect(byTestId('sign-up-sent')).toBeNull()
+  })
+
+  it('says why signing in after signing up failed', async () => {
+    email.mockResolvedValue({
+      data: { user: { emailVerified: true } },
+      error: null,
+    })
+    signInEmail.mockResolvedValue({ data: null, error: { message: 'Locked' } })
+
+    await signUp('the-token')
+
+    await vi.waitFor(() =>
+      expect(byTestId('sign-up-form-error')?.textContent).toContain('Locked'),
+    )
+    expect(navigate).not.toHaveBeenCalled()
   })
 
   it('explains a short password before signing up', async () => {

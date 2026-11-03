@@ -53,6 +53,8 @@ export const queryKeys = {
   brewMethods: () => ['brew-methods'],
   ownedShelves: () => ['me', 'owned-shelves'],
   invites: () => ['invites'],
+  shelfInvites: (shelfId: string) => ['shelves', shelfId, 'invites'],
+  myInvites: () => ['me', 'invites'],
   admin: () => ['admin'],
   adminEntries: (list: AdminList, query: Record<string, string>) => [
     'admin',

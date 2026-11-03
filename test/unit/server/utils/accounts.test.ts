@@ -17,7 +17,12 @@ import {
   user,
 } from '#server/db/schemas'
 import { deleteAccount, listOwnedShelves } from '#server/utils/accounts'
-import { inviteEmail } from '#server/utils/invites'
+import {
+  claimInvites,
+  inviteEmail,
+  inviteToShelf,
+  joinInvitedShelves,
+} from '#server/utils/invites'
 import { listBrewMethods } from '#server/utils/brew-methods'
 import { addCoffee } from '#server/utils/coffees'
 import { ownGrinder } from '#server/utils/grinders'
@@ -273,6 +278,31 @@ describe('deleteAccount', () => {
         .select({ email: invite.email, createdBy: invite.createdBy })
         .from(invite),
     ).toEqual([{ email: 'kim@example.com', createdBy: admin.id }])
+  })
+
+  it('forgets the shelf invites the user took, so signing up again joins nothing', async () => {
+    const { db, sarah, home } = await setup()
+    const kim = await createTestUser(db, { email: 'kim@example.com' })
+    const invited = await inviteToShelf(db, {
+      shelfId: home.id,
+      email: kim.email,
+      createdBy: sarah.id,
+    })
+    await claimInvites(db, {
+      email: kim.email,
+      token: invited.outcome === 'invited' ? invited.token : undefined,
+    })
+
+    await deleteAccount(db, { userId: kim.id, heirs: {} })
+    const again = await createTestUser(db, { email: 'kim@example.com' })
+    await joinInvitedShelves(db, { userId: again.id, email: again.email })
+
+    expect(
+      await db
+        .select()
+        .from(shelfMember)
+        .where(eq(shelfMember.userId, again.id)),
+    ).toEqual([])
   })
 
   it('refuses when no other admin can look after the catalog', async () => {

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
 
-const props = defineProps<{ inviteToken?: string }>()
+const props = withDefaults(
+  defineProps<{ inviteToken?: string; redirect?: string }>(),
+  { inviteToken: undefined, redirect: '/' },
+)
 
 const formError = ref('')
 const sentTo = ref('')
@@ -14,16 +17,31 @@ const { handleSubmit, isSubmitting } = useForm({
 const signUp = handleSubmit(async body => {
   formError.value = ''
 
-  const { error } = await authClient.signUp.email({
+  const { data, error } = await authClient.signUp.email({
     ...body,
-    callbackURL: '/',
+    callbackURL: props.redirect,
     fetchOptions: {
       query: props.inviteToken ? { inviteToken: props.inviteToken } : {},
     },
   })
 
-  if (error) formError.value = authErrorMessage(error)
-  else sentTo.value = body.email
+  if (error) {
+    formError.value = authErrorMessage(error)
+    return
+  }
+
+  if (!data.user.emailVerified) {
+    sentTo.value = body.email
+    return
+  }
+
+  const signedIn = await authClient.signIn.email({
+    email: body.email,
+    password: body.password,
+  })
+
+  if (signedIn.error) formError.value = authErrorMessage(signedIn.error)
+  else await navigateTo(props.redirect)
 })
 </script>
 

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, ne } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, ne } from 'drizzle-orm'
 import type { Database } from '#server/types/database'
 import {
   brewMethod,
@@ -133,7 +133,14 @@ export async function deleteAccount(
       .set({ createdBy: admin.id })
       .where(eq(invite.createdBy, input.userId))
 
-    await tx.delete(user).where(eq(user.id, input.userId))
+    const [deleted] = await tx
+      .delete(user)
+      .where(eq(user.id, input.userId))
+      .returning({ email: user.email })
+
+    await tx
+      .delete(invite)
+      .where(and(isNotNull(invite.usedAt), eq(invite.usedBy, deleted!.email)))
   })
 
   return { outcome: 'deleted' as const }
