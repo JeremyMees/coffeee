@@ -102,7 +102,7 @@ function grind(path: string, headers: Headers, change: unknown) {
 }
 
 describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
-  it('remembers a grind setting for the shelf', async () => {
+  it('remembers a grind setting for the signed-in user', async () => {
     const { sarah, path, setting } = await sharedShelf()
 
     const response = await grind(path, sarah, { ...setting, setting: ' 12 ' })
@@ -111,24 +111,46 @@ describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
     expect(await response.json()).toEqual({ ...setting, setting: '12' })
   })
 
-  it('lets every member see and change the same setting', async () => {
+  it('keeps each member’s own setting and shows them the others’', async () => {
     const { sarah, tom, path, setting } = await sharedShelf()
 
     await grind(path, sarah, { ...setting, setting: '12' })
     await grind(path, tom, { ...setting, setting: '10' })
 
-    for (const headers of [sarah, tom]) {
-      const coffee = await (await request(path, { headers })).json()
-      expect(coffee.grindSettings).toEqual([
-        {
-          ...setting,
-          brand: 'Fellow',
-          model: 'Opus Gen 2',
-          brewMethod: 'Espresso',
-          setting: '10',
-        },
-      ])
-    }
+    const asSarah = await (await request(path, { headers: sarah })).json()
+
+    expect(asSarah.grindSettings).toEqual([
+      {
+        ...setting,
+        brand: 'Fellow',
+        model: 'Opus Gen 2',
+        brewMethod: 'Espresso',
+        setting: '12',
+      },
+    ])
+    expect(asSarah.otherGrindSettings).toEqual([
+      expect.objectContaining({
+        ...setting,
+        name: 'Tom',
+        setting: '10',
+        ownedByShelf: true,
+      }),
+    ])
+  })
+
+  it('only ever changes the signed-in user’s own setting', async () => {
+    const { sarah, tom, path, setting } = await sharedShelf()
+
+    await grind(path, sarah, { ...setting, setting: '12' })
+    await grind(path, tom, { ...setting, setting: '10' })
+    await grind(path, tom, { ...setting, setting: '' })
+
+    const asSarah = await (await request(path, { headers: sarah })).json()
+
+    expect(
+      asSarah.grindSettings.map((saved: { setting: string }) => saved.setting),
+    ).toEqual(['12'])
+    expect(asSarah.otherGrindSettings).toEqual([])
   })
 
   it('clears a setting left blank', async () => {

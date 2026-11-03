@@ -155,6 +155,7 @@ const outlined =
       :coffee-id="coffee.id"
       :grind-settings="coffee.grindSettings"
     />
+    <OtherGrindSettings :settings="coffee.otherGrindSettings" />
     <section class="mt-10">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <h2 class="text-[28px]">Bags on this shelf</h2>

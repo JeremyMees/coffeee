@@ -10,7 +10,7 @@ fakeApi()
 beforeEach(resetApi)
 
 describe('useGrindSettingSave', () => {
-  it('saves the grind setting and refreshes that shelf', async () => {
+  it('saves the grind setting and refreshes every shelf', async () => {
     const { result, client } = await runOn('/', () => ({
       result: useGrindSettingSave(),
       client: useQueryClient(),
@@ -26,7 +26,7 @@ describe('useGrindSettingSave', () => {
 
     expect(api.grindSettingCalls).toEqual([change])
     expect(invalidate.mock.calls.map(([filters]) => filters)).toEqual([
-      { queryKey: queryKeys.shelf('home') },
+      { queryKey: queryKeys.shelves() },
     ])
   })
 })

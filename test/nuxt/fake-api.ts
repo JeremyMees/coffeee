@@ -46,7 +46,8 @@ export function ayele() {
     wouldBuyAgain: false,
     memberVerdicts: [] as MemberVerdict[],
     canEdit: true,
-    grindSettings: [] as ShelfGrindSetting[],
+    grindSettings: [] as OwnGrindSetting[],
+    otherGrindSettings: [] as OtherGrindSetting[],
     roasterDetails: squareMile(),
     purchases: [
       {
@@ -407,7 +408,7 @@ export function fakeApi() {
       const method = api.brewMethods.find(
         listed => listed.id === body.brewMethodId,
       )!
-      const others = (api.coffee.grindSettings as ShelfGrindSetting[]).filter(
+      const others = (api.coffee.grindSettings as OwnGrindSetting[]).filter(
         saved =>
           saved.grinderId !== body.grinderId ||
           saved.brewMethodId !== body.brewMethodId,

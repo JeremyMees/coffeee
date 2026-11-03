@@ -13,9 +13,7 @@ export function useGrindSettingSave() {
         `/api/shelves/${input.shelfId}/coffees/${input.coffeeId}/grind-settings`,
         { method: 'PUT', body: input.change },
       ),
-    onSuccess: (_data, input) =>
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.shelf(input.shelfId),
-      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.shelves() }),
   })
 }

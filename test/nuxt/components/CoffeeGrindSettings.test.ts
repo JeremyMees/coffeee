@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CoffeeGrindSettings from '~/components/CoffeeGrindSettings.vue'
-import type { ShelfGrindSetting } from '#imports'
+import type { OwnGrindSetting } from '#imports'
 import { api, fakeApi, resetApi } from '../fake-api'
 import { tid } from '../fixtures'
 
@@ -9,7 +9,7 @@ fakeApi()
 
 beforeEach(resetApi)
 
-const espresso12: ShelfGrindSetting = {
+const espresso12: OwnGrindSetting = {
   grinderId: 'opus',
   brand: 'Fellow',
   model: 'Opus Gen 2',
@@ -18,7 +18,7 @@ const espresso12: ShelfGrindSetting = {
   setting: '12',
 }
 
-function mountSettings(grindSettings: ShelfGrindSetting[] = []) {
+function mountSettings(grindSettings: OwnGrindSetting[] = []) {
   return mountSuspended(CoffeeGrindSettings, {
     props: { shelfId: 'home', coffeeId: 'c1', grindSettings },
   })
@@ -39,7 +39,7 @@ describe('CoffeeGrindSettings', () => {
     const settings = await mountSettings()
 
     expect(settings.get(tid('grind-settings-empty')).text()).toBe(
-      'No grind settings for this coffee yet.',
+      'You have no grind settings for this coffee yet.',
     )
   })
 

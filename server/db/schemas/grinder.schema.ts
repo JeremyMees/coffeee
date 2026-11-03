@@ -67,19 +67,18 @@ export const shelfGrinder = pgTable(
 export const grindSetting = pgTable(
   'grindSetting',
   {
-    shelfId: text().notNull(),
+    userId: text().notNull(),
     coffeeId: text().notNull(),
     grinderId: text().notNull(),
     brewMethodId: text().notNull(),
     setting: text().notNull(),
-    updatedBy: text(),
     updatedAt: timestamp().notNull().defaultNow(),
   },
   table => [
     primaryKey({
       name: 'grindSettingPk',
       columns: [
-        table.shelfId,
+        table.userId,
         table.coffeeId,
         table.grinderId,
         table.brewMethodId,
@@ -89,9 +88,9 @@ export const grindSetting = pgTable(
     index('grindSettingGrinderIdIdx').on(table.grinderId),
     index('grindSettingBrewMethodIdIdx').on(table.brewMethodId),
     foreignKey({
-      name: 'grindSettingShelfIdFk',
-      columns: [table.shelfId],
-      foreignColumns: [shelf.id],
+      name: 'grindSettingUserIdFk',
+      columns: [table.userId],
+      foreignColumns: [user.id],
     }).onDelete('cascade'),
     foreignKey({
       name: 'grindSettingCoffeeIdFk',
@@ -108,10 +107,5 @@ export const grindSetting = pgTable(
       columns: [table.brewMethodId],
       foreignColumns: [brewMethod.id],
     }).onDelete('cascade'),
-    foreignKey({
-      name: 'grindSettingUpdatedByFk',
-      columns: [table.updatedBy],
-      foreignColumns: [user.id],
-    }).onDelete('set null'),
   ],
 )

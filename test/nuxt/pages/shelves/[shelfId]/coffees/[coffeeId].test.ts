@@ -154,6 +154,30 @@ describe('a coffee page', () => {
     expect(page.get(tid('coffee-card')).text()).not.toContain('Opus')
   })
 
+  it('shows the grind settings other people use for the coffee', async () => {
+    api.coffee.otherGrindSettings = [
+      {
+        grinderId: 'opus',
+        brand: 'Fellow',
+        model: 'Opus Gen 2',
+        brewMethodId: 'espresso',
+        brewMethod: 'Espresso',
+        setting: '11',
+        userId: 'ana',
+        name: 'Ana',
+        ownedByShelf: true,
+      },
+    ]
+
+    const page = await mountSuspended(App, {
+      route: '/shelves/home/coffees/c1',
+    })
+
+    expect(
+      page.get(tid('other-grind-grinder-opus', 'other-grind-setting')).text(),
+    ).toContain('Ana')
+  })
+
   it('shows the roaster and its edited details', async () => {
     const page = await mountSuspended(App, {
       route: '/shelves/home/coffees/c1',

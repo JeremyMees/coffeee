@@ -6,7 +6,7 @@ import { useGrindSettingSave } from '~/queries/grind-settings'
 const props = defineProps<{
   shelfId: string
   coffeeId: string
-  grindSettings: ShelfGrindSetting[]
+  grindSettings: OwnGrindSetting[]
 }>()
 
 const grinderQuery = useShelfGrinders(() => props.shelfId)
@@ -58,7 +58,7 @@ watch(
   { immediate: true },
 )
 
-function edit(saved: ShelfGrindSetting) {
+function edit(saved: OwnGrindSetting) {
   grinderId.value = saved.grinderId
   brewMethodId.value = saved.brewMethodId
 }
@@ -85,7 +85,7 @@ function submit() {
   })
 }
 
-function clear(saved: ShelfGrindSetting) {
+function clear(saved: OwnGrindSetting) {
   return save({
     grinderId: saved.grinderId,
     brewMethodId: saved.brewMethodId,
@@ -120,7 +120,7 @@ const action =
         class="mt-3 text-xs"
         data-testid="grind-settings-empty"
       >
-        No grind settings for this coffee yet.
+        You have no grind settings for this coffee yet.
       </p>
       <ul
         v-else

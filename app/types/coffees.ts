@@ -15,6 +15,7 @@ export type EditableCoffee = Omit<
   | 'wouldBuyAgain'
   | 'memberVerdicts'
   | 'grindSettings'
+  | 'otherGrindSettings'
   | 'roasterDetails'
 >
 

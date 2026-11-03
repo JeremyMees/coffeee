@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, ne, sql } from 'drizzle-orm'
 import type { GrindSettingChange } from '#shared/types/grinders'
 import type { Database } from '#server/types/database'
 import {
@@ -8,35 +8,31 @@ import {
   grinderBrand,
   grindSetting,
   shelfGrinder,
+  user,
 } from '#server/db/schemas'
+
+const settingColumns = {
+  grinderId: grindSetting.grinderId,
+  brand: grinderBrand.name,
+  model: grinder.name,
+  brewMethodId: grindSetting.brewMethodId,
+  brewMethod: brewMethod.name,
+  setting: grindSetting.setting,
+}
 
 export function grindSettingsOf(
   db: Database,
-  input: { shelfId: string; coffeeId: string },
+  input: { userId: string; coffeeId: string },
 ) {
   return db
-    .select({
-      grinderId: grindSetting.grinderId,
-      brand: grinderBrand.name,
-      model: grinder.name,
-      brewMethodId: grindSetting.brewMethodId,
-      brewMethod: brewMethod.name,
-      setting: grindSetting.setting,
-    })
+    .select(settingColumns)
     .from(grindSetting)
-    .innerJoin(
-      shelfGrinder,
-      and(
-        eq(shelfGrinder.shelfId, grindSetting.shelfId),
-        eq(shelfGrinder.grinderId, grindSetting.grinderId),
-      ),
-    )
     .innerJoin(grinder, eq(grinder.id, grindSetting.grinderId))
     .innerJoin(grinderBrand, eq(grinderBrand.id, grinder.brandId))
     .innerJoin(brewMethod, eq(brewMethod.id, grindSetting.brewMethodId))
     .where(
       and(
-        eq(grindSetting.shelfId, input.shelfId),
+        eq(grindSetting.userId, input.userId),
         eq(grindSetting.coffeeId, input.coffeeId),
       ),
     )
@@ -44,6 +40,46 @@ export function grindSettingsOf(
       asc(grinderBrand.nameKey),
       asc(grinder.nameKey),
       asc(brewMethod.position),
+    )
+}
+
+export function otherGrindSettingsOf(
+  db: Database,
+  input: { shelfId: string; userId: string; coffeeId: string },
+) {
+  const owned = sql<boolean>`${shelfGrinder.grinderId} is not null`
+
+  return db
+    .select({
+      ...settingColumns,
+      userId: grindSetting.userId,
+      name: user.name,
+      ownedByShelf: owned,
+    })
+    .from(grindSetting)
+    .innerJoin(grinder, eq(grinder.id, grindSetting.grinderId))
+    .innerJoin(grinderBrand, eq(grinderBrand.id, grinder.brandId))
+    .innerJoin(brewMethod, eq(brewMethod.id, grindSetting.brewMethodId))
+    .innerJoin(user, eq(user.id, grindSetting.userId))
+    .leftJoin(
+      shelfGrinder,
+      and(
+        eq(shelfGrinder.shelfId, input.shelfId),
+        eq(shelfGrinder.grinderId, grindSetting.grinderId),
+      ),
+    )
+    .where(
+      and(
+        eq(grindSetting.coffeeId, input.coffeeId),
+        ne(grindSetting.userId, input.userId),
+      ),
+    )
+    .orderBy(
+      desc(owned),
+      asc(grinderBrand.nameKey),
+      asc(grinder.nameKey),
+      asc(brewMethod.position),
+      asc(user.name),
     )
 }
 
@@ -93,7 +129,7 @@ export async function setGrindSetting(
 
   const { grinderId, brewMethodId, setting } = input.change
   const key = {
-    shelfId: input.shelfId,
+    userId: input.userId,
     coffeeId: input.coffeeId,
     grinderId,
     brewMethodId,
@@ -104,21 +140,21 @@ export async function setGrindSetting(
       .delete(grindSetting)
       .where(
         and(
-          eq(grindSetting.shelfId, key.shelfId),
+          eq(grindSetting.userId, key.userId),
           eq(grindSetting.coffeeId, key.coffeeId),
           eq(grindSetting.grinderId, key.grinderId),
           eq(grindSetting.brewMethodId, key.brewMethodId),
         ),
       )
   } else {
-    const change = { setting, updatedBy: input.userId, updatedAt: new Date() }
+    const change = { setting, updatedAt: new Date() }
 
     await db
       .insert(grindSetting)
       .values({ ...key, ...change })
       .onConflictDoUpdate({
         target: [
-          grindSetting.shelfId,
+          grindSetting.userId,
           grindSetting.coffeeId,
           grindSetting.grinderId,
           grindSetting.brewMethodId,
