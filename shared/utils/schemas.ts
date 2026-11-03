@@ -1,6 +1,12 @@
 import { z } from 'zod'
 import { roastedForOptions, roastLevels } from './coffee'
 import { bagColours } from './colours'
+import {
+  libraryColumns,
+  libraryFilterPageSize,
+  libraryPageSize,
+  sortDirections,
+} from './library'
 import { isOriginCode, originListFields } from './origins'
 import type { DescribedCoffee } from '../types/coffee'
 import type { OriginListField } from '../types/origins'
@@ -50,6 +56,54 @@ export const listSearchSchema = z.object({
     .string({ error: 'Search with a single piece of text' })
     .max(80, 'Keep the search to 80 characters or fewer')
     .default(''),
+})
+
+function pageNumber() {
+  return z.coerce
+    .number({ error: 'Ask for a page by its number' })
+    .int('Ask for a page by its number')
+    .min(0, 'Ask for a page by its number')
+    .default(0)
+}
+
+function optionalId(noun: string) {
+  return z
+    .string({ error: `Pick a ${noun} as a single piece of text` })
+    .max(100, `Pick a ${noun} by its id`)
+    .default('')
+}
+
+export const librarySearchSchema = z.object({
+  favourites: z
+    .enum(['true', 'false'], { error: 'Say true or false for favourites' })
+    .default('false')
+    .transform(value => value === 'true'),
+  roasterId: optionalId('roaster'),
+  flavorNoteId: optionalId('flavor note'),
+  originCode: optionalId('origin'),
+  sort: z
+    .enum(libraryColumns, { error: 'Sort by one of the library columns' })
+    .optional(),
+  direction: z
+    .enum(sortDirections, { error: 'Sort ascending or descending' })
+    .default('ascending'),
+  page: pageNumber(),
+  pageSize: z.coerce
+    .number({ error: 'Ask for a page size as a number' })
+    .int('Ask for a page size as a whole number')
+    .min(1, 'Ask for at least one coffee')
+    .max(100, 'Ask for at most 100 coffees at a time')
+    .default(libraryPageSize),
+})
+
+export const libraryFilterSearchSchema = listSearchSchema.extend({
+  page: pageNumber(),
+  pageSize: z.coerce
+    .number({ error: 'Ask for a page size as a number' })
+    .int('Ask for a page size as a whole number')
+    .min(1, 'Ask for at least one option')
+    .max(100, 'Ask for at most 100 options at a time')
+    .default(libraryFilterPageSize),
 })
 
 export const originListSearchSchema = listSearchSchema.extend({

@@ -90,6 +90,29 @@ export async function originsOf(db: Database, coffeeId: string) {
   }
 }
 
+export async function originNamesOf(db: Database, coffeeIds: string[]) {
+  const names = new Map<string, { code: string; name: string }[]>()
+
+  if (!coffeeIds.length) return names
+
+  const linked = await db
+    .select({
+      coffeeId: coffeeOrigin.coffeeId,
+      code: origin.code,
+      name: origin.name,
+    })
+    .from(coffeeOrigin)
+    .innerJoin(origin, eq(origin.code, coffeeOrigin.originCode))
+    .where(inArray(coffeeOrigin.coffeeId, coffeeIds))
+    .orderBy(asc(coffeeOrigin.position))
+
+  for (const { coffeeId, ...linkedOrigin } of linked) {
+    names.set(coffeeId, [...(names.get(coffeeId) ?? []), linkedOrigin])
+  }
+
+  return names
+}
+
 export function findSimilarInOrigins(
   db: Database,
   list: OriginList,

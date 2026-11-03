@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { blobHost } from './shared/utils/photos.ts'
 
 const photoHost = blobHost(process.env)
+const description = 'Your coffee shelf, and every coffee you ever bought.'
 
 export default defineNuxtConfig({
   modules: [
@@ -102,7 +103,7 @@ export default defineNuxtConfig({
     manifest: {
       name: 'Coffeee',
       short_name: 'Coffeee',
-      description: 'Your coffee shelf, and every coffee you ever bought.',
+      description,
       theme_color: '#fffaf5',
       background_color: '#fffaf5',
       display: 'standalone',
@@ -148,6 +149,7 @@ export default defineNuxtConfig({
           name: 'viewport',
           content: 'width=device-width, initial-scale=1, viewport-fit=cover',
         },
+        { name: 'description', content: description },
         { name: 'theme-color', content: '#fffaf5' },
         { name: 'apple-mobile-web-app-title', content: 'Coffeee' },
       ],

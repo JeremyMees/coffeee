@@ -12,6 +12,8 @@ import removePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]
 import replacePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/photo.put'
 import photoHandler from '#server/api/photos/[...pathname].get'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
+import libraryFilterHandler from '#server/api/shelves/[shelfId]/library/[filter].get'
+import libraryHandler from '#server/api/shelves/[shelfId]/library/index.get'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
 import varietalsHandler from '#server/api/varietals.get'
 import washingStationsHandler from '#server/api/washing-stations.get'
@@ -55,6 +57,8 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/varietals', varietalsHandler)
     .get('/api/flavor-notes', flavorNotesHandler)
     .get('/api/shelves/:shelfId/stock', stockHandler)
+    .get('/api/shelves/:shelfId/library', libraryHandler)
+    .get('/api/shelves/:shelfId/library/:filter', libraryFilterHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
@@ -115,6 +119,82 @@ describe('adding a coffee to a shelf', () => {
     ])
   })
 
+  it('adds it to the library of that shelf', async () => {
+    const { shelf, headers } = await member()
+
+    await add(shelf.id, headers)
+    const library = await request(`/api/shelves/${shelf.id}/library`, {
+      headers,
+    })
+
+    expect(await library.json()).toEqual({
+      total: 1,
+      coffees: [
+        expect.objectContaining({
+          name: 'Ayele Fulasa',
+          lastBought: '2026-11-01',
+          latestPriceCents: 1650,
+          origins: [{ code: 'ET', name: 'Ethiopia' }],
+        }),
+      ],
+    })
+  })
+
+  it('filters, sorts and pages the library from the query', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers)
+    await add(shelf.id, headers, { ...coffee, name: 'Red Brick' })
+
+    const library = await request(
+      `/api/shelves/${shelf.id}/library?originCode=ET&sort=roaster&direction=descending&page=1&pageSize=1`,
+      { headers },
+    )
+    const body = await library.json()
+
+    expect(body.total).toBe(2)
+    expect(body.coffees).toHaveLength(1)
+  })
+
+  it('refuses a library query it cannot read', async () => {
+    const { shelf, headers } = await member()
+
+    const response = await request(
+      `/api/shelves/${shelf.id}/library?sort=price&pageSize=500`,
+      { headers },
+    )
+
+    expect(response.status).toBe(400)
+    expect((await response.json()).statusMessage).toBe(
+      'Sort by one of the library columns',
+    )
+  })
+
+  it('offers the roasters of the library as you type', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers)
+
+    const response = await request(
+      `/api/shelves/${shelf.id}/library/roasters?search=square`,
+      { headers },
+    )
+
+    expect(await response.json()).toEqual({
+      options: [{ value: expect.any(String), label: 'Square Mile' }],
+      hasMore: false,
+    })
+  })
+
+  it('has no other library filters', async () => {
+    const { shelf, headers } = await member()
+
+    const response = await request(
+      `/api/shelves/${shelf.id}/library/producers`,
+      { headers },
+    )
+
+    expect(response.status).toBe(404)
+  })
+
   it('explains what is wrong in plain words', async () => {
     const { shelf, headers } = await member()
 
@@ -155,6 +235,21 @@ describe('a shelf someone is not a member of', () => {
     })
 
     expect(response.status).toBe(404)
+  })
+
+  it('shows them no library', async () => {
+    const { shelf, headers } = await stranger()
+
+    const library = await request(`/api/shelves/${shelf.id}/library`, {
+      headers,
+    })
+    const roasters = await request(
+      `/api/shelves/${shelf.id}/library/roasters`,
+      { headers },
+    )
+
+    expect(library.status).toBe(404)
+    expect(roasters.status).toBe(404)
   })
 
   it('shows them none of its purchases', async () => {

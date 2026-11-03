@@ -801,3 +801,55 @@ test('lets the person who added a roaster fill in its details and logo', async (
     'Bristol, United Kingdom',
   )
 })
+
+test('keeps every coffee in the Library, finished or not, and finds the favourites', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await addCoffee(page, { name: 'Red Brick', roaster, newRoaster: false })
+
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page).toHaveURL(/\/coffees\//)
+  await page.getByTestId('verdict-star-5').click()
+  await page.getByTestId('verdict-buy-again').click()
+  await expect(page.getByTestId('verdict-favourite')).toBeVisible()
+  await page.getByTestId('coffee-finish').click()
+  await expect(page.getByTestId('coffee-finish')).toBeHidden()
+
+  await page.goto(`/shelves/${member.shelfId}/library`)
+  const names = page.getByTestId('library').getByTestId('coffee-card-name')
+  await expect(names).toHaveText(['Red Brick', 'Ayele Fulasa'])
+
+  await page.getByTestId('library-filter-favourites').click()
+  await expect(names).toHaveText(['Ayele Fulasa'])
+
+  await page.getByTestId('library-view-table').click()
+  const row = page.getByTestId('data-table-row')
+  await expect(row.getByTestId('library-row-name')).toHaveText('Ayele Fulasa')
+  await expect(row.getByTestId('data-table-cell-latestPrice')).toHaveText(
+    '€16.50',
+  )
+
+  await page.getByTestId('library-filter-clear').click()
+  await page.getByTestId('library-filter-roasters').click()
+  await page
+    .getByTestId('library-filter-roasters-search')
+    .fill(roaster.slice(-8))
+  await page
+    .getByTestId('library-filter-option')
+    .filter({ hasText: roaster })
+    .click()
+  await expect(page.getByTestId('library-row-name')).toHaveText([
+    'Red Brick',
+    'Ayele Fulasa',
+  ])
+
+  await page.getByTestId('library-sort-rating').click()
+  await expect(page.getByTestId('library-row-name')).toHaveText([
+    'Ayele Fulasa',
+    'Red Brick',
+  ])
+})

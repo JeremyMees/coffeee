@@ -2,7 +2,7 @@ import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
 import type { ListEntry, OriginListEntry } from '#shared/types/catalog'
-import { nameKey } from '#imports'
+import { isFavourite, libraryFilters, libraryPageSize, nameKey } from '#imports'
 
 export function fakeList<Entry extends ListEntry>(entries: () => Entry[]) {
   return (event: H3Event) => {
@@ -70,6 +70,61 @@ export function ayele() {
   }
 }
 
+export function libraryCoffee(
+  overrides: Partial<LibraryCoffee> = {},
+): LibraryCoffee {
+  return {
+    id: 'c1',
+    name: 'Ayele Fulasa',
+    roaster: 'Square Mile',
+    roasterId: 'r2',
+    roastLevel: 'light',
+    roastedFor: 'filter',
+    colour: '#2f6f4f',
+    photoUrl: null,
+    roastedOn: '2026-10-28',
+    lastBought: '2026-11-01',
+    rating: null,
+    wouldBuyAgain: false,
+    flavorNotes: [],
+    origins: [{ code: 'ET', name: 'Ethiopia' }],
+    latestPriceCents: 1650,
+    ...overrides,
+  }
+}
+
+export function libraryCoffees() {
+  return [
+    libraryCoffee({
+      rating: 5,
+      wouldBuyAgain: true,
+      flavorNotes: [{ id: 'n1', name: 'Lime' }],
+    }),
+    libraryCoffee({
+      id: 'c2',
+      name: 'El Paraiso',
+      roaster: 'La Cabra',
+      roasterId: 'r1',
+      roastLevel: 'medium',
+      lastBought: '2026-10-01',
+      rating: 4,
+      wouldBuyAgain: false,
+      flavorNotes: [{ id: 'n2', name: 'Jasmine' }],
+      origins: [{ code: 'CO', name: 'Colombia' }],
+      latestPriceCents: 2400,
+    }),
+    libraryCoffee({
+      id: 'c3',
+      name: 'Red Brick',
+      roastLevel: 'dark',
+      lastBought: '2026-09-01',
+      flavorNotes: [{ id: 'n1', name: 'Lime' }],
+      origins: [],
+      latestPriceCents: null,
+    }),
+  ]
+}
+
 export function squareMile(): ShelfRoaster {
   return {
     id: 'r2',
@@ -93,8 +148,74 @@ export function brewMethods() {
   ]
 }
 
+export function manyCoffees(count: number) {
+  return Array.from({ length: count }, (_, index) =>
+    libraryCoffee({ id: `m${index + 1}`, name: `Coffee ${index + 1}` }),
+  )
+}
+
+export const libraryOptions = {
+  roasters: [
+    { value: 'r1', label: 'La Cabra' },
+    { value: 'r2', label: 'Square Mile' },
+    { value: 'r3', label: 'Tim Wendelboe' },
+  ],
+  'flavor-notes': [
+    { value: 'n2', label: 'Jasmine' },
+    { value: 'n1', label: 'Lime' },
+  ],
+  origins: [
+    { value: 'CO', label: 'Colombia' },
+    { value: 'ET', label: 'Ethiopia' },
+  ],
+} satisfies Record<LibraryFilterKind, LibraryOption[]>
+
+const fakeFilterPageSize = 2
+
+function fakeLibrary(event: H3Event) {
+  const query = getQuery(event) as Record<string, string>
+  api.libraryQueries.push(query)
+
+  const matching = api.library.filter(
+    coffee =>
+      (query.favourites !== 'true' || isFavourite(coffee)) &&
+      (!query.roasterId || coffee.roasterId === query.roasterId) &&
+      (!query.flavorNoteId ||
+        coffee.flavorNotes.some(note => note.id === query.flavorNoteId)) &&
+      (!query.originCode ||
+        coffee.origins.some(origin => origin.code === query.originCode)),
+  )
+  const start = Number(query.page ?? 0) * libraryPageSize
+
+  return {
+    total: matching.length,
+    coffees: matching.slice(start, start + libraryPageSize),
+  }
+}
+
+function fakeLibraryFilter(kind: LibraryFilterKind) {
+  return (event: H3Event) => {
+    const query = getQuery(event) as Record<string, string>
+    api.libraryFilterQueries.push({ kind, ...query })
+
+    const key = nameKey(query.search ?? '')
+    const matching = libraryOptions[kind].filter(option =>
+      nameKey(option.label).includes(key),
+    )
+    const start = Number(query.page ?? 0) * fakeFilterPageSize
+
+    return {
+      options: matching.slice(start, start + fakeFilterPageSize),
+      hasMore: matching.length > start + fakeFilterPageSize,
+    }
+  }
+}
+
 export const api = {
   stock: [] as unknown[],
+  library: [] as LibraryCoffee[],
+  libraryQueries: [] as Record<string, string>[],
+  libraryFilterQueries: [] as Record<string, string>[],
   added: [] as unknown[],
   edits: [] as unknown[],
   shelves: [] as string[],
@@ -155,6 +276,9 @@ function storedPurchase(id: string, body: Record<string, unknown>) {
 
 export function resetApi() {
   api.stock = []
+  api.library = []
+  api.libraryQueries = []
+  api.libraryFilterQueries = []
   api.added = []
   api.edits = []
   api.shelves = []
@@ -195,6 +319,15 @@ export function fakeApi() {
   })
 
   registerEndpoint('/api/shelves/home/stock', () => api.stock)
+
+  registerEndpoint('/api/shelves/home/library', fakeLibrary)
+
+  for (const kind of libraryFilters) {
+    registerEndpoint(
+      `/api/shelves/home/library/${kind}`,
+      fakeLibraryFilter(kind),
+    )
+  }
 
   registerEndpoint(
     '/api/roasters',

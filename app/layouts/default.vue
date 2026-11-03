@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-dvh lg:grid lg:grid-cols-[248px_1fr]">
+  <div class="min-h-dvh lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
     <AppSidebar />
     <div
       class="pr-[env(safe-area-inset-right)] pb-[calc(7rem+env(safe-area-inset-bottom))] pl-[env(safe-area-inset-left)] lg:pb-16"

@@ -46,7 +46,7 @@ import {
   verdictOn,
 } from '#server/utils/verdicts'
 
-const coffeeColumns = {
+export const coffeeColumns = {
   id: coffee.id,
   name: coffee.name,
   roaster: roaster.name,
@@ -111,7 +111,7 @@ async function describedOf(db: Database, coffeeId: string) {
   return { ...(await originsOf(db, coffeeId)), ...entries }
 }
 
-async function flavorNotesOf(db: Database, coffeeIds: string[]) {
+export async function flavorNotesOf(db: Database, coffeeIds: string[]) {
   const notes = new Map<string, ListEntry[]>()
 
   if (!coffeeIds.length) return notes
