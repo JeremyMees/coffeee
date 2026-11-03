@@ -15,4 +15,12 @@ describe('signed-out visitors', () => {
       '/sign-in?redirect=/admin/invites',
     )
   })
+  it.each(['/sign-up', '/forgot-password', '/reset-password?token=t'])(
+    'can open %s without signing in',
+    async route => {
+      await mountSuspended(App, { route })
+
+      expect(useRouter().currentRoute.value.fullPath).toBe(route)
+    },
+  )
 })

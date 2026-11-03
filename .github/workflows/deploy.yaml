@@ -57,7 +57,9 @@ jobs:
             --env NUXT_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             --env NUXT_GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             --env NUXT_ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
-            --env NUXT_PRODUCTION_URL=https://coffeee-shelf.vercel.app
+            --env NUXT_PLUNK_API_KEY=${{ secrets.PLUNK_API_KEY }}
+            --env NUXT_EMAIL_FROM=hello@coffeee.app
+            --env NUXT_PRODUCTION_URL=https://www.coffeee.app
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}

@@ -33,3 +33,7 @@ coverage/
 # Playwright
 test-results/
 playwright-report/
+
+# Maizzle
+.maizzle
+server/assets/emails

@@ -1,4 +1,5 @@
 import type { BetterAuthPlugin } from 'better-auth'
+import type { GoogleOptions } from 'better-auth/social-providers'
 import type { Database } from '#server/types/database'
 
 export interface AuthConfig {
@@ -6,6 +7,6 @@ export interface AuthConfig {
   secret: string
   productionUrl: string
   adminEmail: string
-  google: { clientId: string; clientSecret: string }
+  google: GoogleOptions
   plugins?: BetterAuthPlugin[]
 }

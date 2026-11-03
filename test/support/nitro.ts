@@ -11,6 +11,7 @@ export function useStorage(base: string) {
   storages.set(base, items)
 
   return {
+    getItem: async (key: string) => items.get(key) ?? null,
     getItemRaw: async (key: string) => items.get(key) ?? null,
     setItemRaw: async (key: string, value: unknown) => {
       items.set(key, value)

@@ -1,4 +1,7 @@
+import type { GoogleProfile } from 'better-auth/social-providers'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Email } from '#server/types/email'
+import { user as userTable } from '#server/db/schemas'
 import { createAuth, useAuth } from '#server/utils/auth'
 import { createInviteLink, inviteEmail } from '#server/utils/invites'
 import { listShelves } from '#server/utils/shelves'
@@ -7,11 +10,18 @@ import { runtimeConfig } from '#test/support/nitro'
 
 const current = vi.hoisted(() => ({
   db: undefined as unknown,
+  sent: [] as Email[],
   oauthState: undefined as
     { additionalData?: Record<string, unknown> } | undefined,
 }))
 
 vi.mock('#server/utils/db', () => ({ useDb: () => current.db }))
+
+vi.mock('#server/utils/email', () => ({
+  sendEmail: async (email: Email) => {
+    current.sent.push(email)
+  },
+}))
 
 vi.mock('better-auth/api', async importOriginal => ({
   ...(await importOriginal<object>()),
@@ -24,6 +34,7 @@ vi.mock('better-auth/api', async importOriginal => ({
 
 beforeEach(() => {
   current.oauthState = undefined
+  current.sent = []
 })
 
 async function setup() {
@@ -33,7 +44,19 @@ async function setup() {
     secret: 'a-test-secret-that-is-long-enough-to-use',
     productionUrl: 'http://localhost:3000',
     adminEmail: 'jeremy@example.com',
-    google: { clientId: 'google-id', clientSecret: 'google-secret' },
+    google: {
+      clientId: 'google-id',
+      clientSecret: 'google-secret',
+      verifyIdToken: async () => true,
+      getUserInfo: async ({ idToken }) => ({
+        user: {
+          name: 'Someone',
+          email: idToken!,
+          emailVerified: true,
+        },
+        data: { sub: `google-${idToken}` } as GoogleProfile,
+      }),
+    },
   })
   const context = await auth.$context
 
@@ -44,7 +67,42 @@ async function setup() {
     )
   }
 
-  return { db, signUpWithGoogle }
+  function signUpWithPassword(email: string, inviteToken?: string) {
+    return auth.api.signUpEmail({
+      body: { name: 'Sarah', email, password: 'a-long-password' },
+      query: inviteToken ? { inviteToken } : undefined,
+    })
+  }
+
+  function signInWithPassword(email: string, password = 'a-long-password') {
+    return auth.api.signInEmail({ body: { email, password } })
+  }
+
+  function signInWithGoogle(email: string) {
+    return auth.api.signInSocial({
+      body: { provider: 'google', idToken: { token: email } },
+    })
+  }
+
+  async function followLink(link: string) {
+    return auth.handler(new Request(link))
+  }
+
+  return {
+    auth,
+    db,
+    signUpWithGoogle,
+    signUpWithPassword,
+    signInWithPassword,
+    signInWithGoogle,
+    followLink,
+  }
+}
+
+async function invite(db: Awaited<ReturnType<typeof setup>>['db']) {
+  const admin = await createTestUser(db, { role: 'admin' })
+
+  return { admin, ...(await createInviteLink(db, { createdBy: admin.id })) }
 }
 
 describe('signing up', () => {
@@ -102,6 +160,214 @@ describe('signing up', () => {
     const { user } = await signUpWithGoogle('Jeremy@example.com')
 
     expect(user).toMatchObject({ email: 'jeremy@example.com', role: 'admin' })
+  })
+})
+
+describe('signing up with a password', () => {
+  it('lets an invited email create an account', async () => {
+    const { db, signUpWithPassword } = await setup()
+    const admin = await createTestUser(db, { role: 'admin' })
+    await inviteEmail(db, { email: 'sarah@example.com', createdBy: admin.id })
+
+    const { user } = await signUpWithPassword('Sarah@example.com')
+
+    expect(user).toMatchObject({
+      email: 'sarah@example.com',
+      emailVerified: false,
+    })
+    expect(await listShelves(db, user.id)).toEqual([
+      expect.objectContaining({ name: "Sarah's shelf" }),
+    ])
+  })
+
+  it('lets someone in with an invite link', async () => {
+    const { db, signUpWithPassword } = await setup()
+    const { token } = await invite(db)
+
+    const { user } = await signUpWithPassword('tom@example.com', token)
+
+    expect(user).toMatchObject({ email: 'tom@example.com' })
+  })
+
+  it('refuses someone without an invite and emails nothing', async () => {
+    const { db, signUpWithPassword } = await setup()
+
+    await expect(
+      signUpWithPassword('stranger@example.com'),
+    ).rejects.toMatchObject({
+      body: {
+        code: 'INVITE_REQUIRED',
+        message: 'You need an invite to join Coffeee',
+      },
+    })
+    expect(await db.select().from(userTable)).toEqual([])
+    expect(current.sent).toEqual([])
+  })
+
+  it('emails a link to confirm the address', async () => {
+    const { db, signUpWithPassword } = await setup()
+    const { token } = await invite(db)
+
+    await signUpWithPassword('tom@example.com', token)
+
+    expect(current.sent).toEqual([
+      {
+        to: 'tom@example.com',
+        subject: 'Confirm your email for Coffeee',
+        template: 'VerifyEmail',
+        values: {
+          name: 'Sarah',
+          link: expect.stringMatching(
+            /^http:\/\/localhost:3000\/api\/auth\/verify-email\?token=/,
+          ),
+        },
+      },
+    ])
+  })
+
+  it('refuses to sign in until the email is confirmed, and emails the link again', async () => {
+    const { db, signUpWithPassword, signInWithPassword } = await setup()
+    const { token } = await invite(db)
+    await signUpWithPassword('tom@example.com', token)
+
+    await expect(signInWithPassword('tom@example.com')).rejects.toMatchObject({
+      body: { code: 'EMAIL_NOT_VERIFIED' },
+    })
+    expect(current.sent).toHaveLength(2)
+    expect(current.sent[1]).toMatchObject({
+      to: 'tom@example.com',
+      template: 'VerifyEmail',
+    })
+  })
+
+  it('signs in once the emailed link is followed', async () => {
+    const { db, signUpWithPassword, signInWithPassword, followLink } =
+      await setup()
+    const { token } = await invite(db)
+    await signUpWithPassword('tom@example.com', token)
+
+    const confirmed = await followLink(current.sent[0]!.values.link)
+    const { user } = await signInWithPassword('tom@example.com')
+
+    expect(confirmed.status).toBe(302)
+    expect(confirmed.headers.get('set-cookie')).toContain('session_token')
+    expect(user).toMatchObject({
+      email: 'tom@example.com',
+      emailVerified: true,
+    })
+  })
+})
+
+describe('resetting a forgotten password', () => {
+  async function confirmedUser() {
+    const found = await setup()
+    const { token } = await invite(found.db)
+    await found.signUpWithPassword('tom@example.com', token)
+    await found.followLink(current.sent[0]!.values.link)
+    current.sent = []
+
+    return found
+  }
+
+  it('emails a link to pick a new password', async () => {
+    const { auth } = await confirmedUser()
+
+    await auth.api.requestPasswordReset({
+      body: { email: 'tom@example.com', redirectTo: '/reset-password' },
+    })
+
+    expect(current.sent).toEqual([
+      {
+        to: 'tom@example.com',
+        subject: 'Reset your Coffeee password',
+        template: 'ResetPassword',
+        values: {
+          name: 'Sarah',
+          link: expect.stringMatching(
+            /^http:\/\/localhost:3000\/api\/auth\/reset-password\/[\w-]+\?callbackURL=%2Freset-password$/,
+          ),
+        },
+      },
+    ])
+  })
+
+  it('emails nothing for an address without an account', async () => {
+    const { auth } = await confirmedUser()
+
+    await auth.api.requestPasswordReset({
+      body: { email: 'nobody@example.com', redirectTo: '/reset-password' },
+    })
+
+    expect(current.sent).toEqual([])
+  })
+
+  it('signs in with the new password from the emailed link', async () => {
+    const { auth, followLink, signInWithPassword } = await confirmedUser()
+    await auth.api.requestPasswordReset({
+      body: { email: 'tom@example.com', redirectTo: '/reset-password' },
+    })
+
+    const opened = await followLink(current.sent[0]!.values.link)
+    const token = new URL(
+      opened.headers.get('location')!,
+      'http://x',
+    ).searchParams.get('token')!
+    await auth.api.resetPassword({
+      body: { token, newPassword: 'a-brand-new-password' },
+    })
+
+    await expect(signInWithPassword('tom@example.com')).rejects.toMatchObject({
+      body: { code: 'INVALID_EMAIL_OR_PASSWORD' },
+    })
+    expect(
+      await signInWithPassword('tom@example.com', 'a-brand-new-password'),
+    ).toMatchObject({ user: { email: 'tom@example.com' } })
+  })
+})
+
+describe('signing in with Google after signing up with a password', () => {
+  it('reaches the same user once the email is confirmed', async () => {
+    const { db, signUpWithPassword, followLink, signInWithGoogle } =
+      await setup()
+    const { token } = await invite(db)
+    const { user } = await signUpWithPassword('tom@example.com', token)
+    await followLink(current.sent[0]!.values.link)
+
+    const google = await signInWithGoogle('tom@example.com')
+
+    expect(google).toMatchObject({ user: { id: user.id } })
+    expect(await db.select().from(userTable)).toHaveLength(2)
+  })
+
+  it('does not take over an account whose email is not confirmed', async () => {
+    const { db, signUpWithPassword, signInWithGoogle } = await setup()
+    const { token } = await invite(db)
+    await signUpWithPassword('tom@example.com', token)
+
+    await expect(signInWithGoogle('tom@example.com')).rejects.toMatchObject({
+      body: { message: 'account not linked' },
+    })
+  })
+
+  it('lets a Google user also sign in with a password after a reset', async () => {
+    const { db, auth, signUpWithGoogle, signInWithPassword } = await setup()
+    const admin = await createTestUser(db, { role: 'admin' })
+    await inviteEmail(db, { email: 'sarah@example.com', createdBy: admin.id })
+    const { user } = await signUpWithGoogle('sarah@example.com')
+    await auth.api.requestPasswordReset({
+      body: { email: 'sarah@example.com', redirectTo: '/reset-password' },
+    })
+    const token = current.sent[0]!.values.link.match(
+      /reset-password\/([\w-]+)/,
+    )![1]!
+
+    await auth.api.resetPassword({
+      body: { token, newPassword: 'a-long-password' },
+    })
+
+    expect(await signInWithPassword('sarah@example.com')).toMatchObject({
+      user: { id: user.id },
+    })
   })
 })
 

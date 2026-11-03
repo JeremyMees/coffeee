@@ -47,6 +47,7 @@ export default defineConfig({
       exclude: [
         'app/components/ui/**',
         'app/assets/**',
+        'app/emails/**',
         'app/utils/shadcn.ts',
         'server/utils/db.ts',
         'server/db/**',

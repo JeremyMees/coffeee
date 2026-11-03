@@ -71,8 +71,8 @@ async function copyLink() {
         <div>
           <h3 class="font-sans text-lg font-semibold">Allow an email</h3>
           <p class="mt-1 text-xs">
-            That person can sign in with Google using this address. It stays
-            allowed until they sign up or you revoke it.
+            That person can sign up with Google or a password using this
+            address. It stays allowed until they sign up or you revoke it.
           </p>
         </div>
         <FieldGroup>

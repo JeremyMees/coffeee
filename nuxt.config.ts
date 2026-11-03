@@ -15,6 +15,7 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@vite-pwa/nuxt',
     'shadcn-nuxt',
+    '@maizzle/nuxt',
   ],
 
   future: { compatibilityVersion: 5 },
@@ -74,6 +75,8 @@ export default defineNuxtConfig({
     adminEmail: '',
     googleClientId: '',
     googleClientSecret: '',
+    plunkApiKey: '',
+    emailFrom: '',
   },
 
   imports: { dirs: ['types/*.ts'] },
@@ -86,6 +89,14 @@ export default defineNuxtConfig({
   image: {
     provider: process.env.VERCEL ? 'vercel' : 'none',
     domains: photoHost ? [photoHost] : [],
+  },
+
+  maizzle: {
+    content: ['app/emails/*.vue'],
+    components: { source: ['app/emails/components'] },
+    css: { base: 'app/emails' },
+    static: { source: [] },
+    plaintext: true,
   },
 
   shadcn: {

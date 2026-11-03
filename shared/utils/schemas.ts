@@ -467,3 +467,31 @@ export const newOriginEntrySchema = entryNameSchema.extend({
     .string({ error: 'Pick a country from the list' })
     .refine(isOriginCode, 'Pick a country from the list'),
 })
+
+export const passwordMinLength = 8
+
+const passwordSchema = z
+  .string({ error: `Use at least ${passwordMinLength} characters` })
+  .min(passwordMinLength, {
+    error: `Use at least ${passwordMinLength} characters`,
+  })
+  .max(128, { error: 'Use at most 128 characters' })
+
+export const signInSchema = z.object({
+  email: inviteEmailSchema.shape.email,
+  password: z
+    .string({ error: 'Enter your password' })
+    .min(1, { error: 'Enter your password' }),
+})
+
+export const signUpSchema = z.object({
+  name: z
+    .string({ error: 'Enter your name' })
+    .trim()
+    .min(1, { error: 'Enter your name' })
+    .max(80, { error: 'Keep your name under 80 characters' }),
+  email: inviteEmailSchema.shape.email,
+  password: passwordSchema,
+})
+
+export const newPasswordSchema = z.object({ password: passwordSchema })

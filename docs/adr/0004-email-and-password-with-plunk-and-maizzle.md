@@ -7,7 +7,7 @@ uses Better Auth's built-in email and password support, with email verification
 and password reset. Emails are written as Vue templates and built with Maizzle
 through `@maizzle/nuxt`, which turns Tailwind classes into inlined, email-safe
 HTML plus a plain-text version, and they are sent through Plunk's HTTP API from
-a domain Jeremy owns, the same setup as dnd-tracker.
+the app's own domain, `coffeee.app`, the same setup as dnd-tracker.
 
 ## Consequences
 
@@ -16,8 +16,8 @@ a domain Jeremy owns, the same setup as dnd-tracker.
   sign-up must verify its email before it can sign in.
 - Accounts with the same verified email are linked, so signing in with Google
   after signing up with a password reaches the same user.
-- Emails are sent from Jeremy's own domain, verified in Plunk, while the app
-  itself stays on its `vercel.app` address for now.
+- Emails are sent from `hello@coffeee.app`, verified in Plunk, and the app
+  itself runs on `www.coffeee.app`.
 - Email sending sits behind one server util, so tests replace it and assert on
   what would have been sent instead of calling Plunk.
 

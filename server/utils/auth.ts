@@ -1,19 +1,28 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { betterAuth } from 'better-auth'
+import type { GenericEndpointContext } from 'better-auth'
 import { APIError, getOAuthState } from 'better-auth/api'
 import { admin, oAuthProxy } from 'better-auth/plugins'
 import { useRuntimeConfig } from 'nitropack/runtime'
 import type { AuthConfig } from '#server/types/auth'
 import * as schema from '#server/db/schemas'
 import { useDb } from '#server/utils/db'
+import { sendEmail } from '#server/utils/email'
 import { claimInvite } from '#server/utils/invites'
 import { createShelf, shelfNameFor } from '#server/utils/shelves'
 
-const hosts = ['localhost:*', '127.0.0.1:*', 'coffeee-*.vercel.app']
+const hosts = [
+  'localhost:*',
+  '127.0.0.1:*',
+  'coffeee-*.vercel.app',
+  'www.coffeee.app',
+  'coffeee.app',
+]
 
-async function inviteTokenFromSignIn() {
+async function inviteTokenFromSignUp(context: GenericEndpointContext | null) {
   const state = await getOAuthState().catch(() => null)
-  const token = state?.additionalData?.inviteToken
+  const token =
+    context?.query?.inviteToken ?? state?.additionalData?.inviteToken
 
   return typeof token === 'string' ? token : undefined
 }
@@ -26,29 +35,50 @@ export function createAuth(config: AuthConfig) {
       'http://localhost:*',
       'http://127.0.0.1:*',
       'https://coffeee-*.vercel.app',
+      'https://www.coffeee.app',
+      'https://coffeee.app',
     ],
     database: drizzleAdapter(config.db, { provider: 'pg', schema }),
-    socialProviders: {
-      google: {
-        clientId: config.google.clientId,
-        clientSecret: config.google.clientSecret,
-      },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: true,
+      sendResetPassword: ({ user, url }) =>
+        sendEmail({
+          to: user.email,
+          subject: 'Reset your Coffeee password',
+          template: 'ResetPassword',
+          values: { name: user.name, link: url },
+        }),
     },
+    emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: ({ user, url }) =>
+        sendEmail({
+          to: user.email,
+          subject: 'Confirm your email for Coffeee',
+          template: 'VerifyEmail',
+          values: { name: user.name, link: url },
+        }),
+    },
+    socialProviders: { google: config.google },
     databaseHooks: {
       user: {
         create: {
-          before: async user => {
+          before: async (user, context) => {
             const email = user.email.toLowerCase()
 
             if (email === config.adminEmail.toLowerCase()) {
               return { data: { ...user, role: 'admin' } }
             }
 
-            const token = await inviteTokenFromSignIn()
+            const token = await inviteTokenFromSignUp(context)
             const invite = await claimInvite(config.db, { email, token })
 
             if (!invite) {
-              throw new APIError('FORBIDDEN', {
+              throw new APIError('UNPROCESSABLE_ENTITY', {
+                code: 'INVITE_REQUIRED',
                 message: 'You need an invite to join Coffeee',
               })
             }

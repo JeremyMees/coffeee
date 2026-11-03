@@ -5,6 +5,7 @@ const route = useRoute()
 const signingIn = ref(false)
 
 const refused = computed(() => typeof route.query.error === 'string')
+const reset = computed(() => route.query.reset === 'done')
 
 function redirectPath() {
   const redirect = route.query.redirect
@@ -51,6 +52,10 @@ useHead({ title: 'Sign in · Coffeee' })
             Ask an admin to invite you, or open the invite link you were sent.
           </AlertDescription>
         </Alert>
+        <Alert v-if="reset" data-testid="sign-in-reset">
+          <AlertTitle>Password changed</AlertTitle>
+          <AlertDescription>Sign in with your new password.</AlertDescription>
+        </Alert>
         <Button
           size="lg"
           data-testid="sign-in-google"
@@ -59,6 +64,18 @@ useHead({ title: 'Sign in · Coffeee' })
         >
           Continue with Google
         </Button>
+        <FieldSeparator>or</FieldSeparator>
+        <PasswordSignInForm :redirect="redirectPath()" />
+        <p class="border-t pt-4 text-center text-xs">
+          Invited by email?
+          <NuxtLink
+            to="/sign-up"
+            class="underline underline-offset-4"
+            data-testid="sign-in-sign-up"
+          >
+            Create an account
+          </NuxtLink>
+        </p>
       </CardContent>
     </Card>
   </main>

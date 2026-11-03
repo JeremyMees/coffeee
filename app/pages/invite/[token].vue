@@ -32,7 +32,7 @@ useHead({ title: 'Your invite · Coffeee' })
           and expires seven days after it was made.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent class="flex flex-col gap-4">
         <Button
           size="lg"
           class="w-full"
@@ -42,6 +42,8 @@ useHead({ title: 'Your invite · Coffeee' })
         >
           Continue with Google
         </Button>
+        <FieldSeparator>or</FieldSeparator>
+        <PasswordSignUpForm :invite-token="String(route.params.token)" />
       </CardContent>
     </Card>
   </main>

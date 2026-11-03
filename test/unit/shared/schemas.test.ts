@@ -8,10 +8,13 @@ import {
   newBrewMethodSchema,
   newCoffeeSchema,
   newGrinderSchema,
+  newPasswordSchema,
   originListSearchSchema,
   newShelfSchema,
   purchaseSchema,
   roasterDetailsSchema,
+  signInSchema,
+  signUpSchema,
   verdictSchema,
 } from '#shared/utils/schemas'
 import { fieldErrors } from '#shared/utils/validation'
@@ -380,6 +383,54 @@ describe('inviteEmailSchema', () => {
   it('explains an invalid email', () => {
     expect(errorsOf(inviteEmailSchema, { email: 'not an email' })).toEqual({
       email: 'Enter a valid email',
+    })
+  })
+})
+
+describe('signInSchema', () => {
+  it('lowercases the email and keeps the password as typed', () => {
+    expect(
+      signInSchema.parse({ email: 'Tom@Example.com', password: ' secret ' }),
+    ).toEqual({ email: 'tom@example.com', password: ' secret ' })
+  })
+
+  it('asks for a password', () => {
+    expect(
+      errorsOf(signInSchema, { email: 'tom@example.com', password: '' }),
+    ).toEqual({ password: 'Enter your password' })
+  })
+})
+
+describe('signUpSchema', () => {
+  it('trims the name and lowercases the email', () => {
+    expect(
+      signUpSchema.parse({
+        name: ' Tom ',
+        email: 'Tom@Example.com',
+        password: 'a-long-password',
+      }),
+    ).toEqual({
+      name: 'Tom',
+      email: 'tom@example.com',
+      password: 'a-long-password',
+    })
+  })
+
+  it('explains each missing or short field', () => {
+    expect(
+      errorsOf(signUpSchema, { name: ' ', email: 'nope', password: 'short' }),
+    ).toEqual({
+      name: 'Enter your name',
+      email: 'Enter a valid email',
+      password: 'Use at least 8 characters',
+    })
+  })
+})
+
+describe('newPasswordSchema', () => {
+  it('refuses a password that is too long', () => {
+    expect(errorsOf(newPasswordSchema, { password: 'x'.repeat(129) })).toEqual({
+      password: 'Use at most 128 characters',
     })
   })
 })
