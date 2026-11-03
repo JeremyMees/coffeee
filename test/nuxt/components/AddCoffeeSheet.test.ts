@@ -130,7 +130,7 @@ describe('AddCoffeeSheet', () => {
     expect(byTestId('add-coffee-steps')!.textContent).toContain('Coffee')
     expect(byTestId('add-coffee-steps')!.textContent).toContain('First bag')
     expect(byTestId('add-coffee-back')).toBeNull()
-    expect(byTestId('add-coffee-submit')).toBeNull()
+    expect(byTestId('add-coffee-submit')).not.toBeNull()
   })
 
   it('moves between steps without asking for anything first', async () => {
