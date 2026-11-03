@@ -1,5 +1,7 @@
 <script setup lang="ts">
-defineProps<{ roaster: ListedRoaster }>()
+const props = defineProps<{ roaster: ListedRoaster }>()
+
+const morph = useMorph('roaster', () => props.roaster.id)
 </script>
 
 <template>
@@ -7,11 +9,17 @@ defineProps<{ roaster: ListedRoaster }>()
     :to="`/roasters/${roaster.id}`"
     data-testid="roaster-result"
     class="flex items-center gap-4 rounded-[18px] border p-3 transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    @click="morph.open"
   >
-    <RoasterLogoImage :roaster="roaster" class="size-16" />
+    <RoasterLogoImage
+      :roaster="roaster"
+      class="size-16"
+      :style="morph.name('logo')"
+    />
     <div class="min-w-0 flex-1">
       <h2
-        class="truncate font-sans text-lg leading-tight font-semibold tracking-[-0.02em]"
+        class="w-fit max-w-full truncate font-sans text-lg leading-tight font-semibold tracking-[-0.02em]"
+        :style="morph.name('name')"
         data-testid="roaster-result-name"
       >
         {{ roaster.name }}

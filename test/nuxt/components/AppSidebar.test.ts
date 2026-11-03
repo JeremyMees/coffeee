@@ -52,4 +52,10 @@ describe('AppSidebar', () => {
       'Shelf: Work',
     )
   })
+
+  it('opens the list of keyboard shortcuts', async () => {
+    const sidebar = await mountSidebar()
+
+    expect(sidebar.get(tid('shortcuts-open')).text()).toBe('Shortcuts')
+  })
 })

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ArrowUpRightIcon, PencilIcon } from '@lucide/vue'
 
-defineProps<{ shelfId: string; roaster: ShelfRoaster }>()
+const props = defineProps<{ shelfId: string; roaster: ShelfRoaster }>()
+
+const morph = useMorph('roaster', () => props.roaster.id)
 
 const editing = ref(false)
 </script>
@@ -22,12 +24,18 @@ const editing = ref(false)
       </button>
     </div>
     <div class="mt-4 flex items-center gap-4 rounded-[18px] border p-4 text-xs">
-      <RoasterLogoImage :roaster="roaster" class="size-16" />
+      <RoasterLogoImage
+        :roaster="roaster"
+        class="size-16"
+        :style="morph.name('logo')"
+      />
       <div class="flex min-w-0 flex-col gap-1">
         <NuxtLink
           :to="`/roasters/${roaster.id}`"
-          class="font-sans text-sm font-semibold underline-offset-4 hover:underline"
+          class="w-fit font-sans text-sm font-semibold underline-offset-4 hover:underline"
+          :style="morph.name('name')"
           data-testid="roaster-details-name"
+          @click="morph.open"
         >
           {{ roaster.name }}
         </NuxtLink>

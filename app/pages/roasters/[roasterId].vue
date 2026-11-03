@@ -14,6 +14,13 @@ const roasterId = computed(() => route.params.roasterId)
 const shelf = useCurrentShelf()
 const shelfId = computed(() => shelf.value?.id ?? '')
 
+const { link: back, back: goBack } = useBackLink({
+  label: 'Roasters',
+  to: '/roasters',
+})
+const morph = useMorph('roaster', roasterId)
+morph.open()
+
 const editing = ref(false)
 const mine = ref(false)
 
@@ -52,19 +59,25 @@ useIntersectionObserver(more, ([entry]) => {
 <template>
   <main v-if="roaster && shelf" class="max-w-2xl">
     <NuxtLink
-      to="/roasters"
+      :to="back.to"
       data-testid="roaster-back"
       class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+      @click="goBack"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
-      Roasters
+      {{ back.label }}
     </NuxtLink>
     <header class="mt-6 flex items-end justify-between gap-4">
       <div class="flex min-w-0 items-center gap-4">
-        <RoasterLogoImage :roaster="roaster" class="size-20" />
+        <RoasterLogoImage
+          :roaster="roaster"
+          class="size-20"
+          :style="morph.name('logo')"
+        />
         <div class="min-w-0">
           <h1
-            class="text-[40px] leading-none lg:text-[56px]"
+            class="w-fit text-[40px] leading-none lg:text-[56px]"
+            :style="morph.name('name')"
             data-testid="roaster-title"
           >
             {{ roaster.name }}

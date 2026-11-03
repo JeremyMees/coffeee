@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ArrowUpRightIcon, PencilIcon } from '@lucide/vue'
 
-defineProps<{
-  coffee: Pick<SharedCoffee, 'name' | 'roaster' | 'link'> & {
+const props = defineProps<{
+  coffee: Pick<SharedCoffee, 'id' | 'name' | 'roaster' | 'link'> & {
     roasterDetails: Pick<ShelfRoaster, 'id'>
   }
   editable: boolean
 }>()
 
 defineEmits<{ edit: [] }>()
+
+const morph = useMorph('coffee', () => props.coffee.id)
 </script>
 
 <template>
@@ -21,7 +23,11 @@ defineEmits<{ edit: [] }>()
       >
         {{ coffee.roaster }}
       </NuxtLink>
-      <h1 class="mt-2 text-[48px] lg:text-[72px]" data-testid="coffee-title">
+      <h1
+        class="mt-2 w-fit text-[48px] lg:text-[72px]"
+        :style="morph.name('name')"
+        data-testid="coffee-title"
+      >
         {{ coffee.name }}
       </h1>
       <a

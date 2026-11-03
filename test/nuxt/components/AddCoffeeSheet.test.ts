@@ -251,7 +251,7 @@ describe('AddCoffeeSheet', () => {
     await openSheet()
 
     byTestId('add-coffee-sheet')!
-      .querySelector<HTMLElement>('[data-slot="sheet-close"]')!
+      .querySelector<HTMLElement>('[data-testid="form-sheet-close"]')!
       .click()
     await flushPromises()
 

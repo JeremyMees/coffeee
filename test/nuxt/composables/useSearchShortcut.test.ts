@@ -1,5 +1,11 @@
+import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useCurrentUser, useSearchFocus, useSearchShortcut } from '#imports'
+import {
+  useCurrentUser,
+  useRouter,
+  useSearchFocus,
+  useSearchShortcut,
+} from '#imports'
 import { currentPath, forgetLastShelf, runOn, testUser } from '../fixtures'
 
 beforeEach(() => {
@@ -42,5 +48,17 @@ describe('useSearchShortcut', () => {
 
     expect(event.defaultPrevented).toBe(false)
     expect(useSearchFocus().value).toBe(false)
+  })
+
+  it('keeps the search in the address when Discover is already open', async () => {
+    await runOn('/shelves/work/discover?q=lime&mine=true', useSearchShortcut)
+
+    press({ metaKey: true })
+    await flushPromises()
+
+    expect(useRouter().currentRoute.value.fullPath).toBe(
+      '/shelves/work/discover?q=lime&mine=true',
+    )
+    expect(useSearchFocus().value).toBe(true)
   })
 })

@@ -100,3 +100,33 @@
 ::view-transition-new(root) {
   animation-duration: 150ms;
 }
+
+::view-transition-group(.coffee-photo),
+::view-transition-group(.coffee-name),
+::view-transition-group(.roaster-logo),
+::view-transition-group(.roaster-name) {
+  animation-duration: 350ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+::view-transition-old(.coffee-photo),
+::view-transition-new(.coffee-photo) {
+  height: 100%;
+  object-fit: cover;
+}
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 150ms ease;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*) {
+    animation: none;
+  }
+}

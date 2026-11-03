@@ -27,6 +27,12 @@ export const queryKeys = {
     kind: FilterKind,
     search: string,
   ) => ['shelves', shelfId, area, kind, search],
+  filterLabels: (shelfId: string, ids: Record<string, string>) => [
+    'shelves',
+    shelfId,
+    'filter-labels',
+    ids,
+  ],
   shelfCoffee: (shelfId: string, coffeeId: string) => [
     'shelves',
     shelfId,

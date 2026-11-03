@@ -42,7 +42,10 @@ const destinations = useDestinations()
         </a>
       </NuxtLink>
     </nav>
-    <div class="mt-auto border-t p-3">
+    <div class="mt-auto px-3 pb-3">
+      <AppShortcuts />
+    </div>
+    <div class="border-t p-3">
       <ShelfSwitcher
         side="top"
         class="w-full"

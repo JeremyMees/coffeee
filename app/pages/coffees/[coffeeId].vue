@@ -5,14 +5,10 @@ import { useCoffee } from '~/queries/coffees'
 const route = useRoute('coffees-coffeeId')
 const coffeeId = computed(() => route.params.coffeeId)
 const shelf = useCurrentShelf()
-const back = computed(() => {
-  const discover = `/shelves/${shelf.value?.id}/discover`
-  const previous = import.meta.client ? window.history.state?.back : null
-
-  return typeof previous === 'string' && previous.startsWith(discover)
-    ? previous
-    : discover
-})
+const { link: back, back: goBack } = useBackLink(() => ({
+  label: 'Discover',
+  to: `/shelves/${shelf.value?.id}/discover`,
+}))
 
 const editing = ref(false)
 
@@ -29,12 +25,13 @@ useHead({ title: () => `${coffee.value?.name} · Coffeee` })
 <template>
   <main v-if="coffee && shelf" class="max-w-2xl">
     <NuxtLink
-      :to="back"
+      :to="back.to"
       data-testid="coffee-back"
       class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+      @click="goBack"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
-      Discover
+      {{ back.label }}
     </NuxtLink>
     <CoffeePhoto class="mt-4" :shelf-id="shelf.id" :coffee="coffee" />
     <CoffeeHeader

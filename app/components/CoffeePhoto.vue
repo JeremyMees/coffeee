@@ -4,6 +4,9 @@ import { useCoffeePhotoRemoval, useCoffeePhotoUpdate } from '~/queries/coffees'
 
 const props = defineProps<{ shelfId: string; coffee: PhotoCoffee }>()
 
+const morph = useMorph('coffee', () => props.coffee.id)
+morph.open()
+
 const failure = ref('')
 
 const { mutateAsync: updatePhoto, isPending: uploading } =
@@ -47,6 +50,7 @@ function remove() {
     <figure
       data-testid="coffee-photo"
       class="aspect-4/3 overflow-hidden rounded-[28px] bg-accent"
+      :style="morph.name('photo')"
     >
       <NuxtImg
         v-if="coffee.photoUrl"

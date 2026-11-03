@@ -18,12 +18,13 @@ afterEach(() => {
 })
 
 describe('FormSheet', () => {
-  it('slides in from the right on desktop', async () => {
+  it('opens as a dialog in the middle on desktop', async () => {
     setViewport(1280, 800)
 
     await mountSheet(true)
 
-    expect(byTestId('a-sheet')!.dataset.side).toBe('right')
+    expect(byTestId('a-sheet')!.dataset.slot).toBe('dialog-content')
+    expect(byTestId('form-sheet-handle')!.className).not.toContain('touch-none')
   })
 
   it('slides up from the bottom on phones', async () => {
@@ -54,10 +55,76 @@ describe('FormSheet', () => {
     const sheet = await mountSheet(true)
 
     byTestId('a-sheet')!
-      .querySelector<HTMLElement>('[data-slot="sheet-close"]')!
+      .querySelector<HTMLElement>('[data-testid="form-sheet-close"]')!
       .click()
     await flushPromises()
 
     expect(sheet.emitted('update:open')).toEqual([[false]])
+  })
+})
+
+describe('FormSheet on a phone', () => {
+  function drag(distance: number) {
+    const handle = byTestId('form-sheet-handle')!
+    const pointer = { pointerId: 1, pointerType: 'touch', buttons: 1 }
+
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        ...pointer,
+        clientX: 100,
+        clientY: 100,
+      }),
+    )
+    handle.dispatchEvent(
+      new PointerEvent('pointermove', {
+        ...pointer,
+        clientX: 100,
+        clientY: 100 + distance,
+      }),
+    )
+  }
+
+  function letGo(distance: number) {
+    byTestId('form-sheet-handle')!.dispatchEvent(
+      new PointerEvent('pointerup', {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 100,
+        clientY: 100 + distance,
+      }),
+    )
+  }
+
+  it('follows a finger dragging it down', async () => {
+    setViewport(375, 812)
+    await mountSheet(true)
+
+    drag(60)
+    await flushPromises()
+
+    expect(byTestId('a-sheet')!.style.transform).toBe('translateY(60px)')
+  })
+
+  it('closes when dragged far enough down', async () => {
+    setViewport(375, 812)
+    const sheet = await mountSheet(true)
+
+    drag(160)
+    letGo(160)
+    await flushPromises()
+
+    expect(sheet.emitted('update:open')).toEqual([[false]])
+  })
+
+  it('springs back when let go too early', async () => {
+    setViewport(375, 812)
+    const sheet = await mountSheet(true)
+
+    drag(40)
+    letGo(40)
+    await flushPromises()
+
+    expect(sheet.emitted('update:open')).toBeUndefined()
+    expect(byTestId('a-sheet')!.style.transform).toBe('')
   })
 })

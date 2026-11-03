@@ -11,6 +11,23 @@ function result(overrides: Partial<ListedRoaster> = {}) {
 }
 
 describe('RoasterResult', () => {
+  it('names its logo and name for the morph into the roaster it opens', async () => {
+    clearNuxtState('roaster-morph')
+    const wrapper = await result()
+    expect(
+      wrapper.get(tid('roaster-result', 'roaster-logo')).attributes('style'),
+    ).toBeUndefined()
+
+    await wrapper.get(tid('roaster-result')).trigger('click')
+
+    expect(
+      wrapper.get(tid('roaster-result', 'roaster-logo')).attributes('style'),
+    ).toContain('view-transition-name: roaster-logo-r2')
+    expect(
+      wrapper.get(tid('roaster-result-name')).attributes('style'),
+    ).toContain('view-transition-name: roaster-name-r2')
+  })
+
   it('opens the roaster and names it and where it is', async () => {
     const wrapper = await result()
 

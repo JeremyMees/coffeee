@@ -2,16 +2,21 @@
 import { SearchIcon } from '@lucide/vue'
 import { refDebounced, useIntersectionObserver } from '@vueuse/core'
 import { useCatalogPages } from '~/queries/catalog'
+import { useFilterLabels } from '~/queries/filters'
 
 useHead({ title: 'Discover · Coffeee' })
 
 const route = useRoute('shelves-shelfId-discover')
 const shelfId = computed(() => route.params.shelfId)
 
-const search = ref(String(route.query.q ?? ''))
+const labels = useFilterLabels(shelfId, labelIds(route.query))
+await labels.suspense()
+const initial = catalogFromRoute(route.query, labels.data.value ?? {})
+
+const search = ref(initial.search)
 const searched = refDebounced(search, 200)
-const filter = ref(emptyCatalogFilter())
-const sort = ref<CatalogSort>('newest')
+const filter = ref(initial.filter)
+const sort = ref<CatalogSort>(initial.sort)
 
 const catalog = useCatalogPages(shelfId, () =>
   catalogQuery(searched.value, filter.value, sort.value),
@@ -25,11 +30,11 @@ const narrowed = computed(
   () => Boolean(searched.value.trim()) || isCatalogFiltered(filter.value),
 )
 
-watch(searched, typed => {
-  navigateTo(
-    { query: typed.trim() ? { q: typed.trim() } : {} },
-    { replace: true },
-  )
+watch([searched, filter, sort], () => {
+  const query = catalogRoute(searched.value, filter.value, sort.value)
+
+  labels.remember(query, catalogLabels(filter.value))
+  navigateTo({ query }, { replace: true })
 })
 
 const input = useTemplateRef<HTMLInputElement>('input')

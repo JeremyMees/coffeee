@@ -11,6 +11,23 @@ function result(overrides: Partial<CatalogCoffee> = {}) {
 }
 
 describe('CatalogResult', () => {
+  it('names its photo and name for the morph into the coffee it opens', async () => {
+    clearNuxtState('coffee-morph')
+    const wrapper = await result()
+    expect(
+      wrapper.get(tid('catalog-result-thumbnail')).attributes('style'),
+    ).toBeUndefined()
+
+    await wrapper.get(tid('catalog-result')).trigger('click')
+
+    expect(
+      wrapper.get(tid('catalog-result-thumbnail')).attributes('style'),
+    ).toContain('view-transition-name: coffee-photo-c1')
+    expect(
+      wrapper.get(tid('catalog-result-name')).attributes('style'),
+    ).toContain('view-transition-name: coffee-name-c1')
+  })
+
   it('opens the coffee and names it, its roaster and how it is roasted', async () => {
     const wrapper = await result()
 

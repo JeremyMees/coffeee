@@ -169,4 +169,71 @@ describe('the Discover page', () => {
     )
     expect(useSearchFocus().value).toBe(false)
   })
+
+  it('keeps the search, filters and sort in the address', async () => {
+    api.catalog = catalogCoffees()
+    await discover()
+
+    await type('search-input', 'a')
+    await click('catalog-filter-mine')
+    await click('catalog-sort-communityRating')
+
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({
+        q: 'a',
+        mine: 'true',
+        sort: 'communityRating',
+      }),
+    )
+  })
+
+  it('starts from the filters and sort in the address, with their names', async () => {
+    api.catalog = catalogCoffees()
+
+    const { page } = await discover(
+      '/shelves/home/discover?mine=true&roasterId=r1&roastedFor=filter&sort=communityRating',
+    )
+
+    expect(api.catalogQueries.at(-1)).toMatchObject({
+      mine: 'true',
+      roasterId: 'r1',
+      roastedFor: 'filter',
+      sort: 'communityRating',
+    })
+    expect(api.filterLabelQueries).toEqual([{ roasterId: 'r1' }])
+    expect(
+      page.get(tid('catalog-filter-mine')).attributes('aria-pressed'),
+    ).toBe('true')
+    expect(page.get(tid('catalog-filter-roasters')).text()).toBe('La Cabra')
+    expect(page.get(tid('catalog-filter-roasted-for')).text()).toBe('Filter')
+  })
+
+  it('does not look up names when no filter needs one', async () => {
+    await discover('/shelves/home/discover?mine=true')
+
+    expect(api.filterLabelQueries).toEqual([])
+  })
+
+  it('knows the names of filters it picked when coming back', async () => {
+    api.catalog = catalogCoffees()
+    await discover()
+    await click('catalog-filter-roasters')
+    const option = await vi.waitFor(() => {
+      const found = allByTestId('catalog-filter-option').find(
+        element => element.textContent?.trim() === 'La Cabra',
+      )
+      if (!found) throw new Error('No La Cabra')
+
+      return found
+    })
+    option.click()
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({ roasterId: 'r1' }),
+    )
+
+    const { page } = await discover('/shelves/home/discover?roasterId=r1')
+
+    expect(page.get(tid('catalog-filter-roasters')).text()).toBe('La Cabra')
+    expect(api.filterLabelQueries).toEqual([])
+  })
 })

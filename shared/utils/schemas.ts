@@ -124,6 +124,13 @@ export const catalogSearchSchema = listSearchSchema.extend({
   pageSize: pageSize('coffee', catalogPageSize),
 })
 
+export const filterLabelsSchema = z.object({
+  roasterId: optionalId('roaster'),
+  flavorNoteId: optionalId('flavor note'),
+  originCode: optionalId('origin'),
+  processId: optionalId('process'),
+})
+
 export const roasterSearchSchema = z.object({
   boughtFrom: yesOrNo('bought from'),
   page: pageNumber(),

@@ -26,6 +26,7 @@ export type EditableCoffee = Omit<
 
 export type CardCoffee = Pick<
   StockCoffee,
+  | 'id'
   | 'name'
   | 'roaster'
   | 'roastLevel'

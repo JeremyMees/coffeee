@@ -6,6 +6,10 @@ import { useCoffeeFinish } from '~/queries/purchases'
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
 const shelfId = computed(() => route.params.shelfId)
 const coffeeId = computed(() => route.params.coffeeId)
+const { link: back, back: goBack } = useBackLink(() => ({
+  label: 'Stock',
+  to: `/shelves/${shelfId.value}`,
+}))
 
 const editing = ref(false)
 const buying = ref(false)
@@ -49,12 +53,13 @@ const outlined =
 <template>
   <main v-if="coffee" class="max-w-2xl">
     <NuxtLink
-      :to="`/shelves/${shelfId}`"
+      :to="back.to"
       data-testid="coffee-back"
       class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+      @click="goBack"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
-      Stock
+      {{ back.label }}
     </NuxtLink>
     <CoffeePhoto class="mt-4" :shelf-id="shelfId" :coffee="coffee" />
     <CoffeeHeader

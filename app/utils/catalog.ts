@@ -70,6 +70,52 @@ export function catalogQuery(
   return query
 }
 
+export function catalogRoute(
+  search: string,
+  filter: CatalogFilter,
+  sort: CatalogSort,
+) {
+  const query = catalogQuery('', filter, sort)
+
+  return search.trim() ? { q: search.trim(), ...query } : query
+}
+
+const fixedCatalogLabels: Partial<
+  Record<CatalogPicker['param'], Record<string, string>>
+> = { roastLevel: roastLevelLabels, roastedFor: roastedForLabels }
+
+export function catalogFromRoute(
+  query: Record<string, unknown>,
+  labels: FilterLabels,
+) {
+  const filter = emptyCatalogFilter()
+  filter.mine = query.mine === 'true'
+
+  for (const picker of catalogPickers) {
+    const fixed = fixedCatalogLabels[picker.param]
+    const value = query[picker.param]
+
+    filter[picker.key] = pickedOption(
+      value,
+      fixed
+        ? fixedLabel(fixed, value)
+        : labels[picker.param as keyof FilterLabels],
+    )
+  }
+
+  return {
+    search: queryText(query.q),
+    filter,
+    sort: catalogSorts.find(sort => sort === query.sort) ?? 'newest',
+  }
+}
+
+export function catalogLabels(filter: CatalogFilter) {
+  return labelsOf(
+    catalogPickers.map(picker => [picker.param, filter[picker.key]]),
+  )
+}
+
 export function matchLabels(coffee: Pick<CatalogCoffee, 'matches'>) {
   return coffee.matches
     .filter(match => match.field !== 'name')

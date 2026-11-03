@@ -339,6 +339,28 @@ function fakeCatalog(event: H3Event) {
   }
 }
 
+const labelledOptions: Record<string, LibraryOption[]> = {
+  roasterId: catalogOptions.roasters,
+  flavorNoteId: catalogOptions['flavor-notes'],
+  originCode: catalogOptions.origins,
+  processId: catalogOptions.processes,
+}
+
+function fakeFilterLabels(event: H3Event) {
+  const query = getQuery(event) as Record<string, string>
+  api.filterLabelQueries.push(query)
+
+  return Object.fromEntries(
+    Object.entries(query).flatMap(([param, value]) => {
+      const option = labelledOptions[param]?.find(
+        option => option.value === value,
+      )
+
+      return option ? [[param, option.label]] : []
+    }),
+  )
+}
+
 function fakeRoasters(event: H3Event) {
   const query = getQuery(event) as Record<string, string>
   api.roasterQueries.push(query)
@@ -380,6 +402,7 @@ export const api = {
   catalog: [] as CatalogCoffee[],
   catalogQueries: [] as Record<string, string>[],
   catalogFilterQueries: [] as Record<string, string>[],
+  filterLabelQueries: [] as Record<string, string>[],
   roasters: [] as ListedRoaster[],
   roasterQueries: [] as Record<string, string>[],
   added: [] as unknown[],
@@ -449,6 +472,7 @@ export function resetApi() {
   api.catalog = []
   api.catalogQueries = []
   api.catalogFilterQueries = []
+  api.filterLabelQueries = []
   api.roasters = []
   api.roasterQueries = []
   api.added = []
@@ -503,6 +527,7 @@ export function fakeApi() {
   }
 
   registerEndpoint('/api/shelves/home/catalog', fakeCatalog)
+  registerEndpoint('/api/shelves/home/filter-labels', fakeFilterLabels)
   registerEndpoint('/api/shelves/home/roasters', fakeRoasters)
 
   registerEndpoint('/api/roasters/r2', {

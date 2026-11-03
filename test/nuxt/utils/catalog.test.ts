@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  catalogFromRoute,
+  catalogLabels,
   catalogQuery,
+  catalogRoute,
   emptyCatalogFilter,
   isCatalogFiltered,
   matchLabels,
@@ -70,5 +73,82 @@ describe('matchLabels', () => {
         }),
       ),
     ).toEqual(['Flavor note: Strawberry', 'Farm: Finca El Paraiso'])
+  })
+})
+
+describe('catalogRoute', () => {
+  it('keeps nothing in the address without a search, filters or sort', () => {
+    expect(catalogRoute(' ', emptyCatalogFilter(), 'newest')).toEqual({})
+  })
+
+  it('keeps the search as q, next to the filters and sort', () => {
+    expect(
+      catalogRoute(
+        ' lime ',
+        { ...emptyCatalogFilter(), mine: true, roaster: laCabra },
+        'communityRating',
+      ),
+    ).toEqual({
+      q: 'lime',
+      mine: 'true',
+      roasterId: 'r1',
+      sort: 'communityRating',
+    })
+  })
+})
+
+describe('catalogFromRoute', () => {
+  it('starts empty without an address to start from', () => {
+    expect(catalogFromRoute({}, {})).toEqual({
+      search: '',
+      filter: emptyCatalogFilter(),
+      sort: 'newest',
+    })
+  })
+
+  it('reads the search, filters and sort, naming each filter', () => {
+    expect(
+      catalogFromRoute(
+        {
+          q: 'lime',
+          mine: 'true',
+          roasterId: 'r1',
+          roastLevel: 'light',
+          sort: 'communityRating',
+        },
+        { roasterId: 'La Cabra' },
+      ),
+    ).toEqual({
+      search: 'lime',
+      filter: {
+        ...emptyCatalogFilter(),
+        mine: true,
+        roaster: laCabra,
+        roastLevel: { value: 'light', label: 'Light' },
+      },
+      sort: 'communityRating',
+    })
+  })
+
+  it('drops what it cannot name or does not know', () => {
+    const { filter, sort } = catalogFromRoute(
+      { roasterId: 'gone', roastLevel: 'burnt', sort: 'oldest' },
+      {},
+    )
+
+    expect(filter).toEqual(emptyCatalogFilter())
+    expect(sort).toBe('newest')
+  })
+})
+
+describe('catalogLabels', () => {
+  it('remembers the names of the filters that need looking up', () => {
+    expect(
+      catalogLabels({
+        ...emptyCatalogFilter(),
+        roaster: laCabra,
+        roastLevel: { value: 'light', label: 'Light' },
+      }),
+    ).toEqual({ roasterId: 'La Cabra' })
   })
 })

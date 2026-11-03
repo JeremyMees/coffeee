@@ -138,7 +138,7 @@ describe('PurchaseSheet', () => {
     const sheet = await openSheet()
 
     byTestId('purchase-sheet')!
-      .querySelector<HTMLElement>('[data-slot="sheet-close"]')!
+      .querySelector<HTMLElement>('[data-testid="form-sheet-close"]')!
       .click()
     await flushPromises()
 

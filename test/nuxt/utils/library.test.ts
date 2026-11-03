@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   emptyLibraryFilter,
   isLibraryFiltered,
+  libraryFromRoute,
+  libraryLabels,
   libraryQuery,
+  libraryRoute,
   originNames,
 } from '~/utils/library'
 import { libraryCoffee } from '../fake-api'
@@ -60,5 +63,87 @@ describe('originNames', () => {
         }),
       ),
     ).toBe('Ethiopia, Kenya')
+  })
+})
+
+describe('libraryRoute', () => {
+  it('keeps nothing in the address for the plain grid', () => {
+    expect(libraryRoute(emptyLibraryFilter(), 'grid', null, 0)).toEqual({})
+  })
+
+  it('keeps the filters, and the sort and page only for the table', () => {
+    const filter = { ...emptyLibraryFilter(), roaster: laCabra }
+    const sort = { column: 'rating', direction: 'descending' } as const
+
+    expect(libraryRoute(filter, 'grid', sort, 2)).toEqual({ roasterId: 'r1' })
+    expect(libraryRoute(filter, 'table', sort, 2)).toEqual({
+      roasterId: 'r1',
+      view: 'table',
+      sort: 'rating',
+      direction: 'descending',
+      page: '3',
+    })
+    expect(libraryRoute(filter, 'table', null, 0)).toEqual({
+      roasterId: 'r1',
+      view: 'table',
+    })
+  })
+})
+
+describe('libraryFromRoute', () => {
+  it('starts as the plain grid without an address to start from', () => {
+    expect(libraryFromRoute({}, {})).toEqual({
+      filter: emptyLibraryFilter(),
+      view: 'grid',
+      sort: null,
+      pageIndex: 0,
+    })
+  })
+
+  it('reads the filters, view, sort and page, naming each filter', () => {
+    expect(
+      libraryFromRoute(
+        {
+          favourites: 'true',
+          roasterId: 'r1',
+          view: 'table',
+          sort: 'rating',
+          direction: 'descending',
+          page: '3',
+        },
+        { roasterId: 'La Cabra' },
+      ),
+    ).toEqual({
+      filter: { ...emptyLibraryFilter(), favourites: true, roaster: laCabra },
+      view: 'table',
+      sort: { column: 'rating', direction: 'descending' },
+      pageIndex: 2,
+    })
+  })
+
+  it('drops what it cannot name or does not know', () => {
+    expect(
+      libraryFromRoute(
+        { roasterId: 'gone', view: 'list', sort: 'colour', page: 'two' },
+        {},
+      ),
+    ).toEqual({
+      filter: emptyLibraryFilter(),
+      view: 'grid',
+      sort: null,
+      pageIndex: 0,
+    })
+  })
+})
+
+describe('libraryLabels', () => {
+  it('remembers the names of the picked filters', () => {
+    expect(
+      libraryLabels({
+        ...emptyLibraryFilter(),
+        roaster: laCabra,
+        origin: { value: 'ET', label: 'Ethiopia' },
+      }),
+    ).toEqual({ roasterId: 'La Cabra', originCode: 'Ethiopia' })
   })
 })

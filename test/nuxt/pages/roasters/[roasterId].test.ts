@@ -34,6 +34,17 @@ async function roaster() {
 }
 
 describe('the page of a roaster', () => {
+  it('names its logo and title for the morph from and back to the list', async () => {
+    const { page } = await roaster()
+
+    expect(page.get(tid('roaster-title')).attributes('style')).toContain(
+      'view-transition-name: roaster-name-r2',
+    )
+    expect(page.get(tid('roaster-logo')).attributes('style')).toContain(
+      'view-transition-name: roaster-logo-r2',
+    )
+  })
+
   it('shows its details and leads back to the roasters', async () => {
     const { page } = await roaster()
 

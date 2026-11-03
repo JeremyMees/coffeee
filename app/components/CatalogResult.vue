@@ -3,6 +3,8 @@ import { ImageIcon } from '@lucide/vue'
 
 const props = defineProps<{ coffee: CatalogCoffee; to: string }>()
 
+const morph = useMorph('coffee', () => props.coffee.id)
+
 const matches = computed(() => matchLabels(props.coffee))
 const described = computed(() =>
   [
@@ -20,9 +22,11 @@ const described = computed(() =>
     :to="to"
     data-testid="catalog-result"
     class="flex gap-4 rounded-[18px] border p-3 transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    @click="morph.open"
   >
     <div
       class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-[12px] bg-accent"
+      :style="morph.name('photo')"
       data-testid="catalog-result-thumbnail"
     >
       <NuxtImg
@@ -58,7 +62,8 @@ const described = computed(() =>
         </span>
       </div>
       <h2
-        class="mt-0.5 truncate font-sans text-lg leading-tight font-semibold tracking-[-0.02em]"
+        class="mt-0.5 max-w-full w-fit truncate font-sans text-lg leading-tight font-semibold tracking-[-0.02em]"
+        :style="morph.name('name')"
         data-testid="catalog-result-name"
       >
         {{ coffee.name }}

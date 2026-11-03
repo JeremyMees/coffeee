@@ -21,6 +21,10 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2025-07-15',
 
+  experimental: {
+    viewTransition: true,
+  },
+
   devtools: { enabled: true },
 
   css: ['~/assets/css/main.css'],
@@ -140,7 +144,8 @@ export default defineNuxtConfig({
   },
 
   app: {
-    viewTransition: true,
+    viewTransition: 'always',
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       title: 'Coffeee',
       htmlAttrs: { lang: 'en' },

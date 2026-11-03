@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CoffeeHeader from '~/components/CoffeeHeader.vue'
+import { useMorph } from '#imports'
 import { tid } from '../fixtures'
 
 const coffee = {
+  id: 'c1',
   name: 'Ayele Fulasa',
   roaster: 'Square Mile',
   link: 'https://example.com/ayele' as string | null,
@@ -11,6 +13,18 @@ const coffee = {
 }
 
 describe('CoffeeHeader', () => {
+  it('names its title for the morph from the card that opened it', async () => {
+    useMorph('coffee', 'c1').open()
+
+    const header = await mountSuspended(CoffeeHeader, {
+      props: { coffee, editable: false },
+    })
+
+    expect(header.get(tid('coffee-title')).attributes('style')).toContain(
+      'view-transition-name: coffee-name-c1',
+    )
+  })
+
   it('names the coffee and its roaster and links to the roaster', async () => {
     const header = await mountSuspended(CoffeeHeader, {
       props: { coffee, editable: false },

@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CoffeeCard from '~/components/CoffeeCard.vue'
 import type { CardCoffee } from '#imports'
 import { daysAgo, tid } from '../fixtures'
 
 const coffee: CardCoffee = {
+  id: 'c1',
   name: 'Ayele Fulasa',
   roaster: 'Square Mile',
   roastLevel: 'medium-dark',
@@ -19,7 +20,27 @@ function mountCard(props: Record<string, unknown> = {}) {
   return mountSuspended(CoffeeCard, { props: { coffee, ...props } })
 }
 
+beforeEach(() => {
+  clearNuxtState('coffee-morph')
+})
+
 describe('CoffeeCard', () => {
+  it('names its photo and name for the morph into the coffee it opens', async () => {
+    const card = await mountCard({ to: '/shelves/home/coffees/c1' })
+    expect(
+      card.get(tid('coffee-card-photo-frame')).attributes('style'),
+    ).toBeUndefined()
+
+    await card.trigger('click')
+
+    expect(
+      card.get(tid('coffee-card-photo-frame')).attributes('style'),
+    ).toContain('view-transition-name: coffee-photo-c1')
+    expect(card.get(tid('coffee-card-name')).attributes('style')).toContain(
+      'view-transition-name: coffee-name-c1',
+    )
+  })
+
   it('lists its flavor notes in order', async () => {
     const card = await mountCard({
       coffee: {

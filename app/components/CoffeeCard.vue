@@ -6,6 +6,8 @@ const props = withDefaults(defineProps<{ coffee: CardCoffee; to?: string }>(), {
   to: undefined,
 })
 
+const morph = useMorph('coffee', () => props.coffee.id)
+
 const days = computed(() =>
   props.coffee.roastedOn ? daysOffRoast(props.coffee.roastedOn) : null,
 )
@@ -21,8 +23,13 @@ const roast = computed(
     :to="to"
     data-testid="coffee-card"
     class="isolate flex flex-col overflow-hidden rounded-[28px] border border-primary bg-background text-primary"
+    @click="morph.open"
   >
-    <div class="h-44 shrink-0 border-b border-primary">
+    <div
+      class="h-44 shrink-0 border-b border-primary"
+      :style="morph.name('photo')"
+      data-testid="coffee-card-photo-frame"
+    >
       <NuxtImg
         v-if="coffee.photoUrl"
         :src="coffee.photoUrl"
@@ -49,7 +56,8 @@ const roast = computed(
       </p>
       <h2
         data-testid="coffee-card-name"
-        class="mt-1.5 line-clamp-2 font-sans text-[32px] leading-[0.95] font-semibold tracking-[-0.045em]"
+        :style="morph.name('name')"
+        class="mt-1.5 line-clamp-2 w-fit font-sans text-[32px] leading-[0.95] font-semibold tracking-[-0.045em]"
       >
         {{ coffee.name }}
       </h2>

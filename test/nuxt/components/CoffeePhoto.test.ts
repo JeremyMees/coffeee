@@ -40,6 +40,16 @@ async function choose(
 }
 
 describe('CoffeePhoto', () => {
+  it('names its photo for the morph from and back to the card', async () => {
+    clearNuxtState('coffee-morph')
+
+    const photo = await mountPhoto()
+
+    expect(photo.get(tid('coffee-photo')).attributes('style')).toContain(
+      'view-transition-name: coffee-photo-c1',
+    )
+  })
+
   it('shows a tidy placeholder when there is no photo', async () => {
     const wrapper = await mountPhoto()
 

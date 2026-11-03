@@ -1,4 +1,9 @@
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/vue-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
 export function useFilterOptions(
@@ -28,4 +33,36 @@ export function useFilterOptions(
     enabled: () => toValue(enabled),
     placeholderData: keepPreviousData,
   })
+}
+
+export function useFilterLabels(
+  shelfId: MaybeRefOrGetter<string>,
+  ids: Record<string, string>,
+) {
+  const request = useRequestFetch()
+  const queryClient = useQueryClient()
+
+  const wanted = Object.keys(ids).length > 0
+  const labels = useQuery({
+    queryKey: computed(() => queryKeys.filterLabels(toValue(shelfId), ids)),
+    queryFn: () =>
+      request<FilterLabels>(`/api/shelves/${toValue(shelfId)}/filter-labels`, {
+        query: ids,
+      }),
+    enabled: wanted,
+    staleTime: Infinity,
+  })
+
+  function remember(query: Record<string, string>, known: FilterLabels) {
+    queryClient.setQueryData(
+      queryKeys.filterLabels(toValue(shelfId), labelIds(query)),
+      known,
+    )
+  }
+
+  async function suspense() {
+    if (wanted) await labels.suspense()
+  }
+
+  return { data: labels.data, suspense, remember }
 }

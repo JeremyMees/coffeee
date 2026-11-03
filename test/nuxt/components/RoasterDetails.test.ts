@@ -17,6 +17,20 @@ function mountDetails(overrides: Partial<ShelfRoaster> = {}) {
 }
 
 describe('RoasterDetails', () => {
+  it('names its logo and name for the morph into the roaster it opens', async () => {
+    clearNuxtState('roaster-morph')
+    const details = await mountDetails()
+
+    await details.get(tid('roaster-details-name')).trigger('click')
+
+    expect(
+      details.get(tid('roaster-details', 'roaster-logo')).attributes('style'),
+    ).toContain('view-transition-name: roaster-logo-r2')
+    expect(
+      details.get(tid('roaster-details-name')).attributes('style'),
+    ).toContain('view-transition-name: roaster-name-r2')
+  })
+
   it('shows where the roaster is and links to its website', async () => {
     const details = await mountDetails()
 

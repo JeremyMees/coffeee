@@ -14,6 +14,7 @@ const addCoffee = useAddCoffee()
     <button
       type="button"
       data-testid="page-add-coffee"
+      aria-keyshortcuts="N"
       class="hidden items-center gap-2 rounded-full border border-primary px-6 py-2.5 text-sm uppercase transition-colors hover:bg-primary hover:text-primary-foreground lg:flex"
       @click="addCoffee = true"
     >

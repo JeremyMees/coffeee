@@ -7,12 +7,15 @@ export function useSearchFocus() {
 export function useSearchShortcut() {
   const shelf = useCurrentShelf()
   const focus = useSearchFocus()
+  const route = useRoute()
 
   onKeyStroke('k', event => {
     if (!(event.metaKey || event.ctrlKey) || !shelf.value) return
 
     event.preventDefault()
     focus.value = true
-    navigateTo(`/shelves/${shelf.value.id}/discover`)
+
+    const discover = `/shelves/${shelf.value.id}/discover`
+    if (route.path !== discover) navigateTo(discover)
   })
 }

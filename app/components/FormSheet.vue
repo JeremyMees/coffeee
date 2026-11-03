@@ -1,5 +1,21 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
+import { XIcon } from '@lucide/vue'
+import { useMediaQuery, usePointerSwipe } from '@vueuse/core'
+import { DialogClose } from 'reka-ui'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 
 defineOptions({ inheritAttrs: false })
 
@@ -7,31 +23,107 @@ defineProps<{ title: string; description: string }>()
 
 const open = defineModel<boolean>('open', { default: false })
 const desktop = useMediaQuery('(min-width: 1024px)')
+
+const parts = computed(() =>
+  desktop.value
+    ? {
+        root: Dialog,
+        content: DialogContent,
+        header: DialogHeader,
+        title: DialogTitle,
+        description: DialogDescription,
+      }
+    : {
+        root: Sheet,
+        content: SheetContent,
+        header: SheetHeader,
+        title: SheetTitle,
+        description: SheetDescription,
+      },
+)
+
+const dismissDistance = 100
+const handle = useTemplateRef<HTMLElement>('handle')
+const dragged = ref(0)
+
+const { distanceY } = usePointerSwipe(handle, {
+  threshold: 0,
+  disableTextSelect: true,
+  onSwipe() {
+    dragged.value = Math.max(0, -distanceY.value)
+  },
+  onSwipeEnd() {
+    if (dragged.value > dismissDistance) open.value = false
+    dragged.value = 0
+  },
+})
+
+const dragStyle = computed(() =>
+  dragged.value
+    ? { transform: `translateY(${dragged.value}px)`, transition: 'none' }
+    : undefined,
+)
 </script>
 
 <template>
-  <Sheet v-model:open="open">
-    <SheetContent
+  <component :is="parts.root" v-model:open="open">
+    <component
+      :is="parts.content"
       v-bind="$attrs"
-      :side="desktop ? 'right' : 'bottom'"
-      class="max-h-[92dvh] gap-0 overflow-y-auto rounded-t-[28px] border-primary bg-background font-mono lg:max-h-none lg:max-w-md! lg:rounded-none"
+      :side="desktop ? undefined : 'bottom'"
+      :show-close-button="false"
+      :style="desktop ? undefined : dragStyle"
+      :class="
+        desktop
+          ? 'flex max-h-[88dvh] flex-col gap-0 overflow-hidden rounded-[28px] border border-primary bg-background p-0 font-mono ring-0 sm:max-w-2xl'
+          : 'max-h-[92dvh] gap-0 overflow-hidden rounded-t-[28px] border-primary bg-background font-mono'
+      "
     >
-      <SheetHeader class="px-5 pt-6 lg:px-8 lg:pt-10">
-        <SheetTitle
-          data-testid="form-sheet-title"
-          class="font-sans text-[40px] leading-[0.9] font-semibold tracking-[-0.045em] text-primary"
+      <div
+        class="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+        data-testid="form-sheet-scroller"
+      >
+        <div
+          ref="handle"
+          :class="desktop ? undefined : 'touch-none'"
+          data-testid="form-sheet-handle"
         >
-          {{ title }}
-        </SheetTitle>
-        <SheetDescription
-          data-testid="form-sheet-description"
-          class="text-xs text-primary"
-        >
-          {{ description }}
-        </SheetDescription>
-      </SheetHeader>
+          <div
+            v-if="!desktop"
+            class="mx-auto mt-3 h-1.5 w-12 rounded-full bg-primary/30"
+            aria-hidden="true"
+          />
+          <component
+            :is="parts.header"
+            class="gap-1.5 px-5 pt-6 text-left lg:px-8 lg:pt-10"
+          >
+            <component
+              :is="parts.title"
+              data-testid="form-sheet-title"
+              class="font-sans text-[40px] leading-[0.9] font-semibold tracking-[-0.045em] text-primary"
+            >
+              {{ title }}
+            </component>
+            <component
+              :is="parts.description"
+              data-testid="form-sheet-description"
+              class="text-xs text-primary"
+            >
+              {{ description }}
+            </component>
+          </component>
+        </div>
 
-      <slot />
-    </SheetContent>
-  </Sheet>
+        <slot />
+      </div>
+
+      <DialogClose
+        data-testid="form-sheet-close"
+        class="absolute top-4 right-4 rounded-full p-2 text-primary transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        <XIcon class="size-4" aria-hidden="true" />
+        <span class="sr-only">Close</span>
+      </DialogClose>
+    </component>
+  </component>
 </template>

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { useCurrentUser } from '#imports'
+import { useCurrentUser, useRouter } from '#imports'
 import {
   api,
   fakeApi,
@@ -27,9 +27,9 @@ beforeEach(() => {
   useCurrentUser().value = testUser()
 })
 
-async function library() {
+async function library(route = '/shelves/home/library') {
   const page = await mountSuspended(App, {
-    route: '/shelves/home/library',
+    route,
     attachTo: document.body,
   })
   const cards = () =>
@@ -183,5 +183,46 @@ describe('the Library page', () => {
       }),
     )
     expect(page.get(tid('data-table-page')).text()).toBe('Page 1 of 2')
+  })
+
+  it('keeps the filters, view, sort and page in the address', async () => {
+    setViewport(1280, 800)
+    api.library = manyCoffees(30)
+    const { page, rows } = await library()
+
+    await pickFilter('origins', 'Ethiopia')
+    await page.get(tid('library-view-table')).trigger('click')
+    await vi.waitFor(() => expect(rows()).toHaveLength(24))
+    await page.get(tid('library-sort-lastBought')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({
+        originCode: 'ET',
+        view: 'table',
+        sort: 'lastBought',
+        direction: 'ascending',
+      }),
+    )
+  })
+
+  it('starts from the address, with the names of its filters', async () => {
+    setViewport(1280, 800)
+    api.library = manyCoffees(30)
+
+    const { page } = await library(
+      '/shelves/home/library?originCode=ET&view=table&sort=lastBought&direction=descending&page=2',
+    )
+
+    await vi.waitFor(() =>
+      expect(api.libraryQueries.at(-1)).toEqual({
+        originCode: 'ET',
+        sort: 'lastBought',
+        direction: 'descending',
+        page: '1',
+      }),
+    )
+    expect(api.filterLabelQueries).toEqual([{ originCode: 'ET' }])
+    expect(page.get(tid('library-filter-origins')).text()).toBe('Ethiopia')
+    expect(page.find(tid('library-table')).exists()).toBe(true)
   })
 })

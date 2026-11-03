@@ -2,6 +2,7 @@
 import { LayoutGridIcon, TableIcon } from '@lucide/vue'
 import type { PaginationState, SortingState } from '@tanstack/vue-table'
 import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
+import { useFilterLabels } from '~/queries/filters'
 import { useLibraryPage, useLibraryPages } from '~/queries/library'
 
 useHead({ title: 'Library · Coffeee' })
@@ -10,11 +11,24 @@ const route = useRoute('shelves-shelfId-library')
 const shelfId = computed(() => route.params.shelfId)
 const desktop = useMediaQuery('(min-width: 1024px)')
 
-const filter = ref(emptyLibraryFilter())
-const view = ref<LibraryView>('grid')
-const sorting = ref<SortingState>([])
+const labels = useFilterLabels(shelfId, labelIds(route.query))
+await labels.suspense()
+const initial = libraryFromRoute(route.query, labels.data.value ?? {})
+
+const filter = ref(initial.filter)
+const view = ref<LibraryView>(initial.view)
+const sorting = ref<SortingState>(
+  initial.sort
+    ? [
+        {
+          id: initial.sort.column,
+          desc: initial.sort.direction === 'descending',
+        },
+      ]
+    : [],
+)
 const pagination = ref<PaginationState>({
-  pageIndex: 0,
+  pageIndex: initial.pageIndex,
   pageSize: libraryPageSize,
 })
 const table = computed(() => desktop.value && view.value === 'table')
@@ -34,6 +48,18 @@ watch([filter, sorting], () => {
   pagination.value = { ...pagination.value, pageIndex: 0 }
 })
 
+watch([filter, view, sort, () => pagination.value.pageIndex], () => {
+  const query = libraryRoute(
+    filter.value,
+    view.value,
+    sort.value,
+    pagination.value.pageIndex,
+  )
+
+  labels.remember(query, libraryLabels(filter.value))
+  navigateTo({ query }, { replace: true })
+})
+
 const grid = useLibraryPages(
   shelfId,
   () => libraryQuery(filter.value),
@@ -45,7 +71,7 @@ const page = useLibraryPage(
   () => pagination.value.pageIndex,
   table,
 )
-await grid.suspense()
+await (table.value ? page.suspense() : grid.suspense())
 
 const cards = computed(
   () => grid.data.value?.pages.flatMap(loaded => loaded.coffees) ?? [],
