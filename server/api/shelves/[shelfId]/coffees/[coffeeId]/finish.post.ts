@@ -1,14 +1,14 @@
 import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { useDb } from '#server/utils/db'
+import { notifyShelf } from '#server/utils/notifications'
 import { finishCoffee } from '#server/utils/purchases'
 import { requireShelf } from '#server/utils/session'
 
 export default defineEventHandler(async event => {
-  const { shelf } = await requireShelf(event)
-  const finished = await finishCoffee(useDb(), {
-    shelfId: shelf.id,
-    coffeeId: getRouterParam(event, 'coffeeId')!,
-  })
+  const { user, shelf } = await requireShelf(event)
+  const db = useDb()
+  const coffeeId = getRouterParam(event, 'coffeeId')!
+  const finished = await finishCoffee(db, { shelfId: shelf.id, coffeeId })
 
   if (!finished) {
     throw createError({
@@ -16,6 +16,13 @@ export default defineEventHandler(async event => {
       statusMessage: 'Nothing of this coffee is in stock',
     })
   }
+
+  await notifyShelf(db, {
+    shelfId: shelf.id,
+    actorId: user.id,
+    kind: 'bagFinished',
+    coffeeId,
+  })
 
   return finished
 })

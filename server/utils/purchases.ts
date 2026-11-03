@@ -100,6 +100,15 @@ export async function editPurchase(
   return edited
 }
 
+export async function isPurchaseOpen(db: Database, ref: ShelfPurchaseRef) {
+  const [found] = await db
+    .select({ id: purchase.id })
+    .from(purchase)
+    .where(and(onShelf(ref), isNull(purchase.finishedAt)))
+
+  return Boolean(found)
+}
+
 export async function finishPurchase(db: Database, ref: ShelfPurchaseRef) {
   const [finished] = await db
     .update(purchase)

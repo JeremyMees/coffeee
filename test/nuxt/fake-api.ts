@@ -459,8 +459,37 @@ export function shelfMembers() {
   ]
 }
 
+export function notifications() {
+  return [
+    {
+      id: 'n1',
+      kind: 'coffeeAdded' as NotificationKind,
+      actor: 'Tom' as string | null,
+      shelfId: 'home',
+      shelf: "Sarah's shelf",
+      coffeeId: 'c1' as string | null,
+      coffee: 'Ayele Fulasa' as string | null,
+      createdAt: '2026-11-02T10:00:00.000Z',
+      readAt: null as string | null,
+    },
+    {
+      id: 'n2',
+      kind: 'memberJoined' as NotificationKind,
+      actor: 'Tom' as string | null,
+      shelfId: 'home',
+      shelf: "Sarah's shelf",
+      coffeeId: null as string | null,
+      coffee: null as string | null,
+      createdAt: '2026-11-01T10:00:00.000Z',
+      readAt: '2026-11-01T12:00:00.000Z' as string | null,
+    },
+  ]
+}
+
 export const api = {
   ownedShelves: ownedShelves(),
+  notifications: [] as ReturnType<typeof notifications>,
+  notificationCalls: [] as unknown[],
   shelfMembers: shelfMembers(),
   shelfCalls: [] as unknown[],
   shelfFails: '',
@@ -546,6 +575,8 @@ function storedPurchase(id: string, body: Record<string, unknown>) {
 
 export function resetApi() {
   api.ownedShelves = ownedShelves()
+  api.notifications = []
+  api.notificationCalls = []
   api.shelfMembers = shelfMembers()
   api.shelfCalls = []
   api.shelfFails = ''
@@ -874,8 +905,30 @@ function registerShelfEndpoints() {
   })
 }
 
+function registerNotificationEndpoints() {
+  registerEndpoint('/api/me/notifications', () => api.notifications)
+
+  registerEndpoint('/api/me/notifications/unread', () => ({
+    unread: api.notifications.filter(found => !found.readAt).length,
+  }))
+
+  registerEndpoint('/api/me/notifications/read', {
+    method: 'POST',
+    handler: () => {
+      api.notificationCalls.push('read')
+      api.notifications = api.notifications.map(found => ({
+        ...found,
+        readAt: found.readAt ?? '2026-11-03T10:00:00.000Z',
+      }))
+
+      return null
+    },
+  })
+}
+
 export function fakeApi() {
   registerAdminEndpoints()
+  registerNotificationEndpoints()
   registerInviteEndpoints()
   registerShelfEndpoints()
 

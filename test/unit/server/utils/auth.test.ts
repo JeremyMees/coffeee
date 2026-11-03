@@ -8,6 +8,7 @@ import {
   inviteEmail,
   inviteToShelf,
 } from '#server/utils/invites'
+import { listNotifications } from '#server/utils/notifications'
 import { createShelf, listShelves } from '#server/utils/shelves'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 import { runtimeConfig } from '#test/support/nitro'
@@ -422,6 +423,19 @@ describe('signing up from a shelf invite', () => {
       expect.objectContaining({ name: "Someone's shelf", ownerId: user.id }),
       expect.objectContaining({ id: home.id, name: 'Home' }),
     ])
+  })
+
+  it('tells the members of the shelf that they joined', async () => {
+    const { db, signUpWithGoogle } = await setup()
+    const { home, token } = await shelfInvite(db)
+    current.oauthState = { additionalData: { inviteToken: token } }
+
+    const { user } = await signUpWithGoogle('tom@example.com')
+
+    expect(await listNotifications(db, home.ownerId)).toMatchObject([
+      { kind: 'memberJoined', shelfId: home.id, actor: user.name },
+    ])
+    expect(await listNotifications(db, user.id)).toEqual([])
   })
 
   it('joins the shelf with Google from the invited email, without the link', async () => {

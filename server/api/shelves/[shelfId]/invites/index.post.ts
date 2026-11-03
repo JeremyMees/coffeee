@@ -8,6 +8,7 @@ import { inviteEmailSchema } from '#shared/utils/schemas'
 import { useDb } from '#server/utils/db'
 import { sendEmail } from '#server/utils/email'
 import { cancelShelfInvite, inviteToShelf } from '#server/utils/invites'
+import { notifyInvited } from '#server/utils/notifications'
 import { requireShelf } from '#server/utils/session'
 import { readValidBody } from '#server/utils/validation'
 
@@ -59,6 +60,12 @@ export default defineEventHandler(async event => {
     })
   }
 
+  await notifyInvited(db, {
+    email,
+    actorId: user.id,
+    shelfId: shelf.id,
+    inviteId: result.invite.id,
+  })
   setResponseStatus(event, 201)
 
   return { ...result.invite, invitedBy: user.name }

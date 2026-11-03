@@ -94,14 +94,17 @@ export async function joinInvitedShelves(
       ),
     )
 
-  if (invited.length === 0) return
+  if (invited.length === 0) return []
 
-  await db
+  const joined = await db
     .insert(shelfMember)
     .values(
       invited.map(found => ({ shelfId: found.shelfId!, userId: input.userId })),
     )
     .onConflictDoNothing()
+    .returning({ shelfId: shelfMember.shelfId })
+
+  return joined.map(found => found.shelfId)
 }
 
 export function listPendingInvites(db: Database) {

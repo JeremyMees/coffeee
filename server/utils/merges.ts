@@ -9,6 +9,7 @@ import {
   grinder,
   grinderBrand,
   grindSetting,
+  notification,
   purchase,
   roaster,
   shelfGrinder,
@@ -41,6 +42,10 @@ export async function mergeCoffees(db: Database, move: Move) {
     .update(purchase)
     .set({ coffeeId: move.to })
     .where(eq(purchase.coffeeId, move.from))
+  await db
+    .update(notification)
+    .set({ coffeeId: move.to })
+    .where(eq(notification.coffeeId, move.from))
   await moveReferences(db, coffeeVerdict, coffeeVerdict.coffeeId, move)
   await moveReferences(db, grindSetting, grindSetting.coffeeId, move)
 

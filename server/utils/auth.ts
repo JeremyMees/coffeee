@@ -10,6 +10,7 @@ import * as schema from '#server/db/schemas'
 import { useDb } from '#server/utils/db'
 import { sendEmail } from '#server/utils/email'
 import { claimInvites, joinInvitedShelves } from '#server/utils/invites'
+import { notifyShelf } from '#server/utils/notifications'
 import { createShelf, shelfNameFor } from '#server/utils/shelves'
 
 const hosts = [
@@ -103,10 +104,18 @@ export function createAuth(config: AuthConfig) {
               name: shelfNameFor(user.name),
               ownerId: user.id,
             })
-            await joinInvitedShelves(config.db, {
+            const joined = await joinInvitedShelves(config.db, {
               userId: user.id,
               email: user.email,
             })
+
+            for (const shelfId of joined) {
+              await notifyShelf(config.db, {
+                shelfId,
+                actorId: user.id,
+                kind: 'memberJoined',
+              })
+            }
           },
         },
       },

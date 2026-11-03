@@ -14,11 +14,14 @@ useAddCoffeeShortcut()
         class="flex items-center justify-between gap-3 border-b px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 lg:hidden"
       >
         <span class="text-[30px]"><AppWordmark /></span>
-        <ShelfSwitcher
-          align="end"
-          class="max-w-[55%]"
-          data-testid="top-bar-shelf-switcher"
-        />
+        <span class="flex max-w-[65%] min-w-0 items-center gap-2">
+          <NotificationsLink />
+          <ShelfSwitcher
+            align="end"
+            class="min-w-0"
+            data-testid="top-bar-shelf-switcher"
+          />
+        </span>
       </header>
       <div class="px-4 lg:px-10">
         <InvitesForYou />

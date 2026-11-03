@@ -54,7 +54,8 @@ const links = computed(() =>
         </a>
       </NuxtLink>
     </nav>
-    <div class="mt-auto px-3 pb-3">
+    <div class="mt-auto flex flex-col gap-1 px-3 pb-3">
+      <NotificationsLink labelled />
       <AppShortcuts />
     </div>
     <div class="border-t p-3">
