@@ -1,0 +1,11 @@
+import type { Email } from '#server/types/email'
+import type { TestAuth, TestDatabase } from '#test/support/types'
+
+export const server = {
+  db: undefined as TestDatabase | undefined,
+  auth: undefined as TestAuth | undefined,
+  cookie: undefined as string | undefined,
+  outbox: [] as Email[],
+  failures: [] as (() => void)[],
+  fakeOnly: false,
+}

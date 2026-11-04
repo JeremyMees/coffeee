@@ -1,39 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { useQueryClient } from '@tanstack/vue-query'
-import { readBody } from 'h3'
 import { useInviteCreate, useInviteRevoke, useInvites } from '~/queries/invites'
+import { inviteEmail, listPendingInvites } from '#server/utils/invites'
 import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
+import { database, scenario, signIn } from '../server'
 
-const calls = { created: [] as unknown[], revoked: [] as string[] }
+let invitedId: string
 
-registerEndpoint('/api/invites', {
-  method: 'GET',
-  handler: () => [{ id: 'i1', email: 'tom@example.com' }],
-})
-
-registerEndpoint('/api/invites', {
-  method: 'POST',
-  handler: async event => {
-    calls.created.push(await readBody(event))
-
-    return { id: 'i2', url: 'https://coffeee.test/invite/abc' }
-  },
-})
-
-registerEndpoint('/api/invites/i1', {
-  method: 'DELETE',
-  handler: () => {
-    calls.revoked.push('i1')
-
-    return null
-  },
-})
-
-beforeEach(() => {
-  calls.created = []
-  calls.revoked = []
+beforeEach(async () => {
+  const jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  const invited = await inviteEmail(await database(), {
+    email: 'tom@example.com',
+    createdBy: jeremy.id,
+  })
+  invitedId = invited!.id
+  await signIn(jeremy)
 })
 
 async function withClient<T>(use: () => T) {
@@ -46,27 +28,30 @@ async function withClient<T>(use: () => T) {
   return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
 }
 
+async function pendingEmails() {
+  const pending = await listPendingInvites(await database())
+
+  return pending.map(invite => invite.email)
+}
+
 describe('useInvites', () => {
   it('fetches the pending invites', async () => {
     const { data, suspense } = await runOn('/', useInvites)
 
     await suspense()
 
-    expect(data.value).toEqual([{ id: 'i1', email: 'tom@example.com' }])
+    expect(data.value?.map(invite => invite.email)).toEqual(['tom@example.com'])
   })
 })
 
 describe('useInviteCreate', () => {
-  it('creates an invite and refreshes the invites', async () => {
+  it('creates an invite link and refreshes the invites', async () => {
     const { result, invalidated } = await withClient(useInviteCreate)
 
     const created = await result.mutateAsync({ link: true })
 
-    expect(created).toEqual({
-      id: 'i2',
-      url: 'https://coffeee.test/invite/abc',
-    })
-    expect(calls.created).toEqual([{ link: true }])
+    expect('url' in created && created.url).toMatch(/\/invite\/[\w-]+$/)
+    expect(await pendingEmails()).toEqual([null, 'tom@example.com'])
     expect(invalidated()).toEqual([{ queryKey: queryKeys.invites() }])
   })
 })
@@ -75,9 +60,9 @@ describe('useInviteRevoke', () => {
   it('revokes an invite and refreshes the invites', async () => {
     const { result, invalidated } = await withClient(useInviteRevoke)
 
-    await result.mutateAsync('i1')
+    await result.mutateAsync(invitedId)
 
-    expect(calls.revoked).toEqual(['i1'])
+    expect(await pendingEmails()).toEqual([])
     expect(invalidated()).toEqual([{ queryKey: queryKeys.invites() }])
   })
 })

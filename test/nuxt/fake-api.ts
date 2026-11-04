@@ -2,18 +2,10 @@ import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
 import type { ListEntry, OriginListEntry } from '#shared/types/catalog'
-import {
-  catalogFilters,
-  catalogPageSize,
-  isFavourite,
-  libraryFilters,
-  libraryPageSize,
-  nameKey,
-} from '#imports'
+import { catalogPageSize, nameKey } from '#imports'
 import { flavorNoteEntries, otherAdminEntries } from '#test/fixtures/admin'
 import { ayele } from '#test/fixtures/coffees'
 import { brewMethods } from '#test/fixtures/brew-methods'
-import { catalogOptions, libraryOptions } from '#test/fixtures/filters'
 import { opus } from '#test/fixtures/grinders'
 import {
   coffeeShelves,
@@ -23,6 +15,7 @@ import {
 } from '#test/fixtures/shelves'
 import type { notifications } from '#test/fixtures/notifications'
 import { profileStats } from '#test/fixtures/users'
+import { server } from '#test/nuxt/server-state'
 
 export function fakeList<Entry extends ListEntry>(entries: () => Entry[]) {
   return (event: H3Event) => {
@@ -39,29 +32,6 @@ export function fakeRegions(regions: () => OriginListEntry[]) {
     return fakeList(regions)(event).filter(region =>
       origins.includes(region.origin),
     )
-  }
-}
-
-const fakeFilterPageSize = 2
-
-function fakeLibrary(event: H3Event) {
-  const query = getQuery(event) as Record<string, string>
-  api.libraryQueries.push(query)
-
-  const matching = api.library.filter(
-    coffee =>
-      (query.favourites !== 'true' || isFavourite(coffee)) &&
-      (!query.roasterId || coffee.roasterId === query.roasterId) &&
-      (!query.flavorNoteId ||
-        coffee.flavorNotes.some(note => note.id === query.flavorNoteId)) &&
-      (!query.originCode ||
-        coffee.origins.some(origin => origin.code === query.originCode)),
-  )
-  const start = Number(query.page ?? 0) * libraryPageSize
-
-  return {
-    total: matching.length,
-    coffees: matching.slice(start, start + libraryPageSize),
   }
 }
 
@@ -97,28 +67,6 @@ function fakeCatalog(event: H3Event) {
   }
 }
 
-const labelledOptions: Record<string, LibraryOption[]> = {
-  roasterId: catalogOptions.roasters,
-  flavorNoteId: catalogOptions['flavor-notes'],
-  originCode: catalogOptions.origins,
-  processId: catalogOptions.processes,
-}
-
-function fakeFilterLabels(event: H3Event) {
-  const query = getQuery(event) as Record<string, string>
-  api.filterLabelQueries.push(query)
-
-  return Object.fromEntries(
-    Object.entries(query).flatMap(([param, value]) => {
-      const option = labelledOptions[param]?.find(
-        option => option.value === value,
-      )
-
-      return option ? [[param, option.label]] : []
-    }),
-  )
-}
-
 function fakeRoasters(event: H3Event) {
   const query = getQuery(event) as Record<string, string>
   api.roasterQueries.push(query)
@@ -128,28 +76,6 @@ function fakeRoasters(event: H3Event) {
   )
 
   return { total: matching.length, roasters: matching }
-}
-
-function fakeFilter(
-  options: Record<string, LibraryOption[]>,
-  calls: () => Record<string, string>[],
-  kind: string,
-) {
-  return (event: H3Event) => {
-    const query = getQuery(event) as Record<string, string>
-    calls().push({ kind, ...query })
-
-    const key = nameKey(query.search ?? '')
-    const matching = options[kind]!.filter(option =>
-      nameKey(option.label).includes(key),
-    )
-    const start = Number(query.page ?? 0) * fakeFilterPageSize
-
-    return {
-      options: matching.slice(start, start + fakeFilterPageSize),
-      hasMore: matching.length > start + fakeFilterPageSize,
-    }
-  }
 }
 
 export const api = {
@@ -169,13 +95,8 @@ export const api = {
   accountDeletes: [] as unknown[],
   accountDeleteFails: '',
   stock: [] as unknown[],
-  library: [] as LibraryCoffee[],
-  libraryQueries: [] as Record<string, string>[],
-  libraryFilterQueries: [] as Record<string, string>[],
   catalog: [] as CatalogCoffee[],
   catalogQueries: [] as Record<string, string>[],
-  catalogFilterQueries: [] as Record<string, string>[],
-  filterLabelQueries: [] as Record<string, string>[],
   roasters: [] as ListedRoaster[],
   roasterQueries: [] as Record<string, string>[],
   added: [] as unknown[],
@@ -259,13 +180,8 @@ export function resetApi() {
   api.accountDeletes = []
   api.accountDeleteFails = ''
   api.stock = []
-  api.library = []
-  api.libraryQueries = []
-  api.libraryFilterQueries = []
   api.catalog = []
   api.catalogQueries = []
-  api.catalogFilterQueries = []
-  api.filterLabelQueries = []
   api.roasters = []
   api.roasterQueries = []
   api.added = []
@@ -611,6 +527,7 @@ function registerNotificationEndpoints() {
 }
 
 export function fakeApi() {
+  server.fakeOnly = true
   registerAdminEndpoints()
   registerNotificationEndpoints()
   registerInviteEndpoints()
@@ -681,30 +598,13 @@ export function fakeApi() {
 
   registerEndpoint('/api/shelves/home/stock', () => api.stock)
 
-  registerEndpoint('/api/shelves/home/library', fakeLibrary)
-
-  for (const kind of libraryFilters) {
-    registerEndpoint(
-      `/api/shelves/home/library/${kind}`,
-      fakeFilter(libraryOptions, () => api.libraryFilterQueries, kind),
-    )
-  }
-
   registerEndpoint('/api/shelves/home/catalog', fakeCatalog)
-  registerEndpoint('/api/shelves/home/filter-labels', fakeFilterLabels)
   registerEndpoint('/api/shelves/home/roasters', fakeRoasters)
 
   registerEndpoint('/api/roasters/r2', {
     method: 'GET',
     handler: () => roaster(),
   })
-
-  for (const kind of catalogFilters) {
-    registerEndpoint(
-      `/api/shelves/home/catalog/${kind}`,
-      fakeFilter(catalogOptions, () => api.catalogFilterQueries, kind),
-    )
-  }
 
   registerEndpoint(
     '/api/roasters',

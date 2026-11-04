@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import LibraryFilters from '~/components/LibraryFilters.vue'
-import { fakeApi, resetApi } from '../fake-api'
+import type { Member } from '#test/support/types'
 import { allByTestId, click, tid } from '../fixtures'
+import { scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
-  resetApi()
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
 })
 
 const laCabra = { value: 'r1', label: 'La Cabra' }
@@ -18,7 +20,7 @@ async function filters(filter: Partial<LibraryFilter> = {}) {
     props: {
       modelValue: { ...emptyLibraryFilter(), ...filter },
       'onUpdate:modelValue': (changed: LibraryFilter) => changes.push(changed),
-      shelfId: 'home',
+      shelfId: sarah.shelf.id,
     },
     attachTo: document.body,
   })
@@ -54,6 +56,8 @@ describe('LibraryFilters', () => {
   })
 
   it('keeps the other filters when picking one', async () => {
+    await scenario.coffee(sarah.shelf, { origins: ['ET'] })
+    await scenario.coffee(sarah.shelf, { name: 'El Paraiso', origins: ['CO'] })
     const { changes } = await filters({ favourites: true })
 
     await click('library-filter-origins')

@@ -1,23 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { registerEndpoint } from '@nuxt/test-utils/runtime'
+import { useQueryClient } from '@tanstack/vue-query'
 import { ref } from 'vue'
 import { useListSearch } from '~/queries/lists'
-import { fakeList } from '../fake-api'
+import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
+import { scenario, signIn } from '../server'
 
-const searches: string[] = []
-
-registerEndpoint('/api/varietals', event => {
-  searches.push(new URL(event.path, 'http://test').searchParams.get('search')!)
-
-  return fakeList(() => [
-    { id: 'v1', name: 'Gesha' },
-    { id: 'v2', name: 'Bourbon' },
-  ])(event)
-})
-
-beforeEach(() => {
-  searches.length = 0
+beforeEach(async () => {
+  const sarah = await scenario.member('Sarah')
+  await scenario.coffee(sarah.shelf, { varietals: ['Gesha', 'Bourbon'] })
+  await signIn(sarah)
 })
 
 describe('useListSearch', () => {
@@ -28,20 +20,24 @@ describe('useListSearch', () => {
 
     await suspense()
 
-    expect(data.value).toEqual([{ id: 'v1', name: 'Gesha' }])
+    expect(data.value?.map(entry => entry.name)).toEqual(['Gesha'])
   })
 
-  it('asks the server once for searches that only differ in case or spacing', async () => {
+  it('keeps one answer for searches that only differ in case or spacing', async () => {
     const search = ref('Gesha')
-    const { suspense } = await runOn('/', () =>
-      useListSearch('/api/varietals', search),
-    )
-    await suspense()
+    const { query, client } = await runOn('/', () => ({
+      query: useListSearch('/api/varietals', search),
+      client: useQueryClient(),
+    }))
+    await query.suspense()
 
     search.value = '  GESHA '
-    await suspense()
+    await query.suspense()
 
-    expect(searches).toEqual(['Gesha'])
+    expect(query.fetchStatus.value).toBe('idle')
+    expect(
+      client.getQueryCache().findAll({ queryKey: queryKeys.lists() }),
+    ).toHaveLength(1)
   })
 
   it('keeps showing the last entries while a new search loads', async () => {
@@ -53,8 +49,8 @@ describe('useListSearch', () => {
 
     search.value = 'bour'
 
-    expect(data.value).toEqual([{ id: 'v1', name: 'Gesha' }])
+    expect(data.value?.map(entry => entry.name)).toEqual(['Gesha'])
     await suspense()
-    expect(data.value).toEqual([{ id: 'v2', name: 'Bourbon' }])
+    expect(data.value?.map(entry => entry.name)).toEqual(['Bourbon'])
   })
 })

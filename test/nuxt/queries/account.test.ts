@@ -1,20 +1,36 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { useAccountDelete, useOwnedShelves } from '~/queries/account'
+import { shelf, user } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { useCurrentUser } from '#imports'
-import { api, fakeApi } from '../fake-api'
 import { currentPath, runOn } from '../fixtures'
-import { ownedShelves } from '#test/fixtures/shelves'
-import { testUser } from '#test/fixtures/users'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let tom: Member
+
+beforeEach(async () => {
+  await scenario.member('Jeremy', { role: 'admin' })
+  sarah = await scenario.member('Sarah')
+  tom = await scenario.member('Tom')
+  await scenario.joinShelf(tom, sarah.shelf)
+  await signIn(sarah)
+})
 
 describe('useOwnedShelves', () => {
-  it('fetches the shelves the user owns', async () => {
+  it('fetches the shelves the user owns, with who else is on them', async () => {
     const { data, suspense } = await runOn('/', () => useOwnedShelves(true))
 
     await suspense()
 
-    expect(data.value).toEqual(ownedShelves())
+    expect(data.value).toEqual([
+      {
+        id: sarah.shelf.id,
+        name: "Sarah's shelf",
+        members: [{ id: tom.id, name: 'Tom' }],
+      },
+    ])
   })
 
   it('waits until it is needed', async () => {
@@ -25,13 +41,19 @@ describe('useOwnedShelves', () => {
 })
 
 describe('useAccountDelete', () => {
-  it('deletes the account and forgets the user', async () => {
-    useCurrentUser().value = testUser()
+  it('deletes the account, hands the shelf over and forgets the user', async () => {
     const { mutateAsync } = await runOn('/', useAccountDelete)
 
-    await mutateAsync({ home: 'tom' })
+    await mutateAsync({ [sarah.shelf.id]: tom.id })
 
-    expect(api.accountDeletes).toEqual([{ heirs: { home: 'tom' } }])
+    const db = await database()
+    const [left] = await db.select().from(user).where(eq(user.id, sarah.id))
+    const [handedOver] = await db
+      .select({ ownerId: shelf.ownerId })
+      .from(shelf)
+      .where(eq(shelf.id, sarah.shelf.id))
+    expect(left).toBeUndefined()
+    expect(handedOver?.ownerId).toBe(tom.id)
     expect(useCurrentUser().value).toBeNull()
     expect(currentPath()).toBe('/sign-in')
   })

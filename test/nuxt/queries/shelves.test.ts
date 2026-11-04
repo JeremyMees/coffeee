@@ -8,18 +8,19 @@ import {
   useShelfMembers,
   useShelfRename,
 } from '~/queries/shelves'
-import { queryKeys, useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { listShelfMembers } from '#server/utils/shelves'
+import type { Member } from '#test/support/types'
+import { queryKeys, shelfPath, useCurrentUser } from '#imports'
 import { currentPath, forgetLastShelf, runOn } from '../fixtures'
-import { shelfMembers } from '#test/fixtures/shelves'
-import { testUser } from '#test/fixtures/users'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let tom: Member
 
-beforeEach(() => {
-  resetApi()
+beforeEach(async () => {
   forgetLastShelf()
-  useCurrentUser().value = testUser()
+  sarah = await scenario.member('Sarah')
+  tom = await scenario.member('Tom')
 })
 
 async function withClient<T>(use: () => T) {
@@ -36,87 +37,106 @@ function shelves() {
   return useCurrentUser().value?.shelves
 }
 
+async function membersOf(shelfId: string) {
+  const members = await listShelfMembers(await database(), shelfId)
+
+  return members.map(member => member.name)
+}
+
 describe('useShelfMembers', () => {
   it('fetches the members of a shelf', async () => {
-    const { data, suspense } = await runOn('/', () => useShelfMembers('home'))
+    await scenario.joinShelf(tom, sarah.shelf)
+    await signIn(sarah)
+    const { data, suspense } = await runOn('/', () =>
+      useShelfMembers(sarah.shelf.id),
+    )
 
     await suspense()
 
-    expect(data.value).toEqual(shelfMembers())
+    expect(data.value?.map(member => member.name)).toEqual(['Sarah', 'Tom'])
   })
 })
 
 describe('useShelfRename', () => {
   it('renames the shelf in the shelves of the current user', async () => {
+    await signIn(sarah)
     const { result } = await withClient(useShelfRename)
 
-    await result.mutateAsync({ shelfId: 'home', name: 'Flat' })
+    await result.mutateAsync({ shelfId: sarah.shelf.id, name: 'Flat' })
 
-    expect(api.shelfCalls).toEqual([{ rename: { name: 'Flat' } }])
     expect(shelves()?.[0]).toEqual({
-      id: 'home',
+      id: sarah.shelf.id,
       name: 'Flat',
-      ownerId: 'user-1',
+      ownerId: sarah.id,
     })
   })
 })
 
 describe('useShelfHandOver', () => {
   it('records the new shelf owner and refreshes the members', async () => {
+    await scenario.joinShelf(tom, sarah.shelf)
+    await signIn(sarah)
     const { result, invalidated } = await withClient(useShelfHandOver)
 
-    await result.mutateAsync({ shelfId: 'home', ownerId: 'tom' })
+    await result.mutateAsync({ shelfId: sarah.shelf.id, ownerId: tom.id })
 
-    expect(api.shelfCalls).toEqual([{ handOver: { ownerId: 'tom' } }])
-    expect(shelves()?.[0]?.ownerId).toBe('tom')
+    expect(shelves()?.[0]?.ownerId).toBe(tom.id)
     expect(invalidated()).toEqual([
-      { queryKey: queryKeys.shelfMembers('home') },
+      { queryKey: queryKeys.shelfMembers(sarah.shelf.id) },
     ])
   })
 })
 
 describe('useShelfMemberRemove', () => {
   it('removes a member and refreshes the members', async () => {
+    await scenario.joinShelf(tom, sarah.shelf)
+    await signIn(sarah)
     const { result, invalidated } = await withClient(useShelfMemberRemove)
 
-    await result.mutateAsync({ shelfId: 'home', userId: 'tom' })
+    await result.mutateAsync({ shelfId: sarah.shelf.id, userId: tom.id })
 
-    expect(api.shelfCalls).toEqual([{ remove: 'tom' }])
+    expect(await membersOf(sarah.shelf.id)).toEqual(['Sarah'])
     expect(invalidated()).toEqual([
-      { queryKey: queryKeys.shelfMembers('home') },
+      { queryKey: queryKeys.shelfMembers(sarah.shelf.id) },
     ])
   })
 })
 
 describe('useShelfLeave', () => {
   it('drops the shelf and goes to another one', async () => {
+    await scenario.joinShelf(sarah, tom.shelf)
+    await signIn(sarah)
     const { result } = await withClient(useShelfLeave)
 
-    await result.mutateAsync('home')
+    await result.mutateAsync(tom.shelf.id)
 
-    expect(api.shelfCalls).toEqual([{ leave: 'home' }])
-    expect(shelves()?.map(shelf => shelf.id)).toEqual(['work'])
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work-work'))
+    expect(await membersOf(tom.shelf.id)).toEqual(['Tom'])
+    expect(shelves()?.map(shelf => shelf.id)).toEqual([sarah.shelf.id])
+    await vi.waitFor(() => expect(currentPath()).toBe(shelfPath(sarah.shelf)))
   })
 })
 
 describe('useShelfDelete', () => {
   it('drops the shelf and goes to another one', async () => {
+    await scenario.joinShelf(sarah, tom.shelf)
+    await signIn(sarah)
     const { result } = await withClient(useShelfDelete)
 
-    await result.mutateAsync('home')
+    await result.mutateAsync(sarah.shelf.id)
 
-    expect(api.shelfCalls).toEqual([{ delete: 'home' }])
-    expect(shelves()?.map(shelf => shelf.id)).toEqual(['work'])
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work-work'))
+    expect(await membersOf(sarah.shelf.id)).toEqual([])
+    expect(shelves()?.map(shelf => shelf.id)).toEqual([tom.shelf.id])
+    await vi.waitFor(() => expect(currentPath()).toBe(shelfPath(tom.shelf)))
   })
 
   it('keeps the shelf when deleting fails', async () => {
-    api.shelfFails = "This is your only shelf, so you can't delete it"
+    await signIn(sarah)
     const { result } = await withClient(useShelfDelete)
 
-    await expect(result.mutateAsync('home')).rejects.toThrow()
+    await expect(result.mutateAsync(sarah.shelf.id)).rejects.toThrow(
+      "This is your only shelf, so you can't delete it",
+    )
 
-    expect(shelves()?.map(shelf => shelf.id)).toEqual(['home', 'work'])
+    expect(shelves()?.map(shelf => shelf.id)).toEqual([sarah.shelf.id])
   })
 })

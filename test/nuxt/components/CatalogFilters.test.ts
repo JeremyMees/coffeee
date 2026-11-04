@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CatalogFilters from '~/components/CatalogFilters.vue'
-import { fakeApi, resetApi } from '../fake-api'
+import type { Member } from '#test/support/types'
 import { allByTestId, click, tid } from '../fixtures'
+import { scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
-  resetApi()
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
 })
 
 const laCabra = { value: 'r1', label: 'La Cabra' }
@@ -18,7 +20,7 @@ async function filters(filter: Partial<CatalogFilter> = {}) {
     props: {
       modelValue: { ...emptyCatalogFilter(), ...filter },
       'onUpdate:modelValue': (changed: CatalogFilter) => changes.push(changed),
-      shelfId: 'home',
+      shelfId: sarah.shelf.id,
     },
     attachTo: document.body,
   })

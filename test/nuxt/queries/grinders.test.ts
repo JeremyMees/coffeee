@@ -5,14 +5,18 @@ import {
   useGrinderOwn,
   useShelfGrinders,
 } from '~/queries/grinders'
+import { listShelfGrinders } from '#server/utils/grinders'
+import type { Member } from '#test/support/types'
 import { queryKeys } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
 import { runOn } from '../fixtures'
-import { opus } from '#test/fixtures/grinders'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(resetApi)
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
+})
 
 async function withClient<T>(use: () => T) {
   const { result, client } = await runOn('/', () => ({
@@ -24,13 +28,23 @@ async function withClient<T>(use: () => T) {
   return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
 }
 
+async function shelfGrinders() {
+  return listShelfGrinders(await database(), sarah.shelf.id)
+}
+
 describe('useShelfGrinders', () => {
   it('fetches the grinders the shelf owns', async () => {
-    const { data, suspense } = await runOn('/', () => useShelfGrinders('home'))
+    const opus = await scenario.grinder(sarah.shelf, {
+      brand: '1Zpresso',
+      model: 'Opus',
+    })
+    const { data, suspense } = await runOn('/', () =>
+      useShelfGrinders(sarah.shelf.id),
+    )
 
     await suspense()
 
-    expect(data.value).toEqual([opus()])
+    expect(data.value).toEqual([opus])
   })
 })
 
@@ -39,15 +53,15 @@ describe('useGrinderOwn', () => {
     const { result, invalidated } = await withClient(useGrinderOwn)
 
     await result.mutateAsync({
-      shelfId: 'home',
+      shelfId: sarah.shelf.id,
       grinder: { brand: 'Niche', model: 'Zero' },
     })
 
-    expect(api.grinderCalls).toEqual([
-      { own: { brand: 'Niche', model: 'Zero' } },
+    expect(await shelfGrinders()).toEqual([
+      expect.objectContaining({ brand: 'Niche', model: 'Zero' }),
     ])
     expect(invalidated()).toEqual([
-      { queryKey: queryKeys.shelf('home') },
+      { queryKey: queryKeys.shelf(sarah.shelf.id) },
       { queryKey: queryKeys.lists() },
     ])
   })
@@ -55,11 +69,14 @@ describe('useGrinderOwn', () => {
 
 describe('useGrinderDisown', () => {
   it('removes a grinder and refreshes the shelf', async () => {
+    const opus = await scenario.grinder(sarah.shelf)
     const { result, invalidated } = await withClient(useGrinderDisown)
 
-    await result.mutateAsync({ shelfId: 'home', grinderId: 'opus' })
+    await result.mutateAsync({ shelfId: sarah.shelf.id, grinderId: opus.id })
 
-    expect(api.grinderCalls).toEqual([{ disown: 'opus' }])
-    expect(invalidated()).toEqual([{ queryKey: queryKeys.shelf('home') }])
+    expect(await shelfGrinders()).toEqual([])
+    expect(invalidated()).toEqual([
+      { queryKey: queryKeys.shelf(sarah.shelf.id) },
+    ])
   })
 })

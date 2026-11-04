@@ -34,6 +34,7 @@ export default defineConfig({
         test: {
           name: 'nuxt',
           include: ['test/nuxt/**/*.{test,spec}.ts'],
+          globalSetup: ['test/support/migrated-database.ts'],
           setupFiles: ['test/nuxt/setup.ts'],
           environment: 'nuxt',
           environmentOptions: {

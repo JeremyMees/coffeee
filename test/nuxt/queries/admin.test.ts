@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { useQueryClient } from '@tanstack/vue-query'
-import { getQuery, readBody } from 'h3'
+import { asc } from 'drizzle-orm'
 import {
   useAdminEntries,
   useAdminEntryCreate,
@@ -9,71 +8,41 @@ import {
   useAdminEntryMerge,
   useAdminEntryUpdate,
 } from '~/queries/admin'
+import { producer } from '#server/db/schemas'
+import { addAdminEntry } from '#server/utils/admin-lists'
+import type { Member } from '#test/support/types'
 import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
+import { database, scenario, signIn } from '../server'
 
-const calls = { listed: [] as unknown[], changed: [] as unknown[] }
+let jeremy: Member
 
-registerEndpoint('/api/admin/lists/producers', {
-  method: 'GET',
-  handler: event => {
-    calls.listed.push(getQuery(event))
-
-    return {
-      total: 1,
-      entries: [
-        {
-          id: 'p1',
-          name: 'Nestor Lasso',
-          detail: null,
-          detailId: null,
-          uses: 2,
-        },
-      ],
-    }
-  },
+beforeEach(async () => {
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await scenario.coffee(jeremy.shelf, { producers: ['Nestor Lasso'] })
+  await scenario.coffee(jeremy.shelf, {
+    name: 'Red Brick',
+    producers: ['Nestor'],
+  })
+  await signIn(jeremy)
 })
 
-registerEndpoint('/api/admin/lists/producers', {
-  method: 'POST',
-  handler: async event => {
-    calls.changed.push({ add: await readBody(event) })
+async function producers() {
+  const db = await database()
 
-    return { id: 'p3', name: 'Diego Bermudez' }
-  },
-})
+  return db
+    .select({ id: producer.id, name: producer.name })
+    .from(producer)
+    .orderBy(asc(producer.nameKey))
+}
 
-registerEndpoint('/api/admin/lists/producers/p2', {
-  method: 'PATCH',
-  handler: async event => {
-    calls.changed.push({ rename: await readBody(event) })
+async function producerId(name: string) {
+  return (await producers()).find(found => found.name === name)!.id
+}
 
-    return { id: 'p2', name: 'Nestor' }
-  },
-})
-
-registerEndpoint('/api/admin/lists/producers/p2/merge', {
-  method: 'POST',
-  handler: async event => {
-    calls.changed.push({ merge: await readBody(event) })
-
-    return { id: 'p1', name: 'Nestor Lasso' }
-  },
-})
-
-registerEndpoint('/api/admin/lists/producers/p2', {
-  method: 'DELETE',
-  handler: () => {
-    calls.changed.push('delete')
-
-    return null
-  },
-})
-
-beforeEach(() => {
-  calls.listed = []
-  calls.changed = []
-})
+async function producerNames() {
+  return (await producers()).map(found => found.name)
+}
 
 async function withClient<T>(use: () => T) {
   const { result, client } = await runOn('/', () => ({
@@ -97,7 +66,7 @@ const everythingChanged = [
 describe('useAdminEntries', () => {
   it('fetches a page of a shared list', async () => {
     const { data, suspense } = await runOn('/', () =>
-      useAdminEntries('producers', { search: 'nes', page: '0' }),
+      useAdminEntries('producers', { search: 'lasso', page: '0' }),
     )
 
     await suspense()
@@ -105,7 +74,6 @@ describe('useAdminEntries', () => {
     expect(data.value?.entries.map(entry => entry.name)).toEqual([
       'Nestor Lasso',
     ])
-    expect(calls.listed).toEqual([{ search: 'nes', page: '0' }])
   })
 })
 
@@ -118,7 +86,11 @@ describe('useAdminEntryCreate', () => {
       body: { name: 'Diego Bermudez' },
     })
 
-    expect(calls.changed).toEqual([{ add: { name: 'Diego Bermudez' } }])
+    expect(await producerNames()).toEqual([
+      'Diego Bermudez',
+      'Nestor',
+      'Nestor Lasso',
+    ])
     expect(invalidated()).toEqual(everythingChanged)
   })
 })
@@ -129,11 +101,11 @@ describe('useAdminEntryUpdate', () => {
 
     await result.mutateAsync({
       list: 'producers',
-      entryId: 'p2',
-      body: { name: 'Nestor' },
+      entryId: await producerId('Nestor'),
+      body: { name: 'Diego Bermudez' },
     })
 
-    expect(calls.changed).toEqual([{ rename: { name: 'Nestor' } }])
+    expect(await producerNames()).toEqual(['Diego Bermudez', 'Nestor Lasso'])
     expect(invalidated()).toEqual(everythingChanged)
   })
 })
@@ -144,22 +116,30 @@ describe('useAdminEntryMerge', () => {
 
     await result.mutateAsync({
       list: 'producers',
-      entryId: 'p2',
-      intoId: 'p1',
+      entryId: await producerId('Nestor'),
+      intoId: await producerId('Nestor Lasso'),
     })
 
-    expect(calls.changed).toEqual([{ merge: { intoId: 'p1' } }])
+    expect(await producerNames()).toEqual(['Nestor Lasso'])
     expect(invalidated()).toEqual(everythingChanged)
   })
 })
 
 describe('useAdminEntryDelete', () => {
   it('deletes the entry and refreshes everything that shows it', async () => {
+    await addAdminEntry(await database(), {
+      list: 'producers',
+      body: { name: 'Diego Bermudez' },
+      createdBy: jeremy.id,
+    })
     const { result, invalidated } = await withClient(useAdminEntryDelete)
 
-    await result.mutateAsync({ list: 'producers', entryId: 'p2' })
+    await result.mutateAsync({
+      list: 'producers',
+      entryId: await producerId('Diego Bermudez'),
+    })
 
-    expect(calls.changed).toEqual(['delete'])
+    expect(await producerNames()).toEqual(['Nestor', 'Nestor Lasso'])
     expect(invalidated()).toEqual(everythingChanged)
   })
 })

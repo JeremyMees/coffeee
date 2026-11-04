@@ -160,9 +160,3 @@ export function catalogCoffees() {
     }),
   ]
 }
-
-export function manyCoffees(count: number) {
-  return Array.from({ length: count }, (_, index) =>
-    libraryCoffee({ id: `m${index + 1}`, name: `Coffee ${index + 1}` }),
-  )
-}

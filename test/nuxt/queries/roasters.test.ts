@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useQueryClient } from '@tanstack/vue-query'
+import { eq } from 'drizzle-orm'
 import {
   useRoaster,
   useRoasterLogoRemoval,
@@ -8,13 +9,12 @@ import {
   useRoasterLogoUpdate,
   useRoasterUpdate,
 } from '~/queries/roasters'
+import { roaster } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import type { RoasterDetails } from '#imports'
 import { queryKeys } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
 import { runOn } from '../fixtures'
-import { listedRoasters } from '#test/fixtures/roasters'
-
-fakeApi()
+import { database, scenario, signIn } from '../server'
 
 const { compressPhoto } = vi.hoisted(() => ({
   compressPhoto: vi.fn(async () => new Blob(['small'], { type: 'image/webp' })),
@@ -22,7 +22,16 @@ const { compressPhoto } = vi.hoisted(() => ({
 
 mockNuxtImport('compressPhoto', () => compressPhoto)
 
-beforeEach(resetApi)
+let sarah: Member
+let squareMile: string
+
+beforeEach(async () => {
+  compressPhoto.mockClear()
+  sarah = await scenario.member('Sarah')
+  await scenario.coffee(sarah.shelf, { roaster: 'Square Mile' })
+  squareMile = await scenario.roaster(sarah, 'Square Mile')
+  await signIn(sarah)
+})
 
 async function withClient<T>(use: () => T) {
   const { result, client } = await runOn('/', () => ({
@@ -34,24 +43,35 @@ async function withClient<T>(use: () => T) {
   return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
 }
 
-const refreshed = [
-  { queryKey: queryKeys.shelf('home') },
-  { queryKey: queryKeys.coffees() },
-  { queryKey: queryKeys.roasters() },
-  { queryKey: queryKeys.lists() },
-  { queryKey: queryKeys.admin() },
-]
+async function stored() {
+  const db = await database()
+  const [found] = await db
+    .select()
+    .from(roaster)
+    .where(eq(roaster.id, squareMile))
+
+  return found!
+}
+
+function refreshed() {
+  return [
+    { queryKey: queryKeys.shelf(sarah.shelf.id) },
+    { queryKey: queryKeys.coffees() },
+    { queryKey: queryKeys.roasters() },
+    { queryKey: queryKeys.lists() },
+    { queryKey: queryKeys.admin() },
+  ]
+}
 
 describe('useRoasterPages', () => {
   it('loads the roasters of the shelf with the query', async () => {
-    api.roasters = listedRoasters()
+    await scenario.roaster(sarah, 'La Cabra')
     const pages = await runOn('/', () =>
-      useRoasterPages('home', { boughtFrom: 'true' }),
+      useRoasterPages(sarah.shelf.id, { boughtFrom: 'true' }),
     )
 
     await pages.suspense()
 
-    expect(api.roasterQueries).toEqual([{ boughtFrom: 'true', page: '0' }])
     expect(
       pages.data.value?.pages[0]?.roasters.map(found => found.name),
     ).toEqual(['Square Mile'])
@@ -61,11 +81,14 @@ describe('useRoasterPages', () => {
 
 describe('useRoaster', () => {
   it('loads a roaster by its id', async () => {
-    const roaster = await runOn('/', () => useRoaster('r2'))
+    const found = await runOn('/', () => useRoaster(squareMile))
 
-    await roaster.suspense()
+    await found.suspense()
 
-    expect(roaster.data.value).toMatchObject({ id: 'r2', name: 'Square Mile' })
+    expect(found.data.value).toMatchObject({
+      id: squareMile,
+      name: 'Square Mile',
+    })
   })
 })
 
@@ -79,10 +102,14 @@ describe('useRoasterUpdate', () => {
       city: 'London',
     }
 
-    await result.mutateAsync({ shelfId: 'home', roasterId: 'r2', details })
+    await result.mutateAsync({
+      shelfId: sarah.shelf.id,
+      roasterId: squareMile,
+      details,
+    })
 
-    expect(api.roasterCalls).toEqual([{ edit: details }])
-    expect(invalidated()).toEqual(refreshed)
+    expect(await stored()).toMatchObject(details)
+    expect(invalidated()).toEqual(refreshed())
   })
 })
 
@@ -91,21 +118,32 @@ describe('useRoasterLogoUpdate', () => {
     const { result, invalidated } = await withClient(useRoasterLogoUpdate)
     const logo = new Blob(['huge'], { type: 'image/png' })
 
-    await result.mutateAsync({ shelfId: 'home', roasterId: 'r2', logo })
+    await result.mutateAsync({
+      shelfId: sarah.shelf.id,
+      roasterId: squareMile,
+      logo,
+    })
 
     expect(compressPhoto).toHaveBeenCalledWith(logo)
-    expect(api.roasterCalls).toEqual(['logo uploaded'])
-    expect(invalidated()).toEqual(refreshed)
+    expect((await stored()).logoUrl).toMatch(
+      /^\/api\/photos\/roasters\/[\w-]+\.webp$/,
+    )
+    expect(invalidated()).toEqual(refreshed())
   })
 })
 
 describe('useRoasterLogoRemoval', () => {
   it('removes the logo and refreshes the shelf', async () => {
+    const db = await database()
+    await db
+      .update(roaster)
+      .set({ logoUrl: '/api/photos/roasters/old.webp' })
+      .where(eq(roaster.id, squareMile))
     const { result, invalidated } = await withClient(useRoasterLogoRemoval)
 
-    await result.mutateAsync({ shelfId: 'home', roasterId: 'r2' })
+    await result.mutateAsync({ shelfId: sarah.shelf.id, roasterId: squareMile })
 
-    expect(api.roasterCalls).toEqual(['logo removed'])
-    expect(invalidated()).toEqual(refreshed)
+    expect((await stored()).logoUrl).toBeNull()
+    expect(invalidated()).toEqual(refreshed())
   })
 })

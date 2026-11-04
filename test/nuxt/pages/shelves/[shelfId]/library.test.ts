@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { useCurrentUser, useRouter } from '#imports'
-import { api, fakeApi, resetApi } from '../../../fake-api'
+import { shelfCoffeePath, shelfPath, useRouter } from '#imports'
+import type { Member } from '#test/support/types'
 import {
   allByTestId,
   click,
@@ -10,19 +10,60 @@ import {
   setViewport,
   tid,
 } from '../../../fixtures'
-import { libraryCoffees, manyCoffees } from '#test/fixtures/coffees'
-import { testUser } from '#test/fixtures/users'
+import { scenario, signIn } from '../../../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
+beforeEach(async () => {
   forgetLastShelf()
-  resetApi()
   setViewport(375, 812)
-  useCurrentUser().value = testUser()
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
 })
 
-async function library(route = '/shelves/sarahs-shelf-home/library') {
+async function threeCoffees() {
+  const redBrick = await scenario.coffee(sarah.shelf, {
+    name: 'Red Brick',
+    roastLevel: 'dark',
+    origins: ['BR'],
+    flavorNotes: ['Lime'],
+    purchasedOn: '2026-09-01',
+  })
+  const elParaiso = await scenario.coffee(sarah.shelf, {
+    name: 'El Paraiso',
+    roaster: 'La Cabra',
+    roastLevel: 'medium',
+    origins: ['CO'],
+    flavorNotes: ['Jasmine'],
+    purchasedOn: '2026-10-01',
+  })
+  const ayele = await scenario.coffee(sarah.shelf, {
+    flavorNotes: ['Lime'],
+    purchasedOn: '2026-11-01',
+  })
+  await scenario.verdict(sarah, ayele.id, { rating: 5, wouldBuyAgain: true })
+  await scenario.verdict(sarah, elParaiso.id, {
+    rating: 4,
+    wouldBuyAgain: false,
+  })
+
+  return { ayele, elParaiso, redBrick }
+}
+
+async function thirtyCoffees() {
+  for (let day = 1; day <= 30; day++) {
+    await scenario.coffee(sarah.shelf, {
+      name: `Coffee ${day}`,
+      purchasedOn: `2026-10-${String(day).padStart(2, '0')}`,
+    })
+  }
+}
+
+function libraryPath(query = '') {
+  return `${shelfPath(sarah.shelf)}/library${query}`
+}
+
+async function library(route = libraryPath()) {
   const page = await mountSuspended(App, {
     route,
     attachTo: document.body,
@@ -64,20 +105,20 @@ describe('the Library page', () => {
     expect(page.find(tid('library-filters')).exists()).toBe(false)
   })
 
-  it('shows every coffee as a card that opens it, in the order it comes', async () => {
-    api.library = libraryCoffees()
+  it('shows every coffee as a card that opens it, last bought first', async () => {
+    const { ayele } = await threeCoffees()
 
     const { page, cards } = await library()
 
     expect(cards()).toEqual(['Ayele Fulasa', 'El Paraiso', 'Red Brick'])
     expect(page.get(tid('library', 'coffee-card')).attributes('href')).toBe(
-      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+      shelfCoffeePath(sarah.shelf, ayele),
     )
     expect(page.find(tid('library-more')).exists()).toBe(false)
   })
 
   it('loads more cards a page at a time', async () => {
-    api.library = manyCoffees(30)
+    await thirtyCoffees()
     const { page, cards } = await library()
 
     expect(cards()).toHaveLength(24)
@@ -88,8 +129,8 @@ describe('the Library page', () => {
     expect(page.find(tid('library-more')).exists()).toBe(false)
   })
 
-  it('asks the server for the coffees the filters pick', async () => {
-    api.library = libraryCoffees()
+  it('shows only the coffees the filters pick', async () => {
+    await threeCoffees()
     const { page, cards } = await library()
 
     await pickFilter('flavor-notes', 'Lime')
@@ -100,15 +141,10 @@ describe('the Library page', () => {
     await page.get(tid('library-filter-favourites')).trigger('click')
 
     await vi.waitFor(() => expect(cards()).toEqual(['Ayele Fulasa']))
-    expect(api.libraryQueries.at(-1)).toEqual({
-      favourites: 'true',
-      flavorNoteId: 'n1',
-      page: '0',
-    })
   })
 
   it('says when nothing matches and clears the filters', async () => {
-    api.library = libraryCoffees()
+    await threeCoffees()
     const { page, cards } = await library()
 
     await pickFilter('roasters', 'La Cabra')
@@ -127,7 +163,7 @@ describe('the Library page', () => {
   })
 
   it('always shows the grid on a phone', async () => {
-    api.library = libraryCoffees()
+    await threeCoffees()
 
     const { page } = await library()
 
@@ -137,7 +173,7 @@ describe('the Library page', () => {
 
   it('switches between the grid and a table on a wide screen', async () => {
     setViewport(1280, 800)
-    api.library = libraryCoffees()
+    await threeCoffees()
     const { page, rows } = await library()
 
     await page.get(tid('library-view-table')).trigger('click')
@@ -158,10 +194,11 @@ describe('the Library page', () => {
 
   it('pages and sorts the table on the server, back to the first page on a new sort', async () => {
     setViewport(1280, 800)
-    api.library = manyCoffees(30)
+    await thirtyCoffees()
     const { page, rows } = await library()
     await page.get(tid('library-view-table')).trigger('click')
     await vi.waitFor(() => expect(rows()).toHaveLength(24))
+    expect(rows()[0]).toBe('Coffee 30')
 
     await page.get(tid('data-table-next')).trigger('click')
 
@@ -170,19 +207,14 @@ describe('the Library page', () => {
 
     await page.get(tid('library-sort-lastBought')).trigger('click')
 
-    await vi.waitFor(() =>
-      expect(api.libraryQueries.at(-1)).toEqual({
-        sort: 'lastBought',
-        direction: 'ascending',
-        page: '0',
-      }),
-    )
+    await vi.waitFor(() => expect(rows()[0]).toBe('Coffee 1'))
+    expect(rows()).toHaveLength(24)
     expect(page.get(tid('data-table-page')).text()).toBe('Page 1 of 2')
   })
 
   it('keeps the filters, view, sort and page in the address', async () => {
     setViewport(1280, 800)
-    api.library = manyCoffees(30)
+    await thirtyCoffees()
     const { page, rows } = await library()
 
     await pickFilter('origins', 'Ethiopia')
@@ -202,22 +234,25 @@ describe('the Library page', () => {
 
   it('starts from the address, with the names of its filters', async () => {
     setViewport(1280, 800)
-    api.library = manyCoffees(30)
+    await thirtyCoffees()
 
-    const { page } = await library(
-      '/shelves/sarahs-shelf-home/library?originCode=ET&view=table&sort=lastBought&direction=descending&page=2',
+    const { page, rows } = await library(
+      libraryPath(
+        '?originCode=ET&view=table&sort=lastBought&direction=descending&page=2',
+      ),
     )
 
     await vi.waitFor(() =>
-      expect(api.libraryQueries.at(-1)).toEqual({
-        originCode: 'ET',
-        sort: 'lastBought',
-        direction: 'descending',
-        page: '1',
-      }),
+      expect(rows()).toEqual([
+        'Coffee 6',
+        'Coffee 5',
+        'Coffee 4',
+        'Coffee 3',
+        'Coffee 2',
+        'Coffee 1',
+      ]),
     )
-    expect(api.filterLabelQueries).toEqual([{ originCode: 'ET' }])
+    expect(page.get(tid('data-table-page')).text()).toBe('Page 2 of 2')
     expect(page.get(tid('library-filter-origins')).text()).toBe('Ethiopia')
-    expect(page.find(tid('library-table')).exists()).toBe(true)
   })
 })

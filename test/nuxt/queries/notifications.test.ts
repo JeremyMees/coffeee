@@ -7,25 +7,69 @@ import {
   useNotificationsRead,
   useUnreadNotifications,
 } from '~/queries/notifications'
+import {
+  countUnreadNotifications,
+  listEmailedKinds,
+  markNotificationsRead,
+  setEmailedKinds,
+} from '#server/utils/notifications'
+import type { Member } from '#test/support/types'
 import { queryKeys } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
-import { notifications } from '#test/fixtures/notifications'
 import { runOn } from '../fixtures'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
-  resetApi()
-  api.notifications = notifications()
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  const tom = await scenario.member('Tom')
+  await scenario.joinShelf(tom, sarah.shelf)
+  await scenario.notifyShelf({
+    shelfId: sarah.shelf.id,
+    actorId: tom.id,
+    kind: 'memberJoined',
+  })
+  await markNotificationsRead(await database(), sarah.id)
+  const added = await scenario.coffee(sarah.shelf)
+  await scenario.notifyShelf({
+    shelfId: sarah.shelf.id,
+    actorId: tom.id,
+    kind: 'coffeeAdded',
+    coffeeId: added.id,
+  })
+  await signIn(sarah)
 })
 
 describe('useNotifications', () => {
-  it('fetches the notifications', async () => {
+  it('fetches the notifications, newest first', async () => {
     const { data, suspense } = await runOn('/', useNotifications)
 
     await suspense()
 
-    expect(data.value).toEqual(notifications())
+    expect(
+      data.value?.map(found => ({
+        kind: found.kind,
+        actor: found.actor,
+        shelf: found.shelf,
+        coffee: found.coffee,
+        read: found.readAt !== null,
+      })),
+    ).toEqual([
+      {
+        kind: 'coffeeAdded',
+        actor: 'Tom',
+        shelf: "Sarah's shelf",
+        coffee: 'Ayele Fulasa',
+        read: false,
+      },
+      {
+        kind: 'memberJoined',
+        actor: 'Tom',
+        shelf: "Sarah's shelf",
+        coffee: null,
+        read: true,
+      },
+    ])
   })
 })
 
@@ -48,7 +92,7 @@ describe('useNotificationsRead', () => {
 
     await result.mutateAsync()
 
-    expect(api.notificationCalls).toEqual(['read'])
+    expect(await countUnreadNotifications(await database(), sarah.id)).toBe(0)
     expect(client.getQueryData(queryKeys.unreadNotifications())).toEqual({
       unread: 0,
     })
@@ -57,7 +101,10 @@ describe('useNotificationsRead', () => {
 
 describe('useNotificationEmails', () => {
   it('fetches which notifications are emailed', async () => {
-    api.notificationEmails = ['bagFinished']
+    await setEmailedKinds(await database(), {
+      userId: sarah.id,
+      emailed: ['bagFinished'],
+    })
     const { data, suspense } = await runOn('/', useNotificationEmails)
 
     await suspense()
@@ -75,9 +122,9 @@ describe('useNotificationEmailsUpdate', () => {
 
     await result.mutateAsync(['coffeeAdded', 'memberJoined'])
 
-    expect(api.notificationCalls).toEqual([
-      { emails: { emailed: ['coffeeAdded', 'memberJoined'] } },
-    ])
+    expect(
+      (await listEmailedKinds(await database(), sarah.id)).toSorted(),
+    ).toEqual(['coffeeAdded', 'memberJoined'])
     expect(client.getQueryData(queryKeys.notificationEmails())).toEqual({
       emailed: ['coffeeAdded', 'memberJoined'],
     })
