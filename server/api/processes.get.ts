@@ -1,4 +1,3 @@
-import { processList } from '#server/db/schemas'
-import { listSearchHandler } from '#server/utils/lists'
+import { descriptionSuggestionHandler } from '#server/utils/descriptions'
 
-export default listSearchHandler(processList)
+export default descriptionSuggestionHandler('processes')

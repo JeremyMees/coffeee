@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   coffee,
   coffeeVerdict,
-  flavorNote,
   grinder,
   grinderBrand,
   grindSetting,
@@ -320,28 +319,6 @@ describe('merging entries', () => {
     ).toEqual([{ name: 'Square Mile', city: 'London' }])
   })
 
-  it('moves a flavor note onto the kept one without listing it twice', async () => {
-    const { db, keptId, duplicateId, sarah } = await setup()
-    const lime = await idOf(db, 'flavorNotes', 'Lime')
-    const limes = await idOf(db, 'flavorNotes', 'Limes')
-
-    await mergeAdminEntry(db, {
-      list: 'flavorNotes',
-      entryId: limes,
-      intoId: lime,
-    })
-
-    const notesOf = async (coffeeId: string) =>
-      (await findCoffee(db, { coffeeId, viewer: sarah }))!.flavorNotes.map(
-        note => note.name,
-      )
-    expect(await notesOf(keptId)).toEqual(['Lime'])
-    expect(await notesOf(duplicateId)).toEqual(['Lime'])
-    expect(await db.select({ name: flavorNote.name }).from(flavorNote)).toEqual(
-      [{ name: 'Lime' }],
-    )
-  })
-
   it('refuses to merge a region into one in another country', async () => {
     const { db, sarah, home } = await setup()
     await addCoffee(db, {
@@ -567,20 +544,6 @@ describe('updating entries', () => {
 })
 
 describe('deleting entries', () => {
-  it('takes a deleted flavor note off every coffee', async () => {
-    const { db, sarah, keptId } = await setup()
-    const lime = await idOf(db, 'flavorNotes', 'Lime')
-
-    expect(
-      await deleteAdminEntry(db, { list: 'flavorNotes', entryId: lime }),
-    ).toEqual({
-      outcome: 'deleted',
-    })
-    expect(
-      (await findCoffee(db, { coffeeId: keptId, viewer: sarah }))!.flavorNotes,
-    ).toEqual([])
-  })
-
   it('refuses to delete a roaster that still has coffees', async () => {
     const { db } = await setup()
     const squareMile = await idOf(db, 'roasters', 'Square Mile')

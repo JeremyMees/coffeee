@@ -10,18 +10,14 @@ import type {
 } from '#shared/types/library'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
+import { coffee, coffeeVerdict, purchase, roaster } from '#server/db/schemas'
+import { coffeeColumns } from '#server/utils/coffees'
 import {
-  coffee,
-  coffeeFlavorNote,
-  coffeeOrigin,
-  coffeeVerdict,
-  flavorNote,
-  origin,
-  purchase,
-  roaster,
-} from '#server/db/schemas'
-import { coffeeColumns, flavorNotesOf } from '#server/utils/coffees'
-import { originNamesOf } from '#server/utils/origins'
+  cardDescriptionsOf,
+  describedWith,
+  descriptionFilterOptions,
+  originNamesSort,
+} from '#server/utils/descriptions'
 import { verdictOn } from '#server/utils/verdicts'
 
 const pricedPurchase = alias(purchase, 'pricedPurchase')
@@ -38,13 +34,6 @@ function latestPriceOf(shelfId: string) {
   )`
 }
 
-const originNames = sql<string | null>`(
-  select string_agg(${origin.name}, ', ' order by ${coffeeOrigin.position})
-  from ${coffeeOrigin}
-  inner join ${origin} on ${origin.code} = ${coffeeOrigin.originCode}
-  where ${coffeeOrigin.coffeeId} = ${coffee.id}
-)`
-
 function libraryWhere(input: { shelfId: string; search: LibrarySearch }) {
   const { search } = input
 
@@ -55,11 +44,9 @@ function libraryWhere(input: { shelfId: string; search: LibrarySearch }) {
       : undefined,
     search.roasterId ? eq(coffee.roasterId, search.roasterId) : undefined,
     search.flavorNoteId
-      ? sql`exists (select 1 from ${coffeeFlavorNote} where ${coffeeFlavorNote.coffeeId} = ${coffee.id} and ${coffeeFlavorNote.flavorNoteId} = ${search.flavorNoteId})`
+      ? describedWith('flavorNotes', search.flavorNoteId)
       : undefined,
-    search.originCode
-      ? sql`exists (select 1 from ${coffeeOrigin} where ${coffeeOrigin.coffeeId} = ${coffee.id} and ${coffeeOrigin.originCode} = ${search.originCode})`
-      : undefined,
+    search.originCode ? describedWith('origins', search.originCode) : undefined,
   )
 }
 
@@ -67,7 +54,7 @@ function sortedBy(column: LibraryColumn, shelfId: string): SQL {
   const values: Record<LibraryColumn, SQL> = {
     rating: sql`${coffeeVerdict.rating}`,
     roaster: sql`${roaster.nameKey}`,
-    origin: originNames,
+    origin: originNamesSort,
     roastLevel: sql`${coffee.roastLevel}`,
     latestPrice: latestPriceOf(shelfId),
     lastBought: sql`${max(purchase.purchasedOn)}`,
@@ -120,8 +107,7 @@ export async function listLibrary(
     .limit(search.pageSize)
     .offset(search.page * search.pageSize)
   const coffeeIds = rows.map(row => row.id)
-  const notes = await flavorNotesOf(db, coffeeIds)
-  const origins = await originNamesOf(db, coffeeIds)
+  const cards = await cardDescriptionsOf(db, coffeeIds)
 
   return {
     total: rows[0]?.total ?? 0,
@@ -129,59 +115,28 @@ export async function listLibrary(
       ...row,
       lastBought: row.lastBought!,
       wouldBuyAgain: row.wouldBuyAgain ?? false,
-      flavorNotes: notes.get(row.id) ?? [],
-      origins: origins.get(row.id) ?? [],
+      ...cards.get(row.id)!,
     })),
   }
 }
 
-function filterOptionsQuery(
-  db: Database,
-  input: { shelfId: string; kind: LibraryFilterKind; key: string },
-) {
-  const onShelf = eq(purchase.shelfId, input.shelfId)
-
-  if (input.kind === 'roasters') {
-    return db
-      .selectDistinct({
-        value: roaster.id,
-        label: roaster.name,
-        key: roaster.nameKey,
-      })
-      .from(purchase)
-      .innerJoin(coffee, eq(coffee.id, purchase.coffeeId))
-      .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
-      .where(and(onShelf, sql`strpos(${roaster.nameKey}, ${input.key}) > 0`))
-      .orderBy(asc(roaster.nameKey), asc(roaster.id))
-      .$dynamic()
-  }
-
-  if (input.kind === 'flavor-notes') {
-    return db
-      .selectDistinct({
-        value: flavorNote.id,
-        label: flavorNote.name,
-        key: flavorNote.nameKey,
-      })
-      .from(purchase)
-      .innerJoin(
-        coffeeFlavorNote,
-        eq(coffeeFlavorNote.coffeeId, purchase.coffeeId),
-      )
-      .innerJoin(flavorNote, eq(flavorNote.id, coffeeFlavorNote.flavorNoteId))
-      .where(and(onShelf, sql`strpos(${flavorNote.nameKey}, ${input.key}) > 0`))
-      .orderBy(asc(flavorNote.nameKey), asc(flavorNote.id))
-      .$dynamic()
-  }
-
+function roasterOptions(db: Database, input: { shelfId: string; key: string }) {
   return db
-    .selectDistinct({ value: origin.code, label: origin.name })
+    .selectDistinct({
+      value: roaster.id,
+      label: roaster.name,
+      key: roaster.nameKey,
+    })
     .from(purchase)
-    .innerJoin(coffeeOrigin, eq(coffeeOrigin.coffeeId, purchase.coffeeId))
-    .innerJoin(origin, eq(origin.code, coffeeOrigin.originCode))
-    .where(and(onShelf, sql`strpos(lower(${origin.name}), ${input.key}) > 0`))
-    .orderBy(asc(origin.name))
-    .$dynamic()
+    .innerJoin(coffee, eq(coffee.id, purchase.coffeeId))
+    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+    .where(
+      and(
+        eq(purchase.shelfId, input.shelfId),
+        sql`strpos(${roaster.nameKey}, ${input.key}) > 0`,
+      ),
+    )
+    .orderBy(asc(roaster.nameKey), asc(roaster.id))
 }
 
 export async function listLibraryFilterOptions(
@@ -193,13 +148,29 @@ export async function listLibraryFilterOptions(
   },
 ) {
   const { search } = input
-  const rows = await filterOptionsQuery(db, {
-    shelfId: input.shelfId,
-    kind: input.kind,
-    key: nameKey(search.search),
-  })
-    .limit(search.pageSize + 1)
-    .offset(search.page * search.pageSize)
+  const limit = search.pageSize + 1
+  const offset = search.page * search.pageSize
+  const rows =
+    input.kind === 'roasters'
+      ? await roasterOptions(db, {
+          shelfId: input.shelfId,
+          key: nameKey(search.search),
+        })
+          .limit(limit)
+          .offset(offset)
+      : await descriptionFilterOptions(
+          db,
+          input.kind === 'flavor-notes' ? 'flavorNotes' : 'origins',
+          {
+            search: search.search,
+            limit,
+            offset,
+            among: db
+              .select({ coffeeId: purchase.coffeeId })
+              .from(purchase)
+              .where(eq(purchase.shelfId, input.shelfId)),
+          },
+        )
 
   return {
     options: rows

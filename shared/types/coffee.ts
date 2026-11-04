@@ -1,5 +1,5 @@
 import type {
-  coffeeListFields,
+  descriptionListFields,
   roastedForOptions,
   roastLevels,
 } from '../utils/coffee'
@@ -12,7 +12,7 @@ export type RoastLevel = (typeof roastLevels)[number]
 
 export type RoastedFor = (typeof roastedForOptions)[number]
 
-export type CoffeeListField = (typeof coffeeListFields)[number]
+export type DescriptionListField = (typeof descriptionListFields)[number]
 
 export type DescribedCoffee = Record<OriginListField, OriginEntry[]> & {
   origins: string[]
@@ -26,5 +26,5 @@ export type NewCoffee = z.output<typeof newCoffeeSchema>
 
 export type CoffeeDescription = Pick<
   CoffeeDetails,
-  'origins' | OriginListField | CoffeeListField
+  'origins' | DescriptionListField
 >

@@ -1,4 +1,3 @@
-import { varietal } from '#server/db/schemas'
-import { listSearchHandler } from '#server/utils/lists'
+import { descriptionSuggestionHandler } from '#server/utils/descriptions'
 
-export default listSearchHandler(varietal)
+export default descriptionSuggestionHandler('varietals')

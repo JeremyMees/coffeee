@@ -1,4 +1,3 @@
-import { region } from '#server/db/schemas'
-import { originListSearchHandler } from '#server/utils/origins'
+import { descriptionSuggestionHandler } from '#server/utils/descriptions'
 
-export default originListSearchHandler(region)
+export default descriptionSuggestionHandler('regions')

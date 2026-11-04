@@ -1,9 +1,11 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{ fields?: CoffeeListField[] }>(), {
+type PlainListField = Exclude<DescriptionListField, OriginListField>
+
+const props = withDefaults(defineProps<{ fields?: PlainListField[] }>(), {
   fields: () => ['processes', 'varietals', 'flavorNotes', 'producers'],
 })
 
-const listPickers: Record<CoffeeListField, ListPickerConfig> = {
+const listPickers: Record<PlainListField, ListPickerConfig> = {
   processes: {
     label: 'Process',
     endpoint: '/api/processes',

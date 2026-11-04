@@ -5,7 +5,7 @@ import { defineEventHandler } from 'h3'
 import { listSearchSchema } from '#shared/utils/schemas'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
-import type { CoffeeList, NewListEntry, SharedList } from '#server/types/lists'
+import type { NewListEntry, SharedList } from '#server/types/lists'
 import { roaster } from '#server/db/schemas'
 import { useDb } from '#server/utils/db'
 import { withFreshId } from '#server/utils/ids'
@@ -96,50 +96,6 @@ export async function findOrCreateEntry(
     )
 
   return found!.id
-}
-
-export async function describeEntries(
-  db: Database,
-  { list, link, entryId }: CoffeeList,
-  input: { coffeeId: string; userId: string; entries: NewListEntry[] },
-) {
-  const ids = new Set<string>()
-
-  for (const entry of input.entries) {
-    ids.add(
-      await findOrCreateEntry(db, list, { ...entry, createdBy: input.userId }),
-    )
-  }
-
-  await db.delete(link).where(eq(link.coffeeId, input.coffeeId))
-
-  if (!ids.size) return
-
-  await db.insert(link).values(
-    [...ids].map((id, position) => ({
-      coffeeId: input.coffeeId,
-      position,
-      [entryId.name]: id,
-    })) as never,
-  )
-}
-
-export function entriesOf<Columns extends Record<string, PgColumn>>(
-  db: Database,
-  { list, link, entryId }: CoffeeList,
-  coffeeId: string,
-  columns?: Columns,
-) {
-  return db
-    .select({
-      id: sql<string>`${list.id}`,
-      name: sql<string>`${list.name}`,
-      ...(columns as Columns),
-    })
-    .from(link)
-    .innerJoin(list, eq(list.id, entryId))
-    .where(eq(link.coffeeId, coffeeId))
-    .orderBy(asc(link.position))
 }
 
 export async function moveReferences(

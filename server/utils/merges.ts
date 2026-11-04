@@ -1,6 +1,5 @@
 import { and, eq } from 'drizzle-orm'
 import type { Database } from '#server/types/database'
-import type { CoffeeList } from '#server/types/lists'
 import type { Move } from '#server/types/merges'
 import {
   brewMethod,
@@ -15,17 +14,6 @@ import {
   shelfGrinder,
 } from '#server/db/schemas'
 import { moveReferences } from '#server/utils/lists'
-
-export async function mergeLinkedEntries(
-  db: Database,
-  { list, link, entryId }: CoffeeList,
-  move: Move,
-) {
-  await moveReferences(db, link, entryId, move)
-  await db.delete(list).where(eq(list.id, move.from))
-
-  return [] as (string | null)[]
-}
 
 export async function mergeCoffees(db: Database, move: Move) {
   const photos = { photoUrl: coffee.photoUrl }

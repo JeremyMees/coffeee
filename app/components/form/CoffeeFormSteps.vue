@@ -72,10 +72,12 @@ const last = computed(() => step.value === props.steps.length)
     </FieldGroup>
     <FieldGroup v-show="step === 2" :data-testid="`${prefix}-pane-2`">
       <CoffeeOriginFields />
-      <CoffeeListFields :fields="['producers']" />
+      <DescriptionListFields :fields="['producers']" />
     </FieldGroup>
     <FieldGroup v-show="step === 3" :data-testid="`${prefix}-pane-3`">
-      <CoffeeListFields :fields="['processes', 'varietals', 'flavorNotes']" />
+      <DescriptionListFields
+        :fields="['processes', 'varietals', 'flavorNotes']"
+      />
       <CoffeeRoastFields />
     </FieldGroup>
     <FieldGroup

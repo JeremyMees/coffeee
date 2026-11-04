@@ -1,4 +1,3 @@
-import { flavorNote } from '#server/db/schemas'
-import { listSearchHandler } from '#server/utils/lists'
+import { descriptionSuggestionHandler } from '#server/utils/descriptions'
 
-export default listSearchHandler(flavorNote)
+export default descriptionSuggestionHandler('flavorNotes')

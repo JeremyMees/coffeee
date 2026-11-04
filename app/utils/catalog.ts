@@ -19,12 +19,12 @@ export const catalogFilterLabels: Record<CatalogFilterKind, string> = {
 export const catalogMatchLabels: Record<CatalogMatchField, string> = {
   name: 'Name',
   roaster: 'Roaster',
-  flavorNote: 'Flavor note',
-  origin: 'Origin',
-  region: 'Region',
-  producer: 'Producer',
-  farm: 'Farm',
-  process: 'Process',
+  origins: 'Origin',
+  flavorNotes: 'Flavor note',
+  regions: 'Region',
+  producers: 'Producer',
+  farms: 'Farm',
+  processes: 'Process',
 }
 
 export const catalogSortLabels: Record<CatalogSort, string> = {

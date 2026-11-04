@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
-import CoffeeListFields from '~/components/form/CoffeeListFields.vue'
+import DescriptionListFields from '~/components/form/DescriptionListFields.vue'
 import { fakeApi } from '../../fake-api'
 import { mountInForm, pickMulti, tid, type } from '../../fixtures'
 
 fakeApi()
 
-describe('CoffeeListFields', () => {
+describe('DescriptionListFields', () => {
   it('asks only for the lists it is given, in that order', async () => {
     const { wrapper } = await mountInForm(
       defineComponent({
         render: () =>
-          h(CoffeeListFields, { fields: ['flavorNotes', 'processes'] }),
+          h(DescriptionListFields, { fields: ['flavorNotes', 'processes'] }),
       }),
     )
 
@@ -22,7 +22,7 @@ describe('CoffeeListFields', () => {
   })
 
   it('asks for processes, which are required, varietals, flavor notes and producers', async () => {
-    const { wrapper } = await mountInForm(CoffeeListFields)
+    const { wrapper } = await mountInForm(DescriptionListFields)
 
     expect(
       wrapper.findAll('label').map(label => label.text().replace(/\s+/g, ' ')),
@@ -30,7 +30,7 @@ describe('CoffeeListFields', () => {
   })
 
   it('fills each list as entries are picked or added', async () => {
-    const { form } = await mountInForm(CoffeeListFields)
+    const { form } = await mountInForm(DescriptionListFields)
 
     await pickMulti('coffee-processes', 'wash', 'Washed')
     await pickMulti('coffee-processes', 'Thermal shock', 'Add “Thermal shock”')
@@ -48,7 +48,7 @@ describe('CoffeeListFields', () => {
   })
 
   it('only takes an entry once it is picked', async () => {
-    const { form } = await mountInForm(CoffeeListFields)
+    const { form } = await mountInForm(DescriptionListFields)
 
     await type('coffee-varietals', 'Geis')
 
@@ -56,7 +56,7 @@ describe('CoffeeListFields', () => {
   })
 
   it('explains a coffee without a process', async () => {
-    const { wrapper, form } = await mountInForm(CoffeeListFields)
+    const { wrapper, form } = await mountInForm(DescriptionListFields)
 
     await form.validate()
 

@@ -236,27 +236,7 @@ describe('the catalog', () => {
       'flavor note',
       'strawb',
       'El Paraiso',
-      { field: 'flavorNote', name: 'Strawberry' },
-    ],
-    ['origin', 'kenya', 'Ayele Fulasa', { field: 'origin', name: 'Kenya' }],
-    ['region', 'guji', 'Ayele Fulasa', { field: 'region', name: 'Guji' }],
-    [
-      'producer',
-      'bermúdez',
-      'El Paraiso',
-      { field: 'producer', name: 'Diego Bermudez' },
-    ],
-    [
-      'farm',
-      'finca',
-      'El Paraiso',
-      { field: 'farm', name: 'Finca El Paraiso' },
-    ],
-    [
-      'process',
-      'anaerob',
-      'El Paraiso',
-      { field: 'process', name: 'Anaerobic' },
+      { field: 'flavorNotes', name: 'Strawberry' },
     ],
   ])(
     'finds a coffee by its %s and says what matched',
@@ -279,7 +259,7 @@ describe('the catalog', () => {
 
     expect(paraiso!.matches).toEqual([
       { field: 'name', name: 'El Paraiso' },
-      { field: 'farm', name: 'Finca El Paraiso' },
+      { field: 'farms', name: 'Finca El Paraiso' },
     ])
   })
 

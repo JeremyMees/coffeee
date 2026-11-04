@@ -10,12 +10,12 @@ export const catalogFilters = [
 export const catalogMatchFields = [
   'name',
   'roaster',
-  'flavorNote',
-  'origin',
-  'region',
-  'producer',
-  'farm',
-  'process',
+  'origins',
+  'flavorNotes',
+  'regions',
+  'producers',
+  'farms',
+  'processes',
 ] as const
 
 export const catalogSorts = ['newest', 'communityRating'] as const

@@ -1,39 +1,18 @@
-import { and, asc, desc, eq, inArray, isNull, max, ne, sql } from 'drizzle-orm'
-import { coffeeListFields } from '#shared/utils/coffee'
-import type { ListEntry } from '#shared/types/catalog'
-import type {
-  CoffeeDescription,
-  CoffeeDetails,
-  CoffeeListField,
-  NewCoffee,
-} from '#shared/types/coffee'
+import { and, desc, eq, isNull, max, ne, sql } from 'drizzle-orm'
+import type { CoffeeDetails, NewCoffee } from '#shared/types/coffee'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
 import { withFreshId } from '#server/utils/ids'
-import {
-  coffee,
-  coffeeFlavorNote,
-  coffeeProcess,
-  coffeeProducer,
-  coffeeVarietal,
-  coffeeVerdict,
-  flavorNote,
-  processList,
-  producer,
-  purchase,
-  roaster,
-  varietal,
-} from '#server/db/schemas'
-import {
-  describeEntries,
-  entriesOf,
-  findOrCreateEntry,
-} from '#server/utils/lists'
+import { coffee, coffeeVerdict, purchase, roaster } from '#server/db/schemas'
+import { findOrCreateEntry } from '#server/utils/lists'
 import type { Viewer } from '#server/types/coffees'
 import { canEditCatalogEntry } from '#server/utils/catalog'
-import type { CoffeeList } from '#server/types/lists'
 import type { EditableCoffeePhoto } from '#server/types/photos'
-import { describeOrigins, originsOf } from '#server/utils/origins'
+import {
+  cardDescriptionsOf,
+  describeCoffee,
+  descriptionOf,
+} from '#server/utils/descriptions'
 import { deletePhoto } from '#server/utils/photos'
 import {
   grindSettingsOf,
@@ -63,77 +42,6 @@ const detailColumns = {
   altitudeFrom: coffee.altitudeFrom,
   altitudeTo: coffee.altitudeTo,
   link: coffee.link,
-}
-
-const coffeeLists: Record<CoffeeListField, CoffeeList> = {
-  producers: {
-    list: producer,
-    link: coffeeProducer,
-    entryId: coffeeProducer.producerId,
-  },
-  processes: {
-    list: processList,
-    link: coffeeProcess,
-    entryId: coffeeProcess.processId,
-  },
-  varietals: {
-    list: varietal,
-    link: coffeeVarietal,
-    entryId: coffeeVarietal.varietalId,
-  },
-  flavorNotes: {
-    list: flavorNote,
-    link: coffeeFlavorNote,
-    entryId: coffeeFlavorNote.flavorNoteId,
-  },
-}
-
-export async function describeCoffee(
-  db: Database,
-  input: { coffeeId: string; userId: string; details: CoffeeDescription },
-) {
-  await describeOrigins(db, input)
-
-  for (const field of coffeeListFields) {
-    await describeEntries(db, coffeeLists[field], {
-      coffeeId: input.coffeeId,
-      userId: input.userId,
-      entries: input.details[field].map(name => ({ name })),
-    })
-  }
-}
-
-async function describedOf(db: Database, coffeeId: string) {
-  const entries = {} as Record<CoffeeListField, ListEntry[]>
-
-  for (const field of coffeeListFields) {
-    entries[field] = await entriesOf(db, coffeeLists[field], coffeeId)
-  }
-
-  return { ...(await originsOf(db, coffeeId)), ...entries }
-}
-
-export async function flavorNotesOf(db: Database, coffeeIds: string[]) {
-  const notes = new Map<string, ListEntry[]>()
-
-  if (!coffeeIds.length) return notes
-
-  const linked = await db
-    .select({
-      coffeeId: coffeeFlavorNote.coffeeId,
-      id: flavorNote.id,
-      name: flavorNote.name,
-    })
-    .from(coffeeFlavorNote)
-    .innerJoin(flavorNote, eq(flavorNote.id, coffeeFlavorNote.flavorNoteId))
-    .where(inArray(coffeeFlavorNote.coffeeId, coffeeIds))
-    .orderBy(asc(coffeeFlavorNote.position))
-
-  for (const { coffeeId, ...note } of linked) {
-    notes.set(coffeeId, [...(notes.get(coffeeId) ?? []), note])
-  }
-
-  return notes
 }
 
 export async function findOrCreateCoffee(
@@ -185,7 +93,7 @@ export function addCoffee(
       await describeCoffee(tx, {
         coffeeId: found.id,
         userId: input.userId,
-        details,
+        description: details,
       })
     }
     const added = await addPurchase(tx, {
@@ -218,12 +126,15 @@ export async function listStock(
     )
     .groupBy(coffee.id, roaster.id, coffeeVerdict.rating)
     .orderBy(desc(max(purchase.purchasedOn)), desc(max(purchase.createdAt)))
-  const notes = await flavorNotesOf(
+  const cards = await cardDescriptionsOf(
     db,
     stock.map(row => row.id),
   )
 
-  return stock.map(row => ({ ...row, flavorNotes: notes.get(row.id) ?? [] }))
+  return stock.map(row => ({
+    ...row,
+    flavorNotes: cards.get(row.id)!.flavorNotes,
+  }))
 }
 
 export async function findEditableCoffee(
@@ -278,7 +189,7 @@ async function findCatalogCoffee(
 
   return {
     ...details,
-    ...(await describedOf(db, input.coffeeId)),
+    ...(await descriptionOf(db, input.coffeeId)),
     ...(await findVerdict(db, {
       userId: input.viewer.id,
       coffeeId: input.coffeeId,
@@ -401,7 +312,7 @@ export function editCoffee(
     await describeCoffee(tx, {
       coffeeId: input.coffeeId,
       userId: input.editor.id,
-      details,
+      description: details,
     })
 
     const [edited] = await tx
@@ -412,7 +323,7 @@ export function editCoffee(
 
     return {
       outcome: 'edited' as const,
-      coffee: { ...edited!, ...(await describedOf(tx, input.coffeeId)) },
+      coffee: { ...edited!, ...(await descriptionOf(tx, input.coffeeId)) },
     }
   })
 }

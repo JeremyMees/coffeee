@@ -67,8 +67,8 @@ describe('matchLabels', () => {
         catalogCoffee({
           matches: [
             { field: 'name', name: 'El Paraiso' },
-            { field: 'flavorNote', name: 'Strawberry' },
-            { field: 'farm', name: 'Finca El Paraiso' },
+            { field: 'flavorNotes', name: 'Strawberry' },
+            { field: 'farms', name: 'Finca El Paraiso' },
           ],
         }),
       ),

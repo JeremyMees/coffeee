@@ -1,6 +1,5 @@
 import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
-import type { PgColumn } from 'drizzle-orm/pg-core'
 import type { z } from 'zod'
 import type { AdminEntrySearch, AdminList } from '#shared/types/admin'
 import type { CoffeeDetails } from '#shared/types/coffee'
@@ -17,38 +16,24 @@ import {
   roasterDetailsSchema,
 } from '#shared/utils/schemas'
 import type { Database } from '#server/types/database'
-import type { CoffeeList, OriginList, SharedList } from '#server/types/lists'
-import type { EntryChanges, Move } from '#server/types/merges'
+import type { AdminListTable } from '#server/types/admin-lists'
+import type { SharedList } from '#server/types/lists'
+import type { EntryChanges } from '#server/types/merges'
 import {
   brewMethod,
   coffee,
-  coffeeFarm,
-  coffeeFlavorNote,
-  coffeeProcess,
-  coffeeProducer,
-  coffeeRegion,
-  coffeeVarietal,
-  coffeeWashingStation,
-  farm,
-  flavorNote,
   grinder,
   grinderBrand,
   grindSetting,
-  origin,
-  processList,
-  producer,
   purchase,
-  region,
   roaster,
   shelfGrinder,
-  varietal,
-  washingStation,
 } from '#server/db/schemas'
+import { findOrCreateCoffee, removeCoffee } from '#server/utils/coffees'
 import {
   describeCoffee,
-  findOrCreateCoffee,
-  removeCoffee,
-} from '#server/utils/coffees'
+  descriptionAdminLists,
+} from '#server/utils/descriptions'
 import { withFreshId } from '#server/utils/ids'
 import { findOrCreateEntry } from '#server/utils/lists'
 import { addBrewMethod } from '#server/utils/brew-methods'
@@ -57,57 +42,15 @@ import {
   mergeCoffees,
   mergeGrinderBrands,
   mergeGrinders,
-  mergeLinkedEntries,
   mergeRoasters,
 } from '#server/utils/merges'
 import { deletePhoto } from '#server/utils/photos'
-
-type Removal =
-  { outcome: 'deleted'; photoUrl: string | null } | { outcome: 'inUse' }
-
-interface AdminListTable {
-  table: SharedList
-  scope?: PgColumn
-  mergesWithinScope?: boolean
-  detail: SQL<string | null>
-  uses: SQL<number>
-  merge: (db: Database, move: Move) => Promise<(string | null)[]>
-  remove: (db: Database, entryId: string) => Promise<Removal>
-}
 
 function counted(from: SQL) {
   return sql<number>`(select cast(count(*) as integer) ${from})`
 }
 
 const noDetail = sql<string | null>`null`
-
-function originDetail(list: OriginList) {
-  return sql<
-    string | null
-  >`(select ${origin.name} from ${origin} where ${origin.code} = ${list.originCode})`
-}
-
-function linkedList(
-  coffeeList: CoffeeList,
-  scoped?: OriginList,
-): AdminListTable {
-  const { list, link, entryId } = coffeeList
-
-  return {
-    table: list,
-    scope: scoped?.originCode,
-    mergesWithinScope: scoped !== undefined,
-    detail: scoped ? originDetail(scoped) : noDetail,
-    uses: counted(sql`from ${link} where ${entryId} = ${list.id}`),
-    merge: (db, move) => mergeLinkedEntries(db, coffeeList, move),
-    remove: async (db, entryId) => {
-      await db.delete(link).where(eq(coffeeList.entryId, entryId))
-      await db.delete(list).where(eq(list.id, entryId))
-
-      return { outcome: 'deleted', photoUrl: null }
-    },
-  }
-}
 
 async function removeUnused(
   db: Database,
@@ -173,42 +116,7 @@ const adminListTables: Record<AdminList, AdminListTable> = {
         : removed
     },
   },
-  flavorNotes: linkedList({
-    list: flavorNote,
-    link: coffeeFlavorNote,
-    entryId: coffeeFlavorNote.flavorNoteId,
-  }),
-  regions: linkedList(
-    { list: region, link: coffeeRegion, entryId: coffeeRegion.regionId },
-    region,
-  ),
-  producers: linkedList({
-    list: producer,
-    link: coffeeProducer,
-    entryId: coffeeProducer.producerId,
-  }),
-  farms: linkedList(
-    { list: farm, link: coffeeFarm, entryId: coffeeFarm.farmId },
-    farm,
-  ),
-  washingStations: linkedList(
-    {
-      list: washingStation,
-      link: coffeeWashingStation,
-      entryId: coffeeWashingStation.washingStationId,
-    },
-    washingStation,
-  ),
-  processes: linkedList({
-    list: processList,
-    link: coffeeProcess,
-    entryId: coffeeProcess.processId,
-  }),
-  varietals: linkedList({
-    list: varietal,
-    link: coffeeVarietal,
-    entryId: coffeeVarietal.varietalId,
-  }),
+  ...descriptionAdminLists,
   grinders: {
     table: grinder,
     scope: grinder.brandId,
@@ -514,7 +422,7 @@ function namedAdder(table: SharedList): AdminListAdder {
   }
 }
 
-function originAdder(table: OriginList): AdminListAdder {
+function originAdder(table: SharedList): AdminListAdder {
   return {
     schema: newOriginEntrySchema,
     add: (db, body: { name: string; originCode: string }, createdBy) =>
@@ -549,7 +457,7 @@ const adminListAdders: Record<AdminList, AdminListAdder> = {
         await describeCoffee(tx, {
           coffeeId: found.id,
           userId: createdBy,
-          details,
+          description: details,
         })
 
         return {
@@ -563,13 +471,13 @@ const adminListAdders: Record<AdminList, AdminListAdder> = {
     add: (db, details: RoasterDetails, createdBy) =>
       insertRoaster(db, { ...details, createdBy }),
   },
-  flavorNotes: namedAdder(flavorNote),
-  regions: originAdder(region),
-  producers: namedAdder(producer),
-  farms: originAdder(farm),
-  washingStations: originAdder(washingStation),
-  processes: namedAdder(processList),
-  varietals: namedAdder(varietal),
+  flavorNotes: namedAdder(descriptionAdminLists.flavorNotes.table),
+  regions: originAdder(descriptionAdminLists.regions.table),
+  producers: namedAdder(descriptionAdminLists.producers.table),
+  farms: originAdder(descriptionAdminLists.farms.table),
+  washingStations: originAdder(descriptionAdminLists.washingStations.table),
+  processes: namedAdder(descriptionAdminLists.processes.table),
+  varietals: namedAdder(descriptionAdminLists.varietals.table),
   grinders: {
     schema: newGrinderSchema,
     add: (db, input: NewGrinder, createdBy) =>

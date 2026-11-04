@@ -1,14 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
-import {
-  coffee,
-  flavorNote,
-  processList,
-  producer,
-  purchase,
-  roaster,
-  varietal,
-} from '#server/db/schemas'
+import { coffee, processList, purchase, roaster } from '#server/db/schemas'
 import {
   addCoffee,
   editCoffee,
@@ -530,7 +522,7 @@ describe('roasters', () => {
   })
 })
 
-describe('processes, varietals and link', () => {
+describe('processes and link', () => {
   async function shown(overrides: Partial<NewCoffee> = {}) {
     const context = await setup()
     const { coffee: added } = await addCoffee(context.db, {
@@ -556,85 +548,89 @@ describe('processes, varietals and link', () => {
     ).toEqual(seededProcesses)
   })
 
-  it('reuses a seeded process and keeps new ones', async () => {
-    const { db, show } = await shown({
-      processes: ['washed', 'Thermal shock'],
-      varietals: ['Pink Bourbon', 'Geisha'],
-      link: 'https://example.com/pink-bourbon',
-    })
-
-    expect(await show()).toMatchObject({
-      processes: [
-        { id: expect.any(String), name: 'Washed' },
-        { id: expect.any(String), name: 'Thermal shock' },
-      ],
-      varietals: [
-        { id: expect.any(String), name: 'Pink Bourbon' },
-        { id: expect.any(String), name: 'Geisha' },
-      ],
-      link: 'https://example.com/pink-bourbon',
-    })
-    expect(await db.select().from(processList)).toHaveLength(
-      seededProcesses.length + 1,
-    )
-    expect(await db.select().from(varietal)).toHaveLength(2)
-  })
-
-  it('are replaced when the coffee is edited', async () => {
+  it('keeps the link and replaces it when the coffee is edited', async () => {
     const { db, sarah, added, show } = await shown({
-      varietals: ['Geisha'],
       link: 'https://example.com/a',
     })
+
+    expect((await show())!.link).toBe('https://example.com/a')
 
     await editCoffee(db, {
       coffeeId: added.id,
       editor: sarah,
-      details: {
-        ...newCoffee(),
-        processes: ['Natural', 'Anaerobic'],
-        varietals: [],
-        flavorNotes: [],
-        link: null,
-      },
+      details: { ...newCoffee(), link: null },
     })
 
-    expect(await show()).toMatchObject({
-      processes: [{ name: 'Natural' }, { name: 'Anaerobic' }],
-      varietals: [],
-      flavorNotes: [],
-      link: null,
-    })
+    expect((await show())!.link).toBeNull()
   })
 })
 
-describe('flavor notes', () => {
-  it('are kept on the coffee and shared by name', async () => {
+describe('where a coffee was grown', () => {
+  it('shows its description and altitude', async () => {
     const { db, sarah, home } = await setup()
     const { coffee: added } = await addCoffee(db, {
       shelfId: home.id,
       userId: sarah.id,
-      coffee: newCoffee({ flavorNotes: ['Lime', 'Milk chocolate'] }),
+      coffee: newCoffee({
+        origins: ['CO'],
+        regions: [{ origin: 'CO', name: 'Huila' }],
+        producers: ['Nestor Lasso'],
+        flavorNotes: ['Lime'],
+        altitudeFrom: 1700,
+        altitudeTo: 2100,
+      }),
     })
+
+    expect(
+      await findShelfCoffee(db, {
+        shelfId: home.id,
+        coffeeId: added.id,
+        viewer: sarah,
+      }),
+    ).toMatchObject({
+      origins: [{ code: 'CO', name: 'Colombia' }],
+      regions: [{ name: 'Huila', origin: 'CO' }],
+      producers: [{ name: 'Nestor Lasso' }],
+      flavorNotes: [{ name: 'Lime' }],
+      altitudeFrom: 1700,
+      altitudeTo: 2100,
+    })
+  })
+
+  it('stays as it was when the coffee is bought again', async () => {
+    const { db, sarah, home } = await setup()
+    const first = newCoffee({
+      origins: ['CO'],
+      regions: [{ origin: 'CO', name: 'Huila' }],
+      altitudeFrom: 1700,
+      altitudeTo: 2100,
+    })
+    const { coffee: added } = await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: first,
+    })
+
     await addCoffee(db, {
       shelfId: home.id,
       userId: sarah.id,
-      coffee: newCoffee({ name: 'Red Brick', flavorNotes: ['LIME'] }),
+      coffee: { ...first, origins: ['KE'], regions: [], altitudeFrom: 1 },
     })
 
-    const shown = await findShelfCoffee(db, {
-      shelfId: home.id,
-      coffeeId: added.id,
-      viewer: sarah,
+    expect(
+      await findShelfCoffee(db, {
+        shelfId: home.id,
+        coffeeId: added.id,
+        viewer: sarah,
+      }),
+    ).toMatchObject({
+      origins: [{ code: 'CO' }],
+      regions: [{ name: 'Huila' }],
+      altitudeFrom: 1700,
     })
-
-    expect(shown!.flavorNotes).toEqual([
-      { id: expect.any(String), name: 'Lime' },
-      { id: expect.any(String), name: 'Milk chocolate' },
-    ])
-    expect(await db.select().from(flavorNote)).toHaveLength(2)
   })
 
-  it('show on each coffee in stock', async () => {
+  it('shows the flavor notes of each coffee in stock', async () => {
     const { db, sarah, home } = await setup()
     await addCoffee(db, {
       shelfId: home.id,
@@ -654,75 +650,6 @@ describe('flavor notes', () => {
         stock.map(row => [row.name, row.flavorNotes.map(note => note.name)]),
       ),
     ).toEqual({ 'Ayele Fulasa': ['Lime', 'Jasmine'], 'Red Brick': [] })
-  })
-})
-
-describe('producers', () => {
-  async function shown(producers: string[]) {
-    const context = await setup()
-    const { coffee: added } = await addCoffee(context.db, {
-      shelfId: context.home.id,
-      userId: context.sarah.id,
-      coffee: newCoffee({ producers }),
-    })
-    const show = () =>
-      findShelfCoffee(context.db, {
-        shelfId: context.home.id,
-        coffeeId: added.id,
-        viewer: context.sarah,
-      })
-
-    return { ...context, added, show }
-  }
-
-  it('are kept on the coffee in the order they were picked', async () => {
-    const { show } = await shown(['Nestor Lasso', 'Diego Bermudez'])
-
-    expect((await show())!.producers).toEqual([
-      { id: expect.any(String), name: 'Nestor Lasso' },
-      { id: expect.any(String), name: 'Diego Bermudez' },
-    ])
-  })
-
-  it('reuse a producer whose name only differs in case or accents', async () => {
-    const { db, sarah, home, show } = await shown(['Néstor Lasso'])
-
-    await addCoffee(db, {
-      shelfId: home.id,
-      userId: sarah.id,
-      coffee: newCoffee({ name: 'Another', producers: ['NESTOR LASSO'] }),
-    })
-
-    expect(await db.select().from(producer)).toHaveLength(1)
-    expect((await show())!.producers).toEqual([
-      { id: expect.any(String), name: 'Néstor Lasso' },
-    ])
-  })
-
-  it('are replaced when the coffee is edited', async () => {
-    const { db, sarah, added, show } = await shown(['Nestor Lasso'])
-
-    await editCoffee(db, {
-      coffeeId: added.id,
-      editor: sarah,
-      details: { ...newCoffee(), producers: ['Diego Bermudez'] },
-    })
-
-    expect((await show())!.producers).toEqual([
-      { id: expect.any(String), name: 'Diego Bermudez' },
-    ])
-  })
-
-  it('can all be removed', async () => {
-    const { db, sarah, added, show } = await shown(['Nestor Lasso'])
-
-    await editCoffee(db, {
-      coffeeId: added.id,
-      editor: sarah,
-      details: { ...newCoffee(), producers: [] },
-    })
-
-    expect((await show())!.producers).toEqual([])
   })
 })
 

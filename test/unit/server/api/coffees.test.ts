@@ -328,7 +328,7 @@ describe('the catalog', () => {
           onShelf: false,
           flavorNotes: [{ id: expect.any(String), name: 'Strawberry' }],
           origins: [{ code: 'ET', name: 'Ethiopia' }],
-          matches: [{ field: 'flavorNote', name: 'Strawberry' }],
+          matches: [{ field: 'flavorNotes', name: 'Strawberry' }],
         },
       ],
     })

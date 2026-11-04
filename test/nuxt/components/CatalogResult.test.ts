@@ -71,7 +71,7 @@ describe('CatalogResult', () => {
 
   it('labels what matched the search', async () => {
     const wrapper = await result({
-      matches: [{ field: 'flavorNote', name: 'Strawberry' }],
+      matches: [{ field: 'flavorNotes', name: 'Strawberry' }],
     })
 
     expect(

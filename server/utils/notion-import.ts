@@ -20,7 +20,8 @@ import {
   shelf,
   user,
 } from '#server/db/schemas'
-import { describeCoffee, findOrCreateCoffee } from '#server/utils/coffees'
+import { findOrCreateCoffee } from '#server/utils/coffees'
+import { describeCoffee } from '#server/utils/descriptions'
 import { ownGrinder } from '#server/utils/grinders'
 import { findOrCreateEntry } from '#server/utils/lists'
 import {
@@ -206,7 +207,7 @@ async function importCoffee(
     await describeCoffee(tx, {
       coffeeId: found.id,
       userId: input.userId,
-      details: {
+      description: {
         origins: mergedEntries(bought, 'origins'),
         regions: [],
         farms: [],
