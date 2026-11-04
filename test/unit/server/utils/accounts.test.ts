@@ -31,6 +31,7 @@ import { createShelf } from '#server/utils/shelves'
 import { communityRatingOf, judgeCoffee } from '#server/utils/verdicts'
 import type { NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 const firstBag: NewCoffee = {
   name: 'Ayele Fulasa',
@@ -113,6 +114,7 @@ describe('deleteAccount', () => {
       shelfId: solo.id,
       userId: sarah.id,
       coffee: firstBag,
+      origin: testOrigin,
     })
     await ownGrinder(db, {
       shelfId: solo.id,
@@ -145,6 +147,7 @@ describe('deleteAccount', () => {
       shelfId: work.id,
       userId: sarah.id,
       coffee: firstBag,
+      origin: testOrigin,
     })
 
     await deleteAccount(db, { userId: sarah.id, heirs: { [home.id]: tom.id } })
@@ -169,6 +172,7 @@ describe('deleteAccount', () => {
       shelfId: work.id,
       userId: tom.id,
       coffee: firstBag,
+      origin: testOrigin,
     })
     const coffeeId = added.coffee.id
     const opus = await ownGrinder(db, {
@@ -228,6 +232,7 @@ describe('deleteAccount', () => {
       shelfId: work.id,
       userId: sarah.id,
       coffee: firstBag,
+      origin: testOrigin,
     })
     await ownGrinder(db, {
       shelfId: work.id,
@@ -295,7 +300,11 @@ describe('deleteAccount', () => {
 
     await deleteAccount(db, { userId: kim.id, heirs: {} })
     const again = await createTestUser(db, { email: 'kim@example.com' })
-    await joinInvitedShelves(db, { userId: again.id, email: again.email })
+    await joinInvitedShelves(db, {
+      userId: again.id,
+      email: again.email,
+      origin: testOrigin,
+    })
 
     expect(
       await db

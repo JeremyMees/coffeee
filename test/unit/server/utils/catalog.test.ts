@@ -14,6 +14,7 @@ import {
   libraryFilterSearchSchema,
 } from '#shared/utils/schemas'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 describe('canEditCatalogEntry', () => {
   it('lets the person who added an entry edit it', () => {
@@ -83,6 +84,7 @@ async function addTo(
     shelfId: shelf.id,
     userId: shelf.ownerId,
     coffee: newCoffee(overrides),
+    origin: testOrigin,
   })
 
   return coffee.id

@@ -33,6 +33,7 @@ import type {
 import { seededProcesses } from '#shared/utils/coffee'
 import { originCodes, origins } from '#shared/utils/origins'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 function described(
   overrides: Partial<CoffeeDescription> = {},
@@ -86,6 +87,7 @@ async function coffeeOn(
     shelfId: shelf.id,
     userId: shelf.ownerId,
     coffee: bag,
+    origin: testOrigin,
   })
 
   await describeCoffee(db, {

@@ -5,6 +5,7 @@ import { profileStatsOf } from '#server/utils/stats'
 import { judgeCoffee } from '#server/utils/verdicts'
 import type { NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 function bag(overrides: Partial<NewCoffee> = {}): NewCoffee {
   return {
@@ -62,11 +63,13 @@ describe('profileStatsOf', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: bag(),
+      origin: testOrigin,
     })
     const kiamaina = await addCoffee(db, {
       shelfId: work.id,
       userId: sarah.id,
       coffee: bag({ name: 'Kiamaina', sizeGrams: 1000, price: 40 }),
+      origin: testOrigin,
     })
     await addCoffee(db, {
       shelfId: work.id,
@@ -77,11 +80,13 @@ describe('profileStatsOf', () => {
         sizeGrams: null,
         price: null,
       }),
+      origin: testOrigin,
     })
     await addCoffee(db, {
       shelfId: home.id,
       userId: tom.id,
       coffee: bag({ name: 'Tom only', roaster: 'Onyx' }),
+      origin: testOrigin,
     })
     await judgeCoffee(db, {
       userId: sarah.id,

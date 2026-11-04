@@ -1,7 +1,6 @@
 import type { App } from 'h3'
 import type { z } from 'zod'
 import type { newCoffeeSchema } from '#shared/utils/schemas'
-import type { notifyShelf } from '#server/utils/notifications'
 import type { createShelf } from '#server/utils/shelves'
 import type { createTestAuth } from '#test/support/auth'
 import type { createTestDatabase } from '#test/support/database'
@@ -18,11 +17,6 @@ export type Member = Awaited<ReturnType<Scenario['member']>>
 export type ScenarioShelf = Pick<
   Awaited<ReturnType<typeof createShelf>>,
   'id' | 'ownerId'
->
-
-export type ScenarioShelfEvent = Omit<
-  Parameters<typeof notifyShelf>[1],
-  'origin'
 >
 
 export type ScenarioCoffee = Partial<z.input<typeof newCoffeeSchema>>

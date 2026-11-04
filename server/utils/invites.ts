@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { and, desc, eq, gt, isNotNull, isNull, lte, or } from 'drizzle-orm'
 import type { Database } from '#server/types/database'
 import { invite, shelf, shelfMember, user } from '#server/db/schemas'
+import { changeShelf } from '#server/utils/notifications'
 
 const inviteLifetime = 7 * 24 * 60 * 60 * 1000
 
@@ -79,32 +80,45 @@ export async function claimInvites(
   }
 }
 
-export async function joinInvitedShelves(
+export function joinInvitedShelves(
   db: Database,
-  input: { userId: string; email: string },
+  input: { userId: string; email: string; origin: string },
 ) {
-  const invited = await db
-    .selectDistinct({ shelfId: invite.shelfId })
-    .from(invite)
-    .where(
-      and(
-        eq(invite.usedBy, input.email.toLowerCase()),
-        isNotNull(invite.usedAt),
-        isNotNull(invite.shelfId),
-      ),
-    )
+  return changeShelf(db, input.origin, async (tx, notify) => {
+    const invited = await tx
+      .selectDistinct({ shelfId: invite.shelfId })
+      .from(invite)
+      .where(
+        and(
+          eq(invite.usedBy, input.email.toLowerCase()),
+          isNotNull(invite.usedAt),
+          isNotNull(invite.shelfId),
+        ),
+      )
 
-  if (invited.length === 0) return []
+    if (invited.length === 0) return []
 
-  const joined = await db
-    .insert(shelfMember)
-    .values(
-      invited.map(found => ({ shelfId: found.shelfId!, userId: input.userId })),
-    )
-    .onConflictDoNothing()
-    .returning({ shelfId: shelfMember.shelfId })
+    const joined = await tx
+      .insert(shelfMember)
+      .values(
+        invited.map(found => ({
+          shelfId: found.shelfId!,
+          userId: input.userId,
+        })),
+      )
+      .onConflictDoNothing()
+      .returning({ shelfId: shelfMember.shelfId })
 
-  return joined.map(found => found.shelfId)
+    for (const found of joined) {
+      await notify({
+        shelfId: found.shelfId,
+        actorId: input.userId,
+        kind: 'memberJoined',
+      })
+    }
+
+    return joined.map(found => found.shelfId)
+  })
 }
 
 export function listPendingInvites(db: Database) {
@@ -262,9 +276,9 @@ function matching(match: InviteMatch) {
 
 export function acceptInvite(
   db: Database,
-  input: { userId: string; email: string; match: InviteMatch },
+  input: { userId: string; email: string; match: InviteMatch; origin: string },
 ) {
-  return db.transaction(async tx => {
+  return changeShelf(db, input.origin, async (tx, notify) => {
     const [claimed] = await tx
       .update(invite)
       .set({ usedAt: new Date(), usedBy: input.email.toLowerCase() })
@@ -273,10 +287,19 @@ export function acceptInvite(
 
     if (!claimed) return undefined
 
-    await tx
+    const [added] = await tx
       .insert(shelfMember)
       .values({ shelfId: claimed.shelfId!, userId: input.userId })
       .onConflictDoNothing()
+      .returning({ shelfId: shelfMember.shelfId })
+
+    if (added) {
+      await notify({
+        shelfId: added.shelfId,
+        actorId: input.userId,
+        kind: 'memberJoined',
+      })
+    }
 
     const [joined] = await tx
       .select({ id: shelf.id, name: shelf.name, ownerId: shelf.ownerId })

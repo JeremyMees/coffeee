@@ -14,9 +14,12 @@ import {
   listShelfInvites,
   revokeInvite,
 } from '#server/utils/invites'
+import { shelfMember } from '#server/db/schemas'
+import { listNotifications } from '#server/utils/notifications'
 import { createShelf, listShelves } from '#server/utils/shelves'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 import type { TestDatabase } from '#test/support/types'
+import { testOrigin } from '#test/support/origin'
 
 async function claimInvite(
   db: TestDatabase,
@@ -303,11 +306,47 @@ describe('shelf invites', () => {
       userId: tom.id,
       email: tom.email,
       match: { inviteId: created.id, email: tom.email },
+      origin: testOrigin,
     })
 
     expect(joined).toEqual({ id: home.id, name: 'Home', ownerId: home.ownerId })
     expect(await listShelves(db, tom.id)).toEqual([joined])
     expect(await listInvitesFor(db, tom.email)).toEqual([])
+  })
+
+  it('tells the members when someone joins, not the one who joined', async () => {
+    const { db, sarah, home, invite } = await shelfSetup()
+    const tom = await createTestUser(db, { name: 'Tom' })
+    const { token } = await invite()
+
+    await acceptInvite(db, {
+      userId: tom.id,
+      email: tom.email,
+      match: { token },
+      origin: testOrigin,
+    })
+
+    expect(await listNotifications(db, sarah.id)).toMatchObject([
+      { kind: 'memberJoined', actor: 'Tom', shelfId: home.id },
+    ])
+    expect(await listNotifications(db, tom.id)).toEqual([])
+  })
+
+  it('tells nobody when someone already on the shelf accepts an invite', async () => {
+    const { db, sarah, home, invite } = await shelfSetup()
+    const tom = await createTestUser(db, { name: 'Tom' })
+    await db.insert(shelfMember).values({ shelfId: home.id, userId: tom.id })
+    const { token } = await invite('anna@example.com')
+
+    const joined = await acceptInvite(db, {
+      userId: tom.id,
+      email: tom.email,
+      match: { token },
+      origin: testOrigin,
+    })
+
+    expect(joined?.id).toBe(home.id)
+    expect(await listNotifications(db, sarah.id)).toEqual([])
   })
 
   it('does not let someone accept an invite sent to another email', async () => {
@@ -319,6 +358,7 @@ describe('shelf invites', () => {
       userId: eve.id,
       email: eve.email,
       match: { inviteId: created.id, email: eve.email },
+      origin: testOrigin,
     })
 
     expect(joined).toBeUndefined()
@@ -335,11 +375,13 @@ describe('shelf invites', () => {
       userId: tom.id,
       email: tom.email,
       match: { token },
+      origin: testOrigin,
     })
     const second = await acceptInvite(db, {
       userId: eve.id,
       email: eve.email,
       match: { token },
+      origin: testOrigin,
     })
 
     expect(first?.name).toBe('Home')
@@ -400,11 +442,44 @@ describe('shelf invites', () => {
     await claimInvites(db, { email: 'tom@example.com', token })
     const tom = await createTestUser(db, { email: 'tom@example.com' })
 
-    await joinInvitedShelves(db, { userId: tom.id, email: tom.email })
-    await joinInvitedShelves(db, { userId: tom.id, email: tom.email })
+    await joinInvitedShelves(db, {
+      userId: tom.id,
+      email: tom.email,
+      origin: testOrigin,
+    })
+    await joinInvitedShelves(db, {
+      userId: tom.id,
+      email: tom.email,
+      origin: testOrigin,
+    })
 
     expect(await listShelves(db, tom.id)).toEqual([
       expect.objectContaining({ id: home.id }),
+    ])
+  })
+
+  it('tells the members of a shelf joined from a claimed invite, once', async () => {
+    const { db, sarah, home, invite } = await shelfSetup()
+    const { token } = await invite()
+    await claimInvites(db, { email: 'tom@example.com', token })
+    const tom = await createTestUser(db, {
+      name: 'Tom',
+      email: 'tom@example.com',
+    })
+
+    await joinInvitedShelves(db, {
+      userId: tom.id,
+      email: tom.email,
+      origin: testOrigin,
+    })
+    await joinInvitedShelves(db, {
+      userId: tom.id,
+      email: tom.email,
+      origin: testOrigin,
+    })
+
+    expect(await listNotifications(db, sarah.id)).toMatchObject([
+      { kind: 'memberJoined', actor: 'Tom', shelfId: home.id },
     ])
   })
 
@@ -412,7 +487,11 @@ describe('shelf invites', () => {
     const { db } = await shelfSetup()
     const tom = await createTestUser(db)
 
-    await joinInvitedShelves(db, { userId: tom.id, email: tom.email })
+    await joinInvitedShelves(db, {
+      userId: tom.id,
+      email: tom.email,
+      origin: testOrigin,
+    })
 
     expect(await listShelves(db, tom.id)).toEqual([])
   })

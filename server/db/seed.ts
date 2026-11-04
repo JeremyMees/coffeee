@@ -5,7 +5,7 @@ import { coffee, purchase, shelf, shelfMember, user } from '#server/db/schemas'
 import { listBrewMethods } from '#server/utils/brew-methods'
 import { ownGrinder } from '#server/utils/grinders'
 import { setGrindSetting } from '#server/utils/grind-settings'
-import { addPurchase, finishPurchase } from '#server/utils/purchases'
+import { addPurchase } from '#server/utils/purchases'
 import { createShelf } from '#server/utils/shelves'
 import { judgeCoffee } from '#server/utils/verdicts'
 
@@ -104,11 +104,10 @@ async function stockTestShelf(
     })
 
     if (index >= testShelfCoffees / 2) {
-      await finishPurchase(db, {
-        shelfId: input.shelfId,
-        coffeeId,
-        purchaseId: added.id,
-      })
+      await db
+        .update(purchase)
+        .set({ finishedAt: new Date() })
+        .where(eq(purchase.id, added.id))
     }
   }
 }

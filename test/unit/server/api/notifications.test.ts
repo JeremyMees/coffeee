@@ -1,22 +1,16 @@
 import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import linkAcceptHandler from '#server/api/invites/link/[token]/accept.post'
-import acceptHandler from '#server/api/me/invites/[inviteId]/accept.post'
 import emailsHandler from '#server/api/me/notifications/emails/index.get'
 import saveEmailsHandler from '#server/api/me/notifications/emails/index.put'
 import listHandler from '#server/api/me/notifications/index.get'
 import readHandler from '#server/api/me/notifications/read.post'
 import unreadHandler from '#server/api/me/notifications/unread.get'
 import finishCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/finish.post'
-import finishPurchaseHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/purchases/[purchaseId]/finish.post'
-import buyAgainHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/purchases/index.post'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import inviteHandler from '#server/api/shelves/[shelfId]/invites/index.post'
 import leaveHandler from '#server/api/shelves/[shelfId]/leave.post'
-import removeMemberHandler from '#server/api/shelves/[shelfId]/members/[userId].delete'
 import type { Email } from '#server/types/email'
 import { shelfMember } from '#server/db/schemas'
-import { inviteToShelf } from '#server/utils/invites'
 import { createShelf } from '#server/utils/shelves'
 import { createTestAuth } from '#test/support/auth'
 import { createTestDatabase, createTestUser } from '#test/support/database'
@@ -63,13 +57,8 @@ function request(path: string, init: RequestInit = {}) {
     .put('/api/me/notifications/emails', saveEmailsHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .post(`${coffeePath}/finish`, finishCoffeeHandler)
-    .post(`${coffeePath}/purchases`, buyAgainHandler)
-    .post(`${coffeePath}/purchases/:purchaseId/finish`, finishPurchaseHandler)
     .post('/api/shelves/:shelfId/invites', inviteHandler)
     .post('/api/shelves/:shelfId/leave', leaveHandler)
-    .delete('/api/shelves/:shelfId/members/:userId', removeMemberHandler)
-    .post('/api/me/invites/:inviteId/accept', acceptHandler)
-    .post('/api/invites/link/:token/accept', linkAcceptHandler)
   const app = createApp().use(router)
 
   const headers = new Headers(init.headers)
@@ -129,77 +118,18 @@ async function setup() {
       processes: ['Washed'],
       ...bag,
     })
-    const { coffee, purchase } = await response.json()
+    const { coffee } = await response.json()
 
     return {
       coffeeId: coffee.id as string,
       path: `/api/shelves/${home.id}/coffees/${coffee.id}`,
-      purchaseId: purchase.id as string,
     }
   }
 
   return { sarah, tom, home, addCoffee }
 }
 
-describe('notifications about shelf events', () => {
-  it('tells the other members when someone adds a coffee', async () => {
-    const { sarah, tom, home, addCoffee } = await setup()
-
-    const { coffeeId } = await addCoffee()
-
-    expect(await notificationsOf(tom.headers)).toMatchObject([
-      {
-        kind: 'coffeeAdded',
-        actor: 'Sarah',
-        shelfId: home.id,
-        shelf: 'Home',
-        coffeeId,
-        coffee: 'Ayele Fulasa',
-        readAt: null,
-      },
-    ])
-    expect(await notificationsOf(sarah.headers)).toEqual([])
-  })
-
-  it('tells the other members when someone adds a bag', async () => {
-    const { sarah, tom, addCoffee } = await setup()
-    const { path, coffeeId } = await addCoffee(tom.headers)
-
-    await post(`${path}/purchases`, tom.headers, bag)
-
-    expect(await notificationsOf(sarah.headers)).toMatchObject([
-      { kind: 'purchaseAdded', actor: 'Tom', coffeeId },
-      { kind: 'coffeeAdded', actor: 'Tom', coffeeId },
-    ])
-    expect(await notificationsOf(tom.headers)).toEqual([])
-  })
-
-  it('tells the other members when someone finishes a bag', async () => {
-    const { sarah, tom, addCoffee } = await setup()
-    const { path, coffeeId } = await addCoffee()
-
-    await post(`${path}/finish`, sarah.headers)
-
-    expect((await notificationsOf(tom.headers))[0]).toMatchObject({
-      kind: 'bagFinished',
-      actor: 'Sarah',
-      coffeeId,
-    })
-  })
-
-  it('tells them once when one bag is finished twice', async () => {
-    const { sarah, tom, addCoffee } = await setup()
-    const { path, purchaseId } = await addCoffee()
-
-    await post(`${path}/purchases/${purchaseId}/finish`, tom.headers)
-    await post(`${path}/purchases/${purchaseId}/finish`, tom.headers)
-
-    const kinds = (await notificationsOf(sarah.headers)).map(
-      (found: { kind: string }) => found.kind,
-    )
-    expect(kinds).toEqual(['bagFinished'])
-  })
-
+describe('notifications about invites', () => {
   it('tells someone with an account that they were invited', async () => {
     const { sarah, home } = await setup()
     const lisa = await person('Lisa')
@@ -211,73 +141,6 @@ describe('notifications about shelf events', () => {
     expect(await notificationsOf(lisa.headers)).toMatchObject([
       { kind: 'invited', actor: 'Sarah', shelfId: home.id, shelf: 'Home' },
     ])
-  })
-
-  it('tells the members when someone joins from an invite in the app', async () => {
-    const { sarah, tom, home } = await setup()
-    const lisa = await person('Lisa')
-    const invited = await inviteToShelf(db, {
-      shelfId: home.id,
-      email: 'lisa@example.com',
-      createdBy: sarah.user.id,
-    })
-    if (invited.outcome !== 'invited') throw new Error(invited.outcome)
-
-    await post(`/api/me/invites/${invited.invite.id}/accept`, lisa.headers)
-
-    for (const member of [sarah, tom]) {
-      expect(await notificationsOf(member.headers)).toMatchObject([
-        { kind: 'memberJoined', actor: 'Lisa', shelfId: home.id },
-      ])
-    }
-  })
-
-  it('tells the members when someone joins from an invite link', async () => {
-    const { sarah, home } = await setup()
-    const lisa = await person('Lisa')
-    const invited = await inviteToShelf(db, {
-      shelfId: home.id,
-      email: 'lisa@example.com',
-      createdBy: sarah.user.id,
-    })
-    if (invited.outcome !== 'invited') throw new Error(invited.outcome)
-
-    await post(`/api/invites/link/${invited.token}/accept`, lisa.headers)
-
-    expect(await notificationsOf(sarah.headers)).toMatchObject([
-      { kind: 'memberJoined', actor: 'Lisa' },
-    ])
-    expect(await notificationsOf(lisa.headers)).toEqual([])
-  })
-
-  it('tells the members when someone leaves', async () => {
-    const { sarah, tom, home } = await setup()
-
-    await post(`/api/shelves/${home.id}/leave`, tom.headers)
-
-    expect(await notificationsOf(sarah.headers)).toMatchObject([
-      { kind: 'memberLeft', actor: 'Tom', shelfId: home.id },
-    ])
-    expect(await notificationsOf(tom.headers)).toEqual([])
-  })
-
-  it('tells the other members, not the shelf owner, when someone is removed', async () => {
-    const { sarah, tom, home } = await setup()
-    const lisa = await person('Lisa')
-    await db
-      .insert(shelfMember)
-      .values({ shelfId: home.id, userId: lisa.user.id })
-
-    await request(`/api/shelves/${home.id}/members/${tom.user.id}`, {
-      method: 'DELETE',
-      headers: sarah.headers,
-    })
-
-    expect(await notificationsOf(lisa.headers)).toMatchObject([
-      { kind: 'memberLeft', actor: 'Tom' },
-    ])
-    expect(await notificationsOf(sarah.headers)).toEqual([])
-    expect(await notificationsOf(tom.headers)).toEqual([])
   })
 })
 

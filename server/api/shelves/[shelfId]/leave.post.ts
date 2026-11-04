@@ -7,15 +7,14 @@ import {
 import { useDb } from '#server/utils/db'
 import { requireShelf } from '#server/utils/session'
 import { leaveShelf } from '#server/utils/shelves'
-import { notifyShelf } from '#server/utils/notifications'
 
 export default defineEventHandler(async event => {
   const { user, shelf } = await requireShelf(event)
-  const db = useDb()
-  const { outcome } = await leaveShelf(db, {
+  const { outcome } = await leaveShelf(useDb(), {
     shelfId: shelf.id,
     ownerId: shelf.ownerId,
     userId: user.id,
+    origin: getRequestURL(event).origin,
   })
 
   if (outcome === 'lastShelf') {
@@ -29,15 +28,6 @@ export default defineEventHandler(async event => {
     throw createError({
       statusCode: 409,
       statusMessage: 'Hand the shelf to another member before you leave',
-    })
-  }
-
-  if (outcome === 'left') {
-    await notifyShelf(db, {
-      shelfId: shelf.id,
-      actorId: user.id,
-      kind: 'memberLeft',
-      origin: getRequestURL(event).origin,
     })
   }
 

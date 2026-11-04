@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { coffee, purchase } from '#server/db/schemas'
+import { coffee, notification, purchase, shelfMember } from '#server/db/schemas'
 import { addCoffee } from '#server/utils/coffees'
+import { listNotifications } from '#server/utils/notifications'
 import {
   buyAgain,
   deletePurchase,
@@ -12,6 +13,7 @@ import { createShelf } from '#server/utils/shelves'
 import type { NewCoffee } from '#shared/types/coffee'
 import type { NewPurchase } from '#shared/types/purchases'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 const firstBag: NewCoffee = {
   name: 'Ayele Fulasa',
@@ -54,14 +56,19 @@ async function setup() {
     shelfId: home.id,
     userId: sarah.id,
     coffee: firstBag,
+    origin: testOrigin,
   })
   const ref = {
     shelfId: home.id,
     coffeeId: added.coffee.id,
     purchaseId: added.purchase.id,
+    userId: sarah.id,
+    origin: testOrigin,
   }
+  const tom = await createTestUser(db, { name: 'Tom' })
+  await db.insert(shelfMember).values({ shelfId: home.id, userId: tom.id })
 
-  return { db, sarah, home, work, ref }
+  return { db, sarah, tom, home, work, ref }
 }
 
 describe('buying a coffee again', () => {
@@ -73,6 +80,7 @@ describe('buying a coffee again', () => {
       coffeeId: ref.coffeeId,
       userId: sarah.id,
       purchase: bag({ roastedOn: '2026-10-28' }),
+      origin: testOrigin,
     })
 
     expect(added).toMatchObject({
@@ -86,6 +94,17 @@ describe('buying a coffee again', () => {
     expect(await db.select().from(purchase)).toHaveLength(2)
   })
 
+  it('tells the other members about the new bag', async () => {
+    const { db, sarah, tom, ref } = await setup()
+
+    await buyAgain(db, { ...ref, purchase: bag() })
+
+    expect(await listNotifications(db, tom.id)).toMatchObject([
+      { kind: 'purchaseAdded', actor: 'Sarah', coffeeId: ref.coffeeId },
+    ])
+    expect(await listNotifications(db, sarah.id)).toEqual([])
+  })
+
   it('adds nothing for a coffee that does not exist', async () => {
     const { db, sarah, ref } = await setup()
 
@@ -95,8 +114,10 @@ describe('buying a coffee again', () => {
         coffeeId: 'nope',
         userId: sarah.id,
         purchase: bag(),
+        origin: testOrigin,
       }),
     ).toBeUndefined()
+    expect(await db.select().from(notification)).toEqual([])
   })
 })
 
@@ -108,6 +129,7 @@ describe('finishing a coffee', () => {
       coffeeId: ref.coffeeId,
       userId: sarah.id,
       purchase: bag(),
+      origin: testOrigin,
     })
 
     const finished = await finishCoffee(db, ref)
@@ -118,11 +140,23 @@ describe('finishing a coffee', () => {
     })
   })
 
-  it('finishes nothing when nothing is in stock', async () => {
-    const { db, ref } = await setup()
+  it('tells the other members which coffee was finished', async () => {
+    const { db, sarah, tom, ref } = await setup()
+
+    await finishCoffee(db, ref)
+
+    expect(await listNotifications(db, tom.id)).toMatchObject([
+      { kind: 'bagFinished', actor: 'Sarah', coffeeId: ref.coffeeId },
+    ])
+    expect(await listNotifications(db, sarah.id)).toEqual([])
+  })
+
+  it('finishes nothing and tells nobody when nothing is in stock', async () => {
+    const { db, tom, ref } = await setup()
     await finishCoffee(db, ref)
 
     expect(await finishCoffee(db, ref)).toBeUndefined()
+    expect(await listNotifications(db, tom.id)).toHaveLength(1)
   })
 
   it('finishes nothing on another shelf', async () => {
@@ -163,6 +197,17 @@ describe('changing a purchase', () => {
     expect(again!.finishedAt).toEqual(first!.finishedAt)
   })
 
+  it('tells the other members once when a bag is finished twice', async () => {
+    const { db, tom, ref } = await setup()
+
+    await finishPurchase(db, ref)
+    await finishPurchase(db, ref)
+
+    expect(await listNotifications(db, tom.id)).toMatchObject([
+      { kind: 'bagFinished', actor: 'Sarah', coffeeId: ref.coffeeId },
+    ])
+  })
+
   it('deletes it, leaving the coffee in the catalog', async () => {
     const { db, ref } = await setup()
 
@@ -183,5 +228,6 @@ describe('changing a purchase', () => {
     expect(await db.select().from(purchase)).toEqual([
       expect.objectContaining({ id: ref.purchaseId, finishedAt: null }),
     ])
+    expect(await db.select().from(notification)).toEqual([])
   })
 })

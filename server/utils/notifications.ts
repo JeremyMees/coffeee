@@ -20,22 +20,23 @@ import { sendEmail } from '#server/utils/email'
 
 const notificationsShown = 50
 
-type ShelfEvent = {
+type ShelfNews = {
   shelfId: string
   actorId: string
   kind: OptionalEmailKind
   coffeeId?: string
-  origin: string
+  skip?: string
 }
+
+type Told = ShelfNews & { userIds: string[] }
+
+export type NotifyShelf = (news: ShelfNews) => Promise<void>
 
 export function notificationSettingsLink(origin: string) {
   return `${origin}/profile?tab=notifications`
 }
 
-async function emailShelfEvent(
-  db: Database,
-  input: ShelfEvent & { userIds: string[] },
-) {
+async function emailShelfNews(db: Database, input: Told & { origin: string }) {
   const recipients = await db
     .select({ email: user.email })
     .from(notificationEmail)
@@ -98,37 +99,54 @@ async function emailShelfEvent(
   }
 }
 
-export async function notifyShelf(
-  db: Database,
-  input: ShelfEvent & { skip?: string },
-) {
+async function recordShelfNews(db: Database, news: ShelfNews) {
   const members = await db
     .select({ userId: shelfMember.userId })
     .from(shelfMember)
     .where(
       and(
-        eq(shelfMember.shelfId, input.shelfId),
-        ne(shelfMember.userId, input.actorId),
-        input.skip ? ne(shelfMember.userId, input.skip) : undefined,
+        eq(shelfMember.shelfId, news.shelfId),
+        ne(shelfMember.userId, news.actorId),
+        news.skip ? ne(shelfMember.userId, news.skip) : undefined,
       ),
     )
 
-  if (members.length === 0) return
+  if (members.length > 0) {
+    await db.insert(notification).values(
+      members.map(member => ({
+        userId: member.userId,
+        kind: news.kind,
+        actorId: news.actorId,
+        shelfId: news.shelfId,
+        coffeeId: news.coffeeId,
+      })),
+    )
+  }
 
-  await db.insert(notification).values(
-    members.map(member => ({
-      userId: member.userId,
-      kind: input.kind,
-      actorId: input.actorId,
-      shelfId: input.shelfId,
-      coffeeId: input.coffeeId,
-    })),
+  return members.map(member => member.userId)
+}
+
+export async function changeShelf<T>(
+  db: Database,
+  origin: string,
+  change: (tx: Database, notify: NotifyShelf) => Promise<T>,
+) {
+  const told: Told[] = []
+  const changed = await db.transaction(tx =>
+    change(tx, async news => {
+      const userIds = await recordShelfNews(tx, news)
+
+      if (userIds.length > 0) told.push({ ...news, userIds })
+    }),
   )
 
-  await emailShelfEvent(db, {
-    ...input,
-    userIds: members.map(member => member.userId),
-  })
+  for (const news of told) {
+    await emailShelfNews(db, { ...news, origin }).catch(caught =>
+      console.error('Could not send a notification email', caught),
+    )
+  }
+
+  return changed
 }
 
 export async function notifyInvited(

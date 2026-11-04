@@ -18,6 +18,7 @@ import {
   grindSettingsOf,
   otherGrindSettingsOf,
 } from '#server/utils/grind-settings'
+import { changeShelf } from '#server/utils/notifications'
 import { addPurchase, purchaseColumns } from '#server/utils/purchases'
 import { findRoaster } from '#server/utils/roasters'
 import { shelvesHolding } from '#server/utils/shelves'
@@ -69,11 +70,11 @@ export async function findOrCreateCoffee(
 
 export function addCoffee(
   db: Database,
-  input: { shelfId: string; userId: string; coffee: NewCoffee },
+  input: { shelfId: string; userId: string; coffee: NewCoffee; origin: string },
 ) {
   const details = input.coffee
 
-  return db.transaction(async tx => {
+  return changeShelf(db, input.origin, async (tx, notify) => {
     const roasterId = await findOrCreateEntry(tx, roaster, {
       name: details.roaster,
       createdBy: input.userId,
@@ -101,6 +102,12 @@ export function addCoffee(
       coffeeId: found.id,
       userId: input.userId,
       purchase: details,
+    })
+    await notify({
+      shelfId: input.shelfId,
+      actorId: input.userId,
+      kind: 'coffeeAdded',
+      coffeeId: found.id,
     })
 
     return { coffee: found, purchase: { id: added.id } }

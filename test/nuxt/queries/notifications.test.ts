@@ -24,19 +24,8 @@ beforeEach(async () => {
   sarah = await scenario.member('Sarah')
   const tom = await scenario.member('Tom')
   await scenario.joinShelf(tom, sarah.shelf)
-  await scenario.notifyShelf({
-    shelfId: sarah.shelf.id,
-    actorId: tom.id,
-    kind: 'memberJoined',
-  })
   await markNotificationsRead(await database(), sarah.id)
-  const added = await scenario.coffee(sarah.shelf)
-  await scenario.notifyShelf({
-    shelfId: sarah.shelf.id,
-    actorId: tom.id,
-    kind: 'coffeeAdded',
-    coffeeId: added.id,
-  })
+  await scenario.coffee(sarah.shelf, {}, tom)
   await signIn(sarah)
 })
 

@@ -28,6 +28,7 @@ import type { AdminList } from '#shared/types/admin'
 import type { NewCoffee } from '#shared/types/coffee'
 import { adminEntrySearchSchema } from '#shared/utils/schemas'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 const bag: NewCoffee = {
   name: 'Ayele Fulasa',
@@ -61,6 +62,7 @@ async function setup() {
     shelfId: home.id,
     userId: sarah.id,
     coffee: bag,
+    origin: testOrigin,
   })
   const duplicate = await addCoffee(db, {
     shelfId: work.id,
@@ -71,6 +73,7 @@ async function setup() {
       flavorNotes: ['Lime', 'Limes'],
       purchasedOn: '2026-10-01',
     },
+    origin: testOrigin,
   })
 
   return {
@@ -195,6 +198,7 @@ describe('listing a shared list', () => {
           { origin: 'ET', name: 'Sidamo' },
         ],
       },
+      origin: testOrigin,
     })
     const guji = await idOf(db, 'regions', 'Guji')
 
@@ -282,11 +286,13 @@ describe('merging entries', () => {
       shelfId: work.id,
       userId: tom.id,
       coffee: { ...bag, roaster: 'Square Mile Coffee', name: 'Ayele Fulasa' },
+      origin: testOrigin,
     })
     await addCoffee(db, {
       shelfId: work.id,
       userId: tom.id,
       coffee: { ...bag, roaster: 'Square Mile Coffee', name: 'Red Brick' },
+      origin: testOrigin,
     })
     const squareMile = await idOf(db, 'roasters', 'Square Mile')
     const duplicate = await idOf(db, 'roasters', 'Square Mile Coffee')
@@ -330,6 +336,7 @@ describe('merging entries', () => {
         origins: ['CO'],
         regions: [{ origin: 'CO', name: 'Cauca' }],
       },
+      origin: testOrigin,
     })
     const guji = await idOf(db, 'regions', 'Guji')
     const cauca = await idOf(db, 'regions', 'Cauca')

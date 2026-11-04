@@ -14,6 +14,7 @@ import type { RoasterDetails } from '#shared/types/roasters'
 import { roasterSearchSchema } from '#shared/utils/schemas'
 import { storages } from '#test/support/nitro'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 const firstBag: NewCoffee = {
   name: 'Ayele Fulasa',
@@ -50,7 +51,12 @@ async function setup() {
   const tom = await createTestUser(db, { name: 'Tom' })
   const admin = await createTestUser(db, { name: 'Ada', role: 'admin' })
   const home = await createShelf(db, { name: 'Home', ownerId: sarah.id })
-  await addCoffee(db, { shelfId: home.id, userId: sarah.id, coffee: firstBag })
+  await addCoffee(db, {
+    shelfId: home.id,
+    userId: sarah.id,
+    coffee: firstBag,
+    origin: testOrigin,
+  })
   const [{ id: roasterId }] = (await db
     .select({ id: roaster.id })
     .from(roaster)) as [{ id: string }]
@@ -91,16 +97,19 @@ describe('listing the roasters', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: { ...firstBag, name: 'Kamwangi', purchasedOn: '2026-10-15' },
+      origin: testOrigin,
     })
     await addCoffee(db, {
       shelfId: work.id,
       userId: tom.id,
       coffee: { ...firstBag, purchasedOn: '2026-11-20', price: 99 },
+      origin: testOrigin,
     })
     await addCoffee(db, {
       shelfId: work.id,
       userId: tom.id,
       coffee: { ...firstBag, name: 'El Paraiso', roaster: 'La Cabra' },
+      origin: testOrigin,
     })
 
     const list = (shelfId: string, query: Record<string, string> = {}) =>

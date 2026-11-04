@@ -8,16 +8,15 @@ import { addCoffee } from '#server/utils/coffees'
 import { ownGrinder } from '#server/utils/grinders'
 import { acceptInvite, inviteToShelf } from '#server/utils/invites'
 import { findOrCreateEntry } from '#server/utils/lists'
-import { notifyShelf } from '#server/utils/notifications'
 import { createShelf, shelfNameFor } from '#server/utils/shelves'
 import { judgeCoffee } from '#server/utils/verdicts'
 import { createTestUser } from '#test/support/database'
 import type {
   ScenarioCoffee,
   ScenarioShelf,
-  ScenarioShelfEvent,
   TestDatabase,
 } from '#test/support/types'
+import { testOrigin } from '#test/support/origin'
 
 export function createScenario(database: () => Promise<TestDatabase>) {
   let stamped = Date.now() - 24 * 60 * 60 * 1000
@@ -44,11 +43,15 @@ export function createScenario(database: () => Promise<TestDatabase>) {
       return { id: user.id, name: user.name, email: user.email, shelf }
     },
 
-    async coffee(shelf: ScenarioShelf, details: ScenarioCoffee = {}) {
+    async coffee(
+      shelf: ScenarioShelf,
+      details: ScenarioCoffee = {},
+      by: { id: string } = { id: shelf.ownerId },
+    ) {
       const db = await database()
       const added = await addCoffee(db, {
         shelfId: shelf.id,
-        userId: shelf.ownerId,
+        userId: by.id,
         coffee: newCoffeeSchema.parse({
           name: 'Ayele Fulasa',
           roaster: 'Square Mile',
@@ -62,6 +65,7 @@ export function createScenario(database: () => Promise<TestDatabase>) {
           price: null,
           ...details,
         }),
+        origin: testOrigin,
       })
       const createdAt = nextStamp()
 
@@ -131,13 +135,7 @@ export function createScenario(database: () => Promise<TestDatabase>) {
         userId: member.id,
         email: member.email,
         match: { token: invited.outcome === 'invited' ? invited.token : '' },
-      })
-    },
-
-    async notifyShelf(event: ScenarioShelfEvent) {
-      await notifyShelf(await database(), {
-        origin: 'http://localhost:3000',
-        ...event,
+        origin: testOrigin,
       })
     },
   }

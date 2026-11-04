@@ -1,6 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
-import { coffee, processList, purchase, roaster } from '#server/db/schemas'
+import {
+  coffee,
+  processList,
+  purchase,
+  roaster,
+  shelfMember,
+} from '#server/db/schemas'
 import {
   addCoffee,
   editCoffee,
@@ -10,10 +16,12 @@ import {
   listStock,
 } from '#server/utils/coffees'
 import { findSimilar } from '#server/utils/lists'
+import { listNotifications } from '#server/utils/notifications'
 import { createShelf } from '#server/utils/shelves'
 import { seededProcesses } from '#shared/utils/coffee'
 import type { CoffeeDetails, NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 async function setup() {
   const { db } = await createTestDatabase()
@@ -58,6 +66,7 @@ describe('adding a coffee', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
 
     expect(added.coffee).toMatchObject({
@@ -77,18 +86,42 @@ describe('adding a coffee', () => {
     ])
   })
 
+  it('tells the other members of the shelf, not the one who added it', async () => {
+    const { db, sarah, tom, home } = await setup()
+    await db.insert(shelfMember).values({ shelfId: home.id, userId: tom.id })
+
+    const added = await addCoffee(db, {
+      shelfId: home.id,
+      userId: sarah.id,
+      coffee: newCoffee(),
+      origin: testOrigin,
+    })
+
+    expect(await listNotifications(db, tom.id)).toMatchObject([
+      {
+        kind: 'coffeeAdded',
+        actor: 'Sarah',
+        shelfId: home.id,
+        coffeeId: added.coffee.id,
+      },
+    ])
+    expect(await listNotifications(db, sarah.id)).toEqual([])
+  })
+
   it('reuses a roaster whose name only differs in case, spacing or hyphens', async () => {
     const { db, sarah, home } = await setup()
     await addCoffee(db, {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee({ roaster: 'La Cabra', name: 'Halo' }),
+      origin: testOrigin,
     })
 
     await addCoffee(db, {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee({ roaster: 'la-cabra', name: 'Kiamabara' }),
+      origin: testOrigin,
     })
 
     expect(await findSimilar(db, roaster, '')).toEqual([
@@ -102,6 +135,7 @@ describe('adding a coffee', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
 
     const second = await addCoffee(db, {
@@ -112,6 +146,7 @@ describe('adding a coffee', () => {
         roaster: 'SQUARE MILE',
         roastLevel: 'dark',
       }),
+      origin: testOrigin,
     })
 
     expect(second.coffee).toEqual(first.coffee)
@@ -127,11 +162,13 @@ describe('adding a coffee', () => {
         shelfId: home.id,
         userId: sarah.id,
         coffee: newCoffee(),
+        origin: testOrigin,
       }),
       addCoffee(db, {
         shelfId: work.id,
         userId: tom.id,
         coffee: newCoffee({ roaster: 'square-mile' }),
+        origin: testOrigin,
       }),
     ])
 
@@ -147,6 +184,7 @@ describe('adding a coffee', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee({ roastedOn: null, sizeGrams: null, price: undefined }),
+      origin: testOrigin,
     })
 
     expect(await db.select().from(purchase)).toEqual([
@@ -166,11 +204,13 @@ describe('current stock', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
     await addCoffee(db, {
       shelfId: work.id,
       userId: tom.id,
       coffee: newCoffee({ name: 'Red Brick' }),
+      origin: testOrigin,
     })
 
     const stock = await listStock(db, { shelfId: home.id, userId: sarah.id })
@@ -196,6 +236,7 @@ describe('current stock', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
     await db.update(purchase).set({ finishedAt: new Date() })
 
@@ -211,6 +252,7 @@ describe('current stock', () => {
         shelfId: home.id,
         userId: sarah.id,
         coffee: newCoffee({ roastedOn }),
+        origin: testOrigin,
       })
     }
 
@@ -227,6 +269,7 @@ describe('current stock', () => {
         shelfId: home.id,
         userId: sarah.id,
         coffee: newCoffee({ name }),
+        origin: testOrigin,
       })
     }
 
@@ -243,11 +286,13 @@ describe('a coffee on a shelf', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
     await addCoffee(db, {
       shelfId: work.id,
       userId: tom.id,
       coffee: newCoffee({ purchasedOn: '2026-10-01' }),
+      origin: testOrigin,
     })
 
     const found = await findShelfCoffee(db, {
@@ -290,6 +335,7 @@ describe('a coffee on a shelf', () => {
         shelfId: home.id,
         userId: sarah.id,
         coffee: newCoffee({ purchasedOn }),
+        origin: testOrigin,
       })
     }
     const [only] = await db.select({ id: coffee.id }).from(coffee)
@@ -313,6 +359,7 @@ describe('a coffee on a shelf', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
 
     const canEdit = async (viewer: { id: string; role: string | null }) =>
@@ -335,6 +382,7 @@ describe('editing a coffee', () => {
       shelfId: context.home.id,
       userId: context.sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
 
     return { ...context, added }
@@ -431,6 +479,7 @@ describe('editing a coffee', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee({ name: 'Red Brick' }),
+      origin: testOrigin,
     })
 
     const result = await editCoffee(db, {
@@ -483,6 +532,7 @@ describe('editing a coffee', () => {
       shelfId: work.id,
       userId: tom.id,
       coffee: newCoffee({ purchasedOn: '2026-10-01', price: 12 }),
+      origin: testOrigin,
     })
     const before = await db.select().from(purchase).orderBy(purchase.id)
 
@@ -506,6 +556,7 @@ describe('roasters', () => {
         shelfId: home.id,
         userId: sarah.id,
         coffee: newCoffee({ roaster: name }),
+        origin: testOrigin,
       })
     }
 
@@ -529,6 +580,7 @@ describe('processes and link', () => {
       shelfId: context.home.id,
       userId: context.sarah.id,
       coffee: newCoffee(overrides),
+      origin: testOrigin,
     })
     const show = () =>
       findShelfCoffee(context.db, {
@@ -579,6 +631,7 @@ describe('where a coffee was grown', () => {
         altitudeFrom: 1700,
         altitudeTo: 2100,
       }),
+      origin: testOrigin,
     })
 
     expect(
@@ -609,12 +662,14 @@ describe('where a coffee was grown', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: first,
+      origin: testOrigin,
     })
 
     await addCoffee(db, {
       shelfId: home.id,
       userId: sarah.id,
       coffee: { ...first, origins: ['KE'], regions: [], altitudeFrom: 1 },
+      origin: testOrigin,
     })
 
     expect(
@@ -636,11 +691,13 @@ describe('where a coffee was grown', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee({ flavorNotes: ['Lime', 'Jasmine'] }),
+      origin: testOrigin,
     })
     await addCoffee(db, {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee({ name: 'Red Brick' }),
+      origin: testOrigin,
     })
 
     const stock = await listStock(db, { shelfId: home.id, userId: sarah.id })
@@ -660,6 +717,7 @@ describe('finding a coffee to edit', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
     await db
       .update(coffee)
@@ -677,6 +735,7 @@ describe('finding a coffee to edit', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
 
     expect(
@@ -700,6 +759,7 @@ describe('findCoffee', () => {
       shelfId: work.id,
       userId: tom.id,
       coffee: newCoffee(),
+      origin: testOrigin,
     })
 
     const found = await findCoffee(db, { coffeeId: added.id, viewer: sarah })

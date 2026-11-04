@@ -12,6 +12,7 @@ import {
   librarySearchSchema,
 } from '#shared/utils/schemas'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 async function setup() {
   const { db } = await createTestDatabase()
@@ -58,6 +59,7 @@ async function add(
     shelfId: home.id,
     userId: sarah.id,
     coffee: newCoffee(overrides),
+    origin: testOrigin,
   })
 
   return coffee.id
@@ -121,6 +123,7 @@ describe('the library', () => {
       shelfId: context.work.id,
       userId: context.tom.id,
       coffee: newCoffee({ name: 'Red Brick' }),
+      origin: testOrigin,
     })
     await context.db.update(purchase).set({ finishedAt: new Date() })
 
@@ -322,6 +325,7 @@ describe('the library filter options', () => {
       shelfId: context.work.id,
       userId: context.tom.id,
       coffee: newCoffee({ roaster: 'Tim Wendelboe', origins: ['RW'] }),
+      origin: testOrigin,
     })
 
     expect(labels(await options(context, 'roasters'))).toEqual([

@@ -11,6 +11,7 @@ import type { NewCoffee } from '#shared/types/coffee'
 import { createTestAuth } from '#test/support/auth'
 import type { TestAuth, TestDatabase } from '#test/support/types'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 const current = vi.hoisted(() => ({
   auth: undefined as unknown,
@@ -58,7 +59,12 @@ beforeEach(async () => {
   current.db = db
   const sarah = await createTestUser(db)
   const home = await createShelf(db, { name: 'Home', ownerId: sarah.id })
-  await addCoffee(db, { shelfId: home.id, userId: sarah.id, coffee: bag })
+  await addCoffee(db, {
+    shelfId: home.id,
+    userId: sarah.id,
+    coffee: bag,
+    origin: testOrigin,
+  })
 })
 
 function request(path: string, init: RequestInit = {}) {

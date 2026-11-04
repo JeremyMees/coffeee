@@ -4,6 +4,8 @@ import { priceCents } from '#shared/utils/purchases'
 import type { Database } from '#server/types/database'
 import type { ShelfPurchaseRef } from '#server/types/purchases'
 import { coffee, purchase } from '#server/db/schemas'
+import type { NotifyShelf } from '#server/utils/notifications'
+import { changeShelf } from '#server/utils/notifications'
 
 export const purchaseColumns = {
   id: purchase.id,
@@ -53,38 +55,75 @@ export async function addPurchase(
   return added!
 }
 
-export async function buyAgain(
+export function buyAgain(
   db: Database,
-  input: Parameters<typeof addPurchase>[1],
+  input: Parameters<typeof addPurchase>[1] & { origin: string },
 ) {
-  const [found] = await db
-    .select({ id: coffee.id })
-    .from(coffee)
-    .where(eq(coffee.id, input.coffeeId))
+  return changeShelf(db, input.origin, async (tx, notify) => {
+    const [found] = await tx
+      .select({ id: coffee.id })
+      .from(coffee)
+      .where(eq(coffee.id, input.coffeeId))
 
-  return found ? addPurchase(db, input) : undefined
+    if (!found) return undefined
+
+    const added = await addPurchase(tx, input)
+    await notify({
+      shelfId: input.shelfId,
+      actorId: input.userId,
+      kind: 'purchaseAdded',
+      coffeeId: input.coffeeId,
+    })
+
+    return added
+  })
 }
 
-export async function finishCoffee(
+async function finishOpenPurchase(
   db: Database,
-  input: { shelfId: string; coffeeId: string },
+  notify: NotifyShelf,
+  input: ShelfPurchaseRef & { userId: string },
 ) {
-  const [oldest] = await db
-    .select({ id: purchase.id })
-    .from(purchase)
-    .where(
-      and(
-        eq(purchase.shelfId, input.shelfId),
-        eq(purchase.coffeeId, input.coffeeId),
-        isNull(purchase.finishedAt),
-      ),
-    )
-    .orderBy(asc(purchase.purchasedOn), asc(purchase.createdAt))
-    .limit(1)
+  const [finished] = await db
+    .update(purchase)
+    .set({ finishedAt: sql`now()` })
+    .where(and(onShelf(input), isNull(purchase.finishedAt)))
+    .returning(purchaseColumns)
 
-  if (!oldest) return undefined
+  if (finished) {
+    await notify({
+      shelfId: input.shelfId,
+      actorId: input.userId,
+      kind: 'bagFinished',
+      coffeeId: input.coffeeId,
+    })
+  }
 
-  return finishPurchase(db, { ...input, purchaseId: oldest.id })
+  return finished
+}
+
+export function finishCoffee(
+  db: Database,
+  input: { shelfId: string; coffeeId: string; userId: string; origin: string },
+) {
+  return changeShelf(db, input.origin, async (tx, notify) => {
+    const [oldest] = await tx
+      .select({ id: purchase.id })
+      .from(purchase)
+      .where(
+        and(
+          eq(purchase.shelfId, input.shelfId),
+          eq(purchase.coffeeId, input.coffeeId),
+          isNull(purchase.finishedAt),
+        ),
+      )
+      .orderBy(asc(purchase.purchasedOn), asc(purchase.createdAt))
+      .limit(1)
+
+    if (!oldest) return undefined
+
+    return finishOpenPurchase(tx, notify, { ...input, purchaseId: oldest.id })
+  })
 }
 
 export async function editPurchase(
@@ -100,23 +139,22 @@ export async function editPurchase(
   return edited
 }
 
-export async function isPurchaseOpen(db: Database, ref: ShelfPurchaseRef) {
-  const [found] = await db
-    .select({ id: purchase.id })
-    .from(purchase)
-    .where(and(onShelf(ref), isNull(purchase.finishedAt)))
+export function finishPurchase(
+  db: Database,
+  input: ShelfPurchaseRef & { userId: string; origin: string },
+) {
+  return changeShelf(db, input.origin, async (tx, notify) => {
+    const finished = await finishOpenPurchase(tx, notify, input)
 
-  return Boolean(found)
-}
+    if (finished) return finished
 
-export async function finishPurchase(db: Database, ref: ShelfPurchaseRef) {
-  const [finished] = await db
-    .update(purchase)
-    .set({ finishedAt: sql`coalesce(${purchase.finishedAt}, now())` })
-    .where(onShelf(ref))
-    .returning(purchaseColumns)
+    const [found] = await tx
+      .select(purchaseColumns)
+      .from(purchase)
+      .where(onShelf(input))
 
-  return finished
+    return found
+  })
 }
 
 export async function deletePurchase(db: Database, ref: ShelfPurchaseRef) {

@@ -6,6 +6,7 @@ import {
   grindSetting,
   grinder,
   invite,
+  notification,
   purchase,
   shelfGrinder,
   shelfMember,
@@ -15,6 +16,7 @@ import { addCoffee } from '#server/utils/coffees'
 import { ownGrinder } from '#server/utils/grinders'
 import { setGrindSetting } from '#server/utils/grind-settings'
 import { inviteToShelf } from '#server/utils/invites'
+import { listNotifications } from '#server/utils/notifications'
 import { addPurchase, finishPurchase } from '#server/utils/purchases'
 import {
   createShelf,
@@ -33,6 +35,7 @@ import { judgeCoffee } from '#server/utils/verdicts'
 import type { NewCoffee } from '#shared/types/coffee'
 import type { TestDatabase } from '#test/support/types'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 async function setup() {
   const { db } = await createTestDatabase()
@@ -128,6 +131,7 @@ describe('shelvesHolding', () => {
         altitudeTo: null,
         ...bag,
       },
+      origin: testOrigin,
     })
     await addPurchase(db, {
       shelfId: home.id,
@@ -139,6 +143,8 @@ describe('shelvesHolding', () => {
       shelfId: home.id,
       coffeeId: coffee.id,
       purchaseId: first.id,
+      userId: sarah.id,
+      origin: testOrigin,
     })
     await addPurchase(db, {
       shelfId: toms.id,
@@ -269,10 +275,28 @@ describe('removeMember', () => {
       shelfId: home.id,
       ownerId: sarah.id,
       userId: tom.id,
+      origin: testOrigin,
     })
 
     expect(result).toEqual({ outcome: 'removed' })
     expect(await shelfNamesOf(db, tom.id)).toEqual(["Tom's shelf"])
+  })
+
+  it('tells the other members, not the shelf owner or the one removed', async () => {
+    const { db, sarah, tom, lisa, home } = await shared()
+
+    await removeMember(db, {
+      shelfId: home.id,
+      ownerId: sarah.id,
+      userId: tom.id,
+      origin: testOrigin,
+    })
+
+    expect(await listNotifications(db, lisa.id)).toMatchObject([
+      { kind: 'memberLeft', actor: 'Tom', shelfId: home.id },
+    ])
+    expect(await listNotifications(db, sarah.id)).toEqual([])
+    expect(await listNotifications(db, tom.id)).toEqual([])
   })
 
   it('refuses to remove the shelf owner', async () => {
@@ -282,6 +306,7 @@ describe('removeMember', () => {
       shelfId: home.id,
       ownerId: sarah.id,
       userId: sarah.id,
+      origin: testOrigin,
     })
 
     expect(result).toEqual({ outcome: 'owner' })
@@ -295,9 +320,11 @@ describe('removeMember', () => {
       shelfId: home.id,
       ownerId: sarah.id,
       userId: stranger.id,
+      origin: testOrigin,
     })
 
     expect(result).toEqual({ outcome: 'notMember' })
+    expect(await db.select().from(notification)).toEqual([])
   })
 
   it('gives someone a new shelf of their own when they lose their only one', async () => {
@@ -307,6 +334,7 @@ describe('removeMember', () => {
       shelfId: home.id,
       ownerId: sarah.id,
       userId: lisa.id,
+      origin: testOrigin,
     })
 
     expect(await listShelves(db, lisa.id)).toMatchObject([
@@ -323,11 +351,30 @@ describe('leaveShelf', () => {
       shelfId: home.id,
       ownerId: sarah.id,
       userId: tom.id,
+      origin: testOrigin,
     })
 
     expect(result).toEqual({ outcome: 'left' })
     expect(await shelfNamesOf(db, tom.id)).toEqual(["Tom's shelf"])
     expect(await shelfNamesOf(db, sarah.id)).toEqual(["Sarah's shelf", 'Home'])
+  })
+
+  it('tells the members who stay', async () => {
+    const { db, sarah, tom, lisa, home } = await shared()
+
+    await leaveShelf(db, {
+      shelfId: home.id,
+      ownerId: sarah.id,
+      userId: tom.id,
+      origin: testOrigin,
+    })
+
+    for (const member of [sarah, lisa]) {
+      expect(await listNotifications(db, member.id)).toMatchObject([
+        { kind: 'memberLeft', actor: 'Tom', shelfId: home.id },
+      ])
+    }
+    expect(await listNotifications(db, tom.id)).toEqual([])
   })
 
   it('keeps a member on their only shelf', async () => {
@@ -337,10 +384,12 @@ describe('leaveShelf', () => {
       shelfId: home.id,
       ownerId: sarah.id,
       userId: lisa.id,
+      origin: testOrigin,
     })
 
     expect(result).toEqual({ outcome: 'lastShelf' })
     expect(await shelfNamesOf(db, lisa.id)).toEqual(['Home'])
+    expect(await db.select().from(notification)).toEqual([])
   })
 
   it('makes the shelf owner hand the shelf over while others are on it', async () => {
@@ -350,10 +399,12 @@ describe('leaveShelf', () => {
       shelfId: home.id,
       ownerId: sarah.id,
       userId: sarah.id,
+      origin: testOrigin,
     })
 
     expect(result).toEqual({ outcome: 'handOverFirst' })
     expect(await shelfNamesOf(db, sarah.id)).toEqual(["Sarah's shelf", 'Home'])
+    expect(await db.select().from(notification)).toEqual([])
   })
 
   it('deletes the shelf when the shelf owner is the last member to leave', async () => {
@@ -364,6 +415,7 @@ describe('leaveShelf', () => {
       shelfId: work.id,
       ownerId: sarah.id,
       userId: sarah.id,
+      origin: testOrigin,
     })
 
     expect(result).toEqual({ outcome: 'deleted' })
@@ -390,6 +442,7 @@ describe('deleteShelf', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: firstBag,
+      origin: testOrigin,
     })
     const opus = await ownGrinder(db, {
       shelfId: home.id,

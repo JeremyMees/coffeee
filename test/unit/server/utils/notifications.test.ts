@@ -4,18 +4,20 @@ import type { Email } from '#server/types/email'
 import { invite, shelfMember, user } from '#server/db/schemas'
 import { addCoffee } from '#server/utils/coffees'
 import { inviteToShelf } from '#server/utils/invites'
+import type { NotifyShelf } from '#server/utils/notifications'
 import {
+  changeShelf,
   countUnreadNotifications,
   listEmailedKinds,
   listNotifications,
   markNotificationsRead,
   notifyInvited,
-  notifyShelf,
   setEmailedKinds,
 } from '#server/utils/notifications'
 import { createShelf } from '#server/utils/shelves'
 import type { NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import type { TestDatabase } from '#test/support/types'
 
 const sending = vi.hoisted(() => ({
   sent: [] as Email[],
@@ -54,6 +56,10 @@ const firstBag: NewCoffee = {
   price: 16.5,
 }
 
+function tell(db: TestDatabase, news: Parameters<NotifyShelf>[0]) {
+  return changeShelf(db, origin, (_, notify) => notify(news))
+}
+
 async function setup() {
   const { db } = await createTestDatabase()
   const sarah = await createTestUser(db, { name: 'Sarah' })
@@ -77,20 +83,13 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('notifyShelf', () => {
+describe('changeShelf', () => {
   it('tells every other member, not the one who did it', async () => {
     const { db, sarah, tom, lisa, home } = await setup()
     const { coffee } = await addCoffee(db, {
       shelfId: home.id,
       userId: sarah.id,
       coffee: firstBag,
-    })
-
-    await notifyShelf(db, {
-      shelfId: home.id,
-      actorId: sarah.id,
-      kind: 'coffeeAdded',
-      coffeeId: coffee.id,
       origin,
     })
 
@@ -117,12 +116,11 @@ describe('notifyShelf', () => {
   it('leaves out someone else it is told to skip', async () => {
     const { db, sarah, tom, lisa, home } = await setup()
 
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: tom.id,
       kind: 'memberLeft',
       skip: sarah.id,
-      origin,
     })
 
     expect(await listNotifications(db, sarah.id)).toEqual([])
@@ -131,15 +129,39 @@ describe('notifyShelf', () => {
     ])
   })
 
+  it('records nothing and emails nobody when the change fails', async () => {
+    const { db, sarah, tom, home } = await setup()
+    await setEmailedKinds(db, { userId: tom.id, emailed: ['memberJoined'] })
+
+    await expect(
+      changeShelf(db, origin, async (_, notify) => {
+        await notify({
+          shelfId: home.id,
+          actorId: sarah.id,
+          kind: 'memberJoined',
+        })
+        throw new Error('The change failed')
+      }),
+    ).rejects.toThrow('The change failed')
+
+    expect(await listNotifications(db, tom.id)).toEqual([])
+    expect(sending.sent).toEqual([])
+  })
+
+  it('returns what the change returns', async () => {
+    const { db } = await setup()
+
+    expect(await changeShelf(db, origin, async () => 'changed')).toBe('changed')
+  })
+
   it('tells nobody on a shelf with one member', async () => {
     const { db, sarah } = await setup()
     const solo = await createShelf(db, { name: 'Solo', ownerId: sarah.id })
 
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: solo.id,
       actorId: sarah.id,
       kind: 'memberJoined',
-      origin,
     })
 
     expect(await listNotifications(db, sarah.id)).toEqual([])
@@ -150,11 +172,10 @@ describe('emailing shelf notifications', () => {
   it('emails nobody until they switch it on', async () => {
     const { db, sarah, home } = await setup()
 
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberJoined',
-      origin,
     })
 
     expect(sending.sent).toEqual([])
@@ -168,13 +189,6 @@ describe('emailing shelf notifications', () => {
       shelfId: home.id,
       userId: sarah.id,
       coffee: firstBag,
-    })
-
-    await notifyShelf(db, {
-      shelfId: home.id,
-      actorId: sarah.id,
-      kind: 'coffeeAdded',
-      coffeeId: coffee.id,
       origin,
     })
 
@@ -196,11 +210,10 @@ describe('emailing shelf notifications', () => {
     const { db, sarah, tom, home } = await setup()
     await setEmailedKinds(db, { userId: tom.id, emailed: ['memberLeft'] })
 
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberLeft',
-      origin,
     })
 
     expect(sending.sent).toMatchObject([
@@ -217,12 +230,11 @@ describe('emailing shelf notifications', () => {
       await setEmailedKinds(db, { userId: member.id, emailed: ['memberLeft'] })
     }
 
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: tom.id,
       kind: 'memberLeft',
       skip: sarah.id,
-      origin,
     })
 
     expect(sending.sent.map(email => email.to)).toEqual([lisa.email])
@@ -239,11 +251,10 @@ describe('emailing shelf notifications', () => {
     }
     sending.failFor = tom.email
 
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberJoined',
-      origin,
     })
 
     expect(sending.sent.map(email => email.to)).toEqual([lisa.email])
@@ -378,18 +389,16 @@ describe('listNotifications', () => {
     const { db, sarah, tom, home } = await setup()
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-11-01T10:00:00Z'))
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberJoined',
-      origin,
     })
     vi.setSystemTime(new Date('2026-11-02T10:00:00Z'))
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberLeft',
-      origin,
     })
 
     const kinds = (await listNotifications(db, tom.id)).map(found => found.kind)
@@ -399,11 +408,10 @@ describe('listNotifications', () => {
 
   it('keeps a notification from someone who deleted their account, without their name', async () => {
     const { db, sarah, tom, home } = await setup()
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: tom.id,
       kind: 'memberJoined',
-      origin,
     })
 
     await db.delete(user).where(eq(user.id, tom.id))
@@ -417,17 +425,15 @@ describe('listNotifications', () => {
 describe('unread notifications', () => {
   it('counts and marks them read for one user only', async () => {
     const { db, sarah, tom, lisa, home } = await setup()
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberJoined',
-      origin,
     })
-    await notifyShelf(db, {
+    await tell(db, {
       shelfId: home.id,
       actorId: sarah.id,
       kind: 'memberLeft',
-      origin,
     })
 
     expect(await countUnreadNotifications(db, tom.id)).toBe(2)

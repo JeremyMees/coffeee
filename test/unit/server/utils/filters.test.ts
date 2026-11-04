@@ -5,6 +5,7 @@ import { findFilterLabels } from '#server/utils/filters'
 import { createShelf } from '#server/utils/shelves'
 import { filterLabelsSchema } from '#shared/utils/schemas'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 async function setup() {
   const { db } = await createTestDatabase()
@@ -35,6 +36,7 @@ async function setup() {
       sizeGrams: 250,
       price: 16.5,
     },
+    origin: testOrigin,
   })
 
   const [squareMile] = await db.select().from(roaster)

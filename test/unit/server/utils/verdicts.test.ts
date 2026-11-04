@@ -16,6 +16,7 @@ import {
 } from '#server/utils/verdicts'
 import type { NewCoffee } from '#shared/types/coffee'
 import { createTestDatabase, createTestUser } from '#test/support/database'
+import { testOrigin } from '#test/support/origin'
 
 const firstBag: NewCoffee = {
   name: 'Ayele Fulasa',
@@ -49,6 +50,7 @@ async function setup() {
     shelfId: home.id,
     userId: sarah.id,
     coffee: firstBag,
+    origin: testOrigin,
   })
   const coffeeId = added.coffee.id
 

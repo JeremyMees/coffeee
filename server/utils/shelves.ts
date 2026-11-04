@@ -11,6 +11,7 @@ import {
 import type { Database } from '#server/types/database'
 import { purchase, shelf, shelfMember, user } from '#server/db/schemas'
 import { withFreshId } from '#server/utils/ids'
+import { changeShelf } from '#server/utils/notifications'
 
 const columns = { id: shelf.id, name: shelf.name, ownerId: shelf.ownerId }
 
@@ -201,13 +202,13 @@ export async function handOverShelf(
 
 export function removeMember(
   db: Database,
-  input: { shelfId: string; ownerId: string; userId: string },
+  input: { shelfId: string; ownerId: string; userId: string; origin: string },
 ) {
   if (input.userId === input.ownerId) {
     return Promise.resolve({ outcome: 'owner' as const })
   }
 
-  return db.transaction(async tx => {
+  return changeShelf(db, input.origin, async (tx, notify) => {
     const removed = await tx
       .delete(shelfMember)
       .where(
@@ -221,6 +222,12 @@ export function removeMember(
     if (removed.length === 0) return { outcome: 'notMember' as const }
 
     await giveShelflessAShelf(tx, [input.userId])
+    await notify({
+      shelfId: input.shelfId,
+      actorId: input.userId,
+      kind: 'memberLeft',
+      skip: input.ownerId,
+    })
 
     return { outcome: 'removed' as const }
   })
@@ -250,32 +257,43 @@ export async function deleteShelf(
   return { outcome: 'deleted' as const }
 }
 
-export async function leaveShelf(
+export function leaveShelf(
   db: Database,
-  input: { shelfId: string; ownerId: string; userId: string },
+  input: { shelfId: string; ownerId: string; userId: string; origin: string },
 ) {
-  if ((await countShelves(db, input.userId)) <= 1) {
-    return { outcome: 'lastShelf' as const }
-  }
-
-  if (input.userId === input.ownerId) {
-    if ((await countMembers(db, input.shelfId)) > 1) {
-      return { outcome: 'handOverFirst' as const }
+  return changeShelf(db, input.origin, async (tx, notify) => {
+    if ((await countShelves(tx, input.userId)) <= 1) {
+      return { outcome: 'lastShelf' as const }
     }
 
-    await db.delete(shelf).where(eq(shelf.id, input.shelfId))
+    if (input.userId === input.ownerId) {
+      if ((await countMembers(tx, input.shelfId)) > 1) {
+        return { outcome: 'handOverFirst' as const }
+      }
 
-    return { outcome: 'deleted' as const }
-  }
+      await tx.delete(shelf).where(eq(shelf.id, input.shelfId))
 
-  await db
-    .delete(shelfMember)
-    .where(
-      and(
-        eq(shelfMember.shelfId, input.shelfId),
-        eq(shelfMember.userId, input.userId),
-      ),
-    )
+      return { outcome: 'deleted' as const }
+    }
 
-  return { outcome: 'left' as const }
+    const left = await tx
+      .delete(shelfMember)
+      .where(
+        and(
+          eq(shelfMember.shelfId, input.shelfId),
+          eq(shelfMember.userId, input.userId),
+        ),
+      )
+      .returning({ userId: shelfMember.userId })
+
+    if (left.length > 0) {
+      await notify({
+        shelfId: input.shelfId,
+        actorId: input.userId,
+        kind: 'memberLeft',
+      })
+    }
+
+    return { outcome: 'left' as const }
+  })
 }
