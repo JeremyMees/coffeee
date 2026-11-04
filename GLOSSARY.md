@@ -73,6 +73,11 @@ Geisha. _Avoid_: Variety, cultivar
 Chocolate. Flavor notes are shared, so coffees can be found by taste. _Avoid_:
 Tasting note, taste, notes
 
+**Description list**: A list of names that all users share and add to, used to
+describe coffees: regions, producers, farms, washing stations, processes,
+varietals and flavor notes. Origins are not one; they are a fixed list of
+countries. _Avoid_: Coffee list, tags
+
 ### Judging a coffee
 
 **Rating**: A user's verdict of one to five stars on a coffee as a whole, not on
