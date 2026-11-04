@@ -1,11 +1,18 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import DescriptionListFields from '~/components/form/DescriptionListFields.vue'
-import { fakeApi } from '../../fake-api'
 import { mountInForm, pickMulti, tid, type } from '../../fixtures'
+import { scenario, signIn } from '../../server'
 
-fakeApi()
+beforeEach(async () => {
+  const sarah = await scenario.member('Sarah')
+  await scenario.coffee(sarah.shelf, {
+    varietals: ['Geisha'],
+    producers: ['Nestor Lasso'],
+  })
+  await signIn(sarah)
+})
 
 describe('DescriptionListFields', () => {
   it('asks only for the lists it is given, in that order', async () => {

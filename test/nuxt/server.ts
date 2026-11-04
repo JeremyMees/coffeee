@@ -102,7 +102,11 @@ export async function signIn(member: Member) {
 export function failRequest(
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   path: string,
-  failure: { status: number; message: string },
+  failure: {
+    status: number
+    message: string
+    errors?: Record<string, string>
+  },
 ) {
   server.failures.push(
     registerEndpoint(path, {
@@ -111,6 +115,7 @@ export function failRequest(
         throw createError({
           statusCode: failure.status,
           statusMessage: failure.message,
+          data: failure.errors && { errors: failure.errors },
         })
       },
     }),

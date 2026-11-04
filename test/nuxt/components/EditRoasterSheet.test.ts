@@ -1,18 +1,53 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import EditRoasterSheet from '~/components/EditRoasterSheet.vue'
-import { api, fakeApi, resetApi } from '../fake-api'
+import type { ShelfRoaster } from '#imports'
+import { roaster } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { byTestId, inputValue, submit, type } from '../fixtures'
-import { squareMile } from '#test/fixtures/roasters'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let squareMile: string
 
-beforeEach(resetApi)
+const squareMileDetails = {
+  name: 'Square Mile',
+  website: 'https://www.squaremilecoffee.com',
+  countryCode: 'GB',
+  city: 'London',
+} as const
 
-async function openSheet() {
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  squareMile = await scenario.roaster(sarah, 'Square Mile')
+  await scenario.roasterDetails(sarah, squareMile, squareMileDetails)
+  await signIn(sarah)
+})
+
+async function stored(roasterId = squareMile) {
+  const db = await database()
+  const [found] = await db
+    .select({
+      name: roaster.name,
+      website: roaster.website,
+      countryCode: roaster.countryCode,
+      city: roaster.city,
+    })
+    .from(roaster)
+    .where(eq(roaster.id, roasterId))
+
+  return found!
+}
+
+async function openSheet(roasterId = squareMile) {
   const sheet = await mountSuspended(EditRoasterSheet, {
-    props: { shelfId: 'home', roaster: squareMile(), open: true },
+    props: {
+      shelfId: sarah.shelf.id,
+      roaster: await $fetch<ShelfRoaster>(`/api/roasters/${roasterId}`),
+      open: true,
+    },
     attachTo: document.body,
   })
 
@@ -60,16 +95,12 @@ describe('EditRoasterSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.roasterCalls).toEqual([
-      {
-        edit: {
-          name: 'Square Mile Coffee Roasters',
-          website: null,
-          countryCode: 'IE',
-          city: 'Dublin',
-        },
-      },
-    ])
+    expect(await stored()).toEqual({
+      name: 'Square Mile Coffee Roasters',
+      website: null,
+      countryCode: 'IE',
+      city: 'Dublin',
+    })
   })
 
   it('clears the country', async () => {
@@ -78,17 +109,16 @@ describe('EditRoasterSheet', () => {
     await pickCountry('')
     await submit('edit-roaster-form')
 
-    await vi.waitFor(() =>
-      expect(api.roasterCalls).toEqual([
-        {
-          edit: expect.objectContaining({ countryCode: null }),
-        },
-      ]),
+    await vi.waitFor(async () =>
+      expect(await stored()).toEqual({
+        ...squareMileDetails,
+        countryCode: null,
+      }),
     )
   })
 
   it('explains a missing name before sending anything', async () => {
-    await openSheet()
+    const sheet = await openSheet()
 
     await type('roaster-name', '')
     await submit('edit-roaster-form')
@@ -96,10 +126,12 @@ describe('EditRoasterSheet', () => {
     await vi.waitFor(() =>
       expect(sheetText()).toContain('Give the roaster a name'),
     )
-    expect(api.roasterCalls).toEqual([])
+    expect(sheet.emitted('update:open')).toBeUndefined()
+    expect(await stored()).toEqual(squareMileDetails)
   })
 
   it('shows a name that is taken next to the field', async () => {
+    await scenario.roaster(sarah, 'La Cabra')
     await openSheet()
 
     await type('roaster-name', 'La Cabra')
@@ -111,11 +143,13 @@ describe('EditRoasterSheet', () => {
       ),
     )
     expect(byTestId('form-error')).toBeNull()
+    expect(await stored()).toEqual(squareMileDetails)
   })
 
   it('says why the roaster could not be saved', async () => {
-    api.roasterFails = true
-    await openSheet()
+    const tom = await scenario.member('Tom')
+    const laCabra = await scenario.roaster(tom, 'La Cabra')
+    await openSheet(laCabra)
 
     await submit('edit-roaster-form')
 

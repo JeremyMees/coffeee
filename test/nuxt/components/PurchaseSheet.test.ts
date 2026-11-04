@@ -1,24 +1,48 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { desc, eq } from 'drizzle-orm'
 import PurchaseSheet from '~/components/PurchaseSheet.vue'
+import type { ShelfPurchase } from '#imports'
 import { localDate } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { purchase } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { byTestId, inputValue, submit, type } from '../fixtures'
-import { ayele } from '#test/fixtures/coffees'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let coffeeId: string
+let purchases: ShelfPurchase[]
 
-beforeEach(resetApi)
-
-const purchases = ayele().purchases
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  coffeeId = (
+    await scenario.coffee(sarah.shelf, {
+      purchasedOn: '2026-09-01',
+      sizeGrams: null,
+    })
+  ).id
+  await scenario.finishBag(sarah.shelf, coffeeId)
+  await scenario.bag(sarah.shelf, coffeeId, {
+    purchasedOn: '2026-11-01',
+    roastedOn: '2026-10-28',
+    sizeGrams: 250,
+    price: 16.5,
+  })
+  await signIn(sarah)
+  purchases = (
+    await $fetch<{ purchases: ShelfPurchase[] }>(
+      `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}`,
+    )
+  ).purchases
+})
 
 async function openSheet(
   props: { purchase?: ShelfPurchase; open?: boolean } = {},
 ) {
   const open = props.open ?? true
   const sheet = await mountSuspended(PurchaseSheet, {
-    props: { shelfId: 'home', coffeeId: 'c1', purchases, ...props, open },
+    props: { shelfId: sarah.shelf.id, coffeeId, purchases, ...props, open },
     attachTo: document.body,
   })
 
@@ -34,6 +58,22 @@ async function openSheet(
 
 function pickedDate(picker: string) {
   return byTestId(picker, 'date-picker-trigger')!.textContent?.trim()
+}
+
+async function stored() {
+  const db = await database()
+
+  return db
+    .select({
+      id: purchase.id,
+      purchasedOn: purchase.purchasedOn,
+      roastedOn: purchase.roastedOn,
+      sizeGrams: purchase.sizeGrams,
+      priceCents: purchase.priceCents,
+    })
+    .from(purchase)
+    .where(eq(purchase.coffeeId, coffeeId))
+    .orderBy(desc(purchase.createdAt))
 }
 
 describe('PurchaseSheet', () => {
@@ -56,16 +96,14 @@ describe('PurchaseSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.purchaseCalls).toEqual([
-      {
-        buyAgain: {
-          purchasedOn: localDate(),
-          roastedOn: null,
-          sizeGrams: 1000,
-          price: 16.5,
-        },
-      },
-    ])
+    const [added] = await stored()
+    expect(added).toMatchObject({
+      purchasedOn: localDate(),
+      roastedOn: null,
+      sizeGrams: 1000,
+      priceCents: 1650,
+    })
+    expect(await stored()).toHaveLength(3)
   })
 
   it('edits a purchase from its own details', async () => {
@@ -81,17 +119,14 @@ describe('PurchaseSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.purchaseCalls).toEqual([
-      {
-        edit: 'p2',
-        body: {
-          purchasedOn: '2026-11-01',
-          roastedOn: '2026-10-28',
-          sizeGrams: 250,
-          price: null,
-        },
-      },
-    ])
+    expect(await stored()).toContainEqual({
+      id: purchases[0]!.id,
+      purchasedOn: '2026-11-01',
+      roastedOn: '2026-10-28',
+      sizeGrams: 250,
+      priceCents: null,
+    })
+    expect(await stored()).toHaveLength(2)
   })
 
   it('explains a size that makes no sense before sending anything', async () => {
@@ -105,10 +140,19 @@ describe('PurchaseSheet', () => {
         'The size has to be more than 0 g',
       ),
     )
-    expect(api.purchaseCalls).toEqual([])
+    expect(await stored()).toHaveLength(2)
   })
 
   it('shows what the server refused next to the field', async () => {
+    failRequest(
+      'POST',
+      `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}/purchases`,
+      {
+        status: 400,
+        message: '',
+        errors: { price: 'That price looks like a typo' },
+      },
+    )
     const sheet = await openSheet()
 
     await type('coffee-price', '999')
@@ -120,11 +164,16 @@ describe('PurchaseSheet', () => {
       ),
     )
     expect(sheet.emitted('update:open')).toBeUndefined()
+    expect(await stored()).toHaveLength(2)
   })
 
-  it('says why the purchase could not be saved', async () => {
-    api.purchaseFails = true
-    await openSheet()
+  it('says why the purchase could not be saved and stays open', async () => {
+    failRequest(
+      'POST',
+      `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}/purchases`,
+      { status: 503, message: 'The shelf is out of reach' },
+    )
+    const sheet = await openSheet()
 
     await submit('purchase-form')
 
@@ -133,6 +182,8 @@ describe('PurchaseSheet', () => {
         'The shelf is out of reach',
       ),
     )
+    expect(sheet.emitted('update:open')).toBeUndefined()
+    expect(await stored()).toHaveLength(2)
   })
 
   it('asks to close from its close button', async () => {

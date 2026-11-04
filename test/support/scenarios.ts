@@ -1,15 +1,21 @@
 import { eq } from 'drizzle-orm'
-import type { NewGrinder } from '#shared/types/grinders'
+import type { GrindSettingChange, NewGrinder } from '#shared/types/grinders'
+import type { RoasterDetails } from '#shared/types/roasters'
 import type { VerdictChange } from '#shared/types/verdicts'
+import type { NewPurchase } from '#shared/types/purchases'
 import { newCoffeeSchema } from '#shared/utils/schemas'
 import { coffee, purchase, roaster } from '#server/db/schemas'
 import { listBrewMethods } from '#server/utils/brew-methods'
-import { addCoffee } from '#server/utils/coffees'
+import { addCoffee, replaceCoffeePhoto } from '#server/utils/coffees'
 import { ownGrinder } from '#server/utils/grinders'
 import { acceptInvite, inviteToShelf } from '#server/utils/invites'
 import { findOrCreateEntry } from '#server/utils/lists'
+import { storePhoto } from '#server/utils/photos'
+import { buyAgain, finishCoffee } from '#server/utils/purchases'
+import { editRoaster, replaceRoasterLogo } from '#server/utils/roasters'
 import { createShelf, shelfNameFor } from '#server/utils/shelves'
 import { judgeCoffee } from '#server/utils/verdicts'
+import { setGrindSetting } from '#server/utils/grind-settings'
 import { createTestUser } from '#test/support/database'
 import type {
   ScenarioCoffee,
@@ -137,6 +143,101 @@ export function createScenario(database: () => Promise<TestDatabase>) {
         match: { token: invited.outcome === 'invited' ? invited.token : '' },
         origin: testOrigin,
       })
+    },
+
+    async roasterDetails(
+      member: { id: string },
+      roasterId: string,
+      details: RoasterDetails,
+    ) {
+      return editRoaster(await database(), {
+        roasterId,
+        editor: member,
+        details,
+      })
+    },
+
+    async roasterLogo(roasterId: string) {
+      const logoUrl = await storePhoto(
+        { data: Buffer.from('logo'), type: 'image/webp' },
+        'roasters',
+      )
+      await replaceRoasterLogo(
+        await database(),
+        { roasterId, logoUrl: null },
+        logoUrl,
+      )
+
+      return logoUrl
+    },
+
+    async finishBag(
+      shelf: ScenarioShelf,
+      coffeeId: string,
+      by: { id: string } = { id: shelf.ownerId },
+    ) {
+      return finishCoffee(await database(), {
+        shelfId: shelf.id,
+        coffeeId,
+        userId: by.id,
+        origin: testOrigin,
+      })
+    },
+
+    async bag(
+      shelf: ScenarioShelf,
+      coffeeId: string,
+      details: Partial<NewPurchase> = {},
+      by: { id: string } = { id: shelf.ownerId },
+    ) {
+      const db = await database()
+      const added = await buyAgain(db, {
+        shelfId: shelf.id,
+        coffeeId,
+        userId: by.id,
+        purchase: {
+          purchasedOn: '2026-11-01',
+          roastedOn: null,
+          sizeGrams: null,
+          price: null,
+          ...details,
+        },
+        origin: testOrigin,
+      })
+      await db
+        .update(purchase)
+        .set({ createdAt: nextStamp() })
+        .where(eq(purchase.id, added!.id))
+
+      return added!
+    },
+
+    async grindSetting(
+      member: { id: string },
+      shelf: ScenarioShelf,
+      coffeeId: string,
+      change: GrindSettingChange,
+    ) {
+      return setGrindSetting(await database(), {
+        shelfId: shelf.id,
+        coffeeId,
+        userId: member.id,
+        change,
+      })
+    },
+
+    async coffeePhoto(coffeeId: string) {
+      const photoUrl = await storePhoto(
+        { data: Buffer.from('bag'), type: 'image/webp' },
+        'coffees',
+      )
+      await replaceCoffeePhoto(
+        await database(),
+        { coffeeId, photoUrl: null },
+        photoUrl,
+      )
+
+      return photoUrl
     },
   }
 }

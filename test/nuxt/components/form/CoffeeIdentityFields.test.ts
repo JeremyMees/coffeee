@@ -1,10 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import CoffeeIdentityFields from '~/components/form/CoffeeIdentityFields.vue'
-import { fakeApi } from '../../fake-api'
 import { mountInForm, pickRoaster, tid } from '../../fixtures'
+import { scenario, signIn } from '../../server'
 
-fakeApi()
+beforeEach(async () => {
+  const sarah = await scenario.member('Sarah')
+  await scenario.roaster(sarah, 'Square Mile')
+  await signIn(sarah)
+})
 
 describe('CoffeeIdentityFields', () => {
   it('asks for the name and roaster, which are required, and the link', async () => {

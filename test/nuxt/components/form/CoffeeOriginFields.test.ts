@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import CoffeeOriginFields from '~/components/form/CoffeeOriginFields.vue'
-import { fakeApi } from '../../fake-api'
 import {
   byTestId,
   mountInForm,
@@ -10,8 +9,17 @@ import {
   tid,
   type,
 } from '../../fixtures'
+import { scenario, signIn } from '../../server'
 
-fakeApi()
+beforeEach(async () => {
+  const sarah = await scenario.member('Sarah')
+  await scenario.coffee(sarah.shelf, {
+    origins: ['CO'],
+    regions: [{ origin: 'CO', name: 'Huila' }],
+    farms: [{ origin: 'CO', name: 'La Palma' }],
+  })
+  await signIn(sarah)
+})
 
 function mountFields(initialValues: Record<string, unknown> = {}) {
   return mountInForm(CoffeeOriginFields, initialValues)

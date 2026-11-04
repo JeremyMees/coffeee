@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ScopedListPicker from '~/components/form/ScopedListPicker.vue'
-import { fakeRegions } from '../../fake-api'
 import {
   allByTestId,
   byTestId,
@@ -11,21 +10,20 @@ import {
   pickScoped,
   type,
 } from '../../fixtures'
+import { scenario, signIn } from '../../server'
 
-const searched: string[] = []
-
-registerEndpoint('/api/farms', event => {
-  searched.push(new URL(event.path, 'http://test').searchParams.get('origins')!)
-
-  return fakeRegions(() => [
-    { id: 'f1', name: 'El Paraiso', origin: 'CO' },
-    { id: 'f2', name: 'Santa Rosa', origin: 'CO' },
-    { id: 'f3', name: 'Santa Rosa', origin: 'ET' },
-  ])(event)
-})
-
-beforeEach(() => {
-  searched.length = 0
+beforeEach(async () => {
+  const sarah = await scenario.member('Sarah')
+  await scenario.coffee(sarah.shelf, {
+    origins: ['CO', 'ET', 'BR'],
+    farms: [
+      { origin: 'CO', name: 'El Paraiso' },
+      { origin: 'CO', name: 'Santa Rosa' },
+      { origin: 'ET', name: 'Santa Rosa' },
+      { origin: 'BR', name: 'Santa Rosa' },
+    ],
+  })
+  await signIn(sarah)
 })
 
 function mountPicker(props: Record<string, unknown> = {}) {
@@ -69,7 +67,6 @@ describe('ScopedListPicker', () => {
         'Santa Rosa · Ethiopia',
       ]),
     )
-    expect(searched).toContain('CO,ET')
   })
 
   it('names the country only when there are several origins', async () => {

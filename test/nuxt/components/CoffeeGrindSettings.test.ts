@@ -1,32 +1,76 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import CoffeeGrindSettings from '~/components/CoffeeGrindSettings.vue'
 import type { OwnGrindSetting } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { shelfPath } from '#imports'
+import { grindSetting } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { tid } from '../fixtures'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let coffeeId: string
+let opus: { id: string }
+let espresso: { id: string }
+let pourOver: { id: string }
 
-beforeEach(resetApi)
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  coffeeId = (await scenario.coffee(sarah.shelf)).id
+  opus = await scenario.grinder(sarah.shelf, {
+    brand: 'Fellow',
+    model: 'Opus Gen 2',
+  })
+  espresso = await scenario.brewMethod('Espresso')
+  pourOver = await scenario.brewMethod('Pour over')
+  await signIn(sarah)
+})
 
-const espresso12: OwnGrindSetting = {
-  grinderId: 'opus',
-  brand: 'Fellow',
-  model: 'Opus Gen 2',
-  brewMethodId: 'espresso',
-  brewMethod: 'Espresso',
-  setting: '12',
+async function keep(brewMethod: { id: string }, setting: string) {
+  await scenario.grindSetting(sarah, sarah.shelf, coffeeId, {
+    grinderId: opus.id,
+    brewMethodId: brewMethod.id,
+    setting,
+  })
 }
 
-function mountSettings(grindSettings: OwnGrindSetting[] = []) {
+async function ownSettings() {
+  const shelfCoffee = await $fetch<{ grindSettings: OwnGrindSetting[] }>(
+    `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}`,
+  )
+
+  return shelfCoffee.grindSettings
+}
+
+async function mountSettings() {
   return mountSuspended(CoffeeGrindSettings, {
-    props: { shelfId: 'home', coffeeId: 'c1', grindSettings },
+    props: {
+      shelfId: sarah.shelf.id,
+      coffeeId,
+      grindSettings: await ownSettings(),
+    },
   })
+}
+
+async function stored() {
+  const db = await database()
+
+  return db
+    .select({
+      grinderId: grindSetting.grinderId,
+      brewMethodId: grindSetting.brewMethodId,
+      setting: grindSetting.setting,
+    })
+    .from(grindSetting)
+    .where(eq(grindSetting.coffeeId, coffeeId))
 }
 
 describe('CoffeeGrindSettings', () => {
   it('lists the grind settings of the coffee', async () => {
-    const settings = await mountSettings([espresso12])
+    await keep(espresso, '12')
+
+    const settings = await mountSettings()
 
     const [saved] = settings.findAll(tid('grind-setting'))
     expect(saved!.get(tid('grind-setting-for')).text()).toBe(
@@ -44,15 +88,23 @@ describe('CoffeeGrindSettings', () => {
   })
 
   it('sends the shelf to its settings when it owns no grinders', async () => {
-    api.grinders = []
+    const tom = await scenario.member('Tom')
+    await signIn(tom)
+    const tomsCoffee = await scenario.coffee(tom.shelf)
 
-    const settings = await mountSettings([espresso12])
+    const settings = await mountSuspended(CoffeeGrindSettings, {
+      props: {
+        shelfId: tom.shelf.id,
+        coffeeId: tomsCoffee.id,
+        grindSettings: [],
+      },
+    })
 
     expect(settings.get(tid('grind-no-grinders')).text()).toContain(
       'This shelf owns no grinders yet.',
     )
     expect(settings.get(tid('grind-add-grinder')).attributes('href')).toBe(
-      '/shelves/home/settings?tab=grinders',
+      `${shelfPath(tom.shelf)}/settings?tab=grinders`,
     )
     expect(settings.find(tid('grind-setting-form')).exists()).toBe(false)
   })
@@ -60,56 +112,57 @@ describe('CoffeeGrindSettings', () => {
   it('saves a setting for the picked grinder and brew method', async () => {
     const settings = await mountSettings()
 
-    await settings.get(tid('grind-brew-method')).setValue('pour-over')
+    await settings.get(tid('grind-brew-method')).setValue(pourOver.id)
     await settings.get(tid('grind-setting-input')).setValue(' 4.2 ')
     await settings.get(tid('grind-setting-form')).trigger('submit')
 
-    await vi.waitFor(() =>
-      expect(api.grindSettingCalls).toEqual([
-        { grinderId: 'opus', brewMethodId: 'pour-over', setting: '4.2' },
+    await vi.waitFor(async () =>
+      expect(await stored()).toEqual([
+        { grinderId: opus.id, brewMethodId: pourOver.id, setting: '4.2' },
       ]),
     )
   })
 
   it('fills in the setting already kept for the picked combination', async () => {
-    const settings = await mountSettings([espresso12])
+    await keep(espresso, '12')
+    const settings = await mountSettings()
 
     const input = settings.get<HTMLInputElement>(tid('grind-setting-input'))
     expect(input.element.value).toBe('12')
 
-    await settings.get(tid('grind-brew-method')).setValue('pour-over')
+    await settings.get(tid('grind-brew-method')).setValue(pourOver.id)
     expect(input.element.value).toBe('')
   })
 
   it('edits a saved setting', async () => {
-    const settings = await mountSettings([
-      { ...espresso12, brewMethodId: 'pour-over', brewMethod: 'Pour over' },
-    ])
+    await keep(pourOver, '12')
+    const settings = await mountSettings()
     const brewMethod = settings.get<HTMLSelectElement>(tid('grind-brew-method'))
-    expect(brewMethod.element.value).toBe('espresso')
+    expect(brewMethod.element.value).toBe(espresso.id)
 
     await settings.get(tid('grind-setting-edit')).trigger('click')
 
-    expect(brewMethod.element.value).toBe('pour-over')
+    expect(brewMethod.element.value).toBe(pourOver.id)
     expect(
       settings.get<HTMLInputElement>(tid('grind-setting-input')).element.value,
     ).toBe('12')
   })
 
   it('clears a saved setting', async () => {
-    const settings = await mountSettings([espresso12])
+    await keep(espresso, '12')
+    const settings = await mountSettings()
 
     await settings.get(tid('grind-setting-clear')).trigger('click')
 
-    await vi.waitFor(() =>
-      expect(api.grindSettingCalls).toEqual([
-        { grinderId: 'opus', brewMethodId: 'espresso', setting: null },
-      ]),
-    )
+    await vi.waitFor(async () => expect(await stored()).toEqual([]))
   })
 
   it('says why the setting could not be saved', async () => {
-    api.grindSettingFails = true
+    failRequest(
+      'PUT',
+      `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}/grind-settings`,
+      { status: 404, message: 'This shelf does not own that grinder' },
+    )
     const settings = await mountSettings()
 
     await settings.get(tid('grind-setting-input')).setValue('12')
@@ -120,5 +173,6 @@ describe('CoffeeGrindSettings', () => {
         'This shelf does not own that grinder',
       ),
     )
+    expect(await stored()).toEqual([])
   })
 })

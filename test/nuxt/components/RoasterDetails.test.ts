@@ -2,17 +2,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import RoasterDetails from '~/components/RoasterDetails.vue'
 import type { ShelfRoaster } from '#imports'
-import { fakeApi, resetApi } from '../fake-api'
+import type { Member } from '#test/support/types'
 import { byTestId, tid } from '../fixtures'
-import { squareMile } from '#test/fixtures/roasters'
+import { scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let squareMile: string
 
-beforeEach(resetApi)
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  squareMile = await scenario.roaster(sarah, 'Square Mile')
+  await scenario.roasterDetails(sarah, squareMile, {
+    name: 'Square Mile',
+    website: 'https://www.squaremilecoffee.com',
+    countryCode: 'GB',
+    city: 'London',
+  })
+  await signIn(sarah)
+})
 
-function mountDetails(overrides: Partial<ShelfRoaster> = {}) {
+async function mountDetails(roasterId = squareMile) {
+  const roaster = await $fetch<ShelfRoaster>(`/api/roasters/${roasterId}`)
+
   return mountSuspended(RoasterDetails, {
-    props: { shelfId: 'home', roaster: { ...squareMile(), ...overrides } },
+    props: { shelfId: sarah.shelf.id, roaster },
     attachTo: document.body,
   })
 }
@@ -26,10 +39,10 @@ describe('RoasterDetails', () => {
 
     expect(
       details.get(tid('roaster-details', 'roaster-logo')).attributes('style'),
-    ).toContain('view-transition-name: roaster-logo-r2')
+    ).toContain(`view-transition-name: roaster-logo-${squareMile}`)
     expect(
       details.get(tid('roaster-details-name')).attributes('style'),
-    ).toContain('view-transition-name: roaster-name-r2')
+    ).toContain(`view-transition-name: roaster-name-${squareMile}`)
   })
 
   it('shows where the roaster is and links to its website', async () => {
@@ -46,18 +59,18 @@ describe('RoasterDetails', () => {
   })
 
   it('shows only the name when nothing else is known', async () => {
-    const details = await mountDetails({
-      website: null,
-      countryCode: null,
-      city: null,
-    })
+    const details = await mountDetails(
+      await scenario.roaster(sarah, 'La Cabra'),
+    )
 
+    expect(details.get(tid('roaster-details-name')).text()).toBe('La Cabra')
     expect(details.find(tid('roaster-details-place')).exists()).toBe(false)
     expect(details.find(tid('roaster-details-website')).exists()).toBe(false)
   })
 
   it('offers no edit to someone who can only read it', async () => {
-    const details = await mountDetails({ canEdit: false })
+    const tom = await scenario.member('Tom')
+    const details = await mountDetails(await scenario.roaster(tom, 'La Cabra'))
 
     expect(details.find(tid('roaster-edit')).exists()).toBe(false)
   })

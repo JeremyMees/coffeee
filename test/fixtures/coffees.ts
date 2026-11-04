@@ -134,30 +134,3 @@ export function libraryCoffees() {
     }),
   ]
 }
-
-export function catalogCoffees() {
-  return [
-    catalogCoffee({
-      id: 'c4',
-      name: 'Gesha Village',
-      roaster: 'Tim Wendelboe',
-      roasterId: 'r3',
-      roastedFor: 'espresso',
-      roastedOn: null,
-      onShelf: false,
-      flavorNotes: [{ id: 'n3', name: 'Strawberry' }],
-      origins: [{ code: 'ET', name: 'Ethiopia' }],
-    }),
-    catalogCoffee(),
-    catalogCoffee({
-      id: 'c2',
-      name: 'El Paraiso',
-      roaster: 'La Cabra',
-      roasterId: 'r1',
-      roastLevel: 'medium',
-      onShelf: false,
-      flavorNotes: [{ id: 'n2', name: 'Jasmine' }],
-      origins: [{ code: 'CO', name: 'Colombia' }],
-    }),
-  ]
-}

@@ -27,18 +27,3 @@ export function listedRoaster(
     ...overrides,
   }
 }
-
-export function listedRoasters() {
-  return [
-    listedRoaster({
-      id: 'r1',
-      name: 'La Cabra',
-      countryCode: 'DK',
-      city: 'Aarhus',
-      logoUrl: '/api/photos/roasters/la-cabra.webp',
-      shelfCoffees: 0,
-      lastBought: null,
-    }),
-    listedRoaster(),
-  ]
-}

@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import EditCoffeeSheet from '~/components/EditCoffeeSheet.vue'
-import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { shelfCoffeePath } from '#imports'
+import { coffee, roaster } from '#server/db/schemas'
+import { descriptionOf } from '#server/utils/descriptions'
+import type { Member } from '#test/support/types'
 import {
   byTestId,
   click,
@@ -17,38 +20,77 @@ import {
   submit,
   type,
 } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let ayele: Awaited<ReturnType<typeof scenario.coffee>>
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser()
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  const tom = await scenario.member('Tom')
+  await scenario.coffee(tom.shelf, {
+    name: 'Red Brick',
+    origins: ['CO'],
+    regions: [{ origin: 'CO', name: 'Huila' }],
+    producers: ['Diego Bermudez'],
+    flavorNotes: ['Jasmine'],
+  })
+  await scenario.roaster(tom, 'La Cabra')
+  ayele = await scenario.coffee(sarah.shelf, {
+    regions: [{ origin: 'ET', name: 'Guji' }],
+    washingStations: [{ origin: 'ET', name: 'Hambela' }],
+    producers: ['Nestor Lasso'],
+    varietals: ['Geisha'],
+    flavorNotes: ['Lime'],
+    link: 'https://example.com/ayele',
+    altitudeFrom: 1900,
+    altitudeTo: 2200,
+  })
+  await signIn(sarah)
 })
 
-const coffee = {
-  id: 'c1',
-  name: 'Ayele Fulasa',
-  roaster: 'Square Mile',
-  roastLevel: 'light' as const,
-  roastedFor: 'filter' as const,
-  origins: [{ code: 'ET', name: 'Ethiopia' }],
-  regions: [{ id: 'g1', name: 'Guji', origin: 'ET' }],
-  farms: [],
-  washingStations: [{ id: 'w1', name: 'Hambela', origin: 'ET' }],
-  producers: [{ id: 'n1', name: 'Nestor Lasso' }],
-  processes: [{ id: 's1', name: 'Washed' }],
-  varietals: [{ id: 'v1', name: 'Geisha' }],
-  flavorNotes: [{ id: 'n1', name: 'Lime' }],
-  link: 'https://example.com/ayele',
-  altitudeFrom: 1900,
-  altitudeTo: 2200,
+async function savedCoffee() {
+  const db = await database()
+  const [found] = await db
+    .select({
+      name: coffee.name,
+      roaster: roaster.name,
+      roastLevel: coffee.roastLevel,
+      roastedFor: coffee.roastedFor,
+      link: coffee.link,
+      altitudeFrom: coffee.altitudeFrom,
+      altitudeTo: coffee.altitudeTo,
+    })
+    .from(coffee)
+    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+    .where(eq(coffee.id, ayele.id))
+  const description = await descriptionOf(db, ayele.id)
+  const names = (entries: { name: string }[]) =>
+    entries.map(entry => entry.name)
+
+  return {
+    ...found!,
+    origins: description.origins.map(origin => origin.code),
+    regions: description.regions.map(({ origin, name }) => ({ origin, name })),
+    farms: description.farms.map(({ origin, name }) => ({ origin, name })),
+    washingStations: description.washingStations.map(({ origin, name }) => ({
+      origin,
+      name,
+    })),
+    producers: names(description.producers),
+    processes: names(description.processes),
+    varietals: names(description.varietals),
+    flavorNotes: names(description.flavorNotes),
+  }
 }
 
 async function openSheet(open = true) {
+  const editable = await $fetch(
+    `/api/shelves/${sarah.shelf.id}/coffees/${ayele.id}`,
+  )
   const sheet = await mountSuspended(EditCoffeeSheet, {
-    route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
-    props: { shelfId: 'home', coffee, open },
+    route: shelfCoffeePath(sarah.shelf, ayele),
+    props: { shelfId: sarah.shelf.id, coffee: editable, open },
     attachTo: document.body,
   })
 
@@ -95,11 +137,12 @@ describe('EditCoffeeSheet', () => {
     await click('coffee-origins-chips', 'chip-remove')
     await submit('edit-coffee-form')
 
-    await vi.waitFor(() => expect(api.edits).toHaveLength(1))
-    expect(api.edits[0]).toMatchObject({
-      origins: ['CO'],
-      regions: [{ origin: 'CO', name: 'Huila' }],
-    })
+    await vi.waitFor(async () =>
+      expect(await savedCoffee()).toMatchObject({
+        origins: ['CO'],
+        regions: [{ origin: 'CO', name: 'Huila' }],
+      }),
+    )
   })
 
   it('saves the new details and closes', async () => {
@@ -118,25 +161,23 @@ describe('EditCoffeeSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.edits).toEqual([
-      {
-        name: 'Ayele Fulasa Natural',
-        roaster: 'La Cabra',
-        roastLevel: 'medium',
-        roastedFor: 'omni',
-        origins: ['ET'],
-        regions: [{ origin: 'ET', name: 'Guji' }],
-        farms: [],
-        washingStations: [{ origin: 'ET', name: 'Hambela' }],
-        producers: ['Nestor Lasso', 'Diego Bermudez'],
-        processes: ['Washed', 'Anaerobic'],
-        varietals: ['Geisha'],
-        flavorNotes: ['Lime', 'Jasmine'],
-        link: null,
-        altitudeFrom: 1900,
-        altitudeTo: 2200,
-      },
-    ])
+    expect(await savedCoffee()).toEqual({
+      name: 'Ayele Fulasa Natural',
+      roaster: 'La Cabra',
+      roastLevel: 'medium',
+      roastedFor: 'omni',
+      origins: ['ET'],
+      regions: [{ origin: 'ET', name: 'Guji' }],
+      farms: [],
+      washingStations: [{ origin: 'ET', name: 'Hambela' }],
+      producers: ['Nestor Lasso', 'Diego Bermudez'],
+      processes: ['Washed', 'Anaerobic'],
+      varietals: ['Geisha'],
+      flavorNotes: ['Lime', 'Jasmine'],
+      link: null,
+      altitudeFrom: 1900,
+      altitudeTo: 2200,
+    })
   })
 
   it('explains a missing name before sending anything', async () => {
@@ -148,7 +189,7 @@ describe('EditCoffeeSheet', () => {
     await vi.waitFor(() =>
       expect(sheetText()).toContain('Give the coffee a name'),
     )
-    expect(api.edits).toEqual([])
+    expect((await savedCoffee()).name).toBe('Ayele Fulasa')
   })
 
   it('has the steps of a coffee without a first bag, saving from any of them', async () => {
@@ -190,12 +231,17 @@ describe('EditCoffeeSheet', () => {
       ),
     )
     expect(sheet.emitted('update:open')).toBeUndefined()
+    expect((await savedCoffee()).name).toBe('Ayele Fulasa')
   })
 
   it('says something went wrong when the server gives no reason', async () => {
+    failRequest('PATCH', `/api/shelves/${sarah.shelf.id}/coffees/${ayele.id}`, {
+      status: 500,
+      message: '',
+    })
     await openSheet()
 
-    await type('coffee-name', 'Crash')
+    await type('coffee-name', 'Ayele Fulasa Natural')
     await submit('edit-coffee-form')
 
     await vi.waitFor(() =>

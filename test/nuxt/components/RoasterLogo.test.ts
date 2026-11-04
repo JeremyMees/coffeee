@@ -1,23 +1,49 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import RoasterLogo from '~/components/RoasterLogo.vue'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { photoMaxBytes } from '#imports'
+import { roaster } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { tid } from '../fixtures'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+const { compressPhoto } = vi.hoisted(() => ({
+  compressPhoto: vi.fn(async () => new Blob(['small'], { type: 'image/webp' })),
+}))
 
-mockNuxtImport(
-  'compressPhoto',
-  () => async () => new Blob(['small'], { type: 'image/webp' }),
-)
+mockNuxtImport('compressPhoto', () => compressPhoto)
 
-beforeEach(resetApi)
+let sarah: Member
+let squareMile: string
 
-const roaster = { id: 'r2', name: 'Square Mile', logoUrl: null }
+beforeEach(async () => {
+  compressPhoto.mockClear()
+  sarah = await scenario.member('Sarah')
+  squareMile = await scenario.roaster(sarah, 'Square Mile')
+  await signIn(sarah)
+})
 
-function mountLogo(logoUrl: string | null = null) {
+async function storedLogo() {
+  const db = await database()
+  const [found] = await db
+    .select({ logoUrl: roaster.logoUrl })
+    .from(roaster)
+    .where(eq(roaster.id, squareMile))
+
+  return found!.logoUrl
+}
+
+async function mountLogo() {
   return mountSuspended(RoasterLogo, {
-    props: { shelfId: 'home', roaster: { ...roaster, logoUrl } },
+    props: {
+      shelfId: sarah.shelf.id,
+      roaster: {
+        id: squareMile,
+        name: 'Square Mile',
+        logoUrl: await storedLogo(),
+      },
+    },
   })
 }
 
@@ -33,6 +59,10 @@ async function choose(
   await input.trigger('change')
 }
 
+function logoFile() {
+  return new File(['huge'], 'logo.png', { type: 'image/png' })
+}
+
 describe('RoasterLogo', () => {
   it('offers to add a logo when there is none', async () => {
     const wrapper = await mountLogo()
@@ -42,7 +72,8 @@ describe('RoasterLogo', () => {
   })
 
   it('offers to replace or remove a logo', async () => {
-    const wrapper = await mountLogo('/api/photos/roasters/a.webp')
+    await scenario.roasterLogo(squareMile)
+    const wrapper = await mountLogo()
 
     expect(wrapper.get(tid('roaster-logo-pick')).text()).toBe('Replace logo')
     expect(wrapper.find(tid('roaster-logo-remove')).exists()).toBe(true)
@@ -51,11 +82,13 @@ describe('RoasterLogo', () => {
   it('uploads the logo that is picked', async () => {
     const wrapper = await mountLogo()
 
-    await choose(wrapper, [
-      new File(['huge'], 'logo.png', { type: 'image/png' }),
-    ])
+    await choose(wrapper, [logoFile()])
 
-    await vi.waitFor(() => expect(api.roasterCalls).toEqual(['logo uploaded']))
+    await vi.waitFor(async () =>
+      expect(await storedLogo()).toMatch(
+        /^\/api\/photos\/roasters\/[\w-]+\.webp$/,
+      ),
+    )
   })
 
   it('does nothing when no logo is picked', async () => {
@@ -63,29 +96,32 @@ describe('RoasterLogo', () => {
 
     await choose(wrapper, [])
 
-    expect(api.roasterCalls).toEqual([])
+    expect(compressPhoto).not.toHaveBeenCalled()
+    expect(await storedLogo()).toBeNull()
   })
 
   it('explains why a logo could not be uploaded', async () => {
-    api.roasterFails = true
+    compressPhoto.mockResolvedValueOnce(
+      new Blob([new Uint8Array(photoMaxBytes + 1)], { type: 'image/webp' }),
+    )
     const wrapper = await mountLogo()
 
-    await choose(wrapper, [
-      new File(['huge'], 'logo.png', { type: 'image/png' }),
-    ])
+    await choose(wrapper, [logoFile()])
 
     await vi.waitFor(() =>
       expect(wrapper.get(tid('roaster-logo-error')).text()).toBe(
         'That photo is too large',
       ),
     )
+    expect(await storedLogo()).toBeNull()
   })
 
   it('removes the logo', async () => {
-    const wrapper = await mountLogo('/api/photos/roasters/a.webp')
+    await scenario.roasterLogo(squareMile)
+    const wrapper = await mountLogo()
 
     await wrapper.get(tid('roaster-logo-remove')).trigger('click')
 
-    await vi.waitFor(() => expect(api.roasterCalls).toEqual(['logo removed']))
+    await vi.waitFor(async () => expect(await storedLogo()).toBeNull())
   })
 })

@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import CoffeeFormSteps from '~/components/form/CoffeeFormSteps.vue'
-import { fakeApi } from '../../fake-api'
 import { byTestId, click, mountInForm } from '../../fixtures'
-
-fakeApi()
 
 async function mountSteps(withFirstBag: boolean) {
   const step = ref(1)

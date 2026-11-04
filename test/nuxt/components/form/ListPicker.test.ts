@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ListPicker from '~/components/form/ListPicker.vue'
-import { nameKey } from '#imports'
-import { fakeList } from '../../fake-api'
+import type { Member } from '#test/support/types'
 import {
   byTestId,
   inputValue,
@@ -10,137 +9,131 @@ import {
   pickOption,
   type,
 } from '../../fixtures'
+import { scenario, signIn } from '../../server'
 
-const known = { processes: [] as { id: string; name: string }[] }
-const searches: string[] = []
-const queries: Record<string, string>[] = []
+let sarah: Member
 
-registerEndpoint('/api/processes', event => {
-  const params = new URL(event.path, 'http://test').searchParams
-  searches.push(params.get('search')!)
-  queries.push(Object.fromEntries(params))
-
-  return fakeList(() => known.processes)(event)
-})
-
-beforeEach(() => {
-  searches.length = 0
-  queries.length = 0
-  known.processes = [
-    { id: 'p1', name: 'Co fermentation' },
-    { id: 'p2', name: 'Washed' },
-  ]
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  await scenario.roaster(sarah, 'Square Mile')
+  await scenario.roaster(sarah, 'La Cabra')
+  await signIn(sarah)
 })
 
 function mountPicker(props: Record<string, unknown> = {}) {
   return mountSuspended(ListPicker, {
     props: {
-      id: 'coffee-process',
-      endpoint: '/api/processes',
-      placeholder: 'Search or add a process',
-      hint: 'Type the process',
+      id: 'coffee-roaster',
+      endpoint: '/api/roasters',
+      placeholder: 'Search or add a roaster',
+      hint: 'Type the roaster',
       ...props,
     },
-    attrs: { 'data-testid': 'process' },
+    attrs: { 'data-testid': 'roaster' },
     attachTo: document.body,
   })
 }
 
 describe('ListPicker', () => {
   it('starts from the entry already picked', async () => {
-    await mountPicker({ modelValue: 'Washed' })
+    await mountPicker({ modelValue: 'Square Mile' })
 
-    expect(inputValue('process')).toBe('Washed')
-    expect(byTestId('process')!.getAttribute('placeholder')).toBe(
-      'Search or add a process',
+    expect(inputValue('roaster')).toBe('Square Mile')
+    expect(byTestId('roaster')!.getAttribute('placeholder')).toBe(
+      'Search or add a roaster',
     )
   })
 
   it('asks the list for entries similar to what was typed', async () => {
     await mountPicker()
 
-    await type('process', 'co ferm')
+    await type('roaster', 'squar')
 
-    await vi.waitFor(() => {
-      expect(searches).toContain('co ferm')
-      expect(pickerOptions()).toEqual(['Co fermentation', 'Add “co ferm”'])
-    })
+    await vi.waitFor(() =>
+      expect(pickerOptions()).toEqual(['Square Mile', 'Add “squar”']),
+    )
   })
 
   it('narrows the list with extra params', async () => {
-    await mountPicker({ params: { brand: 'Fellow' } })
+    await scenario.grinder(sarah.shelf, { brand: 'Fellow', model: 'Ode' })
+    await scenario.grinder(sarah.shelf, { brand: 'Baratza', model: 'Odessa' })
+    await mountPicker({
+      endpoint: '/api/grinders',
+      params: { brand: 'Fellow' },
+    })
 
-    await type('process', 'wa')
+    await type('roaster', 'od')
 
-    await vi.waitFor(() =>
-      expect(queries).toContainEqual({ brand: 'Fellow', search: 'wa' }),
-    )
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Ode', 'Add “od”']))
   })
 
   it('waits for typing to pause before asking the list', async () => {
     await mountPicker()
 
-    await type('process', 'w')
-    await type('process', 'wa')
-    await type('process', 'was')
+    await type('roaster', 'square mile')
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Square Mile']))
+    await type('roaster', 'l')
+    await type('roaster', 'la')
+    await type('roaster', 'la cabra')
 
-    await vi.waitFor(() => expect(searches).toContain('was'))
-    expect(searches).not.toContain('w')
-    expect(searches).not.toContain('wa')
+    expect(pickerOptions()).toEqual(['Square Mile', 'Add “la cabra”'])
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['La Cabra']))
   })
 
   it('reuses an earlier search instead of asking again', async () => {
     await mountPicker()
 
-    await type('process', 'washed')
-    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Washed']))
-    await type('process', 'co')
-    await vi.waitFor(() => expect(searches).toContain('co'))
-    await type('process', 'Washed')
-    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Washed']))
+    await type('roaster', 'square')
+    await vi.waitFor(() =>
+      expect(pickerOptions()).toEqual(['Square Mile', 'Add “square”']),
+    )
+    await scenario.roaster(sarah, 'Square One')
+    await type('roaster', 'la cabra')
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['La Cabra']))
+    await type('roaster', 'Square')
+    await new Promise(resolve => setTimeout(resolve, 300))
 
-    expect(searches.filter(search => nameKey(search) === 'washed')).toEqual([
-      'washed',
-    ])
+    expect(pickerOptions()).toEqual(['Square Mile', 'Add “Square”'])
+    await type('roaster', 'squa')
+    await vi.waitFor(() => expect(pickerOptions()).toContain('Square One'))
   })
 
   it('offers to add an entry only when none has that name', async () => {
     await mountPicker()
 
-    await type('process', 'WASHED')
-    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Washed']))
+    await type('roaster', 'SQUARE MILE')
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Square Mile']))
 
-    await type('process', 'Koji')
+    await type('roaster', 'Koji')
     await vi.waitFor(() => expect(pickerOptions()).toEqual(['Add “Koji”']))
   })
 
   it('gives the entry that was picked', async () => {
     const picker = await mountPicker()
 
-    await type('process', 'co ferm')
-    await pickOption('Co fermentation')
+    await type('roaster', 'la cab')
+    await pickOption('La Cabra')
 
-    expect(picker.emitted('update:modelValue')).toEqual([['Co fermentation']])
+    expect(picker.emitted('update:modelValue')).toEqual([['La Cabra']])
   })
 
   it('gives a new entry by the name typed', async () => {
     const picker = await mountPicker()
 
-    await type('process', '  Koji ')
+    await type('roaster', '  Koji ')
     await pickOption('Add “Koji”')
 
     expect(picker.emitted('update:modelValue')).toEqual([['Koji']])
   })
 
   it('shows its hint while the list is empty', async () => {
-    known.processes = []
-    await mountPicker()
+    await mountPicker({ endpoint: '/api/producers' })
 
-    await type('process', '')
+    await type('roaster', '')
 
     await vi.waitFor(() =>
       expect(byTestId('list-hint')!.textContent?.trim()).toBe(
-        'Type the process',
+        'Type the roaster',
       ),
     )
   })
@@ -148,6 +141,6 @@ describe('ListPicker', () => {
   it('is marked invalid when its field has an error', async () => {
     await mountPicker({ invalid: true })
 
-    expect(byTestId('process')!.getAttribute('aria-invalid')).toBe('true')
+    expect(byTestId('roaster')!.getAttribute('aria-invalid')).toBe('true')
   })
 })

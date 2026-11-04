@@ -2,10 +2,9 @@ import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
 import type { ListEntry, OriginListEntry } from '#shared/types/catalog'
-import { catalogPageSize, nameKey } from '#imports'
+import { nameKey } from '#imports'
 import { flavorNoteEntries, otherAdminEntries } from '#test/fixtures/admin'
 import { ayele } from '#test/fixtures/coffees'
-import { brewMethods } from '#test/fixtures/brew-methods'
 import { opus } from '#test/fixtures/grinders'
 import {
   coffeeShelves,
@@ -35,49 +34,6 @@ export function fakeRegions(regions: () => OriginListEntry[]) {
   }
 }
 
-function fakeCatalog(event: H3Event) {
-  const query = getQuery(event) as Record<string, string>
-  api.catalogQueries.push(query)
-
-  const key = nameKey(query.search ?? '')
-  const matching = api.catalog.filter(
-    coffee =>
-      (!key ||
-        nameKey(coffee.name).includes(key) ||
-        coffee.flavorNotes.some(note => nameKey(note.name).includes(key))) &&
-      (query.mine !== 'true' || coffee.onShelf) &&
-      (!query.roasterId || coffee.roasterId === query.roasterId) &&
-      (!query.flavorNoteId ||
-        coffee.flavorNotes.some(note => note.id === query.flavorNoteId)) &&
-      (!query.roastedFor || coffee.roastedFor === query.roastedFor),
-  )
-  const sorted =
-    query.sort === 'communityRating'
-      ? matching.toSorted(
-          (a, b) =>
-            (b.communityRating.average ?? -1) -
-            (a.communityRating.average ?? -1),
-        )
-      : matching
-  const start = Number(query.page ?? 0) * catalogPageSize
-
-  return {
-    total: sorted.length,
-    coffees: sorted.slice(start, start + catalogPageSize),
-  }
-}
-
-function fakeRoasters(event: H3Event) {
-  const query = getQuery(event) as Record<string, string>
-  api.roasterQueries.push(query)
-
-  const matching = api.roasters.filter(
-    roaster => query.boughtFrom !== 'true' || roaster.shelfCoffees > 0,
-  )
-
-  return { total: matching.length, roasters: matching }
-}
-
 export const api = {
   ownedShelves: ownedShelves(),
   profileStats: profileStats(),
@@ -94,73 +50,15 @@ export const api = {
   inviteFails: '',
   accountDeletes: [] as unknown[],
   accountDeleteFails: '',
-  stock: [] as unknown[],
-  catalog: [] as CatalogCoffee[],
-  catalogQueries: [] as Record<string, string>[],
-  roasters: [] as ListedRoaster[],
-  roasterQueries: [] as Record<string, string>[],
-  added: [] as unknown[],
-  edits: [] as unknown[],
   shelves: [] as string[],
-  photos: [] as string[],
-  photoFails: false,
-  purchaseCalls: [] as unknown[],
-  purchaseFails: false,
-  verdicts: [] as unknown[],
-  verdictFails: false,
   grinders: [opus()] as OwnedGrinder[],
   grinderCalls: [] as unknown[],
   grinderFails: false,
-  brewMethods: brewMethods() as ListedBrewMethod[],
-  grindSettingCalls: [] as unknown[],
-  grindSettingFails: false,
-  roasterCalls: [] as unknown[],
   roasterFails: false,
-  coffee: ayele() as Record<string, unknown>,
-  coffeeShelves: coffeeShelves() as CoffeeShelf[],
-  coffeeDeletes: [] as string[],
-  coffeeDeleteFails: false,
   adminEntries: flavorNoteEntries(),
   adminQueries: [] as Record<string, string>[],
   adminCalls: [] as unknown[],
   adminFails: '',
-}
-
-function roaster() {
-  return api.coffee.roasterDetails as ShelfRoaster
-}
-
-function setRoaster(changed: ShelfRoaster) {
-  api.coffee = { ...api.coffee, roaster: changed.name, roasterDetails: changed }
-}
-
-function purchases() {
-  return api.coffee.purchases as ShelfPurchase[]
-}
-
-function setPurchases(changed: ShelfPurchase[]) {
-  api.coffee = { ...api.coffee, purchases: changed }
-}
-
-function failPurchase() {
-  if (api.purchaseFails) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'The shelf is out of reach',
-    })
-  }
-}
-
-function storedPurchase(id: string, body: Record<string, unknown>) {
-  return {
-    id,
-    purchasedOn: String(body.purchasedOn),
-    roastedOn: (body.roastedOn as string | null) ?? null,
-    sizeGrams: (body.sizeGrams as number | null) ?? null,
-    priceCents:
-      body.price == null ? null : Math.round(Number(body.price) * 100),
-    finishedAt: null as string | null,
-  }
 }
 
 export function resetApi() {
@@ -179,32 +77,11 @@ export function resetApi() {
   api.inviteFails = ''
   api.accountDeletes = []
   api.accountDeleteFails = ''
-  api.stock = []
-  api.catalog = []
-  api.catalogQueries = []
-  api.roasters = []
-  api.roasterQueries = []
-  api.added = []
-  api.edits = []
   api.shelves = []
-  api.photos = []
-  api.photoFails = false
-  api.purchaseCalls = []
-  api.purchaseFails = false
-  api.verdicts = []
-  api.verdictFails = false
   api.grinders = [opus()]
   api.grinderCalls = []
   api.grinderFails = false
-  api.brewMethods = brewMethods()
-  api.grindSettingCalls = []
-  api.grindSettingFails = false
-  api.roasterCalls = []
   api.roasterFails = false
-  api.coffee = ayele()
-  api.coffeeShelves = coffeeShelves()
-  api.coffeeDeletes = []
-  api.coffeeDeleteFails = false
   api.adminEntries = flavorNoteEntries()
   api.adminQueries = []
   api.adminCalls = []
@@ -562,23 +439,6 @@ export function fakeApi() {
     },
   })
 
-  registerEndpoint('/api/coffees/c1', {
-    method: 'DELETE',
-    handler: () => {
-      api.coffeeDeletes.push('c1')
-
-      if (api.coffeeDeleteFails) {
-        throw createError({
-          statusCode: 409,
-          statusMessage:
-            'Someone else has bought this coffee too, so only an admin can delete it',
-        })
-      }
-
-      return null
-    },
-  })
-
   registerEndpoint('/api/shelves', {
     method: 'POST',
     handler: async event => {
@@ -596,14 +456,18 @@ export function fakeApi() {
     },
   })
 
-  registerEndpoint('/api/shelves/home/stock', () => api.stock)
+  registerEndpoint('/api/coffees/c1', {
+    method: 'GET',
+    handler: () => {
+      const { purchases, ...shared } = ayele()
 
-  registerEndpoint('/api/shelves/home/catalog', fakeCatalog)
-  registerEndpoint('/api/shelves/home/roasters', fakeRoasters)
+      return { ...shared, shelves: coffeeShelves() }
+    },
+  })
 
   registerEndpoint('/api/roasters/r2', {
     method: 'GET',
-    handler: () => roaster(),
+    handler: () => ayele().roasterDetails,
   })
 
   registerEndpoint(
@@ -664,251 +528,6 @@ export function fakeApi() {
       { id: 'n2', name: 'Jasmine' },
     ]),
   )
-
-  registerEndpoint('/api/shelves/home/coffees', {
-    method: 'POST',
-    handler: async event => {
-      const body = await readBody(event)
-
-      if (body.name === 'Crash') throw createError({ statusCode: 500 })
-
-      if (body.name === 'Dates') {
-        throw createError({
-          statusCode: 400,
-          data: {
-            errors: {
-              purchasedOn: 'Enter the date you bought it',
-              roastedOn: 'Enter the roast date as a date',
-            },
-          },
-        })
-      }
-
-      if (body.name === 'Broken') {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Give the coffee a name',
-          data: { errors: { name: 'That name is taken by a ghost' } },
-        })
-      }
-
-      api.added.push(body)
-
-      return { coffee: { id: 'c9', ...body }, purchase: { id: 'p9' } }
-    },
-  })
-
-  registerEndpoint('/api/coffees/c1', {
-    method: 'GET',
-    handler: () => {
-      const { purchases, ...shared } = api.coffee
-
-      return { ...shared, shelves: api.coffeeShelves }
-    },
-  })
-
-  registerEndpoint('/api/shelves/home/coffees/c1', {
-    method: 'GET',
-    handler: () => api.coffee,
-  })
-
-  registerEndpoint('/api/shelves/home/coffees/c1', {
-    method: 'PATCH',
-    handler: async event => {
-      const body = await readBody(event)
-
-      if (body.name === 'Crash') throw createError({ statusCode: 500 })
-
-      if (body.name === 'Red Brick') {
-        throw createError({
-          statusCode: 409,
-          statusMessage: 'Square Mile already has a coffee called Red Brick',
-          data: {
-            errors: {
-              name: 'Square Mile already has a coffee called Red Brick',
-            },
-          },
-        })
-      }
-
-      api.edits.push(body)
-      api.coffee = { ...api.coffee, ...body }
-
-      return { id: 'c1', ...body }
-    },
-  })
-
-  registerEndpoint('/api/shelves/home/coffees/c1/photo', {
-    method: 'PUT',
-    handler: () => {
-      if (api.photoFails) {
-        throw createError({
-          statusCode: 413,
-          statusMessage: 'That photo is too large',
-        })
-      }
-
-      const photoUrl = '/api/photos/coffees/new.webp'
-      api.photos.push('uploaded')
-      api.coffee = { ...api.coffee, photoUrl }
-
-      return { photoUrl }
-    },
-  })
-
-  registerEndpoint('/api/shelves/home/coffees/c1/photo', {
-    method: 'DELETE',
-    handler: () => {
-      api.photos.push('removed')
-      api.coffee = { ...api.coffee, photoUrl: null }
-
-      return { photoUrl: null }
-    },
-  })
-
-  registerEndpoint('/api/shelves/home/coffees/c1/purchases', {
-    method: 'POST',
-    handler: async event => {
-      const body = await readBody(event)
-      api.purchaseCalls.push({ buyAgain: body })
-
-      if (body.price === 999) {
-        throw createError({
-          statusCode: 400,
-          data: { errors: { price: 'That price looks like a typo' } },
-        })
-      }
-
-      failPurchase()
-
-      const added = storedPurchase('p3', body)
-      setPurchases([added, ...purchases()])
-
-      return added
-    },
-  })
-
-  registerEndpoint('/api/coffees/c1/verdict', {
-    method: 'PATCH',
-    handler: async event => {
-      const body = await readBody(event)
-      api.verdicts.push(body)
-
-      if (api.verdictFails) {
-        throw createError({
-          statusCode: 500,
-          statusMessage: 'The verdict could not be saved',
-        })
-      }
-
-      api.coffee = { ...api.coffee, ...body }
-
-      return {
-        rating: api.coffee.rating,
-        wouldBuyAgain: api.coffee.wouldBuyAgain,
-      }
-    },
-  })
-
-  registerEndpoint('/api/shelves/home/coffees/c1/grind-settings', {
-    method: 'PUT',
-    handler: async event => {
-      const body = await readBody(event)
-      api.grindSettingCalls.push(body)
-
-      if (api.grindSettingFails) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: 'This shelf does not own that grinder',
-        })
-      }
-
-      const grinder = api.grinders.find(owned => owned.id === body.grinderId)!
-      const method = api.brewMethods.find(
-        listed => listed.id === body.brewMethodId,
-      )!
-      const others = (api.coffee.grindSettings as OwnGrindSetting[]).filter(
-        saved =>
-          saved.grinderId !== body.grinderId ||
-          saved.brewMethodId !== body.brewMethodId,
-      )
-      const saved = body.setting
-        ? [
-            {
-              grinderId: grinder.id,
-              brand: grinder.brand,
-              model: grinder.model,
-              brewMethodId: method.id,
-              brewMethod: method.name,
-              setting: body.setting,
-            },
-          ]
-        : []
-      api.coffee = { ...api.coffee, grindSettings: [...others, ...saved] }
-
-      return body
-    },
-  })
-
-  registerEndpoint('/api/roasters/r2', {
-    method: 'PATCH',
-    handler: async event => {
-      const body = await readBody(event)
-      api.roasterCalls.push({ edit: body })
-
-      if (body.name === 'La Cabra') {
-        const message = 'There is already a roaster called La Cabra'
-
-        throw createError({
-          statusCode: 409,
-          statusMessage: message,
-          data: { errors: { name: message } },
-        })
-      }
-
-      if (api.roasterFails) {
-        throw createError({
-          statusCode: 403,
-          statusMessage:
-            'Only the person who added this roaster or an admin can edit it',
-        })
-      }
-
-      const edited = { ...roaster(), ...body }
-      setRoaster(edited)
-
-      return edited
-    },
-  })
-
-  registerEndpoint('/api/roasters/r2/logo', {
-    method: 'PUT',
-    handler: () => {
-      api.roasterCalls.push('logo uploaded')
-
-      if (api.roasterFails) {
-        throw createError({
-          statusCode: 413,
-          statusMessage: 'That photo is too large',
-        })
-      }
-
-      const logoUrl = '/api/photos/roasters/new.webp'
-      setRoaster({ ...roaster(), logoUrl })
-
-      return { logoUrl }
-    },
-  })
-
-  registerEndpoint('/api/roasters/r2/logo', {
-    method: 'DELETE',
-    handler: () => {
-      api.roasterCalls.push('logo removed')
-      setRoaster({ ...roaster(), logoUrl: null })
-
-      return { logoUrl: null }
-    },
-  })
 
   registerEndpoint('/api/shelves/home/grinders', {
     method: 'GET',
@@ -973,87 +592,4 @@ export function fakeApi() {
       () => models[nameKey(String(getQuery(event).brand ?? ''))] ?? [],
     )(event)
   })
-
-  registerEndpoint('/api/brew-methods', {
-    method: 'GET',
-    handler: () => api.brewMethods,
-  })
-
-  registerEndpoint('/api/shelves/home/coffees/c1/finish', {
-    method: 'POST',
-    handler: () => {
-      api.purchaseCalls.push('finish coffee')
-      failPurchase()
-
-      const oldest = purchases().findLast(purchase => !purchase.finishedAt)
-
-      if (!oldest) {
-        throw createError({
-          statusCode: 409,
-          statusMessage: 'Nothing of this coffee is in stock',
-        })
-      }
-
-      const finished = { ...oldest, finishedAt: '2026-11-02T08:00:00.000Z' }
-      setPurchases(
-        purchases().map(purchase =>
-          purchase.id === oldest.id ? finished : purchase,
-        ),
-      )
-
-      return finished
-    },
-  })
-
-  for (const id of ['p1', 'p2']) {
-    const path = `/api/shelves/home/coffees/c1/purchases/${id}`
-
-    registerEndpoint(path, {
-      method: 'PATCH',
-      handler: async event => {
-        const body = await readBody(event)
-        api.purchaseCalls.push({ edit: id, body })
-        failPurchase()
-
-        const edited = storedPurchase(id, body)
-        setPurchases(
-          purchases().map(purchase =>
-            purchase.id === id
-              ? { ...edited, finishedAt: purchase.finishedAt }
-              : purchase,
-          ),
-        )
-
-        return edited
-      },
-    })
-
-    registerEndpoint(`${path}/finish`, {
-      method: 'POST',
-      handler: () => {
-        api.purchaseCalls.push({ finish: id })
-        failPurchase()
-        setPurchases(
-          purchases().map(purchase =>
-            purchase.id === id
-              ? { ...purchase, finishedAt: '2026-11-02T08:00:00.000Z' }
-              : purchase,
-          ),
-        )
-
-        return { id }
-      },
-    })
-
-    registerEndpoint(path, {
-      method: 'DELETE',
-      handler: () => {
-        api.purchaseCalls.push({ delete: id })
-        failPurchase()
-        setPurchases(purchases().filter(purchase => purchase.id !== id))
-
-        return { id }
-      },
-    })
-  }
 }

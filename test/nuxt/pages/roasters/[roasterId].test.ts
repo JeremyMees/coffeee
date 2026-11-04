@@ -1,24 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { clearError, useCurrentUser, useError } from '#imports'
-import { api, fakeApi, resetApi } from '../../fake-api'
-import { catalogCoffee, catalogCoffees } from '#test/fixtures/coffees'
+import { clearError, coffeePath, roasterPath, useError } from '#imports'
+import type { Member } from '#test/support/types'
 import { click, forgetLastShelf, tid } from '../../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { scenario, signIn } from '../../server'
 
-fakeApi()
+let sarah: Member
+let squareMile: { id: string; name: string }
 
-beforeEach(() => {
+beforeEach(async () => {
   forgetLastShelf()
   clearError()
-  resetApi()
-  useCurrentUser().value = testUser()
+  sarah = await scenario.member('Sarah')
+  const id = await scenario.roaster(sarah, 'Square Mile')
+  await scenario.roasterDetails(sarah, id, {
+    name: 'Square Mile',
+    website: 'https://www.squaremilecoffee.com',
+    countryCode: 'GB',
+    city: 'London',
+  })
+  squareMile = { id, name: 'Square Mile' }
+  await signIn(sarah)
 })
 
 async function roaster() {
   const page = await mountSuspended(App, {
-    route: '/roasters/r2',
+    route: roasterPath(squareMile),
     attachTo: document.body,
   })
 
@@ -34,10 +42,10 @@ describe('the page of a roaster', () => {
     const { page } = await roaster()
 
     expect(page.get(tid('roaster-title')).attributes('style')).toContain(
-      'view-transition-name: roaster-name-r2',
+      `view-transition-name: roaster-name-${squareMile.id}`,
     )
     expect(page.get(tid('roaster-logo')).attributes('style')).toContain(
-      'view-transition-name: roaster-logo-r2',
+      `view-transition-name: roaster-logo-${squareMile.id}`,
     )
   })
 
@@ -54,32 +62,31 @@ describe('the page of a roaster', () => {
   })
 
   it('lists every coffee from it, each opening its own page', async () => {
-    api.catalog = catalogCoffees()
+    const ayele = await scenario.coffee(sarah.shelf)
+    await scenario.coffee(sarah.shelf, {
+      name: 'Red Brick',
+      roaster: 'La Cabra',
+    })
 
     const { page, names } = await roaster()
 
     expect(names()).toEqual(['Ayele Fulasa'])
-    expect(api.catalogQueries.at(-1)).toMatchObject({ roasterId: 'r2' })
     expect(page.get(tid('catalog-result')).attributes('href')).toBe(
-      '/coffees/ayele-fulasa-c1',
+      coffeePath(ayele),
     )
     expect(page.findAll(tid('catalog-result-mine'))).toHaveLength(1)
   })
 
   it('keeps only the shelf’s own coffees with Mine', async () => {
-    api.catalog = [
-      catalogCoffee(),
-      catalogCoffee({ id: 'c5', name: 'Red Brick', onShelf: false }),
-    ]
+    const tom = await scenario.member('Tom')
+    await scenario.coffee(sarah.shelf)
+    await scenario.coffee(tom.shelf, { name: 'Red Brick' }, tom)
     const { names } = await roaster()
+    expect(names()).toEqual(['Red Brick', 'Ayele Fulasa'])
 
     await click('roaster-filter-mine')
 
     await vi.waitFor(() => expect(names()).toEqual(['Ayele Fulasa']))
-    expect(api.catalogQueries.at(-1)).toMatchObject({
-      roasterId: 'r2',
-      mine: 'true',
-    })
   })
 
   it('says when nobody added a coffee from it yet', async () => {

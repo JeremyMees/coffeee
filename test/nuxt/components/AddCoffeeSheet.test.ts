@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import AddCoffeeSheet from '~/components/AddCoffeeSheet.vue'
-import { useAddCoffee, useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { shelfPath, useAddCoffee, useCurrentUser } from '#imports'
+import { coffee, purchase, roaster } from '#server/db/schemas'
+import { descriptionOf } from '#server/utils/descriptions'
+import type { Member } from '#test/support/types'
 import {
   byTestId,
   click,
@@ -20,18 +23,70 @@ import {
   submit,
   type,
 } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
+beforeEach(async () => {
   forgetLastShelf()
-  resetApi()
-  useCurrentUser().value = testUser()
+  sarah = await scenario.member('Sarah')
+  const tom = await scenario.member('Tom')
+  await scenario.coffee(tom.shelf, {
+    name: 'Hambela Lot',
+    regions: [{ origin: 'ET', name: 'Guji' }],
+    washingStations: [{ origin: 'ET', name: 'Hambela' }],
+  })
+  await signIn(sarah)
   useAddCoffee().value = false
 })
 
-async function openSheet(route = '/shelves/sarahs-shelf-home') {
+function coffeesPath() {
+  return `/api/shelves/${sarah.shelf.id}/coffees`
+}
+
+async function bagsOnShelf() {
+  const db = await database()
+
+  return db
+    .select({
+      coffee: coffee.name,
+      roaster: roaster.name,
+      purchasedOn: purchase.purchasedOn,
+      roastedOn: purchase.roastedOn,
+      sizeGrams: purchase.sizeGrams,
+      priceCents: purchase.priceCents,
+    })
+    .from(purchase)
+    .innerJoin(coffee, eq(coffee.id, purchase.coffeeId))
+    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+    .where(eq(purchase.shelfId, sarah.shelf.id))
+}
+
+async function addedCoffee(name: string) {
+  const db = await database()
+  const [found] = await db
+    .select({
+      id: coffee.id,
+      name: coffee.name,
+      roaster: roaster.name,
+      roastLevel: coffee.roastLevel,
+      roastedFor: coffee.roastedFor,
+      link: coffee.link,
+      altitudeFrom: coffee.altitudeFrom,
+      altitudeTo: coffee.altitudeTo,
+    })
+    .from(coffee)
+    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+    .where(eq(coffee.name, name))
+
+  return { ...found!, ...(await descriptionOf(db, found!.id)) }
+}
+
+function names(entries: { name: string }[]) {
+  return entries.map(entry => entry.name)
+}
+
+async function openSheet(route = shelfPath(sarah.shelf)) {
   const sheet = await mountSuspended(AddCoffeeSheet, {
     route,
     attachTo: document.body,
@@ -108,7 +163,7 @@ async function addedAndGone(stockPath: string) {
 describe('AddCoffeeSheet', () => {
   it('stays closed until asked for', async () => {
     await mountSuspended(AddCoffeeSheet, {
-      route: '/shelves/sarahs-shelf-home',
+      route: shelfPath(sarah.shelf),
     })
 
     expect(byTestId('add-coffee-sheet')).toBeNull()
@@ -161,7 +216,7 @@ describe('AddCoffeeSheet', () => {
     expect(sheetText()).toContain('Pick where it was grown')
     expect(sheetText()).toContain('Pick a roast level')
     expect(failingSteps()).toEqual([2, 3])
-    expect(api.added).toEqual([])
+    expect(await bagsOnShelf()).toEqual([])
   })
 
   it('explains every missing detail, starting from the first step', async () => {
@@ -210,7 +265,7 @@ describe('AddCoffeeSheet', () => {
   })
 
   it('adds the coffee with its first bag and goes to the stock', async () => {
-    await openSheet('/shelves/sarahs-shelf-home/library')
+    await openSheet(`${shelfPath(sarah.shelf)}/library`)
 
     await fillRequired()
     await pickScoped('coffee-regions', 'guj', 'Guji')
@@ -223,31 +278,36 @@ describe('AddCoffeeSheet', () => {
     await type('coffee-price', '16.5')
     await addCoffee()
 
-    await vi.waitFor(() => expect(api.added).toHaveLength(1))
-    expect(api.added).toEqual([
+    await addedAndGone(shelfPath(sarah.shelf))
+    expect(await bagsOnShelf()).toEqual([
       {
-        name: 'Ayele Fulasa',
+        coffee: 'Ayele Fulasa',
         roaster: 'Square Mile',
-        roastLevel: 'light',
-        roastedFor: 'filter',
-        origins: ['ET'],
-        regions: [{ origin: 'ET', name: 'Guji' }],
-        farms: [],
-        washingStations: [{ origin: 'ET', name: 'Hambela' }],
-        producers: ['Tesfaye'],
-        processes: ['Washed'],
-        varietals: [],
-        flavorNotes: [],
-        link: null,
-        altitudeFrom: 1900,
-        altitudeTo: 2200,
         purchasedOn: localDate(),
         roastedOn: daysAgo(10),
         sizeGrams: 250,
-        price: 16.5,
+        priceCents: 1650,
       },
     ])
-    await addedAndGone('/shelves/sarahs-shelf-home')
+    const added = await addedCoffee('Ayele Fulasa')
+    expect(added).toMatchObject({
+      roaster: 'Square Mile',
+      roastLevel: 'light',
+      roastedFor: 'filter',
+      link: null,
+      altitudeFrom: 1900,
+      altitudeTo: 2200,
+      origins: [{ code: 'ET', name: 'Ethiopia' }],
+      regions: [expect.objectContaining({ origin: 'ET', name: 'Guji' })],
+      farms: [],
+      washingStations: [
+        expect.objectContaining({ origin: 'ET', name: 'Hambela' }),
+      ],
+    })
+    expect(names(added.producers)).toEqual(['Tesfaye'])
+    expect(names(added.processes)).toEqual(['Washed'])
+    expect(added.varietals).toEqual([])
+    expect(added.flavorNotes).toEqual([])
   })
 
   it('leaves the optional details empty and can add a new roaster', async () => {
@@ -261,30 +321,60 @@ describe('AddCoffeeSheet', () => {
     await click('coffee-roasted-for', 'option-omni')
     await addCoffee()
 
-    await vi.waitFor(() => expect(api.added).toHaveLength(1))
-    expect(api.added).toEqual([
-      expect.objectContaining({
+    await addedAndGone(shelfPath(sarah.shelf))
+    expect(await bagsOnShelf()).toEqual([
+      {
+        coffee: 'Halo',
         roaster: 'April',
-        origins: ['KE'],
-        regions: [],
-        processes: ['Thermal shock'],
-        varietals: [],
-        flavorNotes: [],
-        link: null,
-        altitudeFrom: null,
-        altitudeTo: null,
+        purchasedOn: localDate(),
         roastedOn: null,
         sizeGrams: null,
-        price: null,
-      }),
+        priceCents: null,
+      },
     ])
-    await addedAndGone('/shelves/sarahs-shelf-home')
+    const added = await addedCoffee('Halo')
+    expect(added).toMatchObject({
+      roaster: 'April',
+      roastedFor: 'omni',
+      link: null,
+      altitudeFrom: null,
+      altitudeTo: null,
+      origins: [{ code: 'KE', name: 'Kenya' }],
+      regions: [],
+      varietals: [],
+      flavorNotes: [],
+    })
+    expect(names(added.processes)).toEqual(['Thermal shock'])
+  })
+
+  it('shows the reason the server refused it', async () => {
+    failRequest('POST', coffeesPath(), {
+      status: 409,
+      message: 'That coffee could not be added',
+    })
+    await openSheet()
+
+    await fillRequired()
+    await addCoffee()
+
+    await vi.waitFor(() =>
+      expect(byTestId('form-error')!.textContent?.trim()).toBe(
+        'That coffee could not be added',
+      ),
+    )
+    expect(useAddCoffee().value).toBe(true)
+    expect(await bagsOnShelf()).toEqual([])
   })
 
   it('shows what the server refused next to the field', async () => {
+    failRequest('POST', coffeesPath(), {
+      status: 400,
+      message: 'Give the coffee a name',
+      errors: { name: 'That name is taken by a ghost' },
+    })
     await openSheet()
 
-    await fillRequired('Broken')
+    await fillRequired()
     await addCoffee()
 
     await vi.waitFor(() =>
@@ -295,9 +385,17 @@ describe('AddCoffeeSheet', () => {
   })
 
   it('marks the dates the server refused', async () => {
+    failRequest('POST', coffeesPath(), {
+      status: 400,
+      message: '',
+      errors: {
+        purchasedOn: 'Enter the date you bought it',
+        roastedOn: 'Enter the roast date as a date',
+      },
+    })
     await openSheet()
 
-    await fillRequired('Dates')
+    await fillRequired()
     await addCoffee()
 
     await vi.waitFor(() =>
@@ -313,9 +411,10 @@ describe('AddCoffeeSheet', () => {
   })
 
   it('says something went wrong when the server gives no reason', async () => {
+    failRequest('POST', coffeesPath(), { status: 500, message: '' })
     await openSheet()
 
-    await fillRequired('Crash')
+    await fillRequired()
     await addCoffee()
 
     await vi.waitFor(() =>
@@ -326,15 +425,16 @@ describe('AddCoffeeSheet', () => {
     expect(useAddCoffee().value).toBe(true)
   })
 
-  it('sends nothing when there is no shelf to add to', async () => {
-    useCurrentUser().value = testUser({ shelves: [] })
+  it('adds nothing when there is no shelf to add to', async () => {
+    useCurrentUser().value = { ...useCurrentUser().value!, shelves: [] }
     await openSheet('/profile')
 
     await fillRequired()
     await addCoffee()
 
     await new Promise(resolve => setTimeout(resolve, 50))
-    expect(api.added).toEqual([])
+    expect(await bagsOnShelf()).toEqual([])
+    expect(useAddCoffee().value).toBe(true)
   })
 
   it('closes from its close button', async () => {

@@ -1,19 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../../fake-api'
+import { roasterPath } from '#imports'
+import type { Member } from '#test/support/types'
 import { click, forgetLastShelf, tid } from '../../fixtures'
-import { listedRoasters } from '#test/fixtures/roasters'
-import { testUser } from '#test/fixtures/users'
+import { scenario, signIn } from '../../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
+beforeEach(async () => {
   forgetLastShelf()
-  resetApi()
-  useCurrentUser().value = testUser()
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
 })
+
+async function laCabra() {
+  const id = await scenario.roaster(sarah, 'La Cabra')
+  await scenario.roasterDetails(sarah, id, {
+    name: 'La Cabra',
+    website: null,
+    countryCode: 'DK',
+    city: 'Aarhus',
+  })
+  await scenario.roasterLogo(id)
+
+  return { id, name: 'La Cabra' }
+}
+
+async function twoRoasters() {
+  const cabra = await laCabra()
+  await scenario.coffee(sarah.shelf, { roaster: 'Square Mile' })
+
+  return cabra
+}
 
 async function roasters() {
   const page = await mountSuspended(App, {
@@ -30,7 +49,7 @@ async function roasters() {
 
 describe('the roasters page', () => {
   it('lists every roaster of the catalog for the current shelf', async () => {
-    api.roasters = listedRoasters()
+    const cabra = await twoRoasters()
 
     const { page, names } = await roasters()
 
@@ -38,18 +57,17 @@ describe('the roasters page', () => {
     expect(names()).toEqual(['La Cabra', 'Square Mile'])
     expect(page.get(tid('roasters-total')).text()).toBe('2 roasters')
     expect(page.get(tid('roaster-result')).attributes('href')).toBe(
-      '/roasters/la-cabra-r1',
+      roasterPath(cabra),
     )
   })
 
   it('keeps only the roasters the shelf bought from', async () => {
-    api.roasters = listedRoasters()
+    await twoRoasters()
     const { page, names } = await roasters()
 
     await click('roasters-filter-bought-from')
 
     await vi.waitFor(() => expect(names()).toEqual(['Square Mile']))
-    expect(api.roasterQueries.at(-1)).toMatchObject({ boughtFrom: 'true' })
     expect(
       page.get(tid('roasters-filter-bought-from')).attributes('aria-pressed'),
     ).toBe('true')
@@ -64,7 +82,7 @@ describe('the roasters page', () => {
   })
 
   it('says when the shelf has not bought from any roaster', async () => {
-    api.roasters = [listedRoasters()[0]!]
+    await laCabra()
     const { page } = await roasters()
 
     await click('roasters-filter-bought-from')

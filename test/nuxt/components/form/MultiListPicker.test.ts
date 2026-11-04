@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import MultiListPicker from '~/components/form/MultiListPicker.vue'
-import { fakeList } from '../../fake-api'
 import {
   allByTestId,
   byTestId,
@@ -11,14 +10,15 @@ import {
   pickMulti,
   type,
 } from '../../fixtures'
+import { scenario, signIn } from '../../server'
 
-registerEndpoint(
-  '/api/producers',
-  fakeList(() => [
-    { id: 'n1', name: 'Nestor Lasso' },
-    { id: 'n2', name: 'Diego Bermudez' },
-  ]),
-)
+beforeEach(async () => {
+  const sarah = await scenario.member('Sarah')
+  await scenario.coffee(sarah.shelf, {
+    producers: ['Nestor Lasso', 'Diego Bermudez'],
+  })
+  await signIn(sarah)
+})
 
 function mountPicker(props: Record<string, unknown> = {}) {
   return mountSuspended(MultiListPicker, {

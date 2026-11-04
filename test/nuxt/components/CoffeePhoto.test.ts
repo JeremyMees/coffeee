@@ -1,29 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import CoffeePhoto from '~/components/CoffeePhoto.vue'
 import type { PhotoCoffee } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { coffee } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { tid } from '../fixtures'
-
-fakeApi()
+import { database, failRequest, scenario, signIn } from '../server'
 
 mockNuxtImport(
   'compressPhoto',
   () => async () => new Blob(['small'], { type: 'image/webp' }),
 )
 
-beforeEach(resetApi)
+let sarah: Member
+let ayele: PhotoCoffee
 
-const coffee: PhotoCoffee = {
-  id: 'c1',
-  name: 'Ayele Fulasa',
-  photoUrl: null,
-  canEdit: true,
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  const added = await scenario.coffee(sarah.shelf)
+  ayele = { id: added.id, name: added.name, photoUrl: null, canEdit: true }
+  await signIn(sarah)
+})
+
+async function withPhoto() {
+  return { ...ayele, photoUrl: await scenario.coffeePhoto(ayele.id) }
 }
 
-function mountPhoto(overrides: Partial<PhotoCoffee> = {}) {
+function mountPhoto(shown: PhotoCoffee = ayele) {
   return mountSuspended(CoffeePhoto, {
-    props: { shelfId: 'home', coffee: { ...coffee, ...overrides } },
+    props: { shelfId: sarah.shelf.id, coffee: shown },
   })
 }
 
@@ -39,6 +46,16 @@ async function choose(
   await input.trigger('change')
 }
 
+async function storedPhoto() {
+  const db = await database()
+  const [found] = await db
+    .select({ photoUrl: coffee.photoUrl })
+    .from(coffee)
+    .where(eq(coffee.id, ayele.id))
+
+  return found!.photoUrl
+}
+
 describe('CoffeePhoto', () => {
   it('names its photo for the morph from and back to the card', async () => {
     clearNuxtState('coffee-morph')
@@ -46,7 +63,7 @@ describe('CoffeePhoto', () => {
     const photo = await mountPhoto()
 
     expect(photo.get(tid('coffee-photo')).attributes('style')).toContain(
-      'view-transition-name: coffee-photo-c1',
+      `view-transition-name: coffee-photo-${ayele.id}`,
     )
   })
 
@@ -61,22 +78,18 @@ describe('CoffeePhoto', () => {
   })
 
   it('shows the photo of the bag', async () => {
-    const wrapper = await mountPhoto({
-      photoUrl: '/api/photos/coffees/a.webp',
-    })
+    const shown = await withPhoto()
+    const wrapper = await mountPhoto(shown)
     const image = wrapper.get(tid('coffee-photo-image'))
 
-    expect(image.attributes('src')).toBe('/api/photos/coffees/a.webp')
+    expect(image.attributes('src')).toBe(shown.photoUrl)
     expect(image.attributes('alt')).toBe('The bag of Ayele Fulasa')
     expect(wrapper.get(tid('coffee-photo-pick')).text()).toBe('Replace photo')
     expect(wrapper.find(tid('coffee-photo-remove')).exists()).toBe(true)
   })
 
   it('offers no changes to someone who can only read it', async () => {
-    const wrapper = await mountPhoto({
-      canEdit: false,
-      photoUrl: '/api/photos/coffees/a.webp',
-    })
+    const wrapper = await mountPhoto({ ...(await withPhoto()), canEdit: false })
 
     expect(wrapper.find(tid('coffee-photo-pick')).exists()).toBe(false)
     expect(wrapper.find(tid('coffee-photo-remove')).exists()).toBe(false)
@@ -89,7 +102,11 @@ describe('CoffeePhoto', () => {
       new File(['huge'], 'bag.jpg', { type: 'image/jpeg' }),
     ])
 
-    await vi.waitFor(() => expect(api.photos).toEqual(['uploaded']))
+    await vi.waitFor(async () =>
+      expect(await storedPhoto()).toMatch(
+        /^\/api\/photos\/coffees\/[\w-]+\.webp$/,
+      ),
+    )
     expect(
       (wrapper.get(tid('coffee-photo-input')).element as HTMLInputElement)
         .value,
@@ -100,12 +117,18 @@ describe('CoffeePhoto', () => {
     const wrapper = await mountPhoto()
 
     await choose(wrapper, [])
+    await flushPromises()
 
-    expect(api.photos).toEqual([])
+    expect(wrapper.find(tid('coffee-photo-status')).exists()).toBe(false)
+    expect(await storedPhoto()).toBeNull()
   })
 
   it('explains why a photo could not be uploaded', async () => {
-    api.photoFails = true
+    failRequest(
+      'PUT',
+      `/api/shelves/${sarah.shelf.id}/coffees/${ayele.id}/photo`,
+      { status: 413, message: 'That photo is too large' },
+    )
     const wrapper = await mountPhoto()
 
     await choose(wrapper, [
@@ -117,16 +140,15 @@ describe('CoffeePhoto', () => {
         'That photo is too large',
       ),
     )
+    expect(await storedPhoto()).toBeNull()
   })
 
   it('removes the photo', async () => {
-    const wrapper = await mountPhoto({
-      photoUrl: '/api/photos/coffees/a.webp',
-    })
+    const wrapper = await mountPhoto(await withPhoto())
 
     await wrapper.get(tid('coffee-photo-remove')).trigger('click')
 
-    await vi.waitFor(() => expect(api.photos).toEqual(['removed']))
+    await vi.waitFor(async () => expect(await storedPhoto()).toBeNull())
     expect(wrapper.find(tid('coffee-photo-error')).exists()).toBe(false)
   })
 })
