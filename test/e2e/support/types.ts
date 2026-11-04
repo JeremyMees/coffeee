@@ -11,4 +11,5 @@ export type Member = Pick<
 export interface People {
   signIn: (name: string, role?: Role) => Promise<Member>
   joinShelf: (member: Member, shelfId: string) => Promise<void>
+  inviteLink: (by: Member) => Promise<string>
 }

@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, randomUUID } from 'node:crypto'
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto'
 import { test as base } from '@playwright/test'
 import type { BrowserContext } from '@playwright/test'
 import pg from 'pg'
@@ -123,6 +123,21 @@ export const test = base.extend<{ member: Member; people: People }>({
           `insert into "shelfMember" ("shelfId", "userId") values ($1, $2)`,
           [shelfId, member.id],
         )
+      },
+      async inviteLink(by) {
+        const token = randomBytes(32).toString('base64url')
+
+        await database.query(
+          `insert into "invite" ("id", "tokenHash", "createdBy", "expiresAt")
+           values ($1, $2, $3, now() + interval '7 days')`,
+          [
+            randomUUID(),
+            createHash('sha256').update(token).digest('hex'),
+            by.id,
+          ],
+        )
+
+        return token
       },
     })
 
