@@ -42,7 +42,7 @@ describe('CatalogFilters', () => {
     ).toBe('true')
   })
 
-  it('has a chip for flavor note, origin, roaster, process, roast level and roasted for', async () => {
+  it('has a chip for flavor note, origin, roaster, process, varietal, roast level and roasted for', async () => {
     const { wrapper } = await filters()
 
     expect(
@@ -54,6 +54,7 @@ describe('CatalogFilters', () => {
       'Origin',
       'Roaster',
       'Process',
+      'Varietal',
       'Roast level',
       'Roasted for',
     ])

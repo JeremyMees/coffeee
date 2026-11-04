@@ -2,7 +2,13 @@ import { eq } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { FilterLabelSearch, FilterLabels } from '#shared/types/filters'
 import type { Database } from '#server/types/database'
-import { flavorNote, origin, processList, roaster } from '#server/db/schemas'
+import {
+  flavorNote,
+  origin,
+  processList,
+  roaster,
+  varietal,
+} from '#server/db/schemas'
 
 const named: Record<
   keyof FilterLabelSearch,
@@ -12,6 +18,7 @@ const named: Record<
   flavorNoteId: { table: flavorNote, id: flavorNote.id, name: flavorNote.name },
   originCode: { table: origin, id: origin.code, name: origin.name },
   processId: { table: processList, id: processList.id, name: processList.name },
+  varietalId: { table: varietal, id: varietal.id, name: varietal.name },
 }
 
 async function nameOf(

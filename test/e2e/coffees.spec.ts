@@ -886,3 +886,74 @@ test('keeps every coffee in the Library, finished or not, and finds the favourit
     'Red Brick',
   ])
 })
+
+test('finds a coffee on Discover by its varietal or washing station and filters by varietal', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  const varietal = uniqueName('Geisha')
+  const station = uniqueName('Kochere')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await page.getByTestId('page-add-coffee').click()
+  const sheet = page.getByTestId('add-coffee-sheet')
+  await sheet.getByTestId('coffee-name').fill('Kochere Natural')
+  await pickRoaster(page, roaster, true)
+  await toStep(sheet, 'add-coffee', 2)
+  await pickOrigin(page, 'Ethiopia')
+  await pickFromList(
+    page,
+    'coffee-washing-stations',
+    'scoped',
+    station,
+    `Add “${station}”`,
+  )
+  await toStep(sheet, 'add-coffee', 3)
+  await pickProcess(page, 'Natural')
+  await pickFromList(
+    page,
+    'coffee-varietals',
+    'multi',
+    varietal,
+    `Add “${varietal}”`,
+  )
+  await choose(sheet, 'coffee-roast-level', 'option-light')
+  await choose(sheet, 'coffee-roasted-for', 'option-filter')
+  await sheet.getByTestId('add-coffee-submit').click()
+  await expect(sheet).toBeHidden()
+
+  await page.goto(`/shelves/${member.shelfId}/discover`)
+  const results = page.getByTestId('catalog-result')
+  await page.getByTestId('search-input').fill(varietal)
+  await expect(results.getByTestId('catalog-result-name')).toHaveText([
+    'Kochere Natural',
+  ])
+  await expect(results.getByTestId('catalog-result-match')).toHaveText([
+    `Varietal: ${varietal}`,
+  ])
+
+  await page.getByTestId('search-input').fill(station)
+  await expect(results.getByTestId('catalog-result-match')).toHaveText([
+    `Washing station: ${station}`,
+  ])
+
+  await page.getByTestId('search-input').fill('')
+  await page.getByTestId('catalog-filter-varietals').click()
+  await page.getByTestId('catalog-filter-varietals-search').fill(varietal)
+  await page
+    .getByTestId('catalog-filter-option')
+    .filter({ hasText: varietal })
+    .click()
+  await expect(results.getByTestId('catalog-result-name')).toHaveText([
+    'Kochere Natural',
+  ])
+  await expect(page).toHaveURL(/varietalId=/)
+
+  await page.reload()
+  await expect(page.getByTestId('catalog-filter-varietals')).toHaveText(
+    varietal,
+  )
+  await expect(results.getByTestId('catalog-result-name')).toHaveText([
+    'Kochere Natural',
+  ])
+})

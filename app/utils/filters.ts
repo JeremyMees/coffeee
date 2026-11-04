@@ -10,6 +10,7 @@ export const filterPlurals: Record<FilterKind, string> = {
   'flavor-notes': 'flavor notes',
   origins: 'origins',
   processes: 'processes',
+  varietals: 'varietals',
   'roast-levels': 'roast levels',
   'roasted-for': 'brew styles',
 }
@@ -19,6 +20,7 @@ export const labelledParams = [
   'flavorNoteId',
   'originCode',
   'processId',
+  'varietalId',
 ] as const
 
 export function queryText(value: unknown) {

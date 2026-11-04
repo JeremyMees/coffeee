@@ -119,6 +119,7 @@ export const catalogSearchSchema = listSearchSchema.extend({
   flavorNoteId: optionalId('flavor note'),
   originCode: optionalId('origin'),
   processId: optionalId('process'),
+  varietalId: optionalId('varietal'),
   roastLevel: z
     .enum(roastLevels, { error: 'Pick one of the roast levels' })
     .optional(),
@@ -137,6 +138,7 @@ export const filterLabelsSchema = z.object({
   flavorNoteId: optionalId('flavor note'),
   originCode: optionalId('origin'),
   processId: optionalId('process'),
+  varietalId: optionalId('varietal'),
 })
 
 export const roasterSearchSchema = z.object({

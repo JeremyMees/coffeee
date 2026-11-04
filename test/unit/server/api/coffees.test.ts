@@ -406,7 +406,7 @@ describe('the catalog', () => {
     const { home } = await neighbours()
 
     const filter = await request(
-      `/api/shelves/${home.shelf.id}/catalog/varietals`,
+      `/api/shelves/${home.shelf.id}/catalog/washing-stations`,
       { headers: home.headers },
     )
     const query = await request(

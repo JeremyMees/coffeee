@@ -7,6 +7,7 @@ export interface CatalogFilter {
   origin: LibraryOption | null
   roaster: LibraryOption | null
   process: LibraryOption | null
+  varietal: LibraryOption | null
   roastLevel: LibraryOption | null
   roastedFor: LibraryOption | null
 }

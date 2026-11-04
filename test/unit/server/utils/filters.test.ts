@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { flavorNote, processList, roaster } from '#server/db/schemas'
+import { flavorNote, processList, roaster, varietal } from '#server/db/schemas'
 import { addCoffee } from '#server/utils/coffees'
 import { findFilterLabels } from '#server/utils/filters'
 import { createShelf } from '#server/utils/shelves'
@@ -26,7 +26,7 @@ async function setup() {
       washingStations: [],
       producers: [],
       processes: ['Washed'],
-      varietals: [],
+      varietals: ['Geisha'],
       flavorNotes: ['Lime'],
       link: null,
       altitudeFrom: null,
@@ -42,13 +42,20 @@ async function setup() {
   const [squareMile] = await db.select().from(roaster)
   const [lime] = await db.select().from(flavorNote)
   const [washed] = await db.select().from(processList)
+  const [geisha] = await db.select().from(varietal)
 
-  return { db, squareMile: squareMile!, lime: lime!, washed: washed! }
+  return {
+    db,
+    squareMile: squareMile!,
+    lime: lime!,
+    washed: washed!,
+    geisha: geisha!,
+  }
 }
 
 describe('findFilterLabels', () => {
   it('names every picked filter', async () => {
-    const { db, squareMile, lime, washed } = await setup()
+    const { db, squareMile, lime, washed, geisha } = await setup()
 
     const labels = await findFilterLabels(
       db,
@@ -57,6 +64,7 @@ describe('findFilterLabels', () => {
         flavorNoteId: lime.id,
         originCode: 'ET',
         processId: washed.id,
+        varietalId: geisha.id,
       }),
     )
 
@@ -65,6 +73,7 @@ describe('findFilterLabels', () => {
       flavorNoteId: 'Lime',
       originCode: 'Ethiopia',
       processId: 'Washed',
+      varietalId: 'Geisha',
     })
   })
 

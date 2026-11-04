@@ -70,6 +70,9 @@ function catalogWhere(input: {
       ? describedWith('flavorNotes', search.flavorNoteId)
       : undefined,
     search.processId ? describedWith('processes', search.processId) : undefined,
+    search.varietalId
+      ? describedWith('varietals', search.varietalId)
+      : undefined,
     search.originCode ? describedWith('origins', search.originCode) : undefined,
     search.roastLevel ? eq(coffee.roastLevel, search.roastLevel) : undefined,
     search.roastedFor ? eq(coffee.roastedFor, search.roastedFor) : undefined,
@@ -139,6 +142,7 @@ const describedFilters: Record<
 > = {
   'flavor-notes': 'flavorNotes',
   processes: 'processes',
+  varietals: 'varietals',
   origins: 'origins',
 }
 

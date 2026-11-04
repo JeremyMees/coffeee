@@ -109,6 +109,8 @@ async function twoShelvesOfCoffee(setup: Setup) {
     flavorNotes: ['Lime'],
     origins: ['ET', 'KE'],
     regions: [{ name: 'Guji', origin: 'ET' }],
+    washingStations: [{ name: 'Kochere', origin: 'ET' }],
+    varietals: ['Heirloom'],
   })
   await addTo(setup, setup.work, {
     name: 'El Paraiso',
@@ -120,6 +122,7 @@ async function twoShelvesOfCoffee(setup: Setup) {
     producers: ['Diego Bermudez'],
     farms: [{ name: 'Finca El Paraiso', origin: 'CO' }],
     processes: ['Anaerobic'],
+    varietals: ['Geisha', 'Pink Bourbon'],
     price: 24,
   })
   await addTo(setup, setup.work, {
@@ -240,6 +243,18 @@ describe('the catalog', () => {
       'El Paraiso',
       { field: 'flavorNotes', name: 'Strawberry' },
     ],
+    [
+      'varietal',
+      'geisha',
+      'El Paraiso',
+      { field: 'varietals', name: 'Geisha' },
+    ],
+    [
+      'washing station',
+      'koche',
+      'Ayele Fulasa',
+      { field: 'washingStations', name: 'Kochere' },
+    ],
   ])(
     'finds a coffee by its %s and says what matched',
     async (_, search, name, match) => {
@@ -265,7 +280,7 @@ describe('the catalog', () => {
     ])
   })
 
-  it('filters by flavor note, origin, roaster, process, roast level and roasted for, and combines them', async () => {
+  it('filters by flavor note, origin, roaster, process, varietal, roast level and roasted for, and combines them', async () => {
     const context = await setup()
     await twoShelvesOfCoffee(context)
     const options = async (kind: CatalogFilterKind) =>
@@ -284,6 +299,9 @@ describe('the catalog', () => {
     const anaerobic = (await options('processes')).find(
       option => option.label === 'Anaerobic',
     )!
+    const geisha = (await options('varietals')).find(
+      option => option.label === 'Geisha',
+    )!
 
     expect(await names(context, { roasterId: squareMile.value })).toEqual([
       'Red Brick',
@@ -295,6 +313,15 @@ describe('the catalog', () => {
     expect(await names(context, { processId: anaerobic.value })).toEqual([
       'El Paraiso',
     ])
+    expect(await names(context, { varietalId: geisha.value })).toEqual([
+      'El Paraiso',
+    ])
+    expect(
+      await names(context, { varietalId: geisha.value, search: 'cabra' }),
+    ).toEqual(['El Paraiso'])
+    expect(
+      await names(context, { varietalId: geisha.value, search: 'lime' }),
+    ).toEqual([])
     expect(await names(context, { originCode: 'BR' })).toEqual(['Red Brick'])
     expect(await names(context, { roastLevel: 'medium' })).toEqual([
       'El Paraiso',
@@ -363,6 +390,11 @@ describe('the catalog filter options', () => {
     expect(labels(await options(context, 'processes'))).toEqual([
       'Anaerobic',
       'Washed',
+    ])
+    expect(labels(await options(context, 'varietals'))).toEqual([
+      'Geisha',
+      'Heirloom',
+      'Pink Bourbon',
     ])
   })
 

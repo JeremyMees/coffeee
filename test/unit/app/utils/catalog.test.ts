@@ -44,6 +44,7 @@ describe('catalogQuery', () => {
         origin: { value: 'ET', label: 'Ethiopia' },
         roaster: laCabra,
         process: { value: 's1', label: 'Washed' },
+        varietal: { value: 'v1', label: 'Geisha' },
         roastLevel: { value: 'light', label: 'Light' },
         roastedFor: { value: 'filter', label: 'Filter' },
       }),
@@ -54,6 +55,7 @@ describe('catalogQuery', () => {
       originCode: 'ET',
       roasterId: 'r1',
       processId: 's1',
+      varietalId: 'v1',
       roastLevel: 'light',
       roastedFor: 'filter',
     })
@@ -69,10 +71,17 @@ describe('matchLabels', () => {
             { field: 'name', name: 'El Paraiso' },
             { field: 'flavorNotes', name: 'Strawberry' },
             { field: 'farms', name: 'Finca El Paraiso' },
+            { field: 'varietals', name: 'Geisha' },
+            { field: 'washingStations', name: 'Kochere' },
           ],
         }),
       ),
-    ).toEqual(['Flavor note: Strawberry', 'Farm: Finca El Paraiso'])
+    ).toEqual([
+      'Flavor note: Strawberry',
+      'Farm: Finca El Paraiso',
+      'Varietal: Geisha',
+      'Washing station: Kochere',
+    ])
   })
 })
 
@@ -113,10 +122,11 @@ describe('catalogFromRoute', () => {
           q: 'lime',
           mine: 'true',
           roasterId: 'r1',
+          varietalId: 'v1',
           roastLevel: 'light',
           sort: 'communityRating',
         },
-        { roasterId: 'La Cabra' },
+        { roasterId: 'La Cabra', varietalId: 'Geisha' },
       ),
     ).toEqual({
       search: 'lime',
@@ -124,6 +134,7 @@ describe('catalogFromRoute', () => {
         ...emptyCatalogFilter(),
         mine: true,
         roaster: laCabra,
+        varietal: { value: 'v1', label: 'Geisha' },
         roastLevel: { value: 'light', label: 'Light' },
       },
       sort: 'communityRating',

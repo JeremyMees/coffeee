@@ -3,6 +3,7 @@ export const catalogPickers = [
   { key: 'origin', kind: 'origins', param: 'originCode' },
   { key: 'roaster', kind: 'roasters', param: 'roasterId' },
   { key: 'process', kind: 'processes', param: 'processId' },
+  { key: 'varietal', kind: 'varietals', param: 'varietalId' },
   { key: 'roastLevel', kind: 'roast-levels', param: 'roastLevel' },
   { key: 'roastedFor', kind: 'roasted-for', param: 'roastedFor' },
 ] as const
@@ -12,6 +13,7 @@ export const catalogFilterLabels: Record<CatalogFilterKind, string> = {
   origins: 'Origin',
   roasters: 'Roaster',
   processes: 'Process',
+  varietals: 'Varietal',
   'roast-levels': 'Roast level',
   'roasted-for': 'Roasted for',
 }
@@ -20,11 +22,13 @@ export const catalogMatchLabels: Record<CatalogMatchField, string> = {
   name: 'Name',
   roaster: 'Roaster',
   origins: 'Origin',
-  flavorNotes: 'Flavor note',
   regions: 'Region',
-  producers: 'Producer',
   farms: 'Farm',
+  washingStations: 'Washing station',
+  producers: 'Producer',
   processes: 'Process',
+  varietals: 'Varietal',
+  flavorNotes: 'Flavor note',
 }
 
 export const catalogSortLabels: Record<CatalogSort, string> = {
@@ -39,6 +43,7 @@ export function emptyCatalogFilter(): CatalogFilter {
     origin: null,
     roaster: null,
     process: null,
+    varietal: null,
     roastLevel: null,
     roastedFor: null,
   }

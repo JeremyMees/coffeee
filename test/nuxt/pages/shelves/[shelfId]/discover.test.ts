@@ -102,6 +102,28 @@ describe('the Discover page', () => {
     )
   })
 
+  it('finds a coffee by its varietal or washing station and says why', async () => {
+    await threeCoffees()
+    await scenario.coffee(tom.shelf, {
+      name: 'Kochere Natural',
+      origins: ['ET'],
+      washingStations: [{ origin: 'ET', name: 'Kochere Station' }],
+      varietals: ['Geisha'],
+    })
+    const { page, names } = await discover()
+    const matches = () =>
+      page.findAll(tid('catalog-result-match')).map(match => match.text())
+
+    await type('search-input', 'geisha')
+    await vi.waitFor(() => expect(names()).toEqual(['Kochere Natural']))
+    expect(matches()).toEqual(['Varietal: Geisha'])
+
+    await type('search-input', 'station')
+    await vi.waitFor(() =>
+      expect(matches()).toEqual(['Washing station: Kochere Station']),
+    )
+  })
+
   it('starts from the search in the address', async () => {
     await threeCoffees()
 
@@ -228,6 +250,34 @@ describe('the Discover page', () => {
     ).toBe('true')
     expect(page.get(tid('catalog-filter-roasters')).text()).toBe('La Cabra')
     expect(page.get(tid('catalog-filter-roasted-for')).text()).toBe('Filter')
+  })
+
+  it('filters by a varietal any coffee uses and keeps it in the address', async () => {
+    await threeCoffees()
+    await scenario.coffee(tom.shelf, {
+      name: 'Pink Bourbon Lot',
+      varietals: ['Pink Bourbon'],
+    })
+    const { page, names } = await discover()
+
+    await click('catalog-filter-varietals')
+    const option = await vi.waitFor(() => {
+      const found = allByTestId('catalog-filter-option').find(
+        element => element.textContent?.trim() === 'Pink Bourbon',
+      )
+      if (!found) throw new Error('No Pink Bourbon')
+
+      return found
+    })
+    option.click()
+
+    await vi.waitFor(() => expect(names()).toEqual(['Pink Bourbon Lot']))
+    expect(page.get(tid('catalog-filter-varietals')).text()).toBe(
+      'Pink Bourbon',
+    )
+    expect(useRouter().currentRoute.value.query).toEqual({
+      varietalId: expect.any(String),
+    })
   })
 
   it('knows the names of filters it picked when coming back', async () => {

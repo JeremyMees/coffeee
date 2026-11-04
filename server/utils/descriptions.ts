@@ -82,14 +82,6 @@ const descriptionLists: Record<DescriptionListField, CoffeeList> = {
   },
 }
 
-const searchedFields = [
-  'flavorNotes',
-  'regions',
-  'producers',
-  'farms',
-  'processes',
-] as const satisfies DescriptionListField[]
-
 function isOriginListField(field: string): field is OriginListField {
   return (originListFields as readonly string[]).includes(field)
 }
@@ -291,7 +283,7 @@ async function originsMatching(db: Database, key: string) {
 async function listMatchesOf(db: Database, coffeeIds: string[], key: string) {
   const matches: (CatalogMatch & { coffeeId: string })[] = []
 
-  for (const field of searchedFields) {
+  for (const field of descriptionListFields) {
     const { list, link, entryId } = descriptionLists[field]
     const linked = await db
       .select({
@@ -349,7 +341,7 @@ export async function descriptionSearch(db: Database, search: string) {
 
   return {
     where: or(
-      ...searchedFields.map(field =>
+      ...descriptionListFields.map(field =>
         linkedMatching(descriptionLists[field], key),
       ),
       originCodes.length ? fromOrigins(originCodes) : undefined,

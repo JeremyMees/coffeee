@@ -406,6 +406,13 @@ describe('searching', () => {
       'El Paraiso',
       { field: 'flavorNotes', name: 'Strawberry' },
     ],
+    ['varietal', 'geish', 'El Paraiso', { field: 'varietals', name: 'Geisha' }],
+    [
+      'washing station',
+      'hambela',
+      'Ayele Fulasa',
+      { field: 'washingStations', name: 'Hambela' },
+    ],
   ])(
     'finds a coffee by its %s and says what matched',
     async (_, text, name, match) => {
@@ -436,14 +443,6 @@ describe('searching', () => {
         ],
       },
     ])
-  })
-
-  it('does not search varietals or washing stations yet', async () => {
-    const context = await setup()
-    await threeCoffees(context)
-
-    expect(await searched(context.db, 'geisha')).toEqual([])
-    expect(await searched(context.db, 'hambela')).toEqual([])
   })
 
   it('narrows nothing without a search', async () => {
@@ -526,6 +525,7 @@ describe('filter options', () => {
       'Natural',
       'Washed',
     ])
+    expect(await labels(context.db, 'varietals', {})).toEqual(['Geisha'])
   })
 
   it('narrows the options to what was typed and pages through them', async () => {
