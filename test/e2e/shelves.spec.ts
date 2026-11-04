@@ -15,7 +15,9 @@ async function createShelf(page: Page, name: string) {
 test('opens on your own shelf', async ({ page, member }) => {
   await page.goto('/')
 
-  await expect(page).toHaveURL(`/shelves/${member.shelfId}`)
+  await expect(page).toHaveURL(
+    new RegExp(`/shelves/[a-z0-9-]*${member.shelfId}$`),
+  )
   await expect(switcher(page)).toHaveText("Shelf: Tess's shelf")
 })
 
@@ -50,7 +52,9 @@ test('switches to the same page on another shelf', async ({ page, member }) => {
     .filter({ hasText: "Tess's shelf" })
     .click()
 
-  await expect(page).toHaveURL(`/shelves/${member.shelfId}/library`)
+  await expect(page).toHaveURL(
+    new RegExp(`/shelves/[a-z0-9-]*${member.shelfId}/library$`),
+  )
 })
 
 test('explains a shelf without a name', async ({ page }) => {

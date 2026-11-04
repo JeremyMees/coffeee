@@ -15,7 +15,7 @@ function databaseUrl() {
 async function createMember(client: pg.Client, name: string, role: Role) {
   const id = randomUUID()
   const email = `${id}@example.test`
-  const shelfId = randomUUID()
+  const shelfId = randomBytes(4).toString('hex')
   const token = randomBytes(24).toString('base64url')
 
   await client.query(
