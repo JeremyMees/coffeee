@@ -6,26 +6,58 @@ import { inject } from 'vitest'
 import * as schema from '#server/db/schemas'
 import type { TestDatabase } from '#test/support/types'
 
-let migrated: Promise<PGlite> | undefined
+let opened: ReturnType<typeof openDatabase> | undefined
 
-async function loadMigrated() {
+async function openDatabase() {
   const dump = await readFile(inject('migratedDatabase'))
-
-  const template = new PGlite({
+  const client = new PGlite({
     extensions: { pg_trgm },
     loadDataDir: new Blob([dump]),
   })
-  await template.waitReady
+  const { rows } = await client.query<{ name: string }>(
+    `select tablename as name from pg_tables where schemaname = 'public'`,
+  )
+  const tables = rows.map(row => `"${row.name}"`)
+  const seeded: string[] = []
 
-  return template
+  await client.exec('create schema seed')
+  for (const table of tables) {
+    const { rows: found } = await client.query(`select 1 from ${table} limit 1`)
+    if (found.length === 0) continue
+
+    await client.exec(`create table seed.${table} as select * from ${table}`)
+    seeded.push(table)
+  }
+
+  const reset = [
+    `truncate ${tables.join(', ')} cascade`,
+    ...seeded.map(table => `insert into ${table} select * from seed.${table}`),
+  ].join(';\n')
+
+  return { db: drizzle({ client, schema }), client, reset }
 }
 
 export async function createTestDatabase() {
-  migrated ??= loadMigrated()
-  const client = (await (await migrated).clone()) as PGlite
-  const db = drizzle({ client, schema })
+  opened ??= openDatabase()
+  const { db, client } = await opened
 
   return { db, client }
+}
+
+export async function resetTestDatabase() {
+  if (!opened) return
+
+  const { client, reset } = await opened
+  if (client.closed) opened = undefined
+  else await client.exec(reset)
+}
+
+export async function closeTestDatabase() {
+  if (!opened) return
+
+  const { client } = await opened
+  opened = undefined
+  if (!client.closed) await client.close()
 }
 
 export async function createTestUser(

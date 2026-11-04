@@ -26,6 +26,7 @@ export default defineConfig({
           name: 'unit',
           include: ['test/unit/**/*.{test,spec}.ts'],
           globalSetup: ['test/support/migrated-database.ts'],
+          setupFiles: ['test/unit/setup.ts'],
           environment: 'node',
         },
       },
