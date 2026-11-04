@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { notificationLink } from '#imports'
-import { notifications } from '../fake-api'
+import { notificationLink } from '~/utils/notifications'
+import { notifications } from '#test/fixtures/notifications'
 
 function notification(
   overrides: Partial<ReturnType<typeof notifications>[number]> = {},

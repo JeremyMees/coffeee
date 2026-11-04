@@ -3,7 +3,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ProfileName from '~/components/ProfileName.vue'
 import { useCurrentUser } from '#imports'
 import { api, fakeApi, resetApi } from '../fake-api'
-import { byTestId, inputValue, submit, testUser, type } from '../fixtures'
+import { byTestId, inputValue, submit, type } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

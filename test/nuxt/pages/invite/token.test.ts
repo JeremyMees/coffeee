@@ -6,15 +6,8 @@ import {
 } from '@nuxt/test-utils/runtime'
 import { createError } from 'h3'
 import App from '~/app.vue'
-import {
-  byTestId,
-  click,
-  currentPath,
-  submit,
-  testUser,
-  tid,
-  type,
-} from '../../fixtures'
+import { byTestId, click, currentPath, submit, tid, type } from '../../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 const server = vi.hoisted(() => ({
   signedIn: false,

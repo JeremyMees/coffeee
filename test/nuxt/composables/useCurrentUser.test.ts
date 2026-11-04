@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useCurrentUser } from '#imports'
-import { currentPath, testUser } from '../fixtures'
+import { currentPath } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 const { authSignOut } = vi.hoisted(() => ({ authSignOut: vi.fn() }))
 

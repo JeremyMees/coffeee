@@ -3,7 +3,8 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import AdminAddRoasterSheet from '~/components/AdminAddRoasterSheet.vue'
 import { useCurrentUser } from '#imports'
 import { api, fakeApi, resetApi } from '../fake-api'
-import { byTestId, click, submit, testUser, type } from '../fixtures'
+import { byTestId, click, submit, type } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 mockNuxtImport(
   'compressPhoto',

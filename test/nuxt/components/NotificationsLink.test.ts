@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import NotificationsLink from '~/components/NotificationsLink.vue'
-import { api, fakeApi, notifications, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
+import { notifications } from '#test/fixtures/notifications'
 import { tid } from '../fixtures'
 
 fakeApi()

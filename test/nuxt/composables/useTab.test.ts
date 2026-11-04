@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCurrentUser, useRouter, useTab } from '#imports'
-import { runOn, testUser } from '../fixtures'
+import { runOn } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 const tabs = ['shelf', 'members', 'grinders'] as const
 

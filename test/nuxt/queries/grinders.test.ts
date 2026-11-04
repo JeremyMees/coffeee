@@ -6,8 +6,9 @@ import {
   useShelfGrinders,
 } from '~/queries/grinders'
 import { queryKeys } from '#imports'
-import { api, fakeApi, opus, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { runOn } from '../fixtures'
+import { opus } from '#test/fixtures/grinders'
 
 fakeApi()
 

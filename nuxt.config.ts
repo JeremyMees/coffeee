@@ -63,7 +63,11 @@ export default defineNuxtConfig({
     },
     typescript: {
       tsConfig: {
-        include: ['../test/unit/**/*', '../test/support/**/*'],
+        include: [
+          '../test/unit/server/**/*',
+          '../test/unit/shared/**/*',
+          '../test/support/**/*',
+        ],
       },
     },
   },
@@ -80,6 +84,12 @@ export default defineNuxtConfig({
   },
 
   imports: { dirs: ['types/*.ts'] },
+
+  typescript: {
+    tsConfig: {
+      include: ['../test/unit/app/**/*', '../test/fixtures/**/*'],
+    },
+  },
 
   components: [
     { path: '~/components/form', pathPrefix: false },

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useAddCoffee, useAddCoffeeShortcut, useCurrentUser } from '#imports'
-import { forgetLastShelf, runOn, setViewport, testUser } from '../fixtures'
+import { forgetLastShelf, runOn, setViewport } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 describe('useAddCoffee', () => {
   it('is closed until something opens it', () => {

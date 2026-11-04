@@ -5,23 +5,7 @@ import { useForm } from 'vee-validate'
 import { vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import type { Component } from 'vue'
-import type { CurrentUser } from '#imports'
 import { coffeeDetailsSchema, localDate, useRouter, zodSchema } from '#imports'
-
-export function testUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
-  return {
-    id: 'user-1',
-    name: 'Sarah',
-    email: 'sarah@example.com',
-    image: null,
-    role: 'user',
-    shelves: [
-      { id: 'home', name: "Sarah's shelf", ownerId: 'user-1' },
-      { id: 'work', name: 'Work', ownerId: 'user-2' },
-    ],
-    ...overrides,
-  }
-}
 
 export function forgetLastShelf() {
   document.cookie = 'shelf=; max-age=0; path=/'

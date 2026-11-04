@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import RoasterResult from '~/components/RoasterResult.vue'
-import { listedRoaster } from '../fake-api'
 import { tid } from '../fixtures'
+import { listedRoaster } from '#test/fixtures/roasters'
 
 function result(overrides: Partial<ListedRoaster> = {}) {
   return mountSuspended(RoasterResult, {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CatalogResult from '~/components/CatalogResult.vue'
-import { catalogCoffee } from '../fake-api'
+import { catalogCoffee } from '#test/fixtures/coffees'
 import { tid } from '../fixtures'
 
 function result(overrides: Partial<CatalogCoffee> = {}) {

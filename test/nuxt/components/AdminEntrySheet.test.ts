@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AdminEntrySheet from '~/components/AdminEntrySheet.vue'
-import { api, fakeApi, flavorNoteEntries, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { byTestId, inputValue, pickOption, submit, type } from '../fixtures'
+import { flavorNoteEntries } from '#test/fixtures/admin'
 
 fakeApi()
 

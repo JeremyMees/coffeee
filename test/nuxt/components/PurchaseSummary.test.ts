@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import PurchaseSummary from '~/components/PurchaseSummary.vue'
-import { ayele } from '../fake-api'
 import { tid } from '../fixtures'
+import { ayele } from '#test/fixtures/coffees'
 
 async function summary(purchases: ShelfPurchase[]) {
   const wrapper = await mountSuspended(PurchaseSummary, {

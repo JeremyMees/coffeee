@@ -3,7 +3,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useAddCoffee, useCurrentUser } from '#imports'
 import { api, fakeApi, resetApi } from '../../../fake-api'
-import { daysAgo, forgetLastShelf, testUser, tid } from '../../../fixtures'
+import { daysAgo, forgetLastShelf, tid } from '../../../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

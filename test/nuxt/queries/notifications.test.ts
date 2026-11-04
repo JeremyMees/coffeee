@@ -8,7 +8,8 @@ import {
   useUnreadNotifications,
 } from '~/queries/notifications'
 import { queryKeys } from '#imports'
-import { api, fakeApi, notifications, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
+import { notifications } from '#test/fixtures/notifications'
 import { runOn } from '../fixtures'
 
 fakeApi()

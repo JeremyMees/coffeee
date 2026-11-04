@@ -3,13 +3,8 @@ import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ShelfSwitcher from '~/components/ShelfSwitcher.vue'
 import { useCurrentUser } from '#imports'
-import {
-  allByTestId,
-  byTestId,
-  forgetLastShelf,
-  testUser,
-  tid,
-} from '../fixtures'
+import { allByTestId, byTestId, forgetLastShelf, tid } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()

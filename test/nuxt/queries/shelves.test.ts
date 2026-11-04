@@ -9,8 +9,10 @@ import {
   useShelfRename,
 } from '~/queries/shelves'
 import { queryKeys, useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi, shelfMembers } from '../fake-api'
-import { currentPath, forgetLastShelf, runOn, testUser } from '../fixtures'
+import { api, fakeApi, resetApi } from '../fake-api'
+import { currentPath, forgetLastShelf, runOn } from '../fixtures'
+import { shelfMembers } from '#test/fixtures/shelves'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

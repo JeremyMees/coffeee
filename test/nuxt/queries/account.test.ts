@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { useAccountDelete, useOwnedShelves } from '~/queries/account'
 import { useCurrentUser } from '#imports'
-import { api, fakeApi, ownedShelves } from '../fake-api'
-import { currentPath, runOn, testUser } from '../fixtures'
+import { api, fakeApi } from '../fake-api'
+import { currentPath, runOn } from '../fixtures'
+import { ownedShelves } from '#test/fixtures/shelves'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

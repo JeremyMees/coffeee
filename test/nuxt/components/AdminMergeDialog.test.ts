@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AdminMergeDialog from '~/components/AdminMergeDialog.vue'
-import { api, fakeApi, flavorNoteEntries, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { allByTestId, byTestId, submit, type } from '../fixtures'
+import { flavorNoteEntries } from '#test/fixtures/admin'
 
 fakeApi()
 

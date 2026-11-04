@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { clearError, useCurrentUser, useError } from '#imports'
-import { testUser } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   clearError()

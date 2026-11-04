@@ -8,7 +8,7 @@ import {
   isCatalogFiltered,
   matchLabels,
 } from '~/utils/catalog'
-import { catalogCoffee } from '../fake-api'
+import { catalogCoffee } from '#test/fixtures/coffees'
 
 const laCabra = { value: 'r1', label: 'La Cabra' }
 

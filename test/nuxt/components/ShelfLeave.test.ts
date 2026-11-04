@@ -2,14 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ShelfLeave from '~/components/ShelfLeave.vue'
 import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi, shelfMembers } from '../fake-api'
-import {
-  byTestId,
-  click,
-  currentPath,
-  forgetLastShelf,
-  testUser,
-} from '../fixtures'
+import { api, fakeApi, resetApi } from '../fake-api'
+import { byTestId, click, currentPath, forgetLastShelf } from '../fixtures'
+import { shelfMembers } from '#test/fixtures/shelves'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

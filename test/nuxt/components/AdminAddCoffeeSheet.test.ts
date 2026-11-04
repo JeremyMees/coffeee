@@ -10,9 +10,9 @@ import {
   pickOrigin,
   pickRoaster,
   submit,
-  testUser,
   type,
 } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

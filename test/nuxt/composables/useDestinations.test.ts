@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useCurrentUser, useDestinations } from '#imports'
-import { forgetLastShelf, runOn, testUser } from '../fixtures'
+import { forgetLastShelf, runOn } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()

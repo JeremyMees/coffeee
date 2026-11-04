@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useBrewMethods } from '~/queries/brew-methods'
-import { brewMethods, fakeApi, resetApi } from '../fake-api'
+import { fakeApi, resetApi } from '../fake-api'
 import { runOn } from '../fixtures'
+import { brewMethods } from '#test/fixtures/brew-methods'
 
 fakeApi()
 

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { SortingState } from '@tanstack/vue-table'
 import LibraryTable from '~/components/LibraryTable.vue'
-import { libraryCoffees } from '../fake-api'
 import { tid } from '../fixtures'
+import { libraryCoffees } from '#test/fixtures/coffees'
 
 async function table(sorting: SortingState = []) {
   const sortings: SortingState[] = []

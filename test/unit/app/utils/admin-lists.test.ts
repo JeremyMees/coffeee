@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adminListFromRoute, adminListRoute } from '#imports'
+import { adminListFromRoute, adminListRoute } from '~/utils/admin-lists'
 
 describe('adminListRoute', () => {
   it('keeps only the search and pages after the first', () => {

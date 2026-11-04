@@ -4,7 +4,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
 import { api, fakeApi, resetApi } from '../../fake-api'
-import { currentPath, forgetLastShelf, testUser, tid } from '../../fixtures'
+import { currentPath, forgetLastShelf, tid } from '../../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

@@ -9,10 +9,10 @@ import {
   byTestId,
   click,
   submit,
-  testUser,
   tid,
   type,
 } from '../../../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

@@ -6,7 +6,8 @@ import {
   useSearchFocus,
   useSearchShortcut,
 } from '#imports'
-import { currentPath, forgetLastShelf, runOn, testUser } from '../fixtures'
+import { currentPath, forgetLastShelf, runOn } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()

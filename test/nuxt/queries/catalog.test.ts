@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useCatalogPages } from '~/queries/catalog'
-import { api, catalogCoffee, fakeApi, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
+import { catalogCoffee } from '#test/fixtures/coffees'
 import { runOn } from '../fixtures'
 
 fakeApi()

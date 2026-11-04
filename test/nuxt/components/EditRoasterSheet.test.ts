@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import EditRoasterSheet from '~/components/EditRoasterSheet.vue'
-import { api, fakeApi, resetApi, squareMile } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { byTestId, inputValue, submit, type } from '../fixtures'
+import { squareMile } from '#test/fixtures/roasters'
 
 fakeApi()
 

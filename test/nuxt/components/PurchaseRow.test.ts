@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import PurchaseRow from '~/components/PurchaseRow.vue'
-import { api, ayele, fakeApi, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { tid } from '../fixtures'
+import { ayele } from '#test/fixtures/coffees'
 
 fakeApi()
 

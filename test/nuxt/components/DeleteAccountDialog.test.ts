@@ -4,13 +4,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import DeleteAccountDialog from '~/components/DeleteAccountDialog.vue'
 import { useCurrentUser } from '#imports'
 import { api, fakeApi, resetApi } from '../fake-api'
-import {
-  allByTestId,
-  byTestId,
-  click,
-  currentPath,
-  testUser,
-} from '../fixtures'
+import { allByTestId, byTestId, click, currentPath } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

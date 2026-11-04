@@ -3,7 +3,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import IndexPage from '~/pages/index.vue'
 import { useCurrentUser } from '#imports'
-import { currentPath, forgetLastShelf, testUser } from '../fixtures'
+import { currentPath, forgetLastShelf } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()

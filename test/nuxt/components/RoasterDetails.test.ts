@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import RoasterDetails from '~/components/RoasterDetails.vue'
 import type { ShelfRoaster } from '#imports'
-import { fakeApi, resetApi, squareMile } from '../fake-api'
+import { fakeApi, resetApi } from '../fake-api'
 import { byTestId, tid } from '../fixtures'
+import { squareMile } from '#test/fixtures/roasters'
 
 fakeApi()
 

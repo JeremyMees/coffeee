@@ -3,7 +3,8 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
 import { fakeApi } from '../fake-api'
-import { byTestId, testUser, tid } from '../fixtures'
+import { byTestId, tid } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }))
 

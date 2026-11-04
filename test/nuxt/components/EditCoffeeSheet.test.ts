@@ -15,9 +15,9 @@ import {
   pickRoaster,
   pickScoped,
   submit,
-  testUser,
   type,
 } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

@@ -3,8 +3,9 @@ import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import PurchaseSheet from '~/components/PurchaseSheet.vue'
 import { localDate } from '#imports'
-import { api, ayele, fakeApi, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { byTestId, inputValue, submit, type } from '../fixtures'
+import { ayele } from '#test/fixtures/coffees'
 
 fakeApi()
 

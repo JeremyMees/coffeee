@@ -6,7 +6,8 @@ import {
   useCurrentUser,
   useLastShelfId,
 } from '#imports'
-import { forgetLastShelf, rememberShelf, runOn, testUser } from '../fixtures'
+import { forgetLastShelf, rememberShelf, runOn } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()

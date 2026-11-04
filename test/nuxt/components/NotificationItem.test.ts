@@ -2,14 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import NotificationItem from '~/components/NotificationItem.vue'
 import { useCurrentUser } from '#imports'
-import {
-  api,
-  fakeApi,
-  inviteNotification,
-  notifications,
-  resetApi,
-} from '../fake-api'
-import { byTestId, click, currentPath, testUser } from '../fixtures'
+import { api, fakeApi, resetApi } from '../fake-api'
+import { inviteNotification, notifications } from '#test/fixtures/notifications'
+import { byTestId, click, currentPath } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

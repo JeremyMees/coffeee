@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import { defineVitestProject } from '@nuxt/test-utils/config'
+import { nuxtAutoImports } from './test/support/auto-imports.ts'
 
 const ignoredLogs = [/^<Suspense>/]
 
@@ -9,8 +10,10 @@ export default defineConfig({
     onConsoleLog: log => !ignoredLogs.some(pattern => pattern.test(log)),
     projects: [
       {
+        plugins: [nuxtAutoImports()],
         resolve: {
           alias: {
+            '~': fileURLToPath(new URL('app', import.meta.url)),
             '#server': fileURLToPath(new URL('server', import.meta.url)),
             '#shared': fileURLToPath(new URL('shared', import.meta.url)),
             '#test': fileURLToPath(new URL('test', import.meta.url)),
@@ -48,9 +51,9 @@ export default defineConfig({
         'app/components/ui/**',
         'app/assets/**',
         'app/emails/**',
-        'app/utils/shadcn.ts',
         'server/utils/db.ts',
         'server/db/**',
+        'server/tasks/**',
       ],
       thresholds: {
         lines: 80,

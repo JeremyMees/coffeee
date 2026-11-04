@@ -1,7 +1,8 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBackLink, useCurrentUser, useRouter } from '#imports'
-import { forgetLastShelf, runOn, testUser } from '../fixtures'
+import { forgetLastShelf, runOn } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 const stock = { label: 'Stock', to: '/shelves/work' }
 

@@ -2,21 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser, useRouter } from '#imports'
-import {
-  api,
-  fakeApi,
-  libraryCoffees,
-  manyCoffees,
-  resetApi,
-} from '../../../fake-api'
+import { api, fakeApi, resetApi } from '../../../fake-api'
 import {
   allByTestId,
   click,
   forgetLastShelf,
   setViewport,
-  testUser,
   tid,
 } from '../../../fixtures'
+import { libraryCoffees, manyCoffees } from '#test/fixtures/coffees'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

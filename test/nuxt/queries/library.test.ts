@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { useLibraryPage, useLibraryPages } from '~/queries/library'
-import { api, fakeApi, manyCoffees, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { runOn } from '../fixtures'
+import { manyCoffees } from '#test/fixtures/coffees'
 
 fakeApi()
 

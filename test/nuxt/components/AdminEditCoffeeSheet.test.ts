@@ -3,7 +3,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AdminEditCoffeeSheet from '~/components/AdminEditCoffeeSheet.vue'
 import { useCurrentUser } from '#imports'
 import { fakeApi, resetApi } from '../fake-api'
-import { byTestId, inputValue, testUser } from '../fixtures'
+import { byTestId, inputValue } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

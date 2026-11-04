@@ -10,8 +10,9 @@ import {
 } from '~/queries/roasters'
 import type { RoasterDetails } from '#imports'
 import { queryKeys } from '#imports'
-import { api, fakeApi, listedRoasters, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { runOn } from '../fixtures'
+import { listedRoasters } from '#test/fixtures/roasters'
 
 fakeApi()
 

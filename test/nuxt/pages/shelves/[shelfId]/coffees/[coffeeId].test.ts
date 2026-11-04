@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { clearError, useCurrentUser, useError } from '#imports'
-import { api, ayele, fakeApi, resetApi } from '../../../../fake-api'
+import { api, fakeApi, resetApi } from '../../../../fake-api'
 import {
   allByTestId,
   byTestId,
@@ -10,10 +10,11 @@ import {
   click,
   forgetLastShelf,
   submit,
-  testUser,
   tid,
   type,
 } from '../../../../fixtures'
+import { ayele } from '#test/fixtures/coffees'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

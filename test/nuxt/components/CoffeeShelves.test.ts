@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CoffeeShelves from '~/components/CoffeeShelves.vue'
-import { coffeeShelves } from '../fake-api'
 import { tid } from '../fixtures'
+import { coffeeShelves } from '#test/fixtures/shelves'
 
 describe('CoffeeShelves', () => {
   it('links to the coffee on each shelf and says what that shelf bought', async () => {

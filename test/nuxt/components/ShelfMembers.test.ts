@@ -3,7 +3,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ShelfMembers from '~/components/ShelfMembers.vue'
 import { useCurrentUser } from '#imports'
 import { api, fakeApi, resetApi } from '../fake-api'
-import { allByTestId, byTestId, click, testUser } from '../fixtures'
+import { allByTestId, byTestId, click } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

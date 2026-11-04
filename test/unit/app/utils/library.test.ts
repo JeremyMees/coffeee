@@ -8,7 +8,7 @@ import {
   libraryRoute,
   originNames,
 } from '~/utils/library'
-import { libraryCoffee } from '../fake-api'
+import { libraryCoffee } from '#test/fixtures/coffees'
 
 const laCabra = { value: 'r1', label: 'La Cabra' }
 

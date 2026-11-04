@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AdminDeleteDialog from '~/components/AdminDeleteDialog.vue'
-import { api, fakeApi, flavorNoteEntries, resetApi } from '../fake-api'
+import { api, fakeApi, resetApi } from '../fake-api'
 import { byTestId, click } from '../fixtures'
+import { flavorNoteEntries } from '#test/fixtures/admin'
 
 fakeApi()
 

@@ -2,22 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser, useSearchFocus } from '#imports'
-import {
-  api,
-  catalogCoffee,
-  catalogCoffees,
-  fakeApi,
-  resetApi,
-} from '../../../fake-api'
+import { api, fakeApi, resetApi } from '../../../fake-api'
+import { catalogCoffee, catalogCoffees } from '#test/fixtures/coffees'
 import {
   allByTestId,
   click,
   currentPath,
   forgetLastShelf,
-  testUser,
   tid,
   type,
 } from '../../../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 fakeApi()
 

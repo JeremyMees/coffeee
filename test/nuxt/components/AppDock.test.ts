@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AppDock from '~/components/AppDock.vue'
 import { useAddCoffee, useCurrentUser } from '#imports'
-import { forgetLastShelf, testUser, tid } from '../fixtures'
+import { forgetLastShelf, tid } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()

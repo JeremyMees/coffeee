@@ -2,7 +2,6 @@ import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, getQuery, readBody } from 'h3'
 import type { H3Event } from 'h3'
 import type { ListEntry, OriginListEntry } from '#shared/types/catalog'
-import type { ProfileStats } from '#shared/types/stats'
 import {
   catalogFilters,
   catalogPageSize,
@@ -11,6 +10,19 @@ import {
   libraryPageSize,
   nameKey,
 } from '#imports'
+import { flavorNoteEntries, otherAdminEntries } from '#test/fixtures/admin'
+import { ayele } from '#test/fixtures/coffees'
+import { brewMethods } from '#test/fixtures/brew-methods'
+import { catalogOptions, libraryOptions } from '#test/fixtures/filters'
+import { opus } from '#test/fixtures/grinders'
+import {
+  coffeeShelves,
+  ownedShelves,
+  shelfInvites,
+  shelfMembers,
+} from '#test/fixtures/shelves'
+import type { notifications } from '#test/fixtures/notifications'
+import { profileStats } from '#test/fixtures/users'
 
 export function fakeList<Entry extends ListEntry>(entries: () => Entry[]) {
   return (event: H3Event) => {
@@ -29,262 +41,6 @@ export function fakeRegions(regions: () => OriginListEntry[]) {
     )
   }
 }
-
-export function ayele() {
-  return {
-    id: 'c1',
-    name: 'Ayele Fulasa',
-    roaster: 'Square Mile',
-    roastLevel: 'light',
-    roastedFor: 'filter',
-    origins: [{ code: 'ET', name: 'Ethiopia' }],
-    regions: [{ id: 'g1', name: 'Guji', origin: 'ET' }],
-    farms: [] as OriginListEntry[],
-    washingStations: [{ id: 'w1', name: 'Hambela', origin: 'ET' }],
-    producers: [] as ListEntry[],
-    processes: [{ id: 's1', name: 'Washed' }],
-    varietals: [] as ListEntry[],
-    flavorNotes: [] as ListEntry[],
-    link: null as string | null,
-    photoUrl: null as string | null,
-    altitudeFrom: 1900,
-    altitudeTo: 2200,
-    rating: null as number | null,
-    wouldBuyAgain: false,
-    communityRating: { average: null, raters: 0, wouldBuyAgain: 0 } as {
-      average: number | null
-      raters: number
-      wouldBuyAgain: number
-    },
-    reviews: [] as Review[],
-    canEdit: true,
-    canDelete: false,
-    grindSettings: [] as OwnGrindSetting[],
-    otherGrindSettings: [] as OtherGrindSetting[],
-    roasterDetails: squareMile(),
-    purchases: [
-      {
-        id: 'p2',
-        purchasedOn: '2026-11-01',
-        roastedOn: '2026-10-28',
-        sizeGrams: 250,
-        priceCents: 1650,
-        finishedAt: null,
-      },
-      {
-        id: 'p1',
-        purchasedOn: '2026-09-01',
-        roastedOn: null,
-        sizeGrams: null,
-        priceCents: null,
-        finishedAt: '2026-09-20T10:00:00.000Z',
-      },
-    ] as ShelfPurchase[],
-  }
-}
-
-export function coffeeShelves() {
-  return [
-    { id: 'home', name: "Sarah's shelf", bags: 2, inStock: 1 },
-    { id: 'work', name: 'Work', bags: 0, inStock: 0 },
-  ]
-}
-
-export function libraryCoffee(
-  overrides: Partial<LibraryCoffee> = {},
-): LibraryCoffee {
-  return {
-    id: 'c1',
-    name: 'Ayele Fulasa',
-    roaster: 'Square Mile',
-    roasterId: 'r2',
-    roastLevel: 'light',
-    roastedFor: 'filter',
-    photoUrl: null,
-    roastedOn: '2026-10-28',
-    lastBought: '2026-11-01',
-    rating: null,
-    wouldBuyAgain: false,
-    flavorNotes: [],
-    origins: [{ code: 'ET', name: 'Ethiopia' }],
-    latestPriceCents: 1650,
-    ...overrides,
-  }
-}
-
-export function libraryCoffees() {
-  return [
-    libraryCoffee({
-      rating: 5,
-      wouldBuyAgain: true,
-      flavorNotes: [{ id: 'n1', name: 'Lime' }],
-    }),
-    libraryCoffee({
-      id: 'c2',
-      name: 'El Paraiso',
-      roaster: 'La Cabra',
-      roasterId: 'r1',
-      roastLevel: 'medium',
-      lastBought: '2026-10-01',
-      rating: 4,
-      wouldBuyAgain: false,
-      flavorNotes: [{ id: 'n2', name: 'Jasmine' }],
-      origins: [{ code: 'CO', name: 'Colombia' }],
-      latestPriceCents: 2400,
-    }),
-    libraryCoffee({
-      id: 'c3',
-      name: 'Red Brick',
-      roastLevel: 'dark',
-      lastBought: '2026-09-01',
-      flavorNotes: [{ id: 'n1', name: 'Lime' }],
-      origins: [],
-      latestPriceCents: null,
-    }),
-  ]
-}
-
-export function catalogCoffee(
-  overrides: Partial<CatalogCoffee> = {},
-): CatalogCoffee {
-  return {
-    id: 'c1',
-    name: 'Ayele Fulasa',
-    roaster: 'Square Mile',
-    roasterId: 'r2',
-    roastLevel: 'light',
-    roastedFor: 'filter',
-    photoUrl: null,
-    roastedOn: '2026-10-28',
-    onShelf: true,
-    flavorNotes: [{ id: 'n1', name: 'Lime' }],
-    origins: [{ code: 'ET', name: 'Ethiopia' }],
-    matches: [],
-    communityRating: { average: null, raters: 0 },
-    ...overrides,
-  }
-}
-
-export function catalogCoffees() {
-  return [
-    catalogCoffee({
-      id: 'c4',
-      name: 'Gesha Village',
-      roaster: 'Tim Wendelboe',
-      roasterId: 'r3',
-      roastedFor: 'espresso',
-      roastedOn: null,
-      onShelf: false,
-      flavorNotes: [{ id: 'n3', name: 'Strawberry' }],
-      origins: [{ code: 'ET', name: 'Ethiopia' }],
-    }),
-    catalogCoffee(),
-    catalogCoffee({
-      id: 'c2',
-      name: 'El Paraiso',
-      roaster: 'La Cabra',
-      roasterId: 'r1',
-      roastLevel: 'medium',
-      onShelf: false,
-      flavorNotes: [{ id: 'n2', name: 'Jasmine' }],
-      origins: [{ code: 'CO', name: 'Colombia' }],
-    }),
-  ]
-}
-
-export function squareMile(): ShelfRoaster {
-  return {
-    id: 'r2',
-    name: 'Square Mile',
-    website: 'https://www.squaremilecoffee.com',
-    countryCode: 'GB',
-    city: 'London',
-    logoUrl: null,
-    canEdit: true,
-  }
-}
-
-export function listedRoaster(
-  overrides: Partial<ListedRoaster> = {},
-): ListedRoaster {
-  return {
-    id: 'r2',
-    name: 'Square Mile',
-    website: 'https://www.squaremilecoffee.com',
-    countryCode: 'GB',
-    city: 'London',
-    logoUrl: null,
-    shelfCoffees: 2,
-    lastBought: '2026-11-01',
-    ...overrides,
-  }
-}
-
-export function listedRoasters() {
-  return [
-    listedRoaster({
-      id: 'r1',
-      name: 'La Cabra',
-      countryCode: 'DK',
-      city: 'Aarhus',
-      logoUrl: '/api/photos/roasters/la-cabra.webp',
-      shelfCoffees: 0,
-      lastBought: null,
-    }),
-    listedRoaster(),
-  ]
-}
-
-export function opus() {
-  return { id: 'opus', brand: 'Fellow', model: 'Opus Gen 2' }
-}
-
-export function brewMethods() {
-  return [
-    { id: 'espresso', name: 'Espresso' },
-    { id: 'pour-over', name: 'Pour over' },
-  ]
-}
-
-export function manyCoffees(count: number) {
-  return Array.from({ length: count }, (_, index) =>
-    libraryCoffee({ id: `m${index + 1}`, name: `Coffee ${index + 1}` }),
-  )
-}
-
-export const libraryOptions = {
-  roasters: [
-    { value: 'r1', label: 'La Cabra' },
-    { value: 'r2', label: 'Square Mile' },
-    { value: 'r3', label: 'Tim Wendelboe' },
-  ],
-  'flavor-notes': [
-    { value: 'n2', label: 'Jasmine' },
-    { value: 'n1', label: 'Lime' },
-  ],
-  origins: [
-    { value: 'CO', label: 'Colombia' },
-    { value: 'ET', label: 'Ethiopia' },
-  ],
-} satisfies Record<LibraryFilterKind, LibraryOption[]>
-
-export const catalogOptions = {
-  ...libraryOptions,
-  'flavor-notes': [
-    { value: 'n2', label: 'Jasmine' },
-    { value: 'n1', label: 'Lime' },
-    { value: 'n3', label: 'Strawberry' },
-  ],
-  processes: [{ value: 's1', label: 'Washed' }],
-  'roast-levels': [
-    { value: 'light', label: 'Light' },
-    { value: 'medium', label: 'Medium' },
-  ],
-  'roasted-for': [
-    { value: 'espresso', label: 'Espresso' },
-    { value: 'filter', label: 'Filter' },
-  ],
-} satisfies Record<CatalogFilterKind, LibraryOption[]>
 
 const fakeFilterPageSize = 2
 
@@ -393,119 +149,6 @@ function fakeFilter(
       options: matching.slice(start, start + fakeFilterPageSize),
       hasMore: matching.length > start + fakeFilterPageSize,
     }
-  }
-}
-
-export function flavorNoteEntries(): AdminEntry[] {
-  return [
-    { id: 'n1', name: 'Lime', detail: null, detailId: null, uses: 3 },
-    { id: 'n2', name: 'Limes', detail: null, detailId: null, uses: 1 },
-    { id: 'n3', name: 'Jasmine', detail: null, detailId: null, uses: 0 },
-  ]
-}
-
-export function ownedShelves() {
-  return [
-    { id: 'solo', name: "Sarah's shelf", members: [] as ListEntry[] },
-    {
-      id: 'home',
-      name: 'Home',
-      members: [
-        { id: 'tom', name: 'Tom' },
-        { id: 'lisa', name: 'Lisa' },
-      ],
-    },
-  ]
-}
-
-export function profileStats(): ProfileStats {
-  return {
-    bags: 12,
-    grams: 3000,
-    spentCents: 19800,
-    rated: 9,
-    averageRating: 4.2,
-    wouldBuyAgain: 5,
-    topRoaster: 'Square Mile',
-  }
-}
-
-export function shelfInvites() {
-  return [
-    {
-      id: 'i1',
-      email: 'anna@example.com',
-      invitedBy: 'Sarah',
-      createdAt: '2026-11-01T10:00:00.000Z',
-      expiresAt: '2026-11-08T10:00:00.000Z',
-    },
-  ]
-}
-
-export function shelfMembers() {
-  return [
-    {
-      id: 'user-1',
-      name: 'Sarah',
-      email: 'sarah@example.com',
-      image: null as string | null,
-      joinedAt: '2026-10-01T10:00:00.000Z',
-    },
-    {
-      id: 'tom',
-      name: 'Tom',
-      email: 'tom@example.com',
-      image: null as string | null,
-      joinedAt: '2026-10-02T10:00:00.000Z',
-    },
-  ]
-}
-
-export function notifications() {
-  return [
-    {
-      id: 'n1',
-      kind: 'coffeeAdded' as NotificationKind,
-      actor: 'Tom' as string | null,
-      shelfId: 'home',
-      shelf: "Sarah's shelf",
-      coffeeId: 'c1' as string | null,
-      coffee: 'Ayele Fulasa' as string | null,
-      inviteId: null as string | null,
-      inviteStatus: null as InviteStatus | null,
-      createdAt: '2026-11-02T10:00:00.000Z',
-      readAt: null as string | null,
-    },
-    {
-      id: 'n2',
-      kind: 'memberJoined' as NotificationKind,
-      actor: 'Tom' as string | null,
-      shelfId: 'home',
-      shelf: "Sarah's shelf",
-      coffeeId: null as string | null,
-      coffee: null as string | null,
-      inviteId: null as string | null,
-      inviteStatus: null as InviteStatus | null,
-      createdAt: '2026-11-01T10:00:00.000Z',
-      readAt: '2026-11-01T12:00:00.000Z' as string | null,
-    },
-  ]
-}
-
-export function inviteNotification(
-  overrides: Partial<ReturnType<typeof notifications>[number]> = {},
-) {
-  return {
-    ...notifications()[0]!,
-    id: 'n3',
-    kind: 'invited' as NotificationKind,
-    shelfId: 'office',
-    shelf: 'Office',
-    coffeeId: null,
-    coffee: null,
-    inviteId: 'mi1',
-    inviteStatus: 'pending' as InviteStatus | null,
-    ...overrides,
   }
 }
 
@@ -667,21 +310,6 @@ function fakeAdminEntries(event: H3Event) {
   )
 
   return { total: found.length, entries: found }
-}
-
-const otherAdminEntries: Record<string, AdminEntry[]> = {
-  coffees: [
-    {
-      id: 'c1',
-      name: 'Ayele Fulasa',
-      detail: 'Square Mile',
-      detailId: 'r2',
-      uses: 2,
-    },
-  ],
-  roasters: [
-    { id: 'r2', name: 'Square Mile', detail: null, detailId: null, uses: 1 },
-  ],
 }
 
 function registerAdminEndpoints() {

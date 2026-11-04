@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser, useRouter } from '#imports'
-import { testUser, tid } from '../../fixtures'
+import { tid } from '../../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   useCurrentUser().value = testUser({ role: 'admin' })

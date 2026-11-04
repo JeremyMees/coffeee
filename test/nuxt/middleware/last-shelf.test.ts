@@ -2,12 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
-import {
-  currentPath,
-  forgetLastShelf,
-  rememberShelf,
-  testUser,
-} from '../fixtures'
+import { currentPath, forgetLastShelf, rememberShelf } from '../fixtures'
+import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()
