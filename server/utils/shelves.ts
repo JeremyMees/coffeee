@@ -10,6 +10,7 @@ import {
 } from 'drizzle-orm'
 import type { Database } from '#server/types/database'
 import { purchase, shelf, shelfMember, user } from '#server/db/schemas'
+import { withFreshId } from '#server/utils/ids'
 
 const columns = { id: shelf.id, name: shelf.name, ownerId: shelf.ownerId }
 
@@ -24,7 +25,12 @@ export function createShelf(
   input: { name: string; ownerId: string },
 ) {
   return db.transaction(async tx => {
-    const [created] = await tx.insert(shelf).values(input).returning(columns)
+    const [created] = await withFreshId(tx, (db, id) =>
+      db
+        .insert(shelf)
+        .values({ ...input, id })
+        .returning(columns),
+    )
 
     await tx
       .insert(shelfMember)

@@ -49,6 +49,7 @@ import {
   findOrCreateCoffee,
   removeCoffee,
 } from '#server/utils/coffees'
+import { withFreshId } from '#server/utils/ids'
 import { findOrCreateEntry } from '#server/utils/lists'
 import { addBrewMethod } from '#server/utils/brew-methods'
 import {
@@ -488,6 +489,23 @@ async function insertEntry(
     : taken('name', entry.name)
 }
 
+async function insertRoaster(
+  db: Database,
+  details: RoasterDetails & { createdBy: string },
+): Promise<Addition> {
+  const [added] = await withFreshId(db, (db, id) =>
+    db
+      .insert(roaster)
+      .values({ ...details, id, nameKey: nameKey(details.name) })
+      .onConflictDoNothing({ target: roaster.nameKey })
+      .returning({ id: roaster.id, name: roaster.name }),
+  )
+
+  return added
+    ? { outcome: 'added', entry: added }
+    : taken('name', details.name)
+}
+
 function namedAdder(table: SharedList): AdminListAdder {
   return {
     schema: entryNameSchema,
@@ -543,7 +561,7 @@ const adminListAdders: Record<AdminList, AdminListAdder> = {
   roasters: {
     schema: roasterDetailsSchema,
     add: (db, details: RoasterDetails, createdBy) =>
-      insertEntry(db, roaster, { ...details, createdBy }),
+      insertRoaster(db, { ...details, createdBy }),
   },
   flavorNotes: namedAdder(flavorNote),
   regions: originAdder(region),

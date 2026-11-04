@@ -9,6 +9,7 @@ import type {
 } from '#shared/types/coffee'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
+import { withFreshId } from '#server/utils/ids'
 import {
   coffee,
   coffeeFlavorNote,
@@ -141,11 +142,13 @@ export async function findOrCreateCoffee(
 ) {
   const key = nameKey(input.name)
 
-  const [created] = await db
-    .insert(coffee)
-    .values({ ...input, nameKey: key })
-    .onConflictDoNothing({ target: [coffee.roasterId, coffee.nameKey] })
-    .returning({ id: coffee.id })
+  const [created] = await withFreshId(db, (db, id) =>
+    db
+      .insert(coffee)
+      .values({ ...input, id, nameKey: key })
+      .onConflictDoNothing({ target: [coffee.roasterId, coffee.nameKey] })
+      .returning({ id: coffee.id }),
+  )
 
   const [found] = await db
     .select(coffeeColumns)
