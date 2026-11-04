@@ -15,7 +15,9 @@ beforeEach(() => {
 
 describe('the shelf settings page', () => {
   it('opens on the shelf tab', async () => {
-    const page = await mountSuspended(App, { route: '/shelves/home/settings' })
+    const page = await mountSuspended(App, {
+      route: '/shelves/sarahs-shelf-home/settings',
+    })
 
     expect(page.get(tid('page-title')).text()).toBe('Settings')
     expect(page.get(tid('settings-tab-shelf')).attributes('data-state')).toBe(
@@ -27,7 +29,7 @@ describe('the shelf settings page', () => {
 
   it('opens the tab the address names', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/settings?tab=grinders',
+      route: '/shelves/sarahs-shelf-home/settings?tab=grinders',
     })
 
     expect(page.get(tid('shelf-grinders')).isVisible()).toBe(true)
@@ -35,20 +37,26 @@ describe('the shelf settings page', () => {
   })
 
   it('shows the grinders the shelf owns', async () => {
-    const page = await mountSuspended(App, { route: '/shelves/home/settings' })
+    const page = await mountSuspended(App, {
+      route: '/shelves/sarahs-shelf-home/settings',
+    })
 
     expect(page.get(tid('shelf-grinder-name')).text()).toBe('Fellow Opus Gen 2')
   })
 
   it('lets members invite people and see pending invites', async () => {
-    const page = await mountSuspended(App, { route: '/shelves/home/settings' })
+    const page = await mountSuspended(App, {
+      route: '/shelves/sarahs-shelf-home/settings',
+    })
 
     expect(page.find(tid('shelf-invite-form')).exists()).toBe(true)
     expect(page.get(tid('shelf-invite')).text()).toContain('anna@example.com')
   })
 
   it('lists the members and lets the shelf owner manage the shelf', async () => {
-    const page = await mountSuspended(App, { route: '/shelves/home/settings' })
+    const page = await mountSuspended(App, {
+      route: '/shelves/sarahs-shelf-home/settings',
+    })
 
     expect(page.findAll(tid('shelf-member')).map(row => row.text())).toEqual([
       expect.stringContaining('Sarah (you)'),

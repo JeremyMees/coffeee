@@ -6,6 +6,7 @@ import type {
   OptionalEmailKind,
 } from '#shared/types/notifications'
 import { notificationText } from '#shared/utils/notifications'
+import { shelfCoffeePath, shelfPath } from '#shared/utils/slugs'
 import {
   coffee,
   invite,
@@ -66,7 +67,7 @@ async function emailShelfEvent(
     shelf: found!.shelf,
     coffee: about?.name ?? null,
   })
-  const shelfLink = `${input.origin}/shelves/${input.shelfId}`
+  const onShelf = { id: input.shelfId, name: found!.shelf }
 
   const sent = await Promise.allSettled(
     recipients.map(recipient =>
@@ -76,9 +77,14 @@ async function emailShelfEvent(
         template: 'ShelfNotification',
         values: {
           text,
-          link: input.coffeeId
-            ? `${shelfLink}/coffees/${input.coffeeId}`
-            : shelfLink,
+          link:
+            input.origin +
+            (about
+              ? shelfCoffeePath(onShelf, {
+                  id: input.coffeeId!,
+                  name: about.name,
+                })
+              : shelfPath(onShelf)),
           settings: notificationSettingsLink(input.origin),
         },
       }),

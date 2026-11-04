@@ -47,7 +47,7 @@ const coffee = {
 
 async function openSheet(open = true) {
   const sheet = await mountSuspended(EditCoffeeSheet, {
-    route: '/shelves/home/coffees/c1',
+    route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     props: { shelfId: 'home', coffee, open },
     attachTo: document.body,
   })

@@ -29,8 +29,8 @@ describe('the notifications page', () => {
     expect(
       rows.map(row => row.get(tid('notification-link')).attributes('href')),
     ).toEqual([
-      '/shelves/home/coffees/c1',
-      '/shelves/home/settings?tab=members',
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+      '/shelves/sarahs-shelf-home/settings?tab=members',
     ])
     expect(rows[0]?.attributes('data-unread')).toBe('true')
   })
@@ -66,7 +66,7 @@ describe('the notifications page', () => {
 
     await page.get(tid('notification-accept')).trigger('click')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/office'))
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/office-office'))
     expect(api.inviteCalls).toEqual([{ accept: 'mi1' }])
   })
 

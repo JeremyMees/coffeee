@@ -68,5 +68,5 @@ test('keeps people who are not admins out', async ({ page, people }) => {
 
   await page.goto('/admin/invites')
 
-  await expect(page).toHaveURL(`/shelves/${sam.shelfId}`)
+  await expect(page).toHaveURL(new RegExp(`/shelves/[a-z0-9-]*${sam.shelfId}$`))
 })

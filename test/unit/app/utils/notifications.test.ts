@@ -10,7 +10,9 @@ function notification(
 
 describe('notificationLink', () => {
   it('links to the coffee on its shelf', () => {
-    expect(notificationLink(notification())).toBe('/shelves/home/coffees/c1')
+    expect(notificationLink(notification())).toBe(
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+    )
   })
 
   it('links to the members of the shelf when someone joins or leaves', () => {
@@ -18,7 +20,7 @@ describe('notificationLink', () => {
       notificationLink(
         notification({ kind: 'memberLeft', coffeeId: null, coffee: null }),
       ),
-    ).toBe('/shelves/home/settings?tab=members')
+    ).toBe('/shelves/sarahs-shelf-home/settings?tab=members')
   })
 
   it('links an accepted invite to the shelf it joined', () => {
@@ -32,7 +34,7 @@ describe('notificationLink', () => {
           inviteStatus: 'accepted',
         }),
       ),
-    ).toBe('/shelves/home')
+    ).toBe('/shelves/sarahs-shelf-home')
   })
 
   it('gives an unanswered invite no link, since it is answered in place', () => {

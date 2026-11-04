@@ -23,7 +23,7 @@ beforeEach(() => {
   useSearchFocus().value = false
 })
 
-async function discover(route = '/shelves/home/discover') {
+async function discover(route = '/shelves/sarahs-shelf-home/discover') {
   const page = await mountSuspended(App, { route, attachTo: document.body })
   const names = () =>
     page.findAll(tid('catalog-result-name')).map(name => name.text())
@@ -54,7 +54,7 @@ describe('the Discover page', () => {
     expect(names()).toEqual(['Gesha Village', 'Ayele Fulasa', 'El Paraiso'])
     expect(page.get(tid('discover-total')).text()).toBe('3 coffees')
     expect(page.get(tid('catalog-result')).attributes('href')).toBe(
-      '/coffees/c4',
+      '/coffees/gesha-village-c4',
     )
     expect(allByTestId('catalog-result-mine')).toHaveLength(1)
   })
@@ -75,7 +75,9 @@ describe('the Discover page', () => {
   it('starts from the search in the address', async () => {
     api.catalog = catalogCoffees()
 
-    const { page, names } = await discover('/shelves/home/discover?q=jasmine')
+    const { page, names } = await discover(
+      '/shelves/sarahs-shelf-home/discover?q=jasmine',
+    )
 
     expect(names()).toEqual(['El Paraiso'])
     expect(
@@ -124,7 +126,7 @@ describe('the Discover page', () => {
     await click('discover-no-match-clear')
 
     await vi.waitFor(() => expect(names()).toHaveLength(3))
-    expect(currentPath()).toBe('/shelves/home/discover')
+    expect(currentPath()).toBe('/shelves/sarahs-shelf-home/discover')
   })
 
   it('says when no coffee matches the filters', async () => {
@@ -186,7 +188,7 @@ describe('the Discover page', () => {
     api.catalog = catalogCoffees()
 
     const { page } = await discover(
-      '/shelves/home/discover?mine=true&roasterId=r1&roastedFor=filter&sort=communityRating',
+      '/shelves/sarahs-shelf-home/discover?mine=true&roasterId=r1&roastedFor=filter&sort=communityRating',
     )
 
     expect(api.catalogQueries.at(-1)).toMatchObject({
@@ -204,7 +206,7 @@ describe('the Discover page', () => {
   })
 
   it('does not look up names when no filter needs one', async () => {
-    await discover('/shelves/home/discover?mine=true')
+    await discover('/shelves/sarahs-shelf-home/discover?mine=true')
 
     expect(api.filterLabelQueries).toEqual([])
   })
@@ -226,7 +228,9 @@ describe('the Discover page', () => {
       expect(useRouter().currentRoute.value.query).toEqual({ roasterId: 'r1' }),
     )
 
-    const { page } = await discover('/shelves/home/discover?roasterId=r1')
+    const { page } = await discover(
+      '/shelves/sarahs-shelf-home/discover?roasterId=r1',
+    )
 
     expect(page.get(tid('catalog-filter-roasters')).text()).toBe('La Cabra')
     expect(api.filterLabelQueries).toEqual([])

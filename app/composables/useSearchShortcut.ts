@@ -15,7 +15,7 @@ export function useSearchShortcut() {
     event.preventDefault()
     focus.value = true
 
-    const discover = `/shelves/${shelf.value.id}/discover`
+    const discover = `${shelfPath(shelf.value)}/discover`
     if (route.path !== discover) navigateTo(discover)
   })
 }

@@ -17,7 +17,7 @@ const pagination = defineModel<PaginationState>('pagination', {
 const props = defineProps<{
   coffees: LibraryCoffee[]
   total: number
-  shelfId: string
+  shelf: { id: string; name: string }
 }>()
 
 function sortIcon(column: Column<LibraryCoffee>) {
@@ -66,7 +66,7 @@ const columns: ColumnDef<LibraryCoffee, unknown>[] = [
       h(
         NuxtLink,
         {
-          to: `/shelves/${props.shelfId}/coffees/${row.original.id}`,
+          to: shelfCoffeePath(props.shelf, row.original),
           class: 'font-sans text-sm font-semibold hover:underline',
           'data-testid': 'library-row-name',
         },

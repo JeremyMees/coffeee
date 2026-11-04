@@ -10,7 +10,7 @@ export function useDestinations() {
   const shelf = useCurrentShelf()
 
   return computed(() => {
-    const base = `/shelves/${shelf.value?.id}`
+    const base = shelf.value ? shelfPath(shelf.value) : '/shelves/new'
 
     return [
       { label: 'Stock', to: base, icon: CoffeeIcon },

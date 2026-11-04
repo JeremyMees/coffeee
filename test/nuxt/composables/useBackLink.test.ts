@@ -4,7 +4,7 @@ import { useBackLink, useCurrentUser, useRouter } from '#imports'
 import { forgetLastShelf, runOn } from '../fixtures'
 import { testUser } from '#test/fixtures/users'
 
-const stock = { label: 'Stock', to: '/shelves/work' }
+const stock = { label: 'Stock', to: '/shelves/work-work' }
 
 function cameFrom(back: string | null) {
   window.history.replaceState({ ...window.history.state, back }, '')
@@ -17,7 +17,9 @@ beforeEach(() => {
 })
 
 async function backLink() {
-  const back = await runOn('/shelves/work/coffees/c1', () => useBackLink(stock))
+  const back = await runOn('/shelves/work-work/coffees/ayele-fulasa-c1', () =>
+    useBackLink(stock),
+  )
   await flushPromises()
 
   return back
@@ -35,13 +37,13 @@ describe('useBackLink', () => {
   })
 
   it.each([
-    ['/shelves/work/library?favourites=true', 'Library'],
-    ['/shelves/work/discover?q=kenya&sort=communityRating', 'Discover'],
-    ['/shelves/work', 'Stock'],
+    ['/shelves/work-work/library?favourites=true', 'Library'],
+    ['/shelves/work-work/discover?q=kenya&sort=communityRating', 'Discover'],
+    ['/shelves/work-work', 'Stock'],
     ['/roasters', 'Roasters'],
     ['/roasters/r1', 'Roaster'],
-    ['/coffees/c1', 'Coffee'],
-    ['/shelves/home/coffees/c1', 'Coffee'],
+    ['/coffees/ayele-fulasa-c1', 'Coffee'],
+    ['/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1', 'Coffee'],
   ])('leads back to %s as it was', async (back, label) => {
     cameFrom(back)
 
@@ -59,7 +61,7 @@ describe('useBackLink', () => {
   })
 
   it('goes back in history so the list keeps its scroll position', async () => {
-    cameFrom('/shelves/work/library')
+    cameFrom('/shelves/work-work/library')
     const { back } = await backLink()
     const historyBack = vi
       .spyOn(useRouter(), 'back')
@@ -74,7 +76,7 @@ describe('useBackLink', () => {
   })
 
   it('lets a modified click open the list in a new tab', async () => {
-    cameFrom('/shelves/work/library')
+    cameFrom('/shelves/work-work/library')
     const { back } = await backLink()
     const event = clickWith({ metaKey: true })
 

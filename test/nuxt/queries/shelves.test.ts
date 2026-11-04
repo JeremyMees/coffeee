@@ -96,7 +96,7 @@ describe('useShelfLeave', () => {
 
     expect(api.shelfCalls).toEqual([{ leave: 'home' }])
     expect(shelves()?.map(shelf => shelf.id)).toEqual(['work'])
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work'))
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work-work'))
   })
 })
 
@@ -108,7 +108,7 @@ describe('useShelfDelete', () => {
 
     expect(api.shelfCalls).toEqual([{ delete: 'home' }])
     expect(shelves()?.map(shelf => shelf.id)).toEqual(['work'])
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work'))
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work-work'))
   })
 
   it('keeps the shelf when deleting fails', async () => {

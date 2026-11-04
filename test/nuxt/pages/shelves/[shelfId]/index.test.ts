@@ -17,7 +17,9 @@ beforeEach(() => {
 
 describe('the Stock page', () => {
   it('has Stock as its heading', async () => {
-    const page = await mountSuspended(App, { route: '/shelves/home' })
+    const page = await mountSuspended(App, {
+      route: '/shelves/sarahs-shelf-home',
+    })
 
     expect(page.get(tid('page-title')).text()).toBe('Stock')
   })
@@ -36,10 +38,14 @@ describe('the Stock page', () => {
       },
     ]
 
-    const page = await mountSuspended(App, { route: '/shelves/home' })
+    const page = await mountSuspended(App, {
+      route: '/shelves/sarahs-shelf-home',
+    })
     const card = page.get(tid('stock', 'coffee-card'))
 
-    expect(card.attributes('href')).toBe('/shelves/home/coffees/c1')
+    expect(card.attributes('href')).toBe(
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+    )
     expect(card.get(tid('coffee-card-name')).text()).toBe('Ayele Fulasa')
     expect(card.get(tid('coffee-card-flavor-note')).text()).toBe('Lime')
     expect(
@@ -50,7 +56,9 @@ describe('the Stock page', () => {
   })
 
   it('invites adding a coffee when nothing is in stock', async () => {
-    const page = await mountSuspended(App, { route: '/shelves/home' })
+    const page = await mountSuspended(App, {
+      route: '/shelves/sarahs-shelf-home',
+    })
 
     await page.get(tid('stock-empty-add-coffee')).trigger('click')
 

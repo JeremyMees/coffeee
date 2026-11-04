@@ -33,7 +33,7 @@ beforeEach(() => {
 describe('a coffee page', () => {
   it('shows the coffee and the bags bought on this shelf', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('coffee-title')).text()).toBe('Ayele Fulasa')
@@ -62,7 +62,7 @@ describe('a coffee page', () => {
     api.coffee = { ...ayele(), purchases: [] }
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('purchases-empty')).text()).toBe(
@@ -73,7 +73,7 @@ describe('a coffee page', () => {
 
   it('offers to buy it again once the shelf has a bag', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('coffee-buy-again')).text()).toBe('Buy again')
@@ -81,19 +81,19 @@ describe('a coffee page', () => {
 
   it('leads back to Stock', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
     const back = page.get(tid('coffee-back'))
 
     expect(back.text()).toBe('Stock')
-    expect(back.attributes('href')).toBe('/shelves/home')
+    expect(back.attributes('href')).toBe('/shelves/sarahs-shelf-home')
   })
 
   it('offers no edit to someone who can only read it', async () => {
     api.coffee = { ...ayele(), canEdit: false }
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.find(tid('coffee-edit')).exists()).toBe(false)
@@ -101,7 +101,7 @@ describe('a coffee page', () => {
 
   it('shows the new details once they are saved', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
       attachTo: document.body,
     })
     await page.get(tid('coffee-edit')).trigger('click')
@@ -118,7 +118,7 @@ describe('a coffee page', () => {
 
   it('rates the coffee and marks it a favourite once it would be bought again', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     await page.get(tid('verdict-star-5')).trigger('click')
@@ -148,7 +148,7 @@ describe('a coffee page', () => {
     ]
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('coffee-reviews-average')).text()).toContain('3.5')
@@ -160,7 +160,7 @@ describe('a coffee page', () => {
 
   it('says when nobody has rated the coffee yet', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('coffee-reviews-unrated')).text()).toBe(
@@ -170,7 +170,7 @@ describe('a coffee page', () => {
 
   it('keeps a grind setting for the coffee, not in its details', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     await page.get(tid('grind-setting-input')).setValue('12')
@@ -201,7 +201,7 @@ describe('a coffee page', () => {
     ]
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(
@@ -211,7 +211,7 @@ describe('a coffee page', () => {
 
   it('shows the roaster and its edited details', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
       attachTo: document.body,
     })
     expect(page.get(tid('roaster-details-place')).text()).toBe(
@@ -231,14 +231,16 @@ describe('a coffee page', () => {
   })
 
   it('is not found when the shelf has no such coffee', async () => {
-    await mountSuspended(App, { route: '/shelves/home/coffees/nope' })
+    await mountSuspended(App, {
+      route: '/shelves/sarahs-shelf-home/coffees/nope',
+    })
 
     expect(useError().value).toMatchObject({ statusCode: 404 })
   })
 
   it('says where it was grown', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('detail-origins')).text()).toBe('Ethiopia')
@@ -261,7 +263,7 @@ describe('a coffee page', () => {
     }
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('detail-processes')).text()).toBe('Washed, Anaerobic')
@@ -277,7 +279,7 @@ describe('a coffee page', () => {
     api.coffee = { ...ayele(), roastLevel: 'light', roastedFor: 'filter' }
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('detail-roast')).text()).toBe('Light · Filter')
@@ -293,7 +295,7 @@ describe('a coffee page', () => {
     }
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('detail-producers')).text()).toBe(
@@ -316,7 +318,7 @@ describe('a coffee page', () => {
     }
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('detail-origins')).text()).toBe('Colombia, Ethiopia')
@@ -346,7 +348,7 @@ describe('a coffee page', () => {
     }
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(
@@ -362,7 +364,7 @@ describe('a coffee page', () => {
     api.coffee = { ...ayele(), photoUrl: '/api/photos/coffees/a.webp' }
 
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('coffee-photo-image')).attributes('src')).toBe(
@@ -373,7 +375,7 @@ describe('a coffee page', () => {
 
   it('shows a new photo once it is uploaded', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
     const input = page.get(tid('coffee-photo-input'))
     Object.defineProperty(input.element, 'files', {
@@ -391,7 +393,7 @@ describe('a coffee page', () => {
 
   it('sums up what the shelf bought', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.get(tid('summary-last-bought')).text()).toBe(
@@ -402,7 +404,7 @@ describe('a coffee page', () => {
 
   it('buys the coffee again from the last purchase', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
       attachTo: document.body,
     })
     await page.get(tid('coffee-buy-again')).trigger('click')
@@ -419,7 +421,7 @@ describe('a coffee page', () => {
 
   it('finishes the oldest bag in stock and offers no finish once all are', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     await page.get(tid('coffee-finish')).trigger('click')
@@ -435,7 +437,7 @@ describe('a coffee page', () => {
   it('says why the coffee could not be finished', async () => {
     api.purchaseFails = true
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     await page.get(tid('coffee-finish')).trigger('click')
@@ -449,7 +451,7 @@ describe('a coffee page', () => {
 
   it('edits a purchase in the history', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
       attachTo: document.body,
     })
     await page.findAll(tid('purchase-edit'))[1]!.trigger('click')
@@ -470,7 +472,7 @@ describe('a coffee page', () => {
   it('says nobody bought it once every purchase is deleted', async () => {
     api.coffee = { ...ayele(), purchases: ayele().purchases.slice(0, 1) }
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     await page.get(tid('purchase-delete')).trigger('click')
@@ -487,13 +489,15 @@ describe('a coffee page', () => {
   it('deletes the coffee and goes back', async () => {
     api.coffee = { ...api.coffee, canDelete: true }
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     await page.get(tid('coffee-delete')).trigger('click')
     await click('confirm-dialog-confirm')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/home'))
+    await vi.waitFor(() =>
+      expect(currentPath()).toBe('/shelves/sarahs-shelf-home'),
+    )
     expect(api.coffeeDeletes).toEqual(['c1'])
   })
 
@@ -501,7 +505,7 @@ describe('a coffee page', () => {
     api.coffee = { ...api.coffee, canDelete: true }
     api.coffeeDeleteFails = true
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     await page.get(tid('coffee-delete')).trigger('click')
@@ -512,12 +516,14 @@ describe('a coffee page', () => {
         'only an admin can delete it',
       ),
     )
-    expect(currentPath()).toBe('/shelves/home/coffees/c1')
+    expect(currentPath()).toBe(
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+    )
   })
 
   it('offers no delete button to someone who may not delete it', async () => {
     const page = await mountSuspended(App, {
-      route: '/shelves/home/coffees/c1',
+      route: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     })
 
     expect(page.find(tid('coffee-delete')).exists()).toBe(false)

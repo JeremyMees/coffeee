@@ -32,5 +32,7 @@ test('keeps the admin link and pages from everyone else', async ({
 
   await page.goto('/admin')
 
-  await expect(page).toHaveURL(`/shelves/${member.shelfId}`)
+  await expect(page).toHaveURL(
+    new RegExp(`/shelves/[a-z0-9-]*${member.shelfId}$`),
+  )
 })

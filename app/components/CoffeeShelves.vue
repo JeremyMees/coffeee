@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ArrowRightIcon } from '@lucide/vue'
 
-defineProps<{ coffeeId: string; shelves: CoffeeShelf[] }>()
+defineProps<{
+  coffee: { id: string; name: string }
+  shelves: CoffeeShelf[]
+}>()
 </script>
 
 <template>
@@ -10,7 +13,7 @@ defineProps<{ coffeeId: string; shelves: CoffeeShelf[] }>()
     <ul class="mt-4 divide-y rounded-[18px] border">
       <li v-for="shelf in shelves" :key="shelf.id">
         <NuxtLink
-          :to="`/shelves/${shelf.id}/coffees/${coffeeId}`"
+          :to="shelfCoffeePath(shelf, coffee)"
           :data-testid="`coffee-shelf-${shelf.id}`"
           class="flex items-center justify-between gap-4 p-4 text-xs transition-colors hover:bg-accent"
         >

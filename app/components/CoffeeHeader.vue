@@ -3,7 +3,7 @@ import { ArrowUpRightIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
 
 const props = defineProps<{
   coffee: Pick<SharedCoffee, 'id' | 'name' | 'roaster' | 'link'> & {
-    roasterDetails: Pick<ShelfRoaster, 'id'>
+    roasterDetails: Pick<ShelfRoaster, 'id' | 'name'>
   }
   editable: boolean
   deletable?: boolean
@@ -18,7 +18,7 @@ const morph = useMorph('coffee', () => props.coffee.id)
   <header class="mt-6 flex items-end justify-between gap-4">
     <div>
       <NuxtLink
-        :to="`/roasters/${coffee.roasterDetails.id}`"
+        :to="roasterPath(coffee.roasterDetails)"
         class="text-xs uppercase underline-offset-4 hover:underline"
         data-testid="coffee-roaster-name"
       >

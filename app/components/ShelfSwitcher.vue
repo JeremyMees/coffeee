@@ -18,12 +18,12 @@ const route = useRoute()
 const user = useCurrentUser()
 const current = useCurrentShelf()
 
-function pathOn(shelfId: string) {
-  const currentId = shelfIdOf(route)
+function pathOn(shelf: { id: string; name: string }) {
+  const segment = 'shelfId' in route.params ? route.params.shelfId : undefined
 
-  return currentId
-    ? route.path.replace(`/shelves/${currentId}`, `/shelves/${shelfId}`)
-    : `/shelves/${shelfId}`
+  return segment
+    ? route.path.replace(`/shelves/${segment}`, shelfPath(shelf))
+    : shelfPath(shelf)
 }
 </script>
 
@@ -60,7 +60,7 @@ function pathOn(shelfId: string) {
         as-child
       >
         <NuxtLink
-          :to="pathOn(shelf.id)"
+          :to="pathOn(shelf)"
           :aria-current="shelf.id === current?.id ? 'page' : undefined"
           data-testid="shelf-menu-shelf"
         >
@@ -71,7 +71,7 @@ function pathOn(shelfId: string) {
       <DropdownMenuSeparator />
       <DropdownMenuItem v-if="current" class="rounded-full px-3 py-2" as-child>
         <NuxtLink
-          :to="`/shelves/${current.id}/settings`"
+          :to="`${shelfPath(current)}/settings`"
           data-testid="shelf-menu-settings"
         >
           <SettingsIcon aria-hidden="true" />

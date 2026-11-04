@@ -38,6 +38,8 @@ export const coffeeVerdict = pgTable(
       name: 'coffeeVerdictCoffeeIdFk',
       columns: [table.coffeeId],
       foreignColumns: [coffee.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
   ],
 )

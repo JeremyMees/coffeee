@@ -39,7 +39,7 @@ async function answer(choice: 'accept' | 'decline') {
       user.value?.shelves.push(shelf)
     }
 
-    await navigateTo(`/shelves/${shelf.id}`)
+    await navigateTo(shelfPath(shelf))
   } catch (caught) {
     answerError.value = serverErrors(caught).message
   }

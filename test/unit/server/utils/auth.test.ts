@@ -454,7 +454,7 @@ describe('signing up from a shelf invite', () => {
       {
         template: 'ShelfNotification',
         values: {
-          link: `http://localhost:3000/shelves/${home.id}`,
+          link: `http://localhost:3000/shelves/home-${home.id}`,
           settings: 'http://localhost:3000/profile?tab=notifications',
         },
       },

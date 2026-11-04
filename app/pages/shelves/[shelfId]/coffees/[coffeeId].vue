@@ -4,11 +4,12 @@ import { useShelfCoffee } from '~/queries/coffees'
 import { useCoffeeFinish } from '~/queries/purchases'
 
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
-const shelfId = computed(() => route.params.shelfId)
-const coffeeId = computed(() => route.params.coffeeId)
+const shelfId = computed(() => idFrom(route.params.shelfId))
+const coffeeId = computed(() => idFrom(route.params.coffeeId))
+const shelf = useCurrentShelf()
 const { link: back, back: goBack } = useBackLink(() => ({
   label: 'Stock',
-  to: `/shelves/${shelfId.value}`,
+  to: shelf.value ? shelfPath(shelf.value) : '/',
 }))
 
 const editing = ref(false)
@@ -25,6 +26,12 @@ await suspense()
 if (error.value || !coffee.value) {
   showError({ statusCode: 404, statusMessage: 'Coffee not found' })
 }
+
+await useCanonicalSlug(
+  'coffees',
+  () => route.params.coffeeId,
+  () => coffee.value,
+)
 
 useHead({ title: () => `${coffee.value?.name} · Coffeee` })
 

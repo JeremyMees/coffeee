@@ -11,7 +11,7 @@ async function table(sorting: SortingState = []) {
     props: {
       coffees: libraryCoffees(),
       total: 3,
-      shelfId: 'home',
+      shelf: { id: 'home', name: "Sarah's shelf" },
       sorting,
       'onUpdate:sorting': (changed: SortingState) => sortings.push(changed),
       pagination: { pageIndex: 0, pageSize: libraryPageSize },
@@ -29,7 +29,7 @@ describe('LibraryTable', () => {
       row!.get(tid(`data-table-cell-${column}`)).text()
 
     expect(row!.get(tid('library-row-name')).attributes('href')).toBe(
-      '/shelves/home/coffees/c1',
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     )
     expect(cell('name')).toBe('Ayele Fulasa')
     expect(row!.get(tid('rating-stars')).attributes('aria-label')).toBe(

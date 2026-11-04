@@ -6,7 +6,10 @@ import { tid } from '../fixtures'
 
 function result(overrides: Partial<CatalogCoffee> = {}) {
   return mountSuspended(CatalogResult, {
-    props: { coffee: catalogCoffee(overrides), to: '/shelves/home/coffees/c1' },
+    props: {
+      coffee: catalogCoffee(overrides),
+      to: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+    },
   })
 }
 
@@ -32,7 +35,7 @@ describe('CatalogResult', () => {
     const wrapper = await result()
 
     expect(wrapper.get(tid('catalog-result')).attributes('href')).toBe(
-      '/shelves/home/coffees/c1',
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     )
     expect(wrapper.get(tid('catalog-result-name')).text()).toBe('Ayele Fulasa')
     expect(wrapper.get(tid('catalog-result-roaster')).text()).toBe(

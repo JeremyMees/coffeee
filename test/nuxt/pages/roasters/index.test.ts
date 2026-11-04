@@ -38,7 +38,7 @@ describe('the roasters page', () => {
     expect(names()).toEqual(['La Cabra', 'Square Mile'])
     expect(page.get(tid('roasters-total')).text()).toBe('2 roasters')
     expect(page.get(tid('roaster-result')).attributes('href')).toBe(
-      '/roasters/r1',
+      '/roasters/la-cabra-r1',
     )
   })
 

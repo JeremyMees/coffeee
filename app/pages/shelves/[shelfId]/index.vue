@@ -4,7 +4,8 @@ import { useStock } from '~/queries/coffees'
 useHead({ title: 'Stock · Coffeee' })
 
 const route = useRoute('shelves-shelfId')
-const shelfId = computed(() => route.params.shelfId)
+const shelfId = computed(() => idFrom(route.params.shelfId))
+const shelf = useCurrentShelf()
 const addCoffee = useAddCoffee()
 
 const { data, suspense } = useStock(shelfId)
@@ -43,10 +44,7 @@ const stock = computed(() => data.value ?? [])
         :key="coffee.id"
         class="not-first:-mt-[216px] lg:not-first:mt-0"
       >
-        <CoffeeCard
-          :coffee="coffee"
-          :to="`/shelves/${shelfId}/coffees/${coffee.id}`"
-        />
+        <CoffeeCard :coffee="coffee" :to="shelfCoffeePath(shelf!, coffee)" />
       </li>
     </ul>
   </main>

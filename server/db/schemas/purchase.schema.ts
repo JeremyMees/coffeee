@@ -34,12 +34,14 @@ export const purchase = pgTable(
       name: 'purchaseShelfIdFk',
       columns: [table.shelfId],
       foreignColumns: [shelf.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
     foreignKey({
       name: 'purchaseCoffeeIdFk',
       columns: [table.coffeeId],
       foreignColumns: [coffee.id],
-    }),
+    }).onUpdate('cascade'),
     foreignKey({
       name: 'purchaseAddedByFk',
       columns: [table.addedBy],

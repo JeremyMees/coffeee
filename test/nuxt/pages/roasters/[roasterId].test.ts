@@ -61,7 +61,7 @@ describe('the page of a roaster', () => {
     expect(names()).toEqual(['Ayele Fulasa'])
     expect(api.catalogQueries.at(-1)).toMatchObject({ roasterId: 'r2' })
     expect(page.get(tid('catalog-result')).attributes('href')).toBe(
-      '/coffees/c1',
+      '/coffees/ayele-fulasa-c1',
     )
     expect(page.findAll(tid('catalog-result-mine'))).toHaveLength(1)
   })

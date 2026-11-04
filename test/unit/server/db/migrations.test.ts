@@ -129,3 +129,47 @@ describe('the personal grind settings migrations', () => {
     ])
   }, 30_000)
 })
+
+describe('the short ids migration', () => {
+  it('gives shelves, coffees and roasters short ids and keeps what points at them', async () => {
+    const client = new PGlite({ extensions: { pg_trgm } })
+
+    await migrateThrough(client, '0020_notification_emails')
+
+    await client.exec(`
+      insert into "user" ("id", "name", "email")
+      values ('sarah', 'Sarah', 'sarah@example.com');
+      insert into "shelf" ("id", "name", "ownerId")
+      values ('2a32bc78-fe77-46c0-9f5c-c51cbed7bc88', 'Home', 'sarah');
+      insert into "shelfMember" ("shelfId", "userId")
+      values ('2a32bc78-fe77-46c0-9f5c-c51cbed7bc88', 'sarah');
+      insert into "roaster" ("id", "name", "nameKey")
+      values ('8a1f3e52-7c41-4f0e-9d2b-3b6f5a0c9e11', 'Mok', 'mok');
+      insert into "coffee" ("id", "roasterId", "name", "nameKey", "roastLevel", "roastedFor")
+      values ('2199c26e-d7bf-443c-ac42-a4cc02ceaed9', '8a1f3e52-7c41-4f0e-9d2b-3b6f5a0c9e11', 'Finca Gascon', 'finca gascon', 'light', 'filter');
+      insert into "purchase" ("id", "shelfId", "coffeeId", "purchasedOn")
+      values ('bag', '2a32bc78-fe77-46c0-9f5c-c51cbed7bc88', '2199c26e-d7bf-443c-ac42-a4cc02ceaed9', '2026-11-01');
+    `)
+
+    await migrateTo(client, '0021_short_ids')
+
+    const { rows } = await client.query<Record<string, string>>(`
+      select "shelf"."id" as "shelfId", "coffee"."id" as "coffeeId",
+             "roaster"."id" as "roasterId", "shelfMember"."userId"
+      from "purchase"
+      join "shelf" on "shelf"."id" = "purchase"."shelfId"
+      join "shelfMember" on "shelfMember"."shelfId" = "shelf"."id"
+      join "coffee" on "coffee"."id" = "purchase"."coffeeId"
+      join "roaster" on "roaster"."id" = "coffee"."roasterId"
+    `)
+
+    expect(rows).toEqual([
+      {
+        shelfId: expect.stringMatching(/^[a-z0-9]{8}$/),
+        coffeeId: expect.stringMatching(/^[a-z0-9]{8}$/),
+        roasterId: expect.stringMatching(/^[a-z0-9]{8}$/),
+        userId: 'sarah',
+      },
+    ])
+  }, 30_000)
+})

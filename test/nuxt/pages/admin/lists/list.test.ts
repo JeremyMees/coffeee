@@ -194,7 +194,9 @@ describe('a shared list on the admin page', () => {
     await useRouter().push('/admin/lists/flavorNotes')
 
     await vi.waitFor(() =>
-      expect(useRouter().currentRoute.value.path).toBe('/shelves/home'),
+      expect(useRouter().currentRoute.value.path).toBe(
+        '/shelves/sarahs-shelf-home',
+      ),
     )
   })
 })

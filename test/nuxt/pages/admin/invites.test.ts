@@ -81,7 +81,9 @@ describe('admin invites page', () => {
 
     await mountSuspended(App, { route: '/admin/invites' })
 
-    expect(useRouter().currentRoute.value.path).toBe('/shelves/home')
+    expect(useRouter().currentRoute.value.path).toBe(
+      '/shelves/jeremys-shelf-home',
+    )
   })
 
   it('lists pending invites and leads back to the admin page', async () => {

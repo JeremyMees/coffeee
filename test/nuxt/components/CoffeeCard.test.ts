@@ -26,7 +26,9 @@ beforeEach(() => {
 
 describe('CoffeeCard', () => {
   it('names its photo and name for the morph into the coffee it opens', async () => {
-    const card = await mountCard({ to: '/shelves/home/coffees/c1' })
+    const card = await mountCard({
+      to: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+    })
     expect(
       card.get(tid('coffee-card-photo-frame')).attributes('style'),
     ).toBeUndefined()
@@ -104,10 +106,14 @@ describe('CoffeeCard', () => {
   })
 
   it('opens the coffee when it has somewhere to go', async () => {
-    const card = await mountCard({ to: '/shelves/home/coffees/c1' })
+    const card = await mountCard({
+      to: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+    })
 
     expect(card.element.tagName).toBe('A')
-    expect(card.attributes('href')).toBe('/shelves/home/coffees/c1')
+    expect(card.attributes('href')).toBe(
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+    )
   })
 
   it('is just a card otherwise', async () => {

@@ -185,7 +185,7 @@ describe('emailing shelf notifications', () => {
         template: 'ShelfNotification',
         values: {
           text: 'Sarah added Ayele Fulasa to Home',
-          link: `${origin}/shelves/${home.id}/coffees/${coffee.id}`,
+          link: `${origin}/shelves/home-${home.id}/coffees/ayele-fulasa-${coffee.id}`,
           settings: `${origin}/profile?tab=notifications`,
         },
       },
@@ -206,7 +206,7 @@ describe('emailing shelf notifications', () => {
     expect(sending.sent).toMatchObject([
       {
         subject: 'Sarah left Home',
-        values: { link: `${origin}/shelves/${home.id}` },
+        values: { link: `${origin}/shelves/home-${home.id}` },
       },
     ])
   })

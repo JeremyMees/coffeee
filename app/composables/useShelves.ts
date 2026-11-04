@@ -3,7 +3,7 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router'
 export function shelfIdOf(
   route: Pick<RouteLocationNormalizedLoaded, 'params'>,
 ) {
-  return 'shelfId' in route.params ? route.params.shelfId : undefined
+  return 'shelfId' in route.params ? idFrom(route.params.shelfId) : undefined
 }
 
 export function useLastShelfId() {
@@ -31,5 +31,5 @@ export function lastShelfPath() {
   const lastShelfId = useLastShelfId().value
   const shelf = shelves.find(shelf => shelf.id === lastShelfId) ?? shelves[0]
 
-  return shelf ? `/shelves/${shelf.id}` : '/shelves/new'
+  return shelf ? shelfPath(shelf) : '/shelves/new'
 }

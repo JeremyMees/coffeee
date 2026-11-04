@@ -36,7 +36,9 @@ export const invite = pgTable(
       name: 'inviteShelfIdFk',
       columns: [table.shelfId],
       foreignColumns: [shelf.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
     index('inviteShelfIdIdx').on(table.shelfId),
     check(
       'inviteEmailOrLink',

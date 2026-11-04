@@ -43,7 +43,7 @@ describe('useAddCoffeeShortcut', () => {
   }
 
   it('opens add coffee on N', async () => {
-    await runOn('/shelves/home', useAddCoffeeShortcut)
+    await runOn('/shelves/sarahs-shelf-home', useAddCoffeeShortcut)
 
     const event = press()
 
@@ -54,7 +54,7 @@ describe('useAddCoffeeShortcut', () => {
   it.each([{ metaKey: true }, { ctrlKey: true }, { altKey: true }])(
     'leaves N with %o to the browser',
     async modifier => {
-      await runOn('/shelves/home', useAddCoffeeShortcut)
+      await runOn('/shelves/sarahs-shelf-home', useAddCoffeeShortcut)
 
       const event = press(modifier)
 
@@ -64,7 +64,7 @@ describe('useAddCoffeeShortcut', () => {
   )
 
   it('leaves an N typed into a field alone', async () => {
-    await runOn('/shelves/home', useAddCoffeeShortcut)
+    await runOn('/shelves/sarahs-shelf-home', useAddCoffeeShortcut)
     const input = document.createElement('input')
     document.body.append(input)
 
@@ -74,7 +74,7 @@ describe('useAddCoffeeShortcut', () => {
   })
 
   it('waits while another dialog is open', async () => {
-    await runOn('/shelves/home', useAddCoffeeShortcut)
+    await runOn('/shelves/sarahs-shelf-home', useAddCoffeeShortcut)
     const dialog = document.createElement('div')
     dialog.setAttribute('role', 'dialog')
     document.body.append(dialog)
@@ -86,7 +86,7 @@ describe('useAddCoffeeShortcut', () => {
 
   it('does nothing on a phone', async () => {
     setViewport(375, 812)
-    await runOn('/shelves/home', useAddCoffeeShortcut)
+    await runOn('/shelves/sarahs-shelf-home', useAddCoffeeShortcut)
 
     press()
 

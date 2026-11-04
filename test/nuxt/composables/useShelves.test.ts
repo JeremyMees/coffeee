@@ -26,7 +26,7 @@ describe('shelfIdOf', () => {
 
 describe('useCurrentShelf', () => {
   it('is the shelf in the address', async () => {
-    const shelf = await runOn('/shelves/work/library', useCurrentShelf)
+    const shelf = await runOn('/shelves/work-work/library', useCurrentShelf)
 
     expect(shelf.value?.name).toBe('Work')
   })
@@ -68,13 +68,13 @@ describe('lastShelfPath', () => {
   it('goes to the last shelf used', () => {
     rememberShelf('work')
 
-    expect(lastShelfPath()).toBe('/shelves/work')
+    expect(lastShelfPath()).toBe('/shelves/work-work')
   })
 
   it('goes to the first shelf when the last one is gone', () => {
     rememberShelf('gone')
 
-    expect(lastShelfPath()).toBe('/shelves/home')
+    expect(lastShelfPath()).toBe('/shelves/sarahs-shelf-home')
   })
 
   it('asks for a new shelf when there is none', () => {

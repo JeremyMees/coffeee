@@ -32,24 +32,24 @@ async function openSwitcher(route: string) {
 describe('ShelfSwitcher', () => {
   it('shows the current shelf', async () => {
     const switcher = await mountSuspended(ShelfSwitcher, {
-      route: '/shelves/work',
+      route: '/shelves/work-work',
     })
 
     expect(switcher.get(tid('shelf-switcher')).text()).toBe('Shelf: Work')
   })
 
   it('switches to the same page on another shelf', async () => {
-    const { menu, links } = await openSwitcher('/shelves/work/library')
+    const { menu, links } = await openSwitcher('/shelves/work-work/library')
 
     expect(links).toEqual([
-      ["Sarah's shelf", '/shelves/home/library'],
-      ['Work', '/shelves/work/library'],
+      ["Sarah's shelf", '/shelves/sarahs-shelf-home/library'],
+      ['Work', '/shelves/work-work/library'],
     ])
     expect(byTestId('shelf-menu-new')!.getAttribute('href')).toBe(
       '/shelves/new',
     )
     expect(byTestId('shelf-menu-settings')!.getAttribute('href')).toBe(
-      '/shelves/work/settings',
+      '/shelves/work-work/settings',
     )
     expect(menu.querySelector('[aria-current="page"]')?.textContent).toBe(
       'Work',
@@ -60,8 +60,8 @@ describe('ShelfSwitcher', () => {
     const { links } = await openSwitcher('/profile')
 
     expect(links).toEqual([
-      ["Sarah's shelf", '/shelves/home'],
-      ['Work', '/shelves/work'],
+      ["Sarah's shelf", '/shelves/sarahs-shelf-home'],
+      ['Work', '/shelves/work-work'],
     ])
   })
 })

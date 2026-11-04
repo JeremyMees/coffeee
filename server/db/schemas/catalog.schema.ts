@@ -10,6 +10,7 @@ import {
   unique,
 } from 'drizzle-orm/pg-core'
 import { roastedForOptions, roastLevels } from '../../../shared/utils/coffee'
+import { newCode } from '../../../shared/utils/slugs'
 import { user } from './auth.schema'
 
 export const roastLevel = pgEnum('roastLevel', roastLevels)
@@ -23,9 +24,7 @@ export const origin = pgTable('origin', {
 export const roaster = pgTable(
   'roaster',
   {
-    id: text()
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+    id: text().primaryKey().$defaultFn(newCode),
     name: text().notNull(),
     nameKey: text().notNull(),
     website: text(),
@@ -53,9 +52,7 @@ export const roaster = pgTable(
 export const coffee = pgTable(
   'coffee',
   {
-    id: text()
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+    id: text().primaryKey().$defaultFn(newCode),
     roasterId: text().notNull(),
     name: text().notNull(),
     nameKey: text().notNull(),
@@ -78,7 +75,7 @@ export const coffee = pgTable(
       name: 'coffeeRoasterIdFk',
       columns: [table.roasterId],
       foreignColumns: [roaster.id],
-    }),
+    }).onUpdate('cascade'),
     foreignKey({
       name: 'coffeeCreatedByFk',
       columns: [table.createdBy],

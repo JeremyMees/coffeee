@@ -20,7 +20,9 @@ const [{ data: invite }, signedIn] = await Promise.all([
 user.value ??= signedIn
 
 const landing = computed(() =>
-  invite.value?.shelfId ? `/shelves/${invite.value.shelfId}` : '/',
+  invite.value?.shelfId
+    ? shelfPath({ id: invite.value.shelfId, name: invite.value.shelf ?? '' })
+    : '/',
 )
 const signInPath = `/sign-in?redirect=/invite/${token}`
 
@@ -55,7 +57,7 @@ async function answer(choice: 'accept' | 'decline') {
       user.value?.shelves.push(shelf)
     }
 
-    await navigateTo(`/shelves/${shelf.id}`)
+    await navigateTo(shelfPath(shelf))
   } catch (caught) {
     answerError.value = serverErrors(caught).message
   } finally {

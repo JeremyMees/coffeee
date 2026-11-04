@@ -43,7 +43,9 @@ describe('the admin page', () => {
     await useRouter().push('/admin')
 
     await vi.waitFor(() =>
-      expect(useRouter().currentRoute.value.path).toBe('/shelves/home'),
+      expect(useRouter().currentRoute.value.path).toBe(
+        '/shelves/sarahs-shelf-home',
+      ),
     )
   })
 })

@@ -11,7 +11,7 @@ beforeEach(() => {
   useAddCoffee().value = false
 })
 
-function mountDock(route = '/shelves/work/library') {
+function mountDock(route = '/shelves/work-work/library') {
   return mountSuspended(AppDock, { route })
 }
 
@@ -24,9 +24,9 @@ describe('AppDock', () => {
         .findAll(tid('dock-link'))
         .map(link => [link.attributes('aria-label'), link.attributes('href')]),
     ).toEqual([
-      ['Stock', '/shelves/work'],
-      ['Library', '/shelves/work/library'],
-      ['Discover', '/shelves/work/discover'],
+      ['Stock', '/shelves/work-work'],
+      ['Library', '/shelves/work-work/library'],
+      ['Discover', '/shelves/work-work/discover'],
       ['Roasters', '/roasters'],
       ['Profile', '/profile'],
     ])
@@ -37,12 +37,12 @@ describe('AppDock', () => {
 
     expect(
       dock
-        .get(`${tid('dock-link')}[href="/shelves/work/library"]`)
+        .get(`${tid('dock-link')}[href="/shelves/work-work/library"]`)
         .attributes('aria-current'),
     ).toBe('page')
     expect(
       dock
-        .get(`${tid('dock-link')}[href="/shelves/work"]`)
+        .get(`${tid('dock-link')}[href="/shelves/work-work"]`)
         .attributes('aria-current'),
     ).toBeUndefined()
   })

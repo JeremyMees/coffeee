@@ -8,7 +8,8 @@ import { useLibraryPage, useLibraryPages } from '~/queries/library'
 useHead({ title: 'Library · Coffeee' })
 
 const route = useRoute('shelves-shelfId-library')
-const shelfId = computed(() => route.params.shelfId)
+const shelfId = computed(() => idFrom(route.params.shelfId))
+const shelf = useCurrentShelf()
 const desktop = useMediaQuery('(min-width: 1024px)')
 
 const labels = useFilterLabels(shelfId, labelIds(route.query))
@@ -146,7 +147,7 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
         class="mt-8"
         :coffees="page.data.value?.coffees ?? []"
         :total="total"
-        :shelf-id="shelfId"
+        :shelf="shelf!"
       />
       <div
         v-else-if="!cards.length"
@@ -176,7 +177,7 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
           >
             <CoffeeCard
               :coffee="coffee"
-              :to="`/shelves/${shelfId}/coffees/${coffee.id}`"
+              :to="shelfCoffeePath(shelf!, coffee)"
             />
           </li>
         </ul>

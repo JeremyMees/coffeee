@@ -29,7 +29,7 @@ describe('NotificationItem', () => {
       "Tom added Ayele Fulasa to Sarah's shelf",
     )
     expect(byTestId('notification-link')?.getAttribute('href')).toBe(
-      '/shelves/home/coffees/c1',
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     )
     expect(byTestId('notification-actions')).toBeNull()
   })
@@ -45,7 +45,7 @@ describe('NotificationItem', () => {
 
     await click('notification-accept')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/office'))
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/office-office'))
     expect(api.inviteCalls).toEqual([{ accept: 'mi1' }])
     expect(useCurrentUser().value?.shelves).toContainEqual({
       id: 'office',

@@ -14,12 +14,15 @@ function links(destinations: ReturnType<typeof useDestinations>) {
 
 describe('useDestinations', () => {
   it('points at the pages of the current shelf', async () => {
-    const destinations = await runOn('/shelves/work/discover', useDestinations)
+    const destinations = await runOn(
+      '/shelves/work-work/discover',
+      useDestinations,
+    )
 
     expect(links(destinations)).toEqual([
-      ['Stock', '/shelves/work'],
-      ['Library', '/shelves/work/library'],
-      ['Discover', '/shelves/work/discover'],
+      ['Stock', '/shelves/work-work'],
+      ['Library', '/shelves/work-work/library'],
+      ['Discover', '/shelves/work-work/discover'],
       ['Roasters', '/roasters'],
       ['Profile', '/profile'],
     ])
@@ -28,11 +31,17 @@ describe('useDestinations', () => {
   it('points at the first shelf from pages outside a shelf', async () => {
     const destinations = await runOn('/profile', useDestinations)
 
-    expect(links(destinations)[0]).toEqual(['Stock', '/shelves/home'])
+    expect(links(destinations)[0]).toEqual([
+      'Stock',
+      '/shelves/sarahs-shelf-home',
+    ])
   })
 
   it('gives every destination an icon', async () => {
-    const destinations = await runOn('/shelves/home', useDestinations)
+    const destinations = await runOn(
+      '/shelves/sarahs-shelf-home',
+      useDestinations,
+    )
 
     expect(destinations.value.every(item => item.icon)).toBe(true)
   })

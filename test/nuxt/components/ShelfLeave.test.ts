@@ -58,7 +58,7 @@ describe('ShelfLeave', () => {
 
     await click('confirm-dialog-confirm')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work'))
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work-work'))
     expect(api.shelfCalls).toEqual([{ delete: 'home' }])
     expect(useCurrentUser().value?.shelves.map(shelf => shelf.id)).toEqual([
       'work',
@@ -88,7 +88,9 @@ describe('ShelfLeave', () => {
     await click('shelf-leave-button')
     await click('confirm-dialog-confirm')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/mine'))
+    await vi.waitFor(() =>
+      expect(currentPath()).toBe('/shelves/sarahs-shelf-mine'),
+    )
     expect(api.shelfCalls).toEqual([{ leave: 'home' }])
     expect(useCurrentUser().value?.shelves.map(shelf => shelf.id)).toEqual([
       'mine',

@@ -31,7 +31,7 @@ const editing = ref(false)
       />
       <div class="flex min-w-0 flex-col gap-1">
         <NuxtLink
-          :to="`/roasters/${roaster.id}`"
+          :to="roasterPath(roaster)"
           class="w-fit font-sans text-sm font-semibold underline-offset-4 hover:underline"
           :style="morph.name('name')"
           data-testid="roaster-details-name"

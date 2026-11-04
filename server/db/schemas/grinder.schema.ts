@@ -55,7 +55,9 @@ export const shelfGrinder = pgTable(
       name: 'shelfGrinderShelfIdFk',
       columns: [table.shelfId],
       foreignColumns: [shelf.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
     foreignKey({
       name: 'shelfGrinderGrinderIdFk',
       columns: [table.grinderId],
@@ -96,7 +98,9 @@ export const grindSetting = pgTable(
       name: 'grindSettingCoffeeIdFk',
       columns: [table.coffeeId],
       foreignColumns: [coffee.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
     foreignKey({
       name: 'grindSettingGrinderIdFk',
       columns: [table.grinderId],

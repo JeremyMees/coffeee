@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute('shelves-shelfId-settings')
-const shelfId = computed(() => route.params.shelfId)
+const shelfId = computed(() => idFrom(route.params.shelfId))
 const tab = useTab(['shelf', 'members', 'grinders'])
 
 useHead({ title: 'Shelf settings · Coffeee' })

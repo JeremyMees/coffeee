@@ -6,7 +6,7 @@ const morph = useMorph('roaster', () => props.roaster.id)
 
 <template>
   <NuxtLink
-    :to="`/roasters/${roaster.id}`"
+    :to="roasterPath(roaster)"
     data-testid="roaster-result"
     class="flex items-center gap-4 rounded-[18px] border p-3 transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     @click="morph.open"

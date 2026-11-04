@@ -7,7 +7,7 @@ import { useFilterLabels } from '~/queries/filters'
 useHead({ title: 'Discover · Coffeee' })
 
 const route = useRoute('shelves-shelfId-discover')
-const shelfId = computed(() => route.params.shelfId)
+const shelfId = computed(() => idFrom(route.params.shelfId))
 
 const labels = useFilterLabels(shelfId, labelIds(route.query))
 await labels.suspense()
@@ -138,7 +138,7 @@ useIntersectionObserver(more, ([entry]) => {
         class="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3"
       >
         <li v-for="coffee in coffees" :key="coffee.id">
-          <CatalogResult :coffee="coffee" :to="`/coffees/${coffee.id}`" />
+          <CatalogResult :coffee="coffee" :to="coffeePath(coffee)" />
         </li>
       </ul>
       <button

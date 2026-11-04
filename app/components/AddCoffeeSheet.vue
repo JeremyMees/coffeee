@@ -56,7 +56,7 @@ const add = handleSubmit(
 
       open.value = false
 
-      await navigateTo(`/shelves/${shelf.value.id}`)
+      await navigateTo(shelfPath(shelf.value))
     } catch (error) {
       const { fields, message } = serverErrors(error)
 

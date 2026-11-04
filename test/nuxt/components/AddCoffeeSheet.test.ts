@@ -31,7 +31,7 @@ beforeEach(() => {
   useAddCoffee().value = false
 })
 
-async function openSheet(route = '/shelves/home') {
+async function openSheet(route = '/shelves/sarahs-shelf-home') {
   const sheet = await mountSuspended(AddCoffeeSheet, {
     route,
     attachTo: document.body,
@@ -108,7 +108,7 @@ async function addedAndGone(stockPath: string) {
 describe('AddCoffeeSheet', () => {
   it('stays closed until asked for', async () => {
     await mountSuspended(AddCoffeeSheet, {
-      route: '/shelves/home',
+      route: '/shelves/sarahs-shelf-home',
     })
 
     expect(byTestId('add-coffee-sheet')).toBeNull()
@@ -210,7 +210,7 @@ describe('AddCoffeeSheet', () => {
   })
 
   it('adds the coffee with its first bag and goes to the stock', async () => {
-    await openSheet('/shelves/home/library')
+    await openSheet('/shelves/sarahs-shelf-home/library')
 
     await fillRequired()
     await pickScoped('coffee-regions', 'guj', 'Guji')
@@ -247,7 +247,7 @@ describe('AddCoffeeSheet', () => {
         price: 16.5,
       },
     ])
-    await addedAndGone('/shelves/home')
+    await addedAndGone('/shelves/sarahs-shelf-home')
   })
 
   it('leaves the optional details empty and can add a new roaster', async () => {
@@ -278,7 +278,7 @@ describe('AddCoffeeSheet', () => {
         price: null,
       }),
     ])
-    await addedAndGone('/shelves/home')
+    await addedAndGone('/shelves/sarahs-shelf-home')
   })
 
   it('shows what the server refused next to the field', async () => {

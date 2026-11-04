@@ -30,12 +30,12 @@ describe('useSearchShortcut', () => {
   it.each([{ metaKey: true }, { ctrlKey: true }])(
     'opens Discover of the current shelf and asks for focus on %o',
     async modifier => {
-      await runOn('/shelves/work/library', useSearchShortcut)
+      await runOn('/shelves/work-work/library', useSearchShortcut)
 
       const event = press(modifier)
 
       await vi.waitFor(() =>
-        expect(currentPath()).toBe('/shelves/work/discover'),
+        expect(currentPath()).toBe('/shelves/work-work/discover'),
       )
       expect(event.defaultPrevented).toBe(true)
       expect(useSearchFocus().value).toBe(true)
@@ -43,7 +43,7 @@ describe('useSearchShortcut', () => {
   )
 
   it('leaves a plain k alone', async () => {
-    await runOn('/shelves/work/library', useSearchShortcut)
+    await runOn('/shelves/work-work/library', useSearchShortcut)
 
     const event = press({})
 
@@ -52,13 +52,16 @@ describe('useSearchShortcut', () => {
   })
 
   it('keeps the search in the address when Discover is already open', async () => {
-    await runOn('/shelves/work/discover?q=lime&mine=true', useSearchShortcut)
+    await runOn(
+      '/shelves/work-work/discover?q=lime&mine=true',
+      useSearchShortcut,
+    )
 
     press({ metaKey: true })
     await flushPromises()
 
     expect(useRouter().currentRoute.value.fullPath).toBe(
-      '/shelves/work/discover?q=lime&mine=true',
+      '/shelves/work-work/discover?q=lime&mine=true',
     )
     expect(useSearchFocus().value).toBe(true)
   })

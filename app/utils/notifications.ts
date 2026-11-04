@@ -1,13 +1,16 @@
 export function notificationLink(notification: ShelfNotification) {
+  const shelf = { id: notification.shelfId, name: notification.shelf }
+
   if (notification.kind === 'invited') {
-    return notification.inviteStatus === 'accepted'
-      ? `/shelves/${notification.shelfId}`
-      : null
+    return notification.inviteStatus === 'accepted' ? shelfPath(shelf) : null
   }
 
   if (notification.coffeeId) {
-    return `/shelves/${notification.shelfId}/coffees/${notification.coffeeId}`
+    return shelfCoffeePath(shelf, {
+      id: notification.coffeeId,
+      name: notification.coffee ?? '',
+    })
   }
 
-  return `/shelves/${notification.shelfId}/settings?tab=members`
+  return `${shelfPath(shelf)}/settings?tab=members`
 }

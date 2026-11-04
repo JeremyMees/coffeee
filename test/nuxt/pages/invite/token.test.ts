@@ -34,7 +34,7 @@ registerEndpoint('/api/me', () => {
 registerEndpoint('/api/me/invites', () => [])
 
 registerEndpoint('/api/invites/link/shelf-token', () => ({
-  shelfId: 'home-2',
+  shelfId: 'home2',
   shelf: 'Home',
   invitedBy: 'Sarah',
 }))
@@ -54,7 +54,7 @@ registerEndpoint('/api/invites/link/shelf-token/accept', {
   handler: () => {
     server.accepted.push('shelf-token')
 
-    return { id: 'home-2', name: 'Home', ownerId: 'user-2' }
+    return { id: 'home2', name: 'Home', ownerId: 'user-2' }
   },
 })
 
@@ -95,7 +95,7 @@ describe('invite page', () => {
       expect.objectContaining({
         provider: 'google',
         callbackURL: '/invite/shelf-token',
-        newUserCallbackURL: '/shelves/home-2',
+        newUserCallbackURL: '/shelves/home-home2',
         additionalData: { inviteToken: 'shelf-token' },
       }),
     )
@@ -117,7 +117,7 @@ describe('invite page', () => {
       expect(signUpEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           email: 'tom@example.com',
-          callbackURL: '/shelves/home-2',
+          callbackURL: '/shelves/home-home2',
           fetchOptions: { query: { inviteToken: 'shelf-token' } },
         }),
       ),
@@ -138,10 +138,10 @@ describe('invite page', () => {
 
     await click('invite-accept')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/home-2'))
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/home-home2'))
     expect(server.accepted).toEqual(['shelf-token'])
     expect(useCurrentUser().value?.shelves).toContainEqual(
-      expect.objectContaining({ id: 'home-2' }),
+      expect.objectContaining({ id: 'home2' }),
     )
   })
 

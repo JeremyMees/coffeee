@@ -6,14 +6,13 @@ import {
   text,
   timestamp,
 } from 'drizzle-orm/pg-core'
+import { newCode } from '../../../shared/utils/slugs'
 import { user } from './auth.schema'
 
 export const shelf = pgTable(
   'shelf',
   {
-    id: text()
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+    id: text().primaryKey().$defaultFn(newCode),
     name: text().notNull(),
     ownerId: text().notNull(),
     createdAt: timestamp().notNull().defaultNow(),
@@ -45,7 +44,9 @@ export const shelfMember = pgTable(
       name: 'shelfMemberShelfIdFk',
       columns: [table.shelfId],
       foreignColumns: [shelf.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
     foreignKey({
       name: 'shelfMemberUserIdFk',
       columns: [table.userId],

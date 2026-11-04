@@ -9,6 +9,12 @@ const props = defineProps<{
   grindSettings: OwnGrindSetting[]
 }>()
 
+const user = useCurrentUser()
+const settingsLink = computed(() => {
+  const shelf = user.value?.shelves.find(found => found.id === props.shelfId)
+
+  return `${shelf ? shelfPath(shelf) : `/shelves/${props.shelfId}`}/settings?tab=grinders`
+})
 const grinderQuery = useShelfGrinders(() => props.shelfId)
 const brewMethodQuery = useBrewMethods()
 await Promise.all([grinderQuery.suspense(), brewMethodQuery.suspense()])
@@ -107,7 +113,7 @@ const action =
     >
       This shelf owns no grinders yet.
       <NuxtLink
-        :to="`/shelves/${shelfId}/settings?tab=grinders`"
+        :to="settingsLink"
         data-testid="grind-add-grinder"
         class="underline underline-offset-4"
       >

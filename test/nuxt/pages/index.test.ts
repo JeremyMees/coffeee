@@ -13,11 +13,11 @@ beforeEach(() => {
 
 describe('the home page', () => {
   it('opens the last shelf instead of a page of its own', async () => {
-    await mountSuspended(App, { route: '/shelves/work/library' })
+    await mountSuspended(App, { route: '/shelves/work-work/library' })
 
     await mountSuspended(App, { route: '/' })
 
-    expect(currentPath()).toBe('/shelves/work')
+    expect(currentPath()).toBe('/shelves/work-work')
   })
 
   it('has nothing to show while it sends you on', async () => {

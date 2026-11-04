@@ -19,7 +19,7 @@ const create = handleSubmit(async body => {
 
     user.value?.shelves.push(shelf)
 
-    await navigateTo(`/shelves/${shelf.id}`)
+    await navigateTo(shelfPath(shelf))
   } catch (caught) {
     const { fields, message } = serverErrors(caught)
 

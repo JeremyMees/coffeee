@@ -70,13 +70,13 @@ describe('PasswordSignUpForm', () => {
     })
     signInEmail.mockResolvedValue({ data: {}, error: null })
 
-    await signUp('the-token', '/shelves/home')
+    await signUp('the-token', '/shelves/sarahs-shelf-home')
 
     await vi.waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith('/shelves/home'),
+      expect(navigate).toHaveBeenCalledWith('/shelves/sarahs-shelf-home'),
     )
     expect(email).toHaveBeenCalledWith(
-      expect.objectContaining({ callbackURL: '/shelves/home' }),
+      expect.objectContaining({ callbackURL: '/shelves/sarahs-shelf-home' }),
     )
     expect(signInEmail).toHaveBeenCalledWith({
       email: 'tom@example.com',

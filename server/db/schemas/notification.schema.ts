@@ -49,12 +49,16 @@ export const notification = pgTable(
       name: 'notificationShelfIdFk',
       columns: [table.shelfId],
       foreignColumns: [shelf.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
     foreignKey({
       name: 'notificationCoffeeIdFk',
       columns: [table.coffeeId],
       foreignColumns: [coffee.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
     foreignKey({
       name: 'notificationInviteIdFk',
       columns: [table.inviteId],

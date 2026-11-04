@@ -14,7 +14,7 @@ describe('the last-shelf middleware', () => {
   it('goes to the first shelf the first time', async () => {
     await mountSuspended(App, { route: '/' })
 
-    expect(currentPath()).toBe('/shelves/home')
+    expect(currentPath()).toBe('/shelves/sarahs-shelf-home')
   })
 
   it('goes back to the last shelf used', async () => {
@@ -22,7 +22,7 @@ describe('the last-shelf middleware', () => {
 
     await mountSuspended(App, { route: '/' })
 
-    expect(currentPath()).toBe('/shelves/work')
+    expect(currentPath()).toBe('/shelves/work-work')
   })
 
   it('goes to the first shelf when the last one is gone', async () => {
@@ -30,7 +30,7 @@ describe('the last-shelf middleware', () => {
 
     await mountSuspended(App, { route: '/' })
 
-    expect(currentPath()).toBe('/shelves/home')
+    expect(currentPath()).toBe('/shelves/sarahs-shelf-home')
   })
 
   it('asks for a shelf when there is none', async () => {

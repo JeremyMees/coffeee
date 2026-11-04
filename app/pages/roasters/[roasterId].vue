@@ -10,7 +10,7 @@ import { useCatalogPages } from '~/queries/catalog'
 import { useRoaster } from '~/queries/roasters'
 
 const route = useRoute('roasters-roasterId')
-const roasterId = computed(() => route.params.roasterId)
+const roasterId = computed(() => idFrom(route.params.roasterId))
 const shelf = useCurrentShelf()
 const shelfId = computed(() => shelf.value?.id ?? '')
 
@@ -30,6 +30,12 @@ await suspense()
 if (error.value || !roaster.value) {
   showError({ statusCode: 404, statusMessage: 'Roaster not found' })
 }
+
+await useCanonicalSlug(
+  'roasters',
+  () => route.params.roasterId,
+  () => roaster.value,
+)
 
 useHead({ title: () => `${roaster.value?.name} · Coffeee` })
 
@@ -153,7 +159,7 @@ useIntersectionObserver(more, ([entry]) => {
           class="mt-4 flex flex-col gap-3"
         >
           <li v-for="coffee in coffees" :key="coffee.id">
-            <CatalogResult :coffee="coffee" :to="`/coffees/${coffee.id}`" />
+            <CatalogResult :coffee="coffee" :to="coffeePath(coffee)" />
           </li>
         </ul>
         <button

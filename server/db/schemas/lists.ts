@@ -70,7 +70,9 @@ export function coffeeLink<Name extends string, Entry extends string>(
           name: `${name}CoffeeIdFk`,
           columns: [table.coffeeId],
           foreignColumns: [coffee.id],
-        }).onDelete('cascade'),
+        })
+          .onDelete('cascade')
+          .onUpdate('cascade'),
         foreignKey({
           name: `${name}${capitalised(entryId)}Fk`,
           columns: [linked],

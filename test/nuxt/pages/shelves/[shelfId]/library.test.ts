@@ -22,7 +22,7 @@ beforeEach(() => {
   useCurrentUser().value = testUser()
 })
 
-async function library(route = '/shelves/home/library') {
+async function library(route = '/shelves/sarahs-shelf-home/library') {
   const page = await mountSuspended(App, {
     route,
     attachTo: document.body,
@@ -71,7 +71,7 @@ describe('the Library page', () => {
 
     expect(cards()).toEqual(['Ayele Fulasa', 'El Paraiso', 'Red Brick'])
     expect(page.get(tid('library', 'coffee-card')).attributes('href')).toBe(
-      '/shelves/home/coffees/c1',
+      '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
     )
     expect(page.find(tid('library-more')).exists()).toBe(false)
   })
@@ -205,7 +205,7 @@ describe('the Library page', () => {
     api.library = manyCoffees(30)
 
     const { page } = await library(
-      '/shelves/home/library?originCode=ET&view=table&sort=lastBought&direction=descending&page=2',
+      '/shelves/sarahs-shelf-home/library?originCode=ET&view=table&sort=lastBought&direction=descending&page=2',
     )
 
     await vi.waitFor(() =>

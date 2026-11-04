@@ -29,7 +29,7 @@ describe('creating a shelf', () => {
   it('names the shelf and goes to it', async () => {
     const page = await create('Garage')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/garage'))
+    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/garage-garage'))
     expect(page.get(tid('top-bar-shelf-switcher')).text()).toBe('Shelf: Garage')
   })
 

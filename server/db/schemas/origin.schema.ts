@@ -49,7 +49,9 @@ export const coffeeOrigin = pgTable(
       name: 'coffeeOriginCoffeeIdFk',
       columns: [table.coffeeId],
       foreignColumns: [coffee.id],
-    }).onDelete('cascade'),
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
     foreignKey({
       name: 'coffeeOriginOriginCodeFk',
       columns: [table.originCode],

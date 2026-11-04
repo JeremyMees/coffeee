@@ -381,7 +381,7 @@ describe('choosing which notifications are emailed', () => {
         template: 'ShelfNotification',
         values: {
           text: 'Sarah added Ayele Fulasa to Home',
-          link: `http://localhost:3000/shelves/${home.id}/coffees/${coffeeId}`,
+          link: `http://localhost:3000/shelves/home-${home.id}/coffees/ayele-fulasa-${coffeeId}`,
           settings: 'http://localhost:3000/profile?tab=notifications',
         },
       },

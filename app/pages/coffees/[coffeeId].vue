@@ -3,11 +3,11 @@ import { ArrowLeftIcon } from '@lucide/vue'
 import { useCoffee } from '~/queries/coffees'
 
 const route = useRoute('coffees-coffeeId')
-const coffeeId = computed(() => route.params.coffeeId)
+const coffeeId = computed(() => idFrom(route.params.coffeeId))
 const shelf = useCurrentShelf()
 const { link: back, back: goBack } = useBackLink(() => ({
   label: 'Discover',
-  to: `/shelves/${shelf.value?.id}/discover`,
+  to: shelf.value ? `${shelfPath(shelf.value)}/discover` : '/',
 }))
 
 const editing = ref(false)
@@ -19,6 +19,12 @@ await suspense()
 if (error.value || !coffee.value) {
   showError({ statusCode: 404, statusMessage: 'Coffee not found' })
 }
+
+await useCanonicalSlug(
+  'coffees',
+  () => route.params.coffeeId,
+  () => coffee.value,
+)
 
 useHead({ title: () => `${coffee.value?.name} · Coffeee` })
 </script>
@@ -49,7 +55,7 @@ useHead({ title: () => `${coffee.value?.name} · Coffeee` })
       :reviews="coffee.reviews"
     />
     <RoasterDetails :shelf-id="shelf.id" :roaster="coffee.roasterDetails" />
-    <CoffeeShelves :coffee-id="coffee.id" :shelves="coffee.shelves" />
+    <CoffeeShelves :coffee="coffee" :shelves="coffee.shelves" />
     <DeleteCoffeeDialog
       v-if="coffee.canDelete"
       v-model:open="deleting"

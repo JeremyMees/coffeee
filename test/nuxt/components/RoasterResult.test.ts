@@ -32,7 +32,7 @@ describe('RoasterResult', () => {
     const wrapper = await result()
 
     expect(wrapper.get(tid('roaster-result')).attributes('href')).toBe(
-      '/roasters/r2',
+      '/roasters/square-mile-r2',
     )
     expect(wrapper.get(tid('roaster-result-name')).text()).toBe('Square Mile')
     expect(wrapper.get(tid('roaster-result-place')).text()).toBe(
