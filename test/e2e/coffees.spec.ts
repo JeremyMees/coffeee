@@ -108,6 +108,38 @@ async function toStep(sheet: Locator, prefix: string, step: number) {
   await sheet.getByTestId(`${prefix}-step-${step}`).getByRole('button').click()
 }
 
+async function addDescribedCoffee(
+  page: Page,
+  coffee: { name: string; roaster: string; varietal: string; station: string },
+) {
+  await page.getByTestId('page-add-coffee').click()
+  const sheet = page.getByTestId('add-coffee-sheet')
+  await sheet.getByTestId('coffee-name').fill(coffee.name)
+  await pickRoaster(page, coffee.roaster, true)
+  await toStep(sheet, 'add-coffee', 2)
+  await pickOrigin(page, 'Ethiopia')
+  await pickFromList(
+    page,
+    'coffee-washing-stations',
+    'scoped',
+    coffee.station,
+    `Add “${coffee.station}”`,
+  )
+  await toStep(sheet, 'add-coffee', 3)
+  await pickProcess(page, 'Natural')
+  await pickFromList(
+    page,
+    'coffee-varietals',
+    'multi',
+    coffee.varietal,
+    `Add “${coffee.varietal}”`,
+  )
+  await choose(sheet, 'coffee-roast-level', 'option-light')
+  await choose(sheet, 'coffee-roasted-for', 'option-filter')
+  await sheet.getByTestId('add-coffee-submit').click()
+  await expect(sheet).toBeHidden()
+}
+
 function stockCard(page: Page, name: string | RegExp) {
   return page
     .getByTestId('stock')
@@ -895,32 +927,12 @@ test('finds a coffee on Discover by its varietal or washing station and filters 
   const varietal = uniqueName('Geisha')
   const station = uniqueName('Kochere')
   await page.goto(`/shelves/${member.shelfId}`)
-  await page.getByTestId('page-add-coffee').click()
-  const sheet = page.getByTestId('add-coffee-sheet')
-  await sheet.getByTestId('coffee-name').fill('Kochere Natural')
-  await pickRoaster(page, roaster, true)
-  await toStep(sheet, 'add-coffee', 2)
-  await pickOrigin(page, 'Ethiopia')
-  await pickFromList(
-    page,
-    'coffee-washing-stations',
-    'scoped',
-    station,
-    `Add “${station}”`,
-  )
-  await toStep(sheet, 'add-coffee', 3)
-  await pickProcess(page, 'Natural')
-  await pickFromList(
-    page,
-    'coffee-varietals',
-    'multi',
+  await addDescribedCoffee(page, {
+    name: 'Kochere Natural',
+    roaster,
     varietal,
-    `Add “${varietal}”`,
-  )
-  await choose(sheet, 'coffee-roast-level', 'option-light')
-  await choose(sheet, 'coffee-roasted-for', 'option-filter')
-  await sheet.getByTestId('add-coffee-submit').click()
-  await expect(sheet).toBeHidden()
+    station,
+  })
 
   await page.goto(`/shelves/${member.shelfId}/discover`)
   const results = page.getByTestId('catalog-result')
@@ -956,4 +968,52 @@ test('finds a coffee on Discover by its varietal or washing station and filters 
   await expect(results.getByTestId('catalog-result-name')).toHaveText([
     'Kochere Natural',
   ])
+})
+
+test('searches the Library by what a coffee is and filters it like Discover', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  const varietal = uniqueName('Geisha')
+  const station = uniqueName('Kochere')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
+  await addDescribedCoffee(page, {
+    name: 'Kochere Natural',
+    roaster: uniqueName('Roaster'),
+    varietal,
+    station,
+  })
+
+  await page.goto(`/shelves/${member.shelfId}/library`)
+  const library = page.getByTestId('library')
+  const names = library.getByTestId('coffee-card-name')
+  await expect(names).toHaveText(['Kochere Natural', 'Ayele Fulasa'])
+  await expect(library.getByTestId('coffee-card-matches')).toHaveCount(0)
+
+  await page.getByTestId('search-input').fill(station)
+  await expect(names).toHaveText(['Kochere Natural'])
+  await expect(library.getByTestId('coffee-card-match')).toHaveText([
+    `Washing station: ${station}`,
+  ])
+  await expect(page).toHaveURL(/[?&]q=/)
+
+  await page.getByTestId('search-input').fill('')
+  await expect(names).toHaveText(['Kochere Natural', 'Ayele Fulasa'])
+  await page.getByTestId('library-filter-varietals').click()
+  await page.getByTestId('library-filter-varietals-search').fill(varietal)
+  await page
+    .getByTestId('library-filter-option')
+    .filter({ hasText: varietal })
+    .click()
+  await expect(names).toHaveText(['Kochere Natural'])
+
+  await page.getByTestId('library-filter-clear').click()
+  await page.getByTestId('library-filter-processes').click()
+  await page
+    .getByTestId('library-filter-option')
+    .filter({ hasText: /^Washed$/ })
+    .click()
+  await expect(names).toHaveText(['Ayele Fulasa'])
 })

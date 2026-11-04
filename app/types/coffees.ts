@@ -36,7 +36,7 @@ export type CardCoffee = Pick<
   | 'flavorNotes'
   | 'photoUrl'
   | 'rating'
->
+> & { matches?: CatalogMatch[] }
 
 export type PhotoCoffee = Pick<
   ShelfCoffee,

@@ -98,23 +98,7 @@ function pageSize(noun: string, fallback: number) {
     .default(fallback)
 }
 
-export const librarySearchSchema = z.object({
-  favourites: yesOrNo('favourites'),
-  roasterId: optionalId('roaster'),
-  flavorNoteId: optionalId('flavor note'),
-  originCode: optionalId('origin'),
-  sort: z
-    .enum(libraryColumns, { error: 'Sort by one of the library columns' })
-    .optional(),
-  direction: z
-    .enum(sortDirections, { error: 'Sort ascending or descending' })
-    .default('ascending'),
-  page: pageNumber(),
-  pageSize: pageSize('coffee', libraryPageSize),
-})
-
-export const catalogSearchSchema = listSearchSchema.extend({
-  mine: yesOrNo('mine'),
+export const browsingSearchSchema = listSearchSchema.extend({
   roasterId: optionalId('roaster'),
   flavorNoteId: optionalId('flavor note'),
   originCode: optionalId('origin'),
@@ -126,10 +110,25 @@ export const catalogSearchSchema = listSearchSchema.extend({
   roastedFor: z
     .enum(roastedForOptions, { error: 'Pick espresso, filter or omni' })
     .optional(),
+  page: pageNumber(),
+})
+
+export const librarySearchSchema = browsingSearchSchema.extend({
+  favourites: yesOrNo('favourites'),
+  sort: z
+    .enum(libraryColumns, { error: 'Sort by one of the library columns' })
+    .optional(),
+  direction: z
+    .enum(sortDirections, { error: 'Sort ascending or descending' })
+    .default('ascending'),
+  pageSize: pageSize('coffee', libraryPageSize),
+})
+
+export const catalogSearchSchema = browsingSearchSchema.extend({
+  mine: yesOrNo('mine'),
   sort: z
     .enum(catalogSorts, { error: 'Sort by newest or community rating' })
     .default('newest'),
-  page: pageNumber(),
   pageSize: pageSize('coffee', catalogPageSize),
 })
 

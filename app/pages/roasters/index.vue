@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { StoreIcon } from '@lucide/vue'
-import { useIntersectionObserver } from '@vueuse/core'
 import { useRoasterPages } from '~/queries/roasters'
 
 useHead({ title: 'Roasters · Coffeee' })
@@ -18,18 +17,6 @@ const roasters = computed(
   () => listed.data.value?.pages.flatMap(loaded => loaded.roasters) ?? [],
 )
 const total = computed(() => listed.data.value?.pages[0]?.total ?? 0)
-
-const more = useTemplateRef<HTMLElement>('more')
-
-function loadMore() {
-  if (listed.hasNextPage.value && !listed.isFetchingNextPage.value) {
-    listed.fetchNextPage()
-  }
-}
-
-useIntersectionObserver(more, ([entry]) => {
-  if (entry?.isIntersecting) loadMore()
-})
 </script>
 
 <template>
@@ -83,17 +70,7 @@ useIntersectionObserver(more, ([entry]) => {
           <RoasterResult :roaster="roaster" />
         </li>
       </ul>
-      <button
-        v-if="listed.hasNextPage.value"
-        ref="more"
-        type="button"
-        class="mx-auto mt-8 flex rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
-        :disabled="listed.isFetchingNextPage.value"
-        data-testid="roasters-more"
-        @click="loadMore"
-      >
-        {{ listed.isFetchingNextPage.value ? 'Loading…' : 'Show more' }}
-      </button>
+      <LoadMore :pages="listed" data-testid="roasters-more" />
     </template>
   </main>
 </template>

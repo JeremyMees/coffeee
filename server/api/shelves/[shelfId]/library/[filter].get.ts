@@ -1,6 +1,6 @@
 import { createError, defineEventHandler, getRouterParam } from 'h3'
-import type { LibraryFilterKind } from '#shared/types/library'
-import { libraryFilters } from '#shared/utils/library'
+import type { BrowsingFilterKind } from '#shared/types/browsing'
+import { browsingFilters } from '#shared/utils/browsing'
 import { libraryFilterSearchSchema } from '#shared/utils/schemas'
 import { useDb } from '#server/utils/db'
 import { listLibraryFilterOptions } from '#server/utils/library'
@@ -8,7 +8,7 @@ import { requireShelf } from '#server/utils/session'
 import { readValidQuery } from '#server/utils/validation'
 
 function isLibraryFilter(filter: string | undefined) {
-  return libraryFilters.includes(filter as LibraryFilterKind)
+  return browsingFilters.includes(filter as BrowsingFilterKind)
 }
 
 export default defineEventHandler(async event => {
@@ -26,7 +26,7 @@ export default defineEventHandler(async event => {
 
   return listLibraryFilterOptions(useDb(), {
     shelfId: shelf.id,
-    kind: filter as LibraryFilterKind,
+    kind: filter as BrowsingFilterKind,
     search,
   })
 })

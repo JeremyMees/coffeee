@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { SearchIcon } from '@lucide/vue'
-import { refDebounced, useIntersectionObserver } from '@vueuse/core'
+import { refDebounced } from '@vueuse/core'
+import { BookmarkIcon } from '@lucide/vue'
 import { useCatalogPages } from '~/queries/catalog'
-import { useFilterLabels } from '~/queries/filters'
 
 useHead({ title: 'Discover · Coffeee' })
 
 const route = useRoute('shelves-shelfId-discover')
 const shelfId = computed(() => idFrom(route.params.shelfId))
 
-const labels = useFilterLabels(shelfId, labelIds(route.query))
-await labels.suspense()
-const initial = catalogFromRoute(route.query, labels.data.value ?? {})
+const address = useBrowsingAddress(shelfId, catalogAddress)
+const initial = await address.start()
 
 const search = ref(initial.search)
 const searched = refDebounced(search, 200)
@@ -30,20 +28,21 @@ const narrowed = computed(
   () => Boolean(searched.value.trim()) || isCatalogFiltered(filter.value),
 )
 
-watch([searched, filter, sort], () => {
-  const query = catalogRoute(searched.value, filter.value, sort.value)
+watch([searched, filter, sort], () =>
+  address.keep({
+    search: searched.value,
+    filter: filter.value,
+    sort: sort.value,
+  }),
+)
 
-  labels.remember(query, catalogLabels(filter.value))
-  navigateTo({ query }, { replace: true })
-})
-
-const input = useTemplateRef<HTMLInputElement>('input')
+const box = useTemplateRef('box')
 const focus = useSearchFocus()
 
 function focusIfAsked() {
   if (!focus.value) return
 
-  input.value?.focus()
+  box.value?.focus()
   focus.value = false
 }
 
@@ -55,17 +54,7 @@ function clear() {
   filter.value = emptyCatalogFilter()
 }
 
-const more = useTemplateRef<HTMLElement>('more')
-
-function loadMore() {
-  if (catalog.hasNextPage.value && !catalog.isFetchingNextPage.value) {
-    catalog.fetchNextPage()
-  }
-}
-
-useIntersectionObserver(more, ([entry]) => {
-  if (entry?.isIntersecting) loadMore()
-})
+const mine = { key: 'mine', label: 'Mine', icon: BookmarkIcon } as const
 </script>
 
 <template>
@@ -74,28 +63,21 @@ useIntersectionObserver(more, ([entry]) => {
     <p class="mt-3 text-xs">
       Find any coffee anyone has added, by what you remember or want to taste.
     </p>
-    <label
-      class="mt-6 flex max-w-2xl items-center gap-3 rounded-full border border-primary px-5 py-3 focus-within:ring-2 focus-within:ring-ring"
-    >
-      <SearchIcon class="size-4 shrink-0" aria-hidden="true" />
-      <span class="sr-only">Search the catalog</span>
-      <input
-        ref="input"
-        v-model="search"
-        type="search"
-        autocomplete="off"
-        placeholder="Coffee, roaster, flavor note, origin…"
-        class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        data-testid="search-input"
-      />
-      <kbd
-        class="hidden shrink-0 rounded-md border px-1.5 py-0.5 text-[11px] lg:inline"
-        aria-hidden="true"
-      >
-        ⌘K
-      </kbd>
-    </label>
-    <CatalogFilters v-model="filter" class="mt-4" :shelf-id="shelfId" />
+    <BrowsingSearch
+      ref="box"
+      v-model="search"
+      class="mt-6"
+      label="Search the catalog"
+      placeholder="Coffee, roaster, flavor note, origin…"
+      shortcut
+    />
+    <BrowsingFilters
+      v-model="filter"
+      class="mt-4"
+      :shelf-id="shelfId"
+      area="catalog"
+      :toggle="mine"
+    />
     <p
       v-if="!coffees.length && !narrowed"
       class="mt-8 text-xs"
@@ -141,17 +123,7 @@ useIntersectionObserver(more, ([entry]) => {
           <CatalogResult :coffee="coffee" :to="coffeePath(coffee)" />
         </li>
       </ul>
-      <button
-        v-if="catalog.hasNextPage.value"
-        ref="more"
-        type="button"
-        class="mx-auto mt-8 flex rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
-        :disabled="catalog.isFetchingNextPage.value"
-        data-testid="discover-more"
-        @click="loadMore"
-      >
-        {{ catalog.isFetchingNextPage.value ? 'Loading…' : 'Show more' }}
-      </button>
+      <LoadMore :pages="catalog" data-testid="discover-more" />
     </template>
   </main>
 </template>

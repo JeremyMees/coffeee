@@ -1,18 +1,14 @@
 import type { InternalApi } from 'nitropack/types'
-import type { catalogPickers } from '~/utils/catalog'
 
-export interface CatalogFilter {
+export interface CatalogFilter extends BrowsingFilter {
   mine: boolean
-  flavorNote: LibraryOption | null
-  origin: LibraryOption | null
-  roaster: LibraryOption | null
-  process: LibraryOption | null
-  varietal: LibraryOption | null
-  roastLevel: LibraryOption | null
-  roastedFor: LibraryOption | null
 }
 
-export type CatalogPicker = (typeof catalogPickers)[number]
+export interface CatalogState {
+  search: string
+  filter: CatalogFilter
+  sort: CatalogSort
+}
 
 export type CatalogPage = InternalApi['/api/shelves/:shelfId/catalog']['get']
 

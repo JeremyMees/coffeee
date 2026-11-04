@@ -1,11 +1,7 @@
 import type { InferSelectModel } from 'drizzle-orm'
 import type { z } from 'zod'
 import type { coffee, origin, producer, region } from '#server/db/schemas'
-import type {
-  catalogFilters,
-  catalogMatchFields,
-  catalogSorts,
-} from '../utils/catalog'
+import type { catalogMatchFields, catalogSorts } from '../utils/catalog'
 import type { catalogSearchSchema } from '../utils/schemas'
 
 export type Coffee = InferSelectModel<typeof coffee>
@@ -19,8 +15,6 @@ export type OriginListEntry = ListEntry & {
 }
 
 export type OriginEntry = Omit<OriginListEntry, 'id'>
-
-export type CatalogFilterKind = (typeof catalogFilters)[number]
 
 export type CatalogMatchField = (typeof catalogMatchFields)[number]
 

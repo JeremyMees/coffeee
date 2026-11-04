@@ -163,6 +163,24 @@ describe('adding a coffee to a shelf', () => {
     expect(body.coffees).toHaveLength(1)
   })
 
+  it('searches the library from the query and says why each coffee matched', async () => {
+    const { shelf, headers } = await member()
+    await add(shelf.id, headers)
+    await add(shelf.id, headers, { ...coffee, name: 'Red Brick' })
+
+    const library = await request(
+      `/api/shelves/${shelf.id}/library?search=brick&roastedFor=filter`,
+      { headers },
+    )
+    const body = await library.json()
+
+    expect(body.total).toBe(1)
+    expect(body.coffees[0]).toMatchObject({
+      name: 'Red Brick',
+      matches: [{ field: 'name', name: 'Red Brick' }],
+    })
+  })
+
   it('refuses a library query it cannot read', async () => {
     const { shelf, headers } = await member()
 

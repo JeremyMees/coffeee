@@ -1,23 +1,22 @@
 import { and, asc, desc, eq, gte, max, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
+import type { BrowsingFilterKind } from '#shared/types/browsing'
 import type {
   LibraryColumn,
-  LibraryFilterKind,
   LibraryFilterSearch,
-  LibraryOption,
   LibrarySearch,
 } from '#shared/types/library'
-import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
 import { coffee, coffeeVerdict, purchase, roaster } from '#server/db/schemas'
-import { coffeeColumns } from '#server/utils/coffees'
 import {
-  cardDescriptionsOf,
-  describedWith,
-  descriptionFilterOptions,
-  originNamesSort,
-} from '#server/utils/descriptions'
+  browseCoffees,
+  browsedTotal,
+  browsingFilterOptions,
+  coffeesBoughtOn,
+} from '#server/utils/browsing'
+import { coffeeColumns } from '#server/utils/coffees'
+import { originNamesSort } from '#server/utils/descriptions'
 import { verdictOn } from '#server/utils/verdicts'
 
 const pricedPurchase = alias(purchase, 'pricedPurchase')
@@ -34,19 +33,16 @@ function latestPriceOf(shelfId: string) {
   )`
 }
 
-function libraryWhere(input: { shelfId: string; search: LibrarySearch }) {
-  const { search } = input
-
+function libraryWhere(
+  input: { shelfId: string; search: LibrarySearch },
+  browsed: SQL | undefined,
+) {
   return and(
     eq(purchase.shelfId, input.shelfId),
-    search.favourites
+    input.search.favourites
       ? and(eq(coffeeVerdict.wouldBuyAgain, true), gte(coffeeVerdict.rating, 4))
       : undefined,
-    search.roasterId ? eq(coffee.roasterId, search.roasterId) : undefined,
-    search.flavorNoteId
-      ? describedWith('flavorNotes', search.flavorNoteId)
-      : undefined,
-    search.originCode ? describedWith('origins', search.originCode) : undefined,
+    browsed,
   )
 }
 
@@ -68,6 +64,7 @@ export async function listLibrary(
   input: { shelfId: string; userId: string; search: LibrarySearch },
 ) {
   const { search } = input
+  const browsed = await browseCoffees(db, search)
   const order = search.sort
     ? [
         search.direction === 'ascending'
@@ -85,13 +82,13 @@ export async function listLibrary(
       rating: coffeeVerdict.rating,
       wouldBuyAgain: coffeeVerdict.wouldBuyAgain,
       latestPriceCents: latestPriceOf(input.shelfId),
-      total: sql<number>`cast(count(*) over () as integer)`,
+      total: browsedTotal,
     })
     .from(purchase)
     .innerJoin(coffee, eq(coffee.id, purchase.coffeeId))
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
     .leftJoin(coffeeVerdict, verdictOn(input.userId))
-    .where(libraryWhere(input))
+    .where(libraryWhere(input, browsed.where))
     .groupBy(
       coffee.id,
       roaster.id,
@@ -106,76 +103,27 @@ export async function listLibrary(
     )
     .limit(search.pageSize)
     .offset(search.page * search.pageSize)
-  const coffeeIds = rows.map(row => row.id)
-  const cards = await cardDescriptionsOf(db, coffeeIds)
 
-  return {
-    total: rows[0]?.total ?? 0,
-    coffees: rows.map(({ total: _total, ...row }) => ({
+  return browsed.page(
+    rows.map(row => ({
       ...row,
       lastBought: row.lastBought!,
       wouldBuyAgain: row.wouldBuyAgain ?? false,
-      ...cards.get(row.id)!,
     })),
-  }
+  )
 }
 
-function roasterOptions(db: Database, input: { shelfId: string; key: string }) {
-  return db
-    .selectDistinct({
-      value: roaster.id,
-      label: roaster.name,
-      key: roaster.nameKey,
-    })
-    .from(purchase)
-    .innerJoin(coffee, eq(coffee.id, purchase.coffeeId))
-    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
-    .where(
-      and(
-        eq(purchase.shelfId, input.shelfId),
-        sql`strpos(${roaster.nameKey}, ${input.key}) > 0`,
-      ),
-    )
-    .orderBy(asc(roaster.nameKey), asc(roaster.id))
-}
-
-export async function listLibraryFilterOptions(
+export function listLibraryFilterOptions(
   db: Database,
   input: {
     shelfId: string
-    kind: LibraryFilterKind
+    kind: BrowsingFilterKind
     search: LibraryFilterSearch
   },
 ) {
-  const { search } = input
-  const limit = search.pageSize + 1
-  const offset = search.page * search.pageSize
-  const rows =
-    input.kind === 'roasters'
-      ? await roasterOptions(db, {
-          shelfId: input.shelfId,
-          key: nameKey(search.search),
-        })
-          .limit(limit)
-          .offset(offset)
-      : await descriptionFilterOptions(
-          db,
-          input.kind === 'flavor-notes' ? 'flavorNotes' : 'origins',
-          {
-            search: search.search,
-            limit,
-            offset,
-            among: db
-              .select({ coffeeId: purchase.coffeeId })
-              .from(purchase)
-              .where(eq(purchase.shelfId, input.shelfId)),
-          },
-        )
-
-  return {
-    options: rows
-      .slice(0, search.pageSize)
-      .map(({ value, label }): LibraryOption => ({ value, label })),
-    hasMore: rows.length > search.pageSize,
-  }
+  return browsingFilterOptions(db, {
+    kind: input.kind,
+    search: input.search,
+    among: coffeesBoughtOn(db, input.shelfId),
+  })
 }

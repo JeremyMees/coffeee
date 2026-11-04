@@ -61,6 +61,12 @@ const roast = computed(
       >
         {{ coffee.name }}
       </h2>
+      <MatchedBy
+        v-if="coffee.matches"
+        class="mt-2"
+        :matches="coffee.matches"
+        testid="coffee-card"
+      />
       <ul
         v-if="coffee.flavorNotes.length"
         class="mt-4 flex flex-wrap gap-1.5"

@@ -1,6 +1,6 @@
 import { createError, defineEventHandler, getRouterParam } from 'h3'
-import type { CatalogFilterKind } from '#shared/types/catalog'
-import { catalogFilters } from '#shared/utils/catalog'
+import type { BrowsingFilterKind } from '#shared/types/browsing'
+import { browsingFilters } from '#shared/utils/browsing'
 import { libraryFilterSearchSchema } from '#shared/utils/schemas'
 import { listCatalogFilterOptions } from '#server/utils/catalog'
 import { useDb } from '#server/utils/db'
@@ -8,7 +8,7 @@ import { requireShelf } from '#server/utils/session'
 import { readValidQuery } from '#server/utils/validation'
 
 function isCatalogFilter(filter: string | undefined) {
-  return catalogFilters.includes(filter as CatalogFilterKind)
+  return browsingFilters.includes(filter as BrowsingFilterKind)
 }
 
 export default defineEventHandler(async event => {
@@ -25,7 +25,7 @@ export default defineEventHandler(async event => {
   const search = readValidQuery(event, libraryFilterSearchSchema)
 
   return listCatalogFilterOptions(useDb(), {
-    kind: filter as CatalogFilterKind,
+    kind: filter as BrowsingFilterKind,
     search,
   })
 })

@@ -2,18 +2,27 @@ import { describe, expect, it } from 'vitest'
 import {
   emptyLibraryFilter,
   isLibraryFiltered,
-  libraryFromRoute,
-  libraryLabels,
+  libraryAddress,
   libraryQuery,
-  libraryRoute,
   originNames,
 } from '~/utils/library'
 import { libraryCoffee } from '#test/fixtures/coffees'
 
 const laCabra = { value: 'r1', label: 'La Cabra' }
 
+function state(overrides: Partial<LibraryState> = {}): LibraryState {
+  return {
+    search: '',
+    filter: emptyLibraryFilter(),
+    view: 'grid',
+    sort: null,
+    pageIndex: 0,
+    ...overrides,
+  }
+}
+
 describe('isLibraryFiltered', () => {
-  it('knows when any filter is on', () => {
+  it('knows when Favourites or any filter is on', () => {
     expect(isLibraryFiltered(emptyLibraryFilter())).toBe(false)
     expect(
       isLibraryFiltered({ ...emptyLibraryFilter(), favourites: true }),
@@ -25,26 +34,27 @@ describe('isLibraryFiltered', () => {
 })
 
 describe('libraryQuery', () => {
-  it('asks for everything without filters or a sort', () => {
-    expect(libraryQuery(emptyLibraryFilter())).toEqual({})
+  it('asks for everything without a search, filters or a sort', () => {
+    expect(libraryQuery(' ', emptyLibraryFilter())).toEqual({})
   })
 
-  it('asks for what the filters and sort pick', () => {
+  it('asks for what was typed, Favourites, the filters and sort', () => {
     expect(
       libraryQuery(
+        ' lime ',
         {
+          ...emptyLibraryFilter(),
           favourites: true,
           roaster: laCabra,
-          flavorNote: { value: 'n1', label: 'Lime' },
-          origin: { value: 'ET', label: 'Ethiopia' },
+          varietal: { value: 'v1', label: 'Geisha' },
         },
         { column: 'latestPrice', direction: 'descending' },
       ),
     ).toEqual({
+      search: 'lime',
       favourites: 'true',
       roasterId: 'r1',
-      flavorNoteId: 'n1',
-      originCode: 'ET',
+      varietalId: 'v1',
       sort: 'latestPrice',
       direction: 'descending',
     })
@@ -66,44 +76,46 @@ describe('originNames', () => {
   })
 })
 
-describe('libraryRoute', () => {
+describe('libraryAddress', () => {
   it('keeps nothing in the address for the plain grid', () => {
-    expect(libraryRoute(emptyLibraryFilter(), 'grid', null, 0)).toEqual({})
+    expect(libraryAddress.toRoute(state())).toEqual({})
   })
 
-  it('keeps the filters, and the sort and page only for the table', () => {
+  it('keeps the search and filters, and the sort and page only for the table', () => {
     const filter = { ...emptyLibraryFilter(), roaster: laCabra }
     const sort = { column: 'rating', direction: 'descending' } as const
 
-    expect(libraryRoute(filter, 'grid', sort, 2)).toEqual({ roasterId: 'r1' })
-    expect(libraryRoute(filter, 'table', sort, 2)).toEqual({
+    expect(
+      libraryAddress.toRoute(
+        state({ search: ' lime ', filter, sort, pageIndex: 2 }),
+      ),
+    ).toEqual({ q: 'lime', roasterId: 'r1' })
+    expect(
+      libraryAddress.toRoute(
+        state({ filter, view: 'table', sort, pageIndex: 2 }),
+      ),
+    ).toEqual({
       roasterId: 'r1',
       view: 'table',
       sort: 'rating',
       direction: 'descending',
       page: '3',
     })
-    expect(libraryRoute(filter, 'table', null, 0)).toEqual({
+    expect(libraryAddress.toRoute(state({ filter, view: 'table' }))).toEqual({
       roasterId: 'r1',
       view: 'table',
     })
   })
-})
 
-describe('libraryFromRoute', () => {
   it('starts as the plain grid without an address to start from', () => {
-    expect(libraryFromRoute({}, {})).toEqual({
-      filter: emptyLibraryFilter(),
-      view: 'grid',
-      sort: null,
-      pageIndex: 0,
-    })
+    expect(libraryAddress.fromRoute({}, {})).toEqual(state())
   })
 
-  it('reads the filters, view, sort and page, naming each filter', () => {
+  it('reads the search, filters, view, sort and page, naming each filter', () => {
     expect(
-      libraryFromRoute(
+      libraryAddress.fromRoute(
         {
+          q: 'lime',
           favourites: 'true',
           roasterId: 'r1',
           view: 'table',
@@ -113,37 +125,37 @@ describe('libraryFromRoute', () => {
         },
         { roasterId: 'La Cabra' },
       ),
-    ).toEqual({
-      filter: { ...emptyLibraryFilter(), favourites: true, roaster: laCabra },
-      view: 'table',
-      sort: { column: 'rating', direction: 'descending' },
-      pageIndex: 2,
-    })
+    ).toEqual(
+      state({
+        search: 'lime',
+        filter: { ...emptyLibraryFilter(), favourites: true, roaster: laCabra },
+        view: 'table',
+        sort: { column: 'rating', direction: 'descending' },
+        pageIndex: 2,
+      }),
+    )
   })
 
   it('drops what it cannot name or does not know', () => {
     expect(
-      libraryFromRoute(
+      libraryAddress.fromRoute(
         { roasterId: 'gone', view: 'list', sort: 'colour', page: 'two' },
         {},
       ),
-    ).toEqual({
-      filter: emptyLibraryFilter(),
-      view: 'grid',
-      sort: null,
-      pageIndex: 0,
-    })
+    ).toEqual(state())
   })
-})
 
-describe('libraryLabels', () => {
   it('remembers the names of the picked filters', () => {
     expect(
-      libraryLabels({
-        ...emptyLibraryFilter(),
-        roaster: laCabra,
-        origin: { value: 'ET', label: 'Ethiopia' },
-      }),
+      libraryAddress.labelsOf(
+        state({
+          filter: {
+            ...emptyLibraryFilter(),
+            roaster: laCabra,
+            origin: { value: 'ET', label: 'Ethiopia' },
+          },
+        }),
+      ),
     ).toEqual({ roasterId: 'La Cabra', originCode: 'Ethiopia' })
   })
 })

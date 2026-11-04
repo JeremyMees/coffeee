@@ -7,7 +7,8 @@ import {
 import { addCoffee } from '#server/utils/coffees'
 import { createShelf } from '#server/utils/shelves'
 import { judgeCoffee } from '#server/utils/verdicts'
-import type { CatalogFilterKind, CatalogSearch } from '#shared/types/catalog'
+import type { BrowsingFilterKind } from '#shared/types/browsing'
+import type { CatalogSearch } from '#shared/types/catalog'
 import type { NewCoffee } from '#shared/types/coffee'
 import {
   catalogSearchSchema,
@@ -283,7 +284,7 @@ describe('the catalog', () => {
   it('filters by flavor note, origin, roaster, process, varietal, roast level and roasted for, and combines them', async () => {
     const context = await setup()
     await twoShelvesOfCoffee(context)
-    const options = async (kind: CatalogFilterKind) =>
+    const options = async (kind: BrowsingFilterKind) =>
       (
         await listCatalogFilterOptions(context.db, {
           kind,
@@ -355,7 +356,7 @@ describe('the catalog', () => {
 describe('the catalog filter options', () => {
   async function options(
     { db }: Setup,
-    kind: CatalogFilterKind,
+    kind: BrowsingFilterKind,
     query: Record<string, string> = {},
   ) {
     return listCatalogFilterOptions(db, {

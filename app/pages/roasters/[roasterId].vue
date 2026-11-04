@@ -5,7 +5,6 @@ import {
   BookmarkIcon,
   PencilIcon,
 } from '@lucide/vue'
-import { useIntersectionObserver } from '@vueuse/core'
 import { useCatalogPages } from '~/queries/catalog'
 import { useRoaster } from '~/queries/roasters'
 
@@ -48,18 +47,6 @@ await catalog.suspense()
 const coffees = computed(
   () => catalog.data.value?.pages.flatMap(loaded => loaded.coffees) ?? [],
 )
-
-const more = useTemplateRef<HTMLElement>('more')
-
-function loadMore() {
-  if (catalog.hasNextPage.value && !catalog.isFetchingNextPage.value) {
-    catalog.fetchNextPage()
-  }
-}
-
-useIntersectionObserver(more, ([entry]) => {
-  if (entry?.isIntersecting) loadMore()
-})
 </script>
 
 <template>
@@ -162,17 +149,7 @@ useIntersectionObserver(more, ([entry]) => {
             <CatalogResult :coffee="coffee" :to="coffeePath(coffee)" />
           </li>
         </ul>
-        <button
-          v-if="catalog.hasNextPage.value"
-          ref="more"
-          type="button"
-          class="mx-auto mt-8 flex rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
-          :disabled="catalog.isFetchingNextPage.value"
-          data-testid="roaster-coffees-more"
-          @click="loadMore"
-        >
-          {{ catalog.isFetchingNextPage.value ? 'Loading…' : 'Show more' }}
-        </button>
+        <LoadMore :pages="catalog" data-testid="roaster-coffees-more" />
       </template>
     </section>
     <EditRoasterSheet

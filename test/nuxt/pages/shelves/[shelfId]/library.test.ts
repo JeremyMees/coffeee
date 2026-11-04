@@ -9,6 +9,7 @@ import {
   forgetLastShelf,
   setViewport,
   tid,
+  type,
 } from '../../../fixtures'
 import { scenario, signIn } from '../../../server'
 
@@ -33,8 +34,10 @@ async function threeCoffees() {
     name: 'El Paraiso',
     roaster: 'La Cabra',
     roastLevel: 'medium',
+    roastedFor: 'espresso',
     origins: ['CO'],
     flavorNotes: ['Jasmine'],
+    varietals: ['Geisha'],
     purchasedOn: '2026-10-01',
   })
   const ayele = await scenario.coffee(sarah.shelf, {
@@ -141,6 +144,76 @@ describe('the Library page', () => {
     await page.get(tid('library-filter-favourites')).trigger('click')
 
     await vi.waitFor(() => expect(cards()).toEqual(['Ayele Fulasa']))
+  })
+
+  it('searches only the shelf’s coffees and says why each matched', async () => {
+    await threeCoffees()
+    const tom = await scenario.member('Tom')
+    await scenario.coffee(tom.shelf, { name: 'Geisha Lot' })
+    const { page, cards } = await library()
+
+    await type('search-input', 'geisha')
+
+    await vi.waitFor(() => expect(cards()).toEqual(['El Paraiso']))
+    expect(
+      page.findAll(tid('coffee-card-match')).map(match => match.text()),
+    ).toEqual(['Varietal: Geisha'])
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({ q: 'geisha' }),
+    )
+  })
+
+  it('shows no match line without a search', async () => {
+    await threeCoffees()
+
+    const { page } = await library()
+
+    expect(page.find(tid('coffee-card-matches')).exists()).toBe(false)
+  })
+
+  it('says why each table row matched the search', async () => {
+    setViewport(1280, 800)
+    await threeCoffees()
+    const { page, rows } = await library(libraryPath('?view=table&q=jasmine'))
+
+    await vi.waitFor(() => expect(rows()).toEqual(['El Paraiso']))
+    expect(
+      page.findAll(tid('library-row-match')).map(match => match.text()),
+    ).toEqual(['Flavor note: Jasmine'])
+  })
+
+  it('filters by varietal, roast level and roasted for like Discover', async () => {
+    await threeCoffees()
+    const { cards } = await library()
+
+    await pickFilter('roasted-for', 'Espresso')
+    await vi.waitFor(() => expect(cards()).toEqual(['El Paraiso']))
+    await pickFilter('varietals', 'Geisha')
+    await vi.waitFor(() => expect(cards()).toEqual(['El Paraiso']))
+    await pickFilter('roast-levels', 'Dark')
+
+    await vi.waitFor(() => expect(cards()).toEqual([]))
+    expect(useRouter().currentRoute.value.query).toEqual({
+      roastedFor: 'espresso',
+      varietalId: expect.any(String),
+      roastLevel: 'dark',
+    })
+  })
+
+  it('says when nothing matches the search and clears it', async () => {
+    await threeCoffees()
+    const { page, cards } = await library()
+
+    await type('search-input', 'nope')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('library-no-match')).text()).toContain(
+        'No coffee in your library matches “nope”.',
+      ),
+    )
+    await page.get(tid('library-no-match-clear')).trigger('click')
+
+    await vi.waitFor(() => expect(cards()).toHaveLength(3))
   })
 
   it('says when nothing matches and clears the filters', async () => {

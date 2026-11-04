@@ -25,7 +25,7 @@ function purchaseValues(details: NewPurchase) {
   }
 }
 
-function onShelf(ref: ShelfPurchaseRef) {
+function thePurchase(ref: ShelfPurchaseRef) {
   return and(
     eq(purchase.id, ref.purchaseId),
     eq(purchase.shelfId, ref.shelfId),
@@ -87,7 +87,7 @@ async function finishOpenPurchase(
   const [finished] = await db
     .update(purchase)
     .set({ finishedAt: sql`now()` })
-    .where(and(onShelf(input), isNull(purchase.finishedAt)))
+    .where(and(thePurchase(input), isNull(purchase.finishedAt)))
     .returning(purchaseColumns)
 
   if (finished) {
@@ -133,7 +133,7 @@ export async function editPurchase(
   const [edited] = await db
     .update(purchase)
     .set(purchaseValues(input.purchase))
-    .where(onShelf(input))
+    .where(thePurchase(input))
     .returning(purchaseColumns)
 
   return edited
@@ -151,7 +151,7 @@ export function finishPurchase(
     const [found] = await tx
       .select(purchaseColumns)
       .from(purchase)
-      .where(onShelf(input))
+      .where(thePurchase(input))
 
     return found
   })
@@ -160,7 +160,7 @@ export function finishPurchase(
 export async function deletePurchase(db: Database, ref: ShelfPurchaseRef) {
   const [deleted] = await db
     .delete(purchase)
-    .where(onShelf(ref))
+    .where(thePurchase(ref))
     .returning({ id: purchase.id })
 
   return deleted

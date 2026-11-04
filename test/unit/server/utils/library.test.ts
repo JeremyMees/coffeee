@@ -5,6 +5,7 @@ import { listLibrary, listLibraryFilterOptions } from '#server/utils/library'
 import { addPurchase } from '#server/utils/purchases'
 import { createShelf } from '#server/utils/shelves'
 import { judgeCoffee } from '#server/utils/verdicts'
+import type { BrowsingFilterKind } from '#shared/types/browsing'
 import type { NewCoffee } from '#shared/types/coffee'
 import type { LibrarySearch } from '#shared/types/library'
 import {
@@ -90,8 +91,12 @@ async function threeCoffees(setup: Setup) {
     name: 'El Paraiso',
     roaster: 'La Cabra',
     roastLevel: 'medium',
+    roastedFor: 'espresso',
     flavorNotes: ['Jasmine'],
     origins: ['CO'],
+    farms: [{ origin: 'CO', name: 'Finca El Paraiso' }],
+    processes: ['Anaerobic'],
+    varietals: ['Geisha'],
     purchasedOn: '2026-10-01',
     price: 24,
   })
@@ -143,6 +148,7 @@ describe('the library', () => {
           rating: null,
           wouldBuyAgain: false,
           latestPriceCents: 1650,
+          matches: [],
           flavorNotes: [{ id: expect.any(String), name: 'Lime' }],
           origins: [
             { code: 'ET', name: 'Ethiopia' },
@@ -242,6 +248,68 @@ describe('the library', () => {
     ).toEqual([])
   })
 
+  it('filters by process, varietal, roast level and roasted for, and combines them with search', async () => {
+    const context = await setup()
+    await threeCoffees(context)
+    const idOf = async (kind: BrowsingFilterKind, label: string) =>
+      (
+        await listLibraryFilterOptions(context.db, {
+          shelfId: context.home.id,
+          kind,
+          search: libraryFilterSearchSchema.parse({}),
+        })
+      ).options.find(option => option.label === label)!.value
+
+    expect(
+      await names(context, { processId: await idOf('processes', 'Washed') }),
+    ).toEqual(['Ayele Fulasa', 'Red Brick'])
+    expect(
+      await names(context, { varietalId: await idOf('varietals', 'Geisha') }),
+    ).toEqual(['El Paraiso'])
+    expect(await names(context, { roastLevel: 'dark' })).toEqual(['Red Brick'])
+    expect(await names(context, { roastedFor: 'espresso' })).toEqual([
+      'El Paraiso',
+    ])
+    expect(
+      await names(context, { roastedFor: 'filter', search: 'lime' }),
+    ).toEqual(['Ayele Fulasa', 'Red Brick'])
+    expect(
+      await names(context, { roastedFor: 'espresso', search: 'lime' }),
+    ).toEqual([])
+  })
+
+  it('searches only the shelf’s coffees, by the same fields as Discover', async () => {
+    const context = await setup()
+    await threeCoffees(context)
+    await addCoffee(context.db, {
+      shelfId: context.work.id,
+      userId: context.tom.id,
+      coffee: newCoffee({ name: 'Lime Lot', flavorNotes: ['Lime'] }),
+      origin: testOrigin,
+    })
+
+    expect(await names(context, { search: 'lime' })).toEqual([
+      'Ayele Fulasa',
+      'Red Brick',
+    ])
+    expect(await names(context, { search: 'cabra' })).toEqual(['El Paraiso'])
+    expect(await names(context, { search: 'geisha' })).toEqual(['El Paraiso'])
+    expect(await names(context, { search: 'kenya' })).toEqual(['Ayele Fulasa'])
+    expect(await names(context, { search: 'nope' })).toEqual([])
+  })
+
+  it('says why each coffee matched the search', async () => {
+    const context = await setup()
+    await threeCoffees(context)
+
+    const [paraiso] = (await library(context, { search: 'paraiso' })).coffees
+
+    expect(paraiso!.matches).toEqual([
+      { field: 'name', name: 'El Paraiso' },
+      { field: 'farms', name: 'Finca El Paraiso' },
+    ])
+  })
+
   it('sorts by each column, with what is unknown last', async () => {
     const context = await setup()
     await threeCoffees(context)
@@ -304,7 +372,7 @@ describe('the library', () => {
 describe('the library filter options', () => {
   async function options(
     context: Setup,
-    kind: 'roasters' | 'flavor-notes' | 'origins',
+    kind: BrowsingFilterKind,
     query: Record<string, string> = {},
   ) {
     return listLibraryFilterOptions(context.db, {
@@ -345,6 +413,38 @@ describe('the library filter options', () => {
       ],
       hasMore: false,
     })
+  })
+
+  it('offers only the processes, varietals, roast levels and brew styles the shelf bought', async () => {
+    const context = await setup()
+    await threeCoffees(context)
+    await addCoffee(context.db, {
+      shelfId: context.work.id,
+      userId: context.tom.id,
+      coffee: newCoffee({
+        name: 'Elsewhere',
+        roastLevel: 'medium-dark',
+        roastedFor: 'omni',
+        processes: ['Natural'],
+        varietals: ['Pink Bourbon'],
+      }),
+      origin: testOrigin,
+    })
+
+    expect(labels(await options(context, 'processes'))).toEqual([
+      'Anaerobic',
+      'Washed',
+    ])
+    expect(labels(await options(context, 'varietals'))).toEqual(['Geisha'])
+    expect(labels(await options(context, 'roast-levels'))).toEqual([
+      'Light',
+      'Medium',
+      'Dark',
+    ])
+    expect(labels(await options(context, 'roasted-for'))).toEqual([
+      'Espresso',
+      'Filter',
+    ])
   })
 
   it('narrows the options to what was typed', async () => {

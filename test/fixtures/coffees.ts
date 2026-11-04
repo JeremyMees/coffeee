@@ -24,6 +24,7 @@ export function libraryCoffee(
     flavorNotes: [],
     origins: [{ code: 'ET', name: 'Ethiopia' }],
     latestPriceCents: 1650,
+    matches: [],
     ...overrides,
   }
 }

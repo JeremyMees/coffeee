@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { LayoutGridIcon, TableIcon } from '@lucide/vue'
+import { HeartIcon, LayoutGridIcon, TableIcon } from '@lucide/vue'
 import type { PaginationState, SortingState } from '@tanstack/vue-table'
-import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
-import { useFilterLabels } from '~/queries/filters'
+import { refDebounced, useMediaQuery } from '@vueuse/core'
 import { useLibraryPage, useLibraryPages } from '~/queries/library'
 
 useHead({ title: 'Library · Coffeee' })
@@ -12,10 +11,11 @@ const shelfId = computed(() => idFrom(route.params.shelfId))
 const shelf = useCurrentShelf()
 const desktop = useMediaQuery('(min-width: 1024px)')
 
-const labels = useFilterLabels(shelfId, labelIds(route.query))
-await labels.suspense()
-const initial = libraryFromRoute(route.query, labels.data.value ?? {})
+const address = useBrowsingAddress(shelfId, libraryAddress)
+const initial = await address.start()
 
+const search = ref(initial.search)
+const searched = refDebounced(search, 200)
 const filter = ref(initial.filter)
 const view = ref<LibraryView>(initial.view)
 const sorting = ref<SortingState>(
@@ -45,30 +45,28 @@ const sort = computed<LibrarySort | null>(() => {
     : null
 })
 
-watch([filter, sorting], () => {
+watch([searched, filter, sorting], () => {
   pagination.value = { ...pagination.value, pageIndex: 0 }
 })
 
-watch([filter, view, sort, () => pagination.value.pageIndex], () => {
-  const query = libraryRoute(
-    filter.value,
-    view.value,
-    sort.value,
-    pagination.value.pageIndex,
-  )
-
-  labels.remember(query, libraryLabels(filter.value))
-  navigateTo({ query }, { replace: true })
-})
+watch([searched, filter, view, sort, () => pagination.value.pageIndex], () =>
+  address.keep({
+    search: searched.value,
+    filter: filter.value,
+    view: view.value,
+    sort: sort.value,
+    pageIndex: pagination.value.pageIndex,
+  }),
+)
 
 const grid = useLibraryPages(
   shelfId,
-  () => libraryQuery(filter.value),
+  () => libraryQuery(searched.value, filter.value),
   () => !table.value,
 )
 const page = useLibraryPage(
   shelfId,
-  () => libraryQuery(filter.value, sort.value),
+  () => libraryQuery(searched.value, filter.value, sort.value),
   () => pagination.value.pageIndex,
   table,
 )
@@ -82,22 +80,21 @@ const total = computed(() =>
     ? (page.data.value?.total ?? 0)
     : (grid.data.value?.pages[0]?.total ?? 0),
 )
-const empty = computed(
-  () => !isLibraryFiltered(filter.value) && total.value === 0,
+const narrowed = computed(
+  () => Boolean(searched.value.trim()) || isLibraryFiltered(filter.value),
 )
+const empty = computed(() => !narrowed.value && total.value === 0)
 
-const more = useTemplateRef<HTMLElement>('more')
-
-function loadMore() {
-  if (grid.hasNextPage.value && !grid.isFetchingNextPage.value) {
-    grid.fetchNextPage()
-  }
+function clear() {
+  search.value = ''
+  filter.value = emptyLibraryFilter()
 }
 
-useIntersectionObserver(more, ([entry]) => {
-  if (entry?.isIntersecting) loadMore()
-})
-
+const favourites = {
+  key: 'favourites',
+  label: 'Favourites',
+  icon: HeartIcon,
+} as const
 const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
 </script>
 
@@ -108,8 +105,19 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
       Every coffee you've bought will show up here, finished or not.
     </p>
     <template v-else>
-      <div class="mt-6 flex flex-wrap items-start justify-between gap-4">
-        <LibraryFilters v-model="filter" :shelf-id="shelfId" />
+      <BrowsingSearch
+        v-model="search"
+        class="mt-6"
+        label="Search your library"
+        placeholder="Coffee, roaster, flavor note, origin…"
+      />
+      <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
+        <BrowsingFilters
+          v-model="filter"
+          :shelf-id="shelfId"
+          area="library"
+          :toggle="favourites"
+        />
         <div
           v-if="desktop"
           class="flex rounded-full bg-accent p-1"
@@ -154,14 +162,20 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
         class="mt-8 flex flex-col items-start gap-4"
         data-testid="library-no-match"
       >
-        <p class="text-xs">No coffee in your library matches these filters.</p>
+        <p class="text-xs">
+          {{
+            searched.trim()
+              ? `No coffee in your library matches “${searched.trim()}”.`
+              : 'No coffee in your library matches these filters.'
+          }}
+        </p>
         <button
           type="button"
           data-testid="library-no-match-clear"
           class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
-          @click="filter = emptyLibraryFilter()"
+          @click="clear"
         >
-          Clear filters
+          {{ searched.trim() ? 'Clear search' : 'Clear filters' }}
         </button>
       </div>
       <template v-else>
@@ -181,17 +195,7 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
             />
           </li>
         </ul>
-        <button
-          v-if="grid.hasNextPage.value"
-          ref="more"
-          type="button"
-          class="mx-auto mt-8 flex rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
-          :disabled="grid.isFetchingNextPage.value"
-          data-testid="library-more"
-          @click="loadMore"
-        >
-          {{ grid.isFetchingNextPage.value ? 'Loading…' : 'Show more' }}
-        </button>
+        <LoadMore :pages="grid" data-testid="library-more" />
       </template>
     </template>
   </main>

@@ -1,17 +1,11 @@
 import type { z } from 'zod'
-import type {
-  libraryColumns,
-  libraryFilters,
-  sortDirections,
-} from '../utils/library'
+import type { libraryColumns, sortDirections } from '../utils/library'
 import type {
   libraryFilterSearchSchema,
   librarySearchSchema,
 } from '../utils/schemas'
 
 export type LibraryColumn = (typeof libraryColumns)[number]
-
-export type LibraryFilterKind = (typeof libraryFilters)[number]
 
 export type SortDirection = (typeof sortDirections)[number]
 

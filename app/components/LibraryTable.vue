@@ -7,7 +7,7 @@ import type {
   SortingState,
 } from '@tanstack/vue-table'
 import type { VNodeChild } from 'vue'
-import { NuxtLink, RatingStars } from '#components'
+import { MatchedBy, NuxtLink, RatingStars } from '#components'
 
 const sorting = defineModel<SortingState>('sorting', { required: true })
 const pagination = defineModel<PaginationState>('pagination', {
@@ -62,7 +62,7 @@ const columns: ColumnDef<LibraryCoffee, unknown>[] = [
     id: 'name',
     enableSorting: false,
     header: 'Coffee',
-    cell: ({ row }) =>
+    cell: ({ row }) => [
       h(
         NuxtLink,
         {
@@ -72,6 +72,12 @@ const columns: ColumnDef<LibraryCoffee, unknown>[] = [
         },
         () => row.original.name,
       ),
+      h(MatchedBy, {
+        class: 'mt-1.5',
+        matches: row.original.matches,
+        testid: 'library-row',
+      }),
+    ],
   },
   sortable('rating', coffee =>
     h('span', { class: 'text-primary' }, [

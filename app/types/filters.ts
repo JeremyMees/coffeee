@@ -3,7 +3,7 @@ import type { filterAreas } from '~/utils/filters'
 
 export type FilterArea = (typeof filterAreas)[number]
 
-export type FilterKind = LibraryFilterKind | CatalogFilterKind
+export type FilterKind = BrowsingFilterKind
 
 export type FilterOptionsPage =
   | InternalApi['/api/shelves/:shelfId/library/:filter']['get']

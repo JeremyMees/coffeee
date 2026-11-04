@@ -5,7 +5,6 @@ const props = defineProps<{ coffee: CatalogCoffee; to: string }>()
 
 const morph = useMorph('coffee', () => props.coffee.id)
 
-const matches = computed(() => matchLabels(props.coffee))
 const described = computed(() =>
   [
     roastLevelLabels[props.coffee.roastLevel],
@@ -74,21 +73,11 @@ const described = computed(() =>
       <p class="mt-1.5" data-testid="catalog-result-community-rating">
         <CommunityRating :rating="coffee.communityRating" />
       </p>
-      <ul
-        v-if="matches.length"
-        class="mt-2 flex flex-wrap gap-1.5"
-        aria-label="Matched"
-        data-testid="catalog-result-matches"
-      >
-        <li
-          v-for="match in matches"
-          :key="match"
-          class="rounded-full bg-accent px-2.5 py-1 text-[11px] uppercase"
-          data-testid="catalog-result-match"
-        >
-          {{ match }}
-        </li>
-      </ul>
+      <MatchedBy
+        class="mt-2"
+        :matches="coffee.matches"
+        testid="catalog-result"
+      />
     </div>
   </NuxtLink>
 </template>
