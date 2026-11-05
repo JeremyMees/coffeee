@@ -1,6 +1,7 @@
 test
 test-results
 coverage
+.vitest
 skills
 .github
 .husky
