@@ -44,7 +44,6 @@ async function stored(roasterId = squareMile) {
 async function openSheet(roasterId = squareMile) {
   const sheet = await mountSuspended(EditRoasterSheet, {
     props: {
-      shelfId: sarah.shelf.id,
       roaster: await $fetch<ShelfRoaster>(`/api/roasters/${roasterId}`),
       open: true,
     },

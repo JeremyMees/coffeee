@@ -3,7 +3,6 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery,
-  useQueryClient,
 } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -40,32 +39,21 @@ export function useRoaster(roasterId: MaybeRefOrGetter<string>) {
 }
 
 function useRoasterSaved() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
-  return (shelfId: string) =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.shelf(shelfId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.roasters() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.lists() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin() }),
-    ])
+  return () => changed({ type: 'roaster' })
 }
 
 export function useRoasterUpdate() {
   const saved = useRoasterSaved()
 
   return useMutation({
-    mutationFn: (input: {
-      shelfId: string
-      roasterId: string
-      details: RoasterDetails
-    }) =>
+    mutationFn: (input: { roasterId: string; details: RoasterDetails }) =>
       $fetch(`/api/roasters/${input.roasterId}`, {
         method: 'PATCH',
         body: input.details,
       }),
-    onSuccess: (_data, input) => saved(input.shelfId),
+    onSuccess: saved,
   })
 }
 
@@ -77,17 +65,13 @@ export function useRoasterLogoUpdate() {
   const saved = useRoasterSaved()
 
   return useMutation({
-    mutationFn: async (input: {
-      shelfId: string
-      roasterId: string
-      logo: Blob
-    }) => {
+    mutationFn: async (input: { roasterId: string; logo: Blob }) => {
       const body = new FormData()
       body.append('photo', await compressPhoto(input.logo))
 
       return $fetch(logoPath(input.roasterId), { method: 'PUT', body })
     },
-    onSuccess: (_data, input) => saved(input.shelfId),
+    onSuccess: saved,
   })
 }
 
@@ -95,8 +79,8 @@ export function useRoasterLogoRemoval() {
   const saved = useRoasterSaved()
 
   return useMutation({
-    mutationFn: (input: { shelfId: string; roasterId: string }) =>
+    mutationFn: (input: { roasterId: string }) =>
       $fetch(logoPath(input.roasterId), { method: 'DELETE' }),
-    onSuccess: (_data, input) => saved(input.shelfId),
+    onSuccess: saved,
   })
 }

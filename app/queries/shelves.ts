@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
 export function useShelfMembers(shelfId: MaybeRefOrGetter<string>) {
@@ -51,7 +51,7 @@ export function useShelfRename() {
 
 export function useShelfHandOver() {
   const replaced = useShelfReplaced()
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return useMutation({
     mutationFn: (input: { shelfId: string; ownerId: string }) =>
@@ -61,15 +61,13 @@ export function useShelfHandOver() {
       }),
     onSuccess: async shelf => {
       replaced(shelf)
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.shelfMembers(shelf.id),
-      })
+      await changed({ type: 'members', shelfId: shelf.id })
     },
   })
 }
 
 export function useShelfMemberRemove() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return useMutation({
     mutationFn: (input: { shelfId: string; userId: string }) =>
@@ -77,9 +75,7 @@ export function useShelfMemberRemove() {
         method: 'DELETE',
       }),
     onSuccess: (_data, input) =>
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.shelfMembers(input.shelfId),
-      }),
+      changed({ type: 'members', shelfId: input.shelfId }),
   })
 }
 

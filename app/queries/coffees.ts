@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
 export function useStock(shelfId: MaybeRefOrGetter<string>) {
@@ -35,15 +35,9 @@ export function useCoffee(coffeeId: MaybeRefOrGetter<string>) {
 }
 
 function useCoffeeSaved() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
-  return (shelfId: string) =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.shelf(shelfId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.lists() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin() }),
-    ])
+  return () => changed({ type: 'coffee' })
 }
 
 export function useCoffeeCreate() {
@@ -55,7 +49,7 @@ export function useCoffeeCreate() {
         method: 'POST',
         body: input.coffee,
       }),
-    onSuccess: (_data, input) => saved(input.shelfId),
+    onSuccess: saved,
   })
 }
 
@@ -72,7 +66,7 @@ export function useCoffeeUpdate() {
         method: 'PATCH',
         body: input.details,
       }),
-    onSuccess: (_data, input) => saved(input.shelfId),
+    onSuccess: saved,
   })
 }
 
@@ -94,7 +88,7 @@ export function useCoffeePhotoUpdate() {
 
       return $fetch(photoPath(input), { method: 'PUT', body })
     },
-    onSuccess: (_data, input) => saved(input.shelfId),
+    onSuccess: saved,
   })
 }
 
@@ -104,21 +98,16 @@ export function useCoffeePhotoRemoval() {
   return useMutation({
     mutationFn: (input: { shelfId: string; coffeeId: string }) =>
       $fetch(photoPath(input), { method: 'DELETE' }),
-    onSuccess: (_data, input) => saved(input.shelfId),
+    onSuccess: saved,
   })
 }
 
 export function useCoffeeDelete() {
-  const queryClient = useQueryClient()
+  const saved = useCoffeeSaved()
 
   return useMutation({
     mutationFn: (coffeeId: string) =>
       $fetch(`/api/coffees/${coffeeId}`, { method: 'DELETE' }),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.shelves() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.admin() }),
-      ]),
+    onSuccess: saved,
   })
 }

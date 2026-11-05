@@ -3,7 +3,6 @@ import { CameraIcon, Trash2Icon } from '@lucide/vue'
 import { useRoasterLogoRemoval, useRoasterLogoUpdate } from '~/queries/roasters'
 
 const props = defineProps<{
-  shelfId: string
   roaster: Pick<ShelfRoaster, 'id' | 'name' | 'logoUrl'>
 }>()
 
@@ -13,10 +12,7 @@ const { mutateAsync: updateLogo, isPending: uploading } = useRoasterLogoUpdate()
 const { mutateAsync: removeLogo, isPending: removing } = useRoasterLogoRemoval()
 
 const busy = computed(() => uploading.value || removing.value)
-const target = computed(() => ({
-  shelfId: props.shelfId,
-  roasterId: props.roaster.id,
-}))
+const target = computed(() => ({ roasterId: props.roaster.id }))
 
 async function attempt(action: () => Promise<unknown>) {
   failure.value = ''

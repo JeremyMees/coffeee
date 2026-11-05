@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
 export function useShelfGrinders(shelfId: MaybeRefOrGetter<string>) {
@@ -11,7 +11,7 @@ export function useShelfGrinders(shelfId: MaybeRefOrGetter<string>) {
 }
 
 export function useGrinderOwn() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return useMutation({
     mutationFn: (input: { shelfId: string; grinder: NewGrinder }) =>
@@ -20,17 +20,12 @@ export function useGrinderOwn() {
         body: input.grinder,
       }),
     onSuccess: (_data, input) =>
-      Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.shelf(input.shelfId),
-        }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.lists() }),
-      ]),
+      changed({ type: 'grinder', shelfId: input.shelfId }),
   })
 }
 
 export function useGrinderDisown() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return useMutation({
     mutationFn: (input: { shelfId: string; grinderId: string }) =>
@@ -38,8 +33,6 @@ export function useGrinderDisown() {
         method: 'DELETE',
       }),
     onSuccess: (_data, input) =>
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.shelf(input.shelfId),
-      }),
+      changed({ type: 'grinder', shelfId: input.shelfId }),
   })
 }

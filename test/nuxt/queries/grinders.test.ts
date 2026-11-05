@@ -1,5 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useQueryClient } from '@tanstack/vue-query'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   useGrinderDisown,
   useGrinderOwn,
@@ -7,7 +6,6 @@ import {
 } from '~/queries/grinders'
 import { listShelfGrinders } from '#server/utils/grinders'
 import type { Member } from '#test/support/types'
-import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
 import { database, scenario, signIn } from '../server'
 
@@ -18,14 +16,14 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-async function withClient<T>(use: () => T) {
-  const { result, client } = await runOn('/', () => ({
+async function watching<T>(use: () => T) {
+  const { result, grinders } = await runOn('/', () => ({
     result: use(),
-    client: useQueryClient(),
+    grinders: useShelfGrinders(sarah.shelf.id),
   }))
-  const invalidate = vi.spyOn(client, 'invalidateQueries')
+  await grinders.suspense()
 
-  return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
+  return { result, shown: () => grinders.data.value }
 }
 
 async function shelfGrinders() {
@@ -49,8 +47,8 @@ describe('useShelfGrinders', () => {
 })
 
 describe('useGrinderOwn', () => {
-  it('adds a grinder and refreshes the shelf and the lists', async () => {
-    const { result, invalidated } = await withClient(useGrinderOwn)
+  it('adds a grinder and shows it on the shelf', async () => {
+    const { result, shown } = await watching(useGrinderOwn)
 
     await result.mutateAsync({
       shelfId: sarah.shelf.id,
@@ -60,23 +58,20 @@ describe('useGrinderOwn', () => {
     expect(await shelfGrinders()).toEqual([
       expect.objectContaining({ brand: 'Niche', model: 'Zero' }),
     ])
-    expect(invalidated()).toEqual([
-      { queryKey: queryKeys.shelf(sarah.shelf.id) },
-      { queryKey: queryKeys.lists() },
+    expect(shown()).toEqual([
+      expect.objectContaining({ brand: 'Niche', model: 'Zero' }),
     ])
   })
 })
 
 describe('useGrinderDisown', () => {
-  it('removes a grinder and refreshes the shelf', async () => {
+  it('removes a grinder and drops it from the shelf', async () => {
     const opus = await scenario.grinder(sarah.shelf)
-    const { result, invalidated } = await withClient(useGrinderDisown)
+    const { result, shown } = await watching(useGrinderDisown)
 
     await result.mutateAsync({ shelfId: sarah.shelf.id, grinderId: opus.id })
 
     expect(await shelfGrinders()).toEqual([])
-    expect(invalidated()).toEqual([
-      { queryKey: queryKeys.shelf(sarah.shelf.id) },
-    ])
+    expect(shown()).toEqual([])
   })
 })

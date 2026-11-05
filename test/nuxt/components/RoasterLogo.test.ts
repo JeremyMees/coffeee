@@ -37,7 +37,6 @@ async function storedLogo() {
 async function mountLogo() {
   return mountSuspended(RoasterLogo, {
     props: {
-      shelfId: sarah.shelf.id,
       roaster: {
         id: squareMile,
         name: 'Square Mile',

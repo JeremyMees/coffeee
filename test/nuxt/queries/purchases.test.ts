@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useQueryClient } from '@tanstack/vue-query'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { asc, eq } from 'drizzle-orm'
+import { useProfileStats } from '~/queries/account'
+import { useShelfCoffee, useStock } from '~/queries/coffees'
 import {
   useBuyAgain,
   useCoffeeFinish,
@@ -11,7 +12,6 @@ import {
 import { purchase } from '#server/db/schemas'
 import { purchaseColumns } from '#server/utils/purchases'
 import type { Member } from '#test/support/types'
-import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
 import { database, scenario, signIn } from '../server'
 
@@ -31,14 +31,21 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-async function withClient<T>(use: () => T) {
-  const { result, client } = await runOn('/', () => ({
+async function watching<T>(use: () => T) {
+  const { result, stats, stock, coffee } = await runOn('/', () => ({
     result: use(),
-    client: useQueryClient(),
+    stats: useProfileStats(),
+    stock: useStock(target.shelfId),
+    coffee: useShelfCoffee(target.shelfId, target.coffeeId),
   }))
-  const invalidate = vi.spyOn(client, 'invalidateQueries')
+  await Promise.all([stats.suspense(), stock.suspense(), coffee.suspense()])
 
-  return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
+  return {
+    result,
+    stats: () => stats.data.value,
+    inStock: () => stock.data.value?.map(found => found.id),
+    purchases: () => coffee.data.value?.purchases,
+  }
 }
 
 async function bags() {
@@ -58,16 +65,9 @@ const bag = {
   price: 16.5,
 }
 
-function refreshed() {
-  return [
-    { queryKey: queryKeys.shelf(sarah.shelf.id) },
-    { queryKey: queryKeys.coffees() },
-  ]
-}
-
 describe('useBuyAgain', () => {
-  it('adds a purchase and refreshes that shelf', async () => {
-    const { result, invalidated } = await withClient(useBuyAgain)
+  it('adds a purchase and shows it on the coffee and in the stats', async () => {
+    const { result, stats, purchases } = await watching(useBuyAgain)
 
     await result.mutateAsync({ ...target, purchase: bag })
 
@@ -79,26 +79,27 @@ describe('useBuyAgain', () => {
         priceCents: 1650,
       }),
     ])
-    expect(invalidated()).toEqual(refreshed())
+    expect(purchases()).toHaveLength(2)
+    expect(stats()).toMatchObject({ bags: 2, grams: 500, spentCents: 3150 })
   })
 })
 
 describe('useCoffeeFinish', () => {
-  it('finishes the coffee and refreshes that shelf', async () => {
-    const { result, invalidated } = await withClient(useCoffeeFinish)
+  it('finishes the coffee and takes it out of the stock', async () => {
+    const { result, inStock } = await watching(useCoffeeFinish)
 
     await result.mutateAsync(target)
 
     expect(await bags()).toEqual([
       expect.objectContaining({ finishedAt: expect.any(Date) }),
     ])
-    expect(invalidated()).toEqual(refreshed())
+    expect(inStock()).toEqual([])
   })
 })
 
 describe('usePurchaseUpdate', () => {
-  it('saves the purchase and refreshes that shelf', async () => {
-    const { result, invalidated } = await withClient(usePurchaseUpdate)
+  it('saves the purchase and shows the new price in the stats', async () => {
+    const { result, stats } = await watching(usePurchaseUpdate)
 
     await result.mutateAsync({ ...target, purchaseId, purchase: bag })
 
@@ -109,30 +110,30 @@ describe('usePurchaseUpdate', () => {
         priceCents: 1650,
       }),
     ])
-    expect(invalidated()).toEqual(refreshed())
+    expect(stats()).toMatchObject({ bags: 1, spentCents: 1650 })
   })
 })
 
 describe('usePurchaseFinish', () => {
-  it('finishes the purchase and refreshes that shelf', async () => {
-    const { result, invalidated } = await withClient(usePurchaseFinish)
+  it('finishes the purchase and takes the coffee out of the stock', async () => {
+    const { result, inStock } = await watching(usePurchaseFinish)
 
     await result.mutateAsync({ ...target, purchaseId })
 
     expect(await bags()).toEqual([
       expect.objectContaining({ id: purchaseId, finishedAt: expect.any(Date) }),
     ])
-    expect(invalidated()).toEqual(refreshed())
+    expect(inStock()).toEqual([])
   })
 })
 
 describe('usePurchaseRemoval', () => {
-  it('deletes the purchase and refreshes that shelf', async () => {
-    const { result, invalidated } = await withClient(usePurchaseRemoval)
+  it('deletes the purchase and takes it out of the stats', async () => {
+    const { result, stats } = await watching(usePurchaseRemoval)
 
     await result.mutateAsync({ ...target, purchaseId })
 
     expect(await bags()).toEqual([])
-    expect(invalidated()).toEqual(refreshed())
+    expect(stats()).toMatchObject({ bags: 0, spentCents: 0 })
   })
 })

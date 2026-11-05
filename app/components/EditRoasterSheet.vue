@@ -2,7 +2,7 @@
 import { useForm } from 'vee-validate'
 import { useRoasterUpdate } from '~/queries/roasters'
 
-const props = defineProps<{ shelfId: string; roaster: ShelfRoaster }>()
+const props = defineProps<{ roaster: ShelfRoaster }>()
 
 const open = defineModel<boolean>('open', { default: false })
 const formError = ref('')
@@ -33,11 +33,7 @@ const save = handleSubmit(async details => {
   formError.value = ''
 
   try {
-    await updateRoaster({
-      shelfId: props.shelfId,
-      roasterId: props.roaster.id,
-      details,
-    })
+    await updateRoaster({ roasterId: props.roaster.id, details })
 
     open.value = false
   } catch (error) {
@@ -59,7 +55,7 @@ const save = handleSubmit(async details => {
     <div
       class="flex flex-col gap-6 px-5 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:px-8"
     >
-      <RoasterLogo :shelf-id="shelfId" :roaster="roaster" />
+      <RoasterLogo :roaster="roaster" />
       <form
         class="flex flex-col gap-6"
         novalidate

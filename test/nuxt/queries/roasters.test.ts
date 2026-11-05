@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { useQueryClient } from '@tanstack/vue-query'
 import { eq } from 'drizzle-orm'
 import {
   useRoaster,
@@ -12,7 +11,6 @@ import {
 import { roaster } from '#server/db/schemas'
 import type { Member } from '#test/support/types'
 import type { RoasterDetails } from '#imports'
-import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
 import { database, scenario, signIn } from '../server'
 
@@ -33,14 +31,14 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-async function withClient<T>(use: () => T) {
-  const { result, client } = await runOn('/', () => ({
+async function watching<T>(use: () => T) {
+  const { result, found } = await runOn('/', () => ({
     result: use(),
-    client: useQueryClient(),
+    found: useRoaster(squareMile),
   }))
-  const invalidate = vi.spyOn(client, 'invalidateQueries')
+  await found.suspense()
 
-  return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
+  return { result, shown: () => found.data.value }
 }
 
 async function stored() {
@@ -51,16 +49,6 @@ async function stored() {
     .where(eq(roaster.id, squareMile))
 
   return found!
-}
-
-function refreshed() {
-  return [
-    { queryKey: queryKeys.shelf(sarah.shelf.id) },
-    { queryKey: queryKeys.coffees() },
-    { queryKey: queryKeys.roasters() },
-    { queryKey: queryKeys.lists() },
-    { queryKey: queryKeys.admin() },
-  ]
 }
 
 describe('useRoasterPages', () => {
@@ -93,8 +81,8 @@ describe('useRoaster', () => {
 })
 
 describe('useRoasterUpdate', () => {
-  it('saves the roaster and refreshes the shelf and the lists', async () => {
-    const { result, invalidated } = await withClient(useRoasterUpdate)
+  it('saves the roaster and shows the new details', async () => {
+    const { result, shown } = await watching(useRoasterUpdate)
     const details: RoasterDetails = {
       name: 'Square Mile',
       website: null,
@@ -102,48 +90,40 @@ describe('useRoasterUpdate', () => {
       city: 'London',
     }
 
-    await result.mutateAsync({
-      shelfId: sarah.shelf.id,
-      roasterId: squareMile,
-      details,
-    })
+    await result.mutateAsync({ roasterId: squareMile, details })
 
     expect(await stored()).toMatchObject(details)
-    expect(invalidated()).toEqual(refreshed())
+    expect(shown()).toMatchObject(details)
   })
 })
 
 describe('useRoasterLogoUpdate', () => {
-  it('shrinks the logo, uploads it and refreshes the shelf', async () => {
-    const { result, invalidated } = await withClient(useRoasterLogoUpdate)
+  it('shrinks the logo, uploads it and shows it', async () => {
+    const { result, shown } = await watching(useRoasterLogoUpdate)
     const logo = new Blob(['huge'], { type: 'image/png' })
 
-    await result.mutateAsync({
-      shelfId: sarah.shelf.id,
-      roasterId: squareMile,
-      logo,
-    })
+    await result.mutateAsync({ roasterId: squareMile, logo })
 
     expect(compressPhoto).toHaveBeenCalledWith(logo)
     expect((await stored()).logoUrl).toMatch(
       /^\/api\/photos\/roasters\/[\w-]+\.webp$/,
     )
-    expect(invalidated()).toEqual(refreshed())
+    expect(shown()?.logoUrl).toBe((await stored()).logoUrl)
   })
 })
 
 describe('useRoasterLogoRemoval', () => {
-  it('removes the logo and refreshes the shelf', async () => {
+  it('removes the logo and drops it from the roaster', async () => {
     const db = await database()
     await db
       .update(roaster)
       .set({ logoUrl: '/api/photos/roasters/old.webp' })
       .where(eq(roaster.id, squareMile))
-    const { result, invalidated } = await withClient(useRoasterLogoRemoval)
+    const { result, shown } = await watching(useRoasterLogoRemoval)
 
-    await result.mutateAsync({ shelfId: sarah.shelf.id, roasterId: squareMile })
+    await result.mutateAsync({ roasterId: squareMile })
 
     expect((await stored()).logoUrl).toBeNull()
-    expect(invalidated()).toEqual(refreshed())
+    expect(shown()?.logoUrl).toBeNull()
   })
 })

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { useQueryClient } from '@tanstack/vue-query'
 import { eq } from 'drizzle-orm'
+import { useProfileStats } from '~/queries/account'
 import {
   useCoffee,
   useCoffeeCreate,
@@ -17,7 +17,6 @@ import { coffee } from '#server/db/schemas'
 import { listStock } from '#server/utils/coffees'
 import { storages } from '#test/support/nitro'
 import type { Member } from '#test/support/types'
-import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
 import { database, scenario, signIn } from '../server'
 
@@ -35,14 +34,21 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-async function withClient<T>(use: () => T) {
-  const { result, client } = await runOn('/', () => ({
+async function watching<T>(use: () => T) {
+  const { result, stats, stock, shown } = await runOn('/', () => ({
     result: use(),
-    client: useQueryClient(),
+    stats: useProfileStats(),
+    stock: useStock(sarah.shelf.id),
+    shown: useCoffee(ayele.id),
   }))
-  const invalidate = vi.spyOn(client, 'invalidateQueries')
+  await Promise.all([stats.suspense(), stock.suspense(), shown.suspense()])
 
-  return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
+  return {
+    result,
+    bags: () => stats.data.value?.bags,
+    stock: () => stock.data.value?.map(found => found.name),
+    shown: () => shown.data.value,
+  }
 }
 
 async function stored() {
@@ -59,15 +65,6 @@ async function stockNames() {
   })
 
   return stock.map(found => found.name)
-}
-
-function savedShelf() {
-  return [
-    { queryKey: queryKeys.shelf(sarah.shelf.id) },
-    { queryKey: queryKeys.coffees() },
-    { queryKey: queryKeys.lists() },
-    { queryKey: queryKeys.admin() },
-  ]
 }
 
 const halo = {
@@ -120,8 +117,8 @@ describe('useCoffee', () => {
 })
 
 describe('useCoffeeCreate', () => {
-  it('adds the coffee and refreshes that shelf, every coffee and every list', async () => {
-    const { result, invalidated } = await withClient(useCoffeeCreate)
+  it('adds the coffee and shows it in the stock and the stats', async () => {
+    const { result, stock, bags } = await watching(useCoffeeCreate)
 
     await result.mutateAsync({
       shelfId: sarah.shelf.id,
@@ -137,13 +134,14 @@ describe('useCoffeeCreate', () => {
     expect(await stockNames()).toEqual(
       expect.arrayContaining(['Ayele Fulasa', 'Halo']),
     )
-    expect(invalidated()).toEqual(savedShelf())
+    expect(stock()).toEqual(expect.arrayContaining(['Ayele Fulasa', 'Halo']))
+    expect(bags()).toBe(2)
   })
 })
 
 describe('useCoffeeUpdate', () => {
-  it('saves the details and refreshes that shelf, every coffee and every list', async () => {
-    const { result, invalidated } = await withClient(useCoffeeUpdate)
+  it('saves the details and shows them on the coffee and in the stock', async () => {
+    const { result, stock, shown } = await watching(useCoffeeUpdate)
 
     await result.mutateAsync({
       shelfId: sarah.shelf.id,
@@ -152,13 +150,14 @@ describe('useCoffeeUpdate', () => {
     })
 
     expect((await stored())?.name).toBe('Halo')
-    expect(invalidated()).toEqual(savedShelf())
+    expect(shown()?.name).toBe('Halo')
+    expect(stock()).toEqual(['Halo'])
   })
 })
 
 describe('useCoffeePhotoUpdate', () => {
-  it('uploads the shrunk photo and refreshes that shelf', async () => {
-    const { result, invalidated } = await withClient(useCoffeePhotoUpdate)
+  it('uploads the shrunk photo and shows it on the coffee', async () => {
+    const { result, shown } = await watching(useCoffeePhotoUpdate)
 
     await result.mutateAsync({
       shelfId: sarah.shelf.id,
@@ -170,41 +169,34 @@ describe('useCoffeePhotoUpdate', () => {
     expect(photoUrl).toMatch(/^\/api\/photos\/coffees\/[\w-]+\.webp$/)
     const pathname = photoUrl.replace('/api/photos/', '')
     expect(String(storages.get('photos')?.get(pathname))).toBe('small')
-    expect(invalidated()).toContainEqual({
-      queryKey: queryKeys.shelf(sarah.shelf.id),
-    })
+    expect(shown()?.photoUrl).toBe(photoUrl)
   })
 })
 
 describe('useCoffeePhotoRemoval', () => {
-  it('removes the photo and refreshes that shelf', async () => {
+  it('removes the photo and drops it from the coffee', async () => {
     const db = await database()
     await db
       .update(coffee)
       .set({ photoUrl: '/api/photos/coffees/old.webp' })
       .where(eq(coffee.id, ayele.id))
-    const { result, invalidated } = await withClient(useCoffeePhotoRemoval)
+    const { result, shown } = await watching(useCoffeePhotoRemoval)
 
     await result.mutateAsync({ shelfId: sarah.shelf.id, coffeeId: ayele.id })
 
     expect((await stored())?.photoUrl).toBeNull()
-    expect(invalidated()).toContainEqual({
-      queryKey: queryKeys.shelf(sarah.shelf.id),
-    })
+    expect(shown()?.photoUrl).toBeNull()
   })
 })
 
 describe('useCoffeeDelete', () => {
-  it('deletes the coffee and refreshes every shelf, coffee and admin list', async () => {
-    const { result, invalidated } = await withClient(useCoffeeDelete)
+  it('deletes the coffee and takes it out of the stock and the stats', async () => {
+    const { result, stock, bags } = await watching(useCoffeeDelete)
 
     await result.mutateAsync(ayele.id)
 
     expect(await stored()).toBeUndefined()
-    expect(invalidated()).toEqual([
-      { queryKey: queryKeys.shelves() },
-      { queryKey: queryKeys.coffees() },
-      { queryKey: queryKeys.admin() },
-    ])
+    expect(stock()).toEqual([])
+    expect(bags()).toBe(0)
   })
 })

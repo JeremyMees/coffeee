@@ -83,7 +83,7 @@ const outlined =
       :community-rating="coffee.communityRating"
       :reviews="coffee.reviews"
     />
-    <RoasterDetails :shelf-id="shelfId" :roaster="coffee.roasterDetails" />
+    <RoasterDetails :roaster="coffee.roasterDetails" />
     <CoffeeGrindSettings
       :shelf-id="shelfId"
       :coffee-id="coffee.id"

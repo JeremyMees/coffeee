@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowUpRightIcon, PencilIcon } from '@lucide/vue'
 
-const props = defineProps<{ shelfId: string; roaster: ShelfRoaster }>()
+const props = defineProps<{ roaster: ShelfRoaster }>()
 
 const morph = useMorph('roaster', () => props.roaster.id)
 
@@ -58,7 +58,6 @@ const editing = ref(false)
     <EditRoasterSheet
       v-if="roaster.canEdit"
       v-model:open="editing"
-      :shelf-id="shelfId"
       :roaster="roaster"
     />
   </section>

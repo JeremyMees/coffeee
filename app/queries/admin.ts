@@ -1,9 +1,4 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/vue-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
 function entriesPath(list: AdminList) {
@@ -29,17 +24,9 @@ export function useAdminEntries(
 }
 
 function useAdminEntriesChanged() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.shelves() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.roasters() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.lists() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.brewMethods() }),
-    ])
+  return () => changed({ type: 'catalogEntry' })
 }
 
 export function useAdminEntryCreate() {

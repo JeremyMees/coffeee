@@ -1,15 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation } from '@tanstack/vue-query'
 
 function usePurchaseSaved() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return (input: { shelfId: string }) =>
-    Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.shelf(input.shelfId),
-      }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
-    ])
+    changed({ type: 'purchase', shelfId: input.shelfId })
 }
 
 function coffeePath(input: { shelfId: string; coffeeId: string }) {

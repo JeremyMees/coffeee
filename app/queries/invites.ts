@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
 export function useInvites() {
@@ -11,9 +11,9 @@ export function useInvites() {
 }
 
 function useInvitesChanged() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
-  return () => queryClient.invalidateQueries({ queryKey: queryKeys.invites() })
+  return () => changed({ type: 'invites' })
 }
 
 export function useInviteCreate() {
@@ -46,7 +46,7 @@ export function useShelfInvites(shelfId: MaybeRefOrGetter<string>) {
 }
 
 export function useShelfInviteCreate() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return useMutation({
     mutationFn: (input: { shelfId: string; email: string }) =>
@@ -55,14 +55,12 @@ export function useShelfInviteCreate() {
         body: { email: input.email },
       }),
     onSuccess: (_data, input) =>
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.shelfInvites(input.shelfId),
-      }),
+      changed({ type: 'shelfInvites', shelfId: input.shelfId }),
   })
 }
 
 export function useShelfInviteCancel() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return useMutation({
     mutationFn: (input: { shelfId: string; inviteId: string }) =>
@@ -70,21 +68,18 @@ export function useShelfInviteCancel() {
         method: 'DELETE',
       }),
     onSuccess: (_data, input) =>
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.shelfInvites(input.shelfId),
-      }),
+      changed({ type: 'shelfInvites', shelfId: input.shelfId }),
   })
 }
 
-function useNotificationsChanged() {
-  const queryClient = useQueryClient()
+function useMyInvitesChanged() {
+  const changed = useChanged()
 
-  return () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.notifications() })
+  return () => changed({ type: 'myInvites' })
 }
 
 export function useMyInviteAccept() {
-  const changed = useNotificationsChanged()
+  const changed = useMyInvitesChanged()
 
   return useMutation({
     mutationFn: (inviteId: string) =>
@@ -94,7 +89,7 @@ export function useMyInviteAccept() {
 }
 
 export function useMyInviteDecline() {
-  const changed = useNotificationsChanged()
+  const changed = useMyInvitesChanged()
 
   return useMutation({
     mutationFn: (inviteId: string) =>

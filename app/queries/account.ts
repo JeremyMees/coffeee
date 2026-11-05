@@ -17,7 +17,6 @@ export function useProfileStats() {
   return useQuery({
     queryKey: queryKeys.profileStats(),
     queryFn: () => request('/api/me/stats'),
-    staleTime: 0,
   })
 }
 

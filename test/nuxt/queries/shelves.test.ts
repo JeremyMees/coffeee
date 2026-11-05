@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useQueryClient } from '@tanstack/vue-query'
+import { useOwnedShelves } from '~/queries/account'
 import {
   useShelfDelete,
   useShelfHandOver,
@@ -10,7 +10,7 @@ import {
 } from '~/queries/shelves'
 import { listShelfMembers } from '#server/utils/shelves'
 import type { Member } from '#test/support/types'
-import { queryKeys, shelfPath, useCurrentUser } from '#imports'
+import { shelfPath, useCurrentUser } from '#imports'
 import { currentPath, forgetLastShelf, runOn } from '../fixtures'
 import { database, scenario, signIn } from '../server'
 
@@ -22,16 +22,6 @@ beforeEach(async () => {
   sarah = await scenario.member('Sarah')
   tom = await scenario.member('Tom')
 })
-
-async function withClient<T>(use: () => T) {
-  const { result, client } = await runOn('/', () => ({
-    result: use(),
-    client: useQueryClient(),
-  }))
-  const invalidate = vi.spyOn(client, 'invalidateQueries')
-
-  return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
-}
 
 function shelves() {
   return useCurrentUser().value?.shelves
@@ -60,7 +50,7 @@ describe('useShelfMembers', () => {
 describe('useShelfRename', () => {
   it('renames the shelf in the shelves of the current user', async () => {
     await signIn(sarah)
-    const { result } = await withClient(useShelfRename)
+    const result = await runOn('/', useShelfRename)
 
     await result.mutateAsync({ shelfId: sarah.shelf.id, name: 'Flat' })
 
@@ -73,32 +63,36 @@ describe('useShelfRename', () => {
 })
 
 describe('useShelfHandOver', () => {
-  it('records the new shelf owner and refreshes the members', async () => {
+  it('records the new shelf owner and drops it from the owned shelves', async () => {
     await scenario.joinShelf(tom, sarah.shelf)
     await signIn(sarah)
-    const { result, invalidated } = await withClient(useShelfHandOver)
+    const { result, owned } = await runOn('/', () => ({
+      result: useShelfHandOver(),
+      owned: useOwnedShelves(true),
+    }))
+    await owned.suspense()
 
     await result.mutateAsync({ shelfId: sarah.shelf.id, ownerId: tom.id })
 
     expect(shelves()?.[0]?.ownerId).toBe(tom.id)
-    expect(invalidated()).toEqual([
-      { queryKey: queryKeys.shelfMembers(sarah.shelf.id) },
-    ])
+    expect(owned.data.value).toEqual([])
   })
 })
 
 describe('useShelfMemberRemove', () => {
-  it('removes a member and refreshes the members', async () => {
+  it('removes a member and drops them from the members', async () => {
     await scenario.joinShelf(tom, sarah.shelf)
     await signIn(sarah)
-    const { result, invalidated } = await withClient(useShelfMemberRemove)
+    const { result, members } = await runOn('/', () => ({
+      result: useShelfMemberRemove(),
+      members: useShelfMembers(sarah.shelf.id),
+    }))
+    await members.suspense()
 
     await result.mutateAsync({ shelfId: sarah.shelf.id, userId: tom.id })
 
     expect(await membersOf(sarah.shelf.id)).toEqual(['Sarah'])
-    expect(invalidated()).toEqual([
-      { queryKey: queryKeys.shelfMembers(sarah.shelf.id) },
-    ])
+    expect(members.data.value?.map(member => member.name)).toEqual(['Sarah'])
   })
 })
 
@@ -106,7 +100,7 @@ describe('useShelfLeave', () => {
   it('drops the shelf and goes to another one', async () => {
     await scenario.joinShelf(sarah, tom.shelf)
     await signIn(sarah)
-    const { result } = await withClient(useShelfLeave)
+    const result = await runOn('/', useShelfLeave)
 
     await result.mutateAsync(tom.shelf.id)
 
@@ -120,7 +114,7 @@ describe('useShelfDelete', () => {
   it('drops the shelf and goes to another one', async () => {
     await scenario.joinShelf(sarah, tom.shelf)
     await signIn(sarah)
-    const { result } = await withClient(useShelfDelete)
+    const result = await runOn('/', useShelfDelete)
 
     await result.mutateAsync(sarah.shelf.id)
 
@@ -131,7 +125,7 @@ describe('useShelfDelete', () => {
 
   it('keeps the shelf when deleting fails', async () => {
     await signIn(sarah)
-    const { result } = await withClient(useShelfDelete)
+    const result = await runOn('/', useShelfDelete)
 
     await expect(result.mutateAsync(sarah.shelf.id)).rejects.toThrow(
       "This is your only shelf, so you can't delete it",

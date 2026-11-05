@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation } from '@tanstack/vue-query'
 
 export function useVerdictUpdate() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return useMutation({
     mutationFn: (input: { coffeeId: string; verdict: VerdictChange }) =>
@@ -9,10 +9,6 @@ export function useVerdictUpdate() {
         method: 'PATCH',
         body: input.verdict,
       }),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.shelves() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.coffees() }),
-      ]),
+    onSuccess: () => changed({ type: 'verdict' }),
   })
 }

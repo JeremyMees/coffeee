@@ -5,7 +5,6 @@ import { useAdminEntryCreate } from '~/queries/admin'
 import { useRoasterLogoUpdate } from '~/queries/roasters'
 
 const open = defineModel<boolean>('open', { default: false })
-const shelf = useCurrentShelf()
 const formError = ref('')
 const logo = ref<File>()
 const preview = ref('')
@@ -63,11 +62,7 @@ const add = handleSubmit(async details => {
 
   if (logo.value) {
     try {
-      await updateLogo({
-        shelfId: shelf.value?.id ?? '',
-        roasterId: roaster.id,
-        logo: logo.value,
-      })
+      await updateLogo({ roasterId: roaster.id, logo: logo.value })
     } catch (error) {
       formError.value = `${roaster.name} was added, but its logo was not: ${serverErrors(error).message}`
       return

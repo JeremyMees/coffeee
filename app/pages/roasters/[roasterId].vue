@@ -155,7 +155,6 @@ const coffees = computed(
     <EditRoasterSheet
       v-if="roaster.canEdit"
       v-model:open="editing"
-      :shelf-id="shelf.id"
       :roaster="roaster"
     />
   </main>

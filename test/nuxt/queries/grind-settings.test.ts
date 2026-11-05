@@ -1,13 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
-import { useQueryClient } from '@tanstack/vue-query'
+import { describe, expect, it } from 'vitest'
+import { useShelfCoffee } from '~/queries/coffees'
 import { useGrindSettingSave } from '~/queries/grind-settings'
 import { grindSettingsOf } from '#server/utils/grind-settings'
-import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
 import { database, scenario, signIn } from '../server'
 
 describe('useGrindSettingSave', () => {
-  it('saves the grind setting and refreshes every shelf', async () => {
+  it('saves the grind setting and shows it on the coffee', async () => {
     const sarah = await scenario.member('Sarah')
     const ayele = await scenario.coffee(sarah.shelf)
     const opus = await scenario.grinder(sarah.shelf, {
@@ -16,11 +15,11 @@ describe('useGrindSettingSave', () => {
     })
     const espresso = await scenario.brewMethod('Espresso')
     await signIn(sarah)
-    const { result, client } = await runOn('/', () => ({
+    const { result, coffee } = await runOn('/', () => ({
       result: useGrindSettingSave(),
-      client: useQueryClient(),
+      coffee: useShelfCoffee(sarah.shelf.id, ayele.id),
     }))
-    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    await coffee.suspense()
 
     await result.mutateAsync({
       shelfId: sarah.shelf.id,
@@ -40,8 +39,8 @@ describe('useGrindSettingSave', () => {
         setting: '12',
       }),
     ])
-    expect(invalidate.mock.calls.map(([filters]) => filters)).toEqual([
-      { queryKey: queryKeys.shelves() },
+    expect(coffee.data.value?.grindSettings).toEqual([
+      expect.objectContaining({ model: 'Opus', setting: '12' }),
     ])
   })
 })

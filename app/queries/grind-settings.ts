@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation } from '@tanstack/vue-query'
 
 export function useGrindSettingSave() {
-  const queryClient = useQueryClient()
+  const changed = useChanged()
 
   return useMutation({
     mutationFn: (input: {
@@ -13,7 +13,6 @@ export function useGrindSettingSave() {
         `/api/shelves/${input.shelfId}/coffees/${input.coffeeId}/grind-settings`,
         { method: 'PUT', body: input.change },
       ),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.shelves() }),
+    onSuccess: () => changed({ type: 'grindSetting' }),
   })
 }

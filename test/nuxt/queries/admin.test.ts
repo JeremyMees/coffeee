@@ -1,5 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useQueryClient } from '@tanstack/vue-query'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { asc } from 'drizzle-orm'
 import {
   useAdminEntries,
@@ -11,7 +10,6 @@ import {
 import { producer } from '#server/db/schemas'
 import { addAdminEntry } from '#server/utils/admin-lists'
 import type { Member } from '#test/support/types'
-import { queryKeys } from '#imports'
 import { runOn } from '../fixtures'
 import { database, scenario, signIn } from '../server'
 
@@ -44,24 +42,18 @@ async function producerNames() {
   return (await producers()).map(found => found.name)
 }
 
-async function withClient<T>(use: () => T) {
-  const { result, client } = await runOn('/', () => ({
+async function watching<T>(use: () => T) {
+  const { result, entries } = await runOn('/', () => ({
     result: use(),
-    client: useQueryClient(),
+    entries: useAdminEntries('producers', { page: '0' }),
   }))
-  const invalidate = vi.spyOn(client, 'invalidateQueries')
+  await entries.suspense()
 
-  return { result, invalidated: () => invalidate.mock.calls.map(([f]) => f) }
+  return {
+    result,
+    shown: () => entries.data.value?.entries.map(entry => entry.name),
+  }
 }
-
-const everythingChanged = [
-  { queryKey: queryKeys.admin() },
-  { queryKey: queryKeys.shelves() },
-  { queryKey: queryKeys.coffees() },
-  { queryKey: queryKeys.roasters() },
-  { queryKey: queryKeys.lists() },
-  { queryKey: queryKeys.brewMethods() },
-]
 
 describe('useAdminEntries', () => {
   it('fetches a page of a shared list', async () => {
@@ -78,8 +70,8 @@ describe('useAdminEntries', () => {
 })
 
 describe('useAdminEntryCreate', () => {
-  it('adds the entry and refreshes everything that shows it', async () => {
-    const { result, invalidated } = await withClient(useAdminEntryCreate)
+  it('adds the entry and shows it in the list', async () => {
+    const { result, shown } = await watching(useAdminEntryCreate)
 
     await result.mutateAsync({
       list: 'producers',
@@ -91,13 +83,13 @@ describe('useAdminEntryCreate', () => {
       'Nestor',
       'Nestor Lasso',
     ])
-    expect(invalidated()).toEqual(everythingChanged)
+    expect(shown()).toEqual(['Diego Bermudez', 'Nestor', 'Nestor Lasso'])
   })
 })
 
 describe('useAdminEntryUpdate', () => {
-  it('updates the entry and refreshes everything that shows it', async () => {
-    const { result, invalidated } = await withClient(useAdminEntryUpdate)
+  it('updates the entry and shows the new name in the list', async () => {
+    const { result, shown } = await watching(useAdminEntryUpdate)
 
     await result.mutateAsync({
       list: 'producers',
@@ -106,13 +98,13 @@ describe('useAdminEntryUpdate', () => {
     })
 
     expect(await producerNames()).toEqual(['Diego Bermudez', 'Nestor Lasso'])
-    expect(invalidated()).toEqual(everythingChanged)
+    expect(shown()).toEqual(['Diego Bermudez', 'Nestor Lasso'])
   })
 })
 
 describe('useAdminEntryMerge', () => {
-  it('merges the entry and refreshes everything that shows it', async () => {
-    const { result, invalidated } = await withClient(useAdminEntryMerge)
+  it('merges the entry and drops it from the list', async () => {
+    const { result, shown } = await watching(useAdminEntryMerge)
 
     await result.mutateAsync({
       list: 'producers',
@@ -121,18 +113,18 @@ describe('useAdminEntryMerge', () => {
     })
 
     expect(await producerNames()).toEqual(['Nestor Lasso'])
-    expect(invalidated()).toEqual(everythingChanged)
+    expect(shown()).toEqual(['Nestor Lasso'])
   })
 })
 
 describe('useAdminEntryDelete', () => {
-  it('deletes the entry and refreshes everything that shows it', async () => {
+  it('deletes the entry and drops it from the list', async () => {
     await addAdminEntry(await database(), {
       list: 'producers',
       body: { name: 'Diego Bermudez' },
       createdBy: jeremy.id,
     })
-    const { result, invalidated } = await withClient(useAdminEntryDelete)
+    const { result, shown } = await watching(useAdminEntryDelete)
 
     await result.mutateAsync({
       list: 'producers',
@@ -140,6 +132,6 @@ describe('useAdminEntryDelete', () => {
     })
 
     expect(await producerNames()).toEqual(['Nestor', 'Nestor Lasso'])
-    expect(invalidated()).toEqual(everythingChanged)
+    expect(shown()).toEqual(['Nestor', 'Nestor Lasso'])
   })
 })

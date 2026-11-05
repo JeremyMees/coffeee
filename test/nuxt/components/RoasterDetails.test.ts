@@ -25,7 +25,7 @@ async function mountDetails(roasterId = squareMile) {
   const roaster = await $fetch<ShelfRoaster>(`/api/roasters/${roasterId}`)
 
   return mountSuspended(RoasterDetails, {
-    props: { shelfId: sarah.shelf.id, roaster },
+    props: { roaster },
     attachTo: document.body,
   })
 }

@@ -54,7 +54,7 @@ useHead({ title: () => `${coffee.value?.name} · Coffeee` })
       :community-rating="coffee.communityRating"
       :reviews="coffee.reviews"
     />
-    <RoasterDetails :shelf-id="shelf.id" :roaster="coffee.roasterDetails" />
+    <RoasterDetails :roaster="coffee.roasterDetails" />
     <CoffeeShelves :coffee="coffee" :shelves="coffee.shelves" />
     <DeleteCoffeeDialog
       v-if="coffee.canDelete"
