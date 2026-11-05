@@ -14,7 +14,7 @@
     "postinstall": "nuxt prepare",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:shard": "vitest run --reporter=blob --coverage --no-coverage.thresholds",
+    "test:shard": "vitest run --reporter=blob --reporter=default --coverage --no-coverage.thresholds",
     "test:merge": "vitest run --merge-reports --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

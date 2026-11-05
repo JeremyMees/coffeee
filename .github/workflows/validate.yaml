@@ -52,6 +52,7 @@ jobs:
       - name: Run this shard of the tests
         run: pnpm test:shard --shard=${{ matrix.shard }}/6
       - name: Upload the shard report
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
           name: test-report-${{ matrix.shard }}
@@ -62,6 +63,7 @@ jobs:
   coverage-gate:
     name: Coverage gate
     needs: testing
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
