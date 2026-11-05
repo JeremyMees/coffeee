@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, or, sql } from 'drizzle-orm'
 import type { SQLWrapper } from 'drizzle-orm'
+import type { PgColumn } from 'drizzle-orm/pg-core'
 import type { BrowsingFilterKind, BrowsingSearch } from '#shared/types/browsing'
 import type { CatalogMatch } from '#shared/types/catalog'
 import type { LibraryFilterSearch, LibraryOption } from '#shared/types/library'
@@ -24,7 +25,10 @@ type DescribedFilter = Exclude<
 
 const describedFilters: Record<
   DescribedFilter,
-  { field: DescribedField; param: keyof BrowsingSearch }
+  {
+    field: DescribedField
+    param: 'flavorNoteId' | 'originCode' | 'processId' | 'varietalId'
+  }
 > = {
   'flavor-notes': { field: 'flavorNotes', param: 'flavorNoteId' },
   origins: { field: 'origins', param: 'originCode' },
@@ -35,6 +39,10 @@ const describedFilters: Record<
 const fixedFilters = {
   'roast-levels': { column: coffee.roastLevel, labels: roastLevelLabels },
   'roasted-for': { column: coffee.roastedFor, labels: roastedForLabels },
+}
+
+function anyOf(column: PgColumn, values: string[]) {
+  return values.length ? inArray(column, values) : undefined
 }
 
 export const browsedTotal = sql<number>`cast(count(*) over () as integer)`
@@ -80,16 +88,12 @@ export async function browseCoffees(db: Database, search: BrowsingSearch) {
           described.where,
         )
       : undefined,
-    search.roasterId ? eq(coffee.roasterId, search.roasterId) : undefined,
-    ...Object.values(describedFilters).map(({ field, param }) => {
-      const value = search[param]
-
-      return typeof value === 'string' && value
-        ? describedWith(field, value)
-        : undefined
-    }),
-    search.roastLevel ? eq(coffee.roastLevel, search.roastLevel) : undefined,
-    search.roastedFor ? eq(coffee.roastedFor, search.roastedFor) : undefined,
+    anyOf(coffee.roasterId, search.roasterId),
+    ...Object.values(describedFilters).flatMap(({ field, param }) =>
+      search[param].map(value => describedWith(field, value)),
+    ),
+    anyOf(coffee.roastLevel, search.roastLevel),
+    anyOf(coffee.roastedFor, search.roastedFor),
   )
 
   async function page<Row extends BrowsedRow>(rows: Row[]) {

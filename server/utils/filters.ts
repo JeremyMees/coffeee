@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { inArray } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { FilterLabelSearch, FilterLabels } from '#shared/types/filters'
 import type { Database } from '#server/types/database'
@@ -21,19 +21,17 @@ const named: Record<
   varietalId: { table: varietal, id: varietal.id, name: varietal.name },
 }
 
-async function nameOf(
+async function namesOf(
   db: Database,
   param: keyof FilterLabelSearch,
-  id: string,
+  ids: string[],
 ) {
-  const { table, id: idColumn, name } = named[param]
-  const [row] = await db
-    .select({ name })
-    .from(table)
-    .where(eq(idColumn, id))
-    .limit(1)
+  const { table, id, name } = named[param]
+  const rows = await db.select({ id, name }).from(table).where(inArray(id, ids))
 
-  return row?.name as string | undefined
+  return Object.fromEntries(
+    rows.map(row => [row.id as string, row.name as string]),
+  )
 }
 
 export async function findFilterLabels(
@@ -41,15 +39,15 @@ export async function findFilterLabels(
   search: FilterLabelSearch,
 ): Promise<FilterLabels> {
   const params = (Object.keys(named) as (keyof FilterLabelSearch)[]).filter(
-    param => search[param],
+    param => search[param].length,
   )
   const names = await Promise.all(
-    params.map(param => nameOf(db, param, search[param])),
+    params.map(param => namesOf(db, param, search[param])),
   )
 
   return Object.fromEntries(
     params.flatMap((param, index) =>
-      names[index] ? [[param, names[index]]] : [],
+      Object.keys(names[index]!).length ? [[param, names[index]]] : [],
     ),
   )
 }

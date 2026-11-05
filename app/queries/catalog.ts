@@ -3,7 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 export function useCatalogPages(
   shelfId: MaybeRefOrGetter<string>,
-  query: MaybeRefOrGetter<Record<string, string>>,
+  query: MaybeRefOrGetter<BrowsingQuery>,
 ) {
   const request = useRequestFetch()
 

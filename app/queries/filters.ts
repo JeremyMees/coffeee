@@ -37,7 +37,7 @@ export function useFilterOptions(
 
 export function useFilterLabels(
   shelfId: MaybeRefOrGetter<string>,
-  ids: Record<string, string>,
+  ids: Record<string, string[]>,
 ) {
   const request = useRequestFetch()
   const queryClient = useQueryClient()
@@ -53,7 +53,7 @@ export function useFilterLabels(
     staleTime: Infinity,
   })
 
-  function remember(query: Record<string, string>, known: FilterLabels) {
+  function remember(query: BrowsingQuery, known: FilterLabels) {
     queryClient.setQueryData(
       queryKeys.filterLabels(toValue(shelfId), labelIds(query)),
       known,

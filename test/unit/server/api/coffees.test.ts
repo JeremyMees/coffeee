@@ -420,6 +420,29 @@ describe('the catalog', () => {
     ])
   })
 
+  it('reads a filter picked several times from the address', async () => {
+    const { home } = await neighbours()
+    await add(home.shelf.id, home.headers)
+
+    const either = await request(
+      `/api/shelves/${home.shelf.id}/catalog?roastLevel=light&roastLevel=dark`,
+      { headers: home.headers },
+    )
+    const tooMany = await request(
+      `/api/shelves/${home.shelf.id}/catalog?${Array.from(
+        { length: 21 },
+        (_, index) => `flavorNoteId=n${index}`,
+      ).join('&')}`,
+      { headers: home.headers },
+    )
+
+    expect((await either.json()).total).toBe(2)
+    expect(tooMany.status).toBe(400)
+    expect((await tooMany.json()).statusMessage).toBe(
+      'Pick at most 20 flavor notes at a time',
+    )
+  })
+
   it('has no other catalog filters and refuses queries it cannot read', async () => {
     const { home } = await neighbours()
 

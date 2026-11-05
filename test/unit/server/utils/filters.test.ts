@@ -27,7 +27,7 @@ async function setup() {
       producers: [],
       processes: ['Washed'],
       varietals: ['Geisha'],
-      flavorNotes: ['Lime'],
+      flavorNotes: ['Lime', 'Jasmine'],
       link: null,
       altitudeFrom: null,
       altitudeTo: null,
@@ -40,7 +40,9 @@ async function setup() {
   })
 
   const [squareMile] = await db.select().from(roaster)
-  const [lime] = await db.select().from(flavorNote)
+  const notes = await db.select().from(flavorNote)
+  const lime = notes.find(note => note.name === 'Lime')
+  const jasmine = notes.find(note => note.name === 'Jasmine')
   const [washed] = await db.select().from(processList)
   const [geisha] = await db.select().from(varietal)
 
@@ -48,6 +50,7 @@ async function setup() {
     db,
     squareMile: squareMile!,
     lime: lime!,
+    jasmine: jasmine!,
     washed: washed!,
     geisha: geisha!,
   }
@@ -69,11 +72,28 @@ describe('findFilterLabels', () => {
     )
 
     expect(labels).toEqual({
-      roasterId: 'Square Mile',
-      flavorNoteId: 'Lime',
-      originCode: 'Ethiopia',
-      processId: 'Washed',
-      varietalId: 'Geisha',
+      roasterId: { [squareMile.id]: 'Square Mile' },
+      flavorNoteId: { [lime.id]: 'Lime' },
+      originCode: { ET: 'Ethiopia' },
+      processId: { [washed.id]: 'Washed' },
+      varietalId: { [geisha.id]: 'Geisha' },
+    })
+  })
+
+  it('names every value of a filter with several picked', async () => {
+    const { db, lime, jasmine } = await setup()
+
+    const labels = await findFilterLabels(
+      db,
+      filterLabelsSchema.parse({
+        flavorNoteId: [lime.id, jasmine.id],
+        originCode: ['ET', 'CO'],
+      }),
+    )
+
+    expect(labels).toEqual({
+      flavorNoteId: { [lime.id]: 'Lime', [jasmine.id]: 'Jasmine' },
+      originCode: { ET: 'Ethiopia', CO: 'Colombia' },
     })
   })
 
@@ -82,10 +102,13 @@ describe('findFilterLabels', () => {
 
     const labels = await findFilterLabels(
       db,
-      filterLabelsSchema.parse({ roasterId: squareMile.id, processId: 'gone' }),
+      filterLabelsSchema.parse({
+        roasterId: [squareMile.id, 'gone'],
+        processId: 'gone',
+      }),
     )
 
-    expect(labels).toEqual({ roasterId: 'Square Mile' })
+    expect(labels).toEqual({ roasterId: { [squareMile.id]: 'Square Mile' } })
   })
 
   it('has nothing to name without filters', async () => {

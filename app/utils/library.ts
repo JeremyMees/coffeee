@@ -26,7 +26,7 @@ export function libraryQuery(
     ...browsingQuery(search, filter),
     ...(filter.favourites && { favourites: 'true' }),
     ...(sort && { sort: sort.column, direction: sort.direction }),
-  } as Record<string, string>
+  } as BrowsingQuery
 }
 
 export const libraryAddress: BrowsingAddress<LibraryState> = {
@@ -58,7 +58,7 @@ export const libraryAddress: BrowsingAddress<LibraryState> = {
         ...(sort && { sort: sort.column, direction: sort.direction }),
         ...(pageIndex > 0 && { page: String(pageIndex + 1) }),
       }),
-    }) as Record<string, string>,
+    }) as BrowsingQuery,
   labelsOf: state => browsingLabels(state.filter),
 }
 

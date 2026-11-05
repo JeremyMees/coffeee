@@ -11,7 +11,7 @@ function libraryPath(shelfId: MaybeRefOrGetter<string>) {
 
 export function useLibraryPages(
   shelfId: MaybeRefOrGetter<string>,
-  query: MaybeRefOrGetter<Record<string, string>>,
+  query: MaybeRefOrGetter<BrowsingQuery>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const request = useRequestFetch()
@@ -36,7 +36,7 @@ export function useLibraryPages(
 
 export function useLibraryPage(
   shelfId: MaybeRefOrGetter<string>,
-  query: MaybeRefOrGetter<Record<string, string>>,
+  query: MaybeRefOrGetter<BrowsingQuery>,
   page: MaybeRefOrGetter<number>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {

@@ -13,7 +13,7 @@ export function catalogQuery(
   return {
     ...browsingQuery(search, filter),
     ...(sort !== 'newest' && { sort }),
-  } as Record<string, string>
+  } as BrowsingQuery
 }
 
 export const catalogAddress: BrowsingAddress<CatalogState> = {
@@ -30,7 +30,7 @@ export const catalogAddress: BrowsingAddress<CatalogState> = {
     ({
       ...browsingRoute(search, filter),
       ...(sort !== 'newest' && { sort }),
-    }) as Record<string, string>,
+    }) as BrowsingQuery,
   labelsOf: state => browsingLabels(state.filter),
 }
 

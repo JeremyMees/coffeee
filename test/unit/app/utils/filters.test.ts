@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  fixedLabel,
   labelIds,
   labelsOf,
-  pickedOption,
+  pickedOptions,
   queryText,
+  queryValues,
 } from '~/utils/filters'
 
 describe('queryText', () => {
@@ -16,38 +16,51 @@ describe('queryText', () => {
   })
 })
 
+describe('queryValues', () => {
+  it('reads one value or several, once each, skipping blanks', () => {
+    expect(queryValues('lime')).toEqual(['lime'])
+    expect(queryValues(['lime', '', 'jasmine', 'lime'])).toEqual([
+      'lime',
+      'jasmine',
+    ])
+    expect(queryValues(null)).toEqual([])
+    expect(queryValues(undefined)).toEqual([])
+    expect(queryValues([null, 3])).toEqual([])
+  })
+})
+
 describe('labelIds', () => {
-  it('picks the filters that need a name looked up', () => {
+  it('picks the filters that need a name looked up, with every id', () => {
     expect(
       labelIds({
         q: 'lime',
         roasterId: 'r1',
+        flavorNoteId: ['n1', 'n2'],
         originCode: 'ET',
         processId: '',
         roastLevel: 'light',
       }),
-    ).toEqual({ roasterId: 'r1', originCode: 'ET' })
-  })
-})
-
-describe('pickedOption', () => {
-  it('needs both a value and its name', () => {
-    expect(pickedOption('r1', 'La Cabra')).toEqual({
-      value: 'r1',
-      label: 'La Cabra',
+    ).toEqual({
+      roasterId: ['r1'],
+      flavorNoteId: ['n1', 'n2'],
+      originCode: ['ET'],
     })
-    expect(pickedOption('r1', undefined)).toBeNull()
-    expect(pickedOption('', 'La Cabra')).toBeNull()
   })
 })
 
-describe('fixedLabel', () => {
-  it('names a known value only', () => {
-    const labels = { light: 'Light' }
+describe('pickedOptions', () => {
+  it('keeps each value it has a name for', () => {
+    const labels = { n1: 'Lime', n2: 'Jasmine' }
 
-    expect(fixedLabel(labels, 'light')).toBe('Light')
-    expect(fixedLabel(labels, 'burnt')).toBeUndefined()
-    expect(fixedLabel(labels, 'toString')).toBeUndefined()
+    expect(pickedOptions(['n1', 'gone', 'n2'], labels)).toEqual([
+      { value: 'n1', label: 'Lime' },
+      { value: 'n2', label: 'Jasmine' },
+    ])
+    expect(pickedOptions('n1', labels)).toEqual([
+      { value: 'n1', label: 'Lime' },
+    ])
+    expect(pickedOptions('n1', undefined)).toEqual([])
+    expect(pickedOptions('toString', labels)).toEqual([])
   })
 })
 
@@ -55,10 +68,16 @@ describe('labelsOf', () => {
   it('keeps the names of picked filters that need looking up', () => {
     expect(
       labelsOf([
-        ['roasterId', { value: 'r1', label: 'La Cabra' }],
-        ['originCode', null],
-        ['roastLevel', { value: 'light', label: 'Light' }],
+        [
+          'flavorNoteId',
+          [
+            { value: 'n1', label: 'Lime' },
+            { value: 'n2', label: 'Jasmine' },
+          ],
+        ],
+        ['originCode', []],
+        ['roastLevel', [{ value: 'light', label: 'Light' }]],
       ]),
-    ).toEqual({ roasterId: 'La Cabra' })
+    ).toEqual({ flavorNoteId: { n1: 'Lime', n2: 'Jasmine' } })
   })
 })

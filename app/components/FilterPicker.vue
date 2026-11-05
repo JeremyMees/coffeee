@@ -3,7 +3,7 @@ import { CheckIcon, ChevronDownIcon } from '@lucide/vue'
 import { refDebounced, useIntersectionObserver } from '@vueuse/core'
 import { useFilterOptions } from '~/queries/filters'
 
-const picked = defineModel<LibraryOption | null>({ required: true })
+const picked = defineModel<LibraryOption[]>({ required: true })
 
 const props = defineProps<{
   shelfId: string
@@ -30,6 +30,14 @@ const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
 const options = computed(
   () => data.value?.pages.flatMap(page => page.options) ?? [],
 )
+const pinned = ref<LibraryOption[]>([])
+const others = computed(() => {
+  if (search.value) return options.value
+
+  const values = new Set(pinned.value.map(option => option.value))
+
+  return options.value.filter(option => !values.has(option.value))
+})
 
 const more = useTemplateRef<HTMLElement>('more')
 
@@ -41,37 +49,52 @@ useIntersectionObserver(more, ([entry]) => {
   if (entry?.isIntersecting) loadMore()
 })
 
-function pick(option: LibraryOption) {
-  picked.value = option.value ? option : null
+function pick(options: LibraryOption[]) {
+  picked.value = options.some(option => !option.value) ? [] : options
 }
 
 watch(open, isOpen => {
-  if (!isOpen) search.value = ''
+  if (isOpen) pinned.value = [...picked.value]
+  else search.value = ''
 })
 </script>
 
 <template>
   <Combobox
     v-model:open="open"
-    :model-value="picked ?? anyOption"
+    :model-value="picked"
     by="value"
+    multiple
     ignore-filter
-    @update:model-value="pick($event as LibraryOption)"
+    :reset-search-term-on-select="false"
+    @update:model-value="pick($event as LibraryOption[])"
   >
     <ComboboxAnchor as-child>
       <ComboboxTrigger as-child>
         <button
           type="button"
           :data-testid="`${prefix}-${kind}`"
-          :aria-label="picked ? `${label}: ${picked.label}` : label"
+          :aria-label="
+            picked.length
+              ? `${label}: ${picked.map(option => option.label).join(', ')}`
+              : label
+          "
           :class="[
             'flex max-w-56 items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-            picked
+            picked.length
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-transparent bg-accent hover:border-primary',
           ]"
         >
-          <span class="truncate">{{ picked?.label ?? label }}</span>
+          <span class="truncate">{{ label }}</span>
+          <span
+            v-if="picked.length"
+            class="grid min-w-4 place-items-center rounded-full bg-primary-foreground px-1 text-[10px] leading-4 text-primary tabular-nums"
+            :data-testid="`${prefix}-${kind}-count`"
+            aria-hidden="true"
+          >
+            {{ picked.length }}
+          </span>
           <ChevronDownIcon class="size-3.5 shrink-0" aria-hidden="true" />
         </button>
       </ComboboxTrigger>
@@ -90,15 +113,34 @@ watch(open, isOpen => {
       />
       <ComboboxViewport>
         <ComboboxItem
-          v-if="picked"
+          v-if="picked.length"
           :value="anyOption"
           class="rounded-full px-3 py-2"
           :data-testid="`${prefix}-any`"
         >
           Any {{ label.toLowerCase() }}
         </ComboboxItem>
+        <template v-if="!search && pinned.length">
+          <ComboboxItem
+            v-for="option in pinned"
+            :key="option.value"
+            :value="option"
+            class="rounded-full px-3 py-2"
+            :data-testid="`${prefix}-option`"
+          >
+            <span class="truncate">{{ option.label }}</span>
+            <ComboboxItemIndicator>
+              <CheckIcon aria-hidden="true" />
+            </ComboboxItemIndicator>
+          </ComboboxItem>
+          <ComboboxSeparator
+            v-if="others.length"
+            class="my-1"
+            :data-testid="`${prefix}-pinned-end`"
+          />
+        </template>
         <ComboboxItem
-          v-for="option in options"
+          v-for="option in others"
           :key="option.value"
           :value="option"
           class="rounded-full px-3 py-2"
@@ -110,7 +152,7 @@ watch(open, isOpen => {
           </ComboboxItemIndicator>
         </ComboboxItem>
         <p
-          v-if="data && !options.length"
+          v-if="data && !options.length && !(pinned.length && !search)"
           class="px-3 py-2 text-xs"
           :data-testid="`${prefix}-none`"
         >

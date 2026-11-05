@@ -28,7 +28,7 @@ describe('isLibraryFiltered', () => {
       isLibraryFiltered({ ...emptyLibraryFilter(), favourites: true }),
     ).toBe(true)
     expect(
-      isLibraryFiltered({ ...emptyLibraryFilter(), roaster: laCabra }),
+      isLibraryFiltered({ ...emptyLibraryFilter(), roaster: [laCabra] }),
     ).toBe(true)
   })
 })
@@ -45,8 +45,8 @@ describe('libraryQuery', () => {
         {
           ...emptyLibraryFilter(),
           favourites: true,
-          roaster: laCabra,
-          varietal: { value: 'v1', label: 'Geisha' },
+          roaster: [laCabra],
+          varietal: [{ value: 'v1', label: 'Geisha' }],
         },
         { column: 'latestPrice', direction: 'descending' },
       ),
@@ -82,7 +82,7 @@ describe('libraryAddress', () => {
   })
 
   it('keeps the search and filters, and the sort and page only for the table', () => {
-    const filter = { ...emptyLibraryFilter(), roaster: laCabra }
+    const filter = { ...emptyLibraryFilter(), roaster: [laCabra] }
     const sort = { column: 'rating', direction: 'descending' } as const
 
     expect(
@@ -123,12 +123,16 @@ describe('libraryAddress', () => {
           direction: 'descending',
           page: '3',
         },
-        { roasterId: 'La Cabra' },
+        { roasterId: { r1: 'La Cabra' } },
       ),
     ).toEqual(
       state({
         search: 'lime',
-        filter: { ...emptyLibraryFilter(), favourites: true, roaster: laCabra },
+        filter: {
+          ...emptyLibraryFilter(),
+          favourites: true,
+          roaster: [laCabra],
+        },
         view: 'table',
         sort: { column: 'rating', direction: 'descending' },
         pageIndex: 2,
@@ -151,11 +155,14 @@ describe('libraryAddress', () => {
         state({
           filter: {
             ...emptyLibraryFilter(),
-            roaster: laCabra,
-            origin: { value: 'ET', label: 'Ethiopia' },
+            roaster: [laCabra],
+            origin: [{ value: 'ET', label: 'Ethiopia' }],
           },
         }),
       ),
-    ).toEqual({ roasterId: 'La Cabra', originCode: 'Ethiopia' })
+    ).toEqual({
+      roasterId: { r1: 'La Cabra' },
+      originCode: { ET: 'Ethiopia' },
+    })
   })
 })

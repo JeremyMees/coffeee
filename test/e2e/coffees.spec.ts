@@ -962,8 +962,8 @@ test('finds a coffee on Discover by its varietal or washing station and filters 
   await expect(page).toHaveURL(/varietalId=/)
 
   await page.reload()
-  await expect(page.getByTestId('catalog-filter-varietals')).toHaveText(
-    varietal,
+  await expect(page.getByTestId('catalog-applied-filter')).toHaveText(
+    `Varietal: ${varietal}`,
   )
   await expect(results.getByTestId('catalog-result-name')).toHaveText([
     'Kochere Natural',
@@ -1047,4 +1047,58 @@ test('an empty Library search leads to Discover, which opens the shelf’s own c
     new RegExp(`/shelves/[^/]*${member.shelfId}/coffees/`),
   )
   await expect(page.getByTestId('purchases')).toBeVisible()
+})
+
+test('picks several roasters in the Library, shows each as a chip and comes back to them', async ({
+  page,
+  member,
+}) => {
+  const first = uniqueName('Roaster')
+  const second = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, {
+    name: 'Ayele Fulasa',
+    roaster: first,
+    newRoaster: true,
+  })
+  await addCoffee(page, {
+    name: 'El Paraiso',
+    roaster: second,
+    newRoaster: true,
+  })
+  await addCoffee(page, {
+    name: 'Red Brick',
+    roaster: uniqueName('Roaster'),
+    newRoaster: true,
+  })
+
+  await page.goto(`/shelves/${member.shelfId}/library`)
+  const names = page.getByTestId('library').getByTestId('coffee-card-name')
+  await expect(names).toHaveCount(3)
+
+  await page.getByTestId('library-filter-roasters').click()
+  for (const roaster of [first, second]) {
+    await page
+      .getByTestId('library-filter-option')
+      .filter({ hasText: roaster })
+      .click()
+  }
+  await expect(names).toHaveText(['El Paraiso', 'Ayele Fulasa'])
+  await page.keyboard.press('Escape')
+
+  const applied = page.getByTestId('library-applied-filter')
+  await expect(applied).toHaveText([`Roaster: ${first}`, `Roaster: ${second}`])
+  await page.getByTestId('library-filter-roasters').click()
+  await expect(page.getByTestId('library-filter-option').first()).toHaveText(
+    first,
+  )
+  await page.keyboard.press('Escape')
+
+  await applied.first().click()
+  await expect(names).toHaveText(['El Paraiso'])
+  await expect(applied).toHaveText([`Roaster: ${second}`])
+
+  await page.reload()
+  await expect(names).toHaveText(['El Paraiso'])
+  await expect(applied).toHaveText([`Roaster: ${second}`])
 })

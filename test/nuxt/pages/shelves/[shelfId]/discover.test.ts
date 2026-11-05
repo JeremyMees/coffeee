@@ -256,8 +256,9 @@ describe('the Discover page', () => {
     )
 
     expect(names()).toEqual(['Bombe', 'El Paraiso'])
-    expect(page.get(tid('catalog-filter-roasters')).text()).toBe('La Cabra')
-    expect(page.get(tid('catalog-filter-roasted-for')).text()).toBe('Filter')
+    expect(
+      page.findAll(tid('catalog-applied-filter')).map(chip => chip.text()),
+    ).toEqual(['Roaster: La Cabra', 'Roasted for: Filter'])
   })
 
   it('filters by a varietal any coffee uses and keeps it in the address', async () => {
@@ -280,12 +281,57 @@ describe('the Discover page', () => {
     option.click()
 
     await vi.waitFor(() => expect(names()).toEqual(['Pink Bourbon Lot']))
-    expect(page.get(tid('catalog-filter-varietals')).text()).toBe(
-      'Pink Bourbon',
+    expect(page.get(tid('catalog-applied-filter')).text()).toBe(
+      'Varietal: Pink Bourbon',
     )
     expect(useRouter().currentRoute.value.query).toEqual({
       varietalId: expect.any(String),
     })
+  })
+
+  it('finds coffees with every flavor note picked, and comes back to them', async () => {
+    await threeCoffees()
+    await scenario.coffee(tom.shelf, {
+      name: 'Bombe',
+      flavorNotes: ['Lime', 'Jasmine'],
+    })
+    const { page, names } = await discover()
+    const pick = async (label: string) => {
+      const option = await vi.waitFor(() => {
+        const found = allByTestId('catalog-filter-option').find(
+          element => element.textContent?.trim() === label,
+        )
+        if (!found) throw new Error(`No ${label}`)
+
+        return found
+      })
+      option.click()
+    }
+
+    await click('catalog-filter-flavor-notes')
+    await pick('Lime')
+    await vi.waitFor(() => expect(names()).toEqual(['Bombe', 'Ayele Fulasa']))
+    await pick('Jasmine')
+
+    await vi.waitFor(() => expect(names()).toEqual(['Bombe']))
+    expect(page.get(tid('catalog-filter-flavor-notes-count')).text()).toBe('2')
+    expect(
+      page.findAll(tid('catalog-applied-filter')).map(chip => chip.text()),
+    ).toEqual(['Flavor note: Lime', 'Flavor note: Jasmine'])
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({
+        flavorNoteId: [expect.any(String), expect.any(String)],
+      }),
+    )
+    const address = useRouter().currentRoute.value.fullPath
+    failFilterLabels()
+
+    const back = await discover(address)
+
+    expect(back.names()).toEqual(['Bombe'])
+    expect(
+      back.page.findAll(tid('catalog-applied-filter')).map(chip => chip.text()),
+    ).toEqual(['Flavor note: Lime', 'Flavor note: Jasmine'])
   })
 
   it('knows the names of filters it picked when coming back', async () => {
@@ -311,6 +357,8 @@ describe('the Discover page', () => {
 
     const { page } = await discover(discoverPath(`?roasterId=${laCabra}`))
 
-    expect(page.get(tid('catalog-filter-roasters')).text()).toBe('La Cabra')
+    expect(page.get(tid('catalog-applied-filter')).text()).toBe(
+      'Roaster: La Cabra',
+    )
   })
 })

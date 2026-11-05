@@ -79,7 +79,7 @@ describe('BrowsingFilters', () => {
   })
 
   it('clears every filter without a toggle', async () => {
-    const { wrapper, changes } = await catalogFilters({ roaster: laCabra })
+    const { wrapper, changes } = await catalogFilters({ roaster: [laCabra] })
 
     await wrapper.get(tid('catalog-filter-clear')).trigger('click')
 
@@ -109,7 +109,7 @@ describe('BrowsingFilters', () => {
   })
 
   it('combines a picked chip with the others', async () => {
-    const { changes } = await catalogFilters({ roaster: laCabra })
+    const { changes } = await catalogFilters({ roaster: [laCabra] })
 
     await click('catalog-filter-roasted-for')
     const option = await vi.waitFor(() => {
@@ -126,8 +126,8 @@ describe('BrowsingFilters', () => {
       expect(changes).toEqual([
         {
           ...emptyBrowsingFilter(),
-          roaster: laCabra,
-          roastedFor: { value: 'espresso', label: 'Espresso' },
+          roaster: [laCabra],
+          roastedFor: [{ value: 'espresso', label: 'Espresso' }],
         },
       ]),
     )
@@ -154,9 +154,41 @@ describe('BrowsingFilters', () => {
       {
         ...emptyLibraryFilter(),
         favourites: true,
-        origin: { value: 'CO', label: 'Colombia' },
+        origin: [{ value: 'CO', label: 'Colombia' }],
       },
     ])
+  })
+
+  it('shows each picked value as a chip that takes it off', async () => {
+    const lime = { value: 'n1', label: 'Lime' }
+    const banana = { value: 'n2', label: 'Banana' }
+    const { wrapper, changes } = await catalogFilters({
+      flavorNote: [lime, banana],
+      roaster: [laCabra],
+    })
+    const applied = () =>
+      wrapper.findAll(tid('catalog-applied-filter')).map(chip => chip.text())
+
+    expect(applied()).toEqual([
+      'Flavor note: Lime',
+      'Flavor note: Banana',
+      'Roaster: La Cabra',
+    ])
+    expect(
+      wrapper.get(tid('catalog-applied-filter')).attributes('aria-label'),
+    ).toBe('Remove Flavor note: Lime')
+
+    await wrapper.findAll(tid('catalog-applied-filter'))[0]!.trigger('click')
+
+    expect(changes).toEqual([
+      { ...emptyBrowsingFilter(), flavorNote: [banana], roaster: [laCabra] },
+    ])
+  })
+
+  it('shows no picked chips without filters', async () => {
+    const { wrapper } = await catalogFilters()
+
+    expect(wrapper.find(tid('catalog-applied')).exists()).toBe(false)
   })
 
   it('clears every filter and the toggle, and only offers to when one is on', async () => {
@@ -165,7 +197,7 @@ describe('BrowsingFilters', () => {
 
     const filtered = await libraryFilters({
       favourites: true,
-      roaster: laCabra,
+      roaster: [laCabra],
     })
     await filtered.wrapper.get(tid('library-filter-clear')).trigger('click')
 

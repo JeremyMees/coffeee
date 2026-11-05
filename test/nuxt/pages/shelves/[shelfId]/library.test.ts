@@ -366,6 +366,8 @@ describe('the Library page', () => {
       ]),
     )
     expect(page.get(tid('data-table-page')).text()).toBe('Page 2 of 2')
-    expect(page.get(tid('library-filter-origins')).text()).toBe('Ethiopia')
+    expect(page.get(tid('library-applied-filter')).text()).toBe(
+      'Origin: Ethiopia',
+    )
   })
 })

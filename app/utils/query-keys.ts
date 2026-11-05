@@ -4,18 +4,20 @@ export const queryKeys = {
   shelves: () => ['shelves'],
   shelf: (shelfId: string) => ['shelves', shelfId],
   stock: (shelfId: string) => ['shelves', shelfId, 'stock'],
-  library: (shelfId: string, query: Record<string, string>) => [
+  library: (shelfId: string, query: BrowsingQuery) => [
     'shelves',
     shelfId,
     'library',
     query,
   ],
-  libraryPage: (
-    shelfId: string,
-    query: Record<string, string>,
-    page: number,
-  ) => ['shelves', shelfId, 'library', query, page],
-  catalog: (shelfId: string, query: Record<string, string>) => [
+  libraryPage: (shelfId: string, query: BrowsingQuery, page: number) => [
+    'shelves',
+    shelfId,
+    'library',
+    query,
+    page,
+  ],
+  catalog: (shelfId: string, query: BrowsingQuery) => [
     'shelves',
     shelfId,
     'catalog',
@@ -27,7 +29,7 @@ export const queryKeys = {
     kind: FilterKind,
     search: string,
   ) => ['shelves', shelfId, area, kind, search],
-  filterLabels: (shelfId: string, ids: Record<string, string>) => [
+  filterLabels: (shelfId: string, ids: Record<string, string[]>) => [
     'shelves',
     shelfId,
     'filter-labels',

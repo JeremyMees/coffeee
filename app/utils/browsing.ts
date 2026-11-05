@@ -37,29 +37,30 @@ const fixedLabels: Partial<
 
 export function emptyBrowsingFilter(): BrowsingFilter {
   return {
-    flavorNote: null,
-    origin: null,
-    roaster: null,
-    process: null,
-    varietal: null,
-    roastLevel: null,
-    roastedFor: null,
+    flavorNote: [],
+    origin: [],
+    roaster: [],
+    process: [],
+    varietal: [],
+    roastLevel: [],
+    roastedFor: [],
   }
 }
 
 export function isBrowsingFiltered(filter: BrowsingFilter) {
-  return browsingPickers.some(picker => filter[picker.key] !== null)
+  return browsingPickers.some(picker => filter[picker.key].length > 0)
 }
 
 export function browsingQuery(search: string, filter: BrowsingFilter) {
-  const query: Record<string, string> = {}
+  const query: BrowsingQuery = {}
 
   if (search.trim()) query.search = search.trim()
 
   for (const picker of browsingPickers) {
-    const picked = filter[picker.key]
+    const picked = filter[picker.key].map(option => option.value)
 
-    if (picked) query[picker.param] = picked.value
+    if (picked.length === 1) query[picker.param] = picked[0]!
+    else if (picked.length) query[picker.param] = picked
   }
 
   return query
@@ -78,14 +79,9 @@ export function browsingFromRoute(
   const filter = emptyBrowsingFilter()
 
   for (const picker of browsingPickers) {
-    const fixed = fixedLabels[picker.param]
-    const value = query[picker.param]
-
-    filter[picker.key] = pickedOption(
-      value,
-      fixed
-        ? fixedLabel(fixed, value)
-        : labels[picker.param as keyof FilterLabels],
+    filter[picker.key] = pickedOptions(
+      query[picker.param],
+      fixedLabels[picker.param] ?? labels[picker.param as keyof FilterLabels],
     )
   }
 

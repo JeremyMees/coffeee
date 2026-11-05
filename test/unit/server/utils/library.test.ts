@@ -68,7 +68,7 @@ async function add(
 
 async function library(
   { db, sarah, home }: Setup,
-  query: Record<string, string> = {},
+  query: Record<string, string | string[]> = {},
 ) {
   return listLibrary(db, {
     shelfId: home.id,
@@ -77,7 +77,10 @@ async function library(
   })
 }
 
-async function names(setup: Setup, query: Record<string, string> = {}) {
+async function names(
+  setup: Setup,
+  query: Record<string, string | string[]> = {},
+) {
   return (await library(setup, query)).coffees.map(coffee => coffee.name)
 }
 
@@ -276,6 +279,23 @@ describe('the library', () => {
     expect(
       await names(context, { roastedFor: 'espresso', search: 'lime' }),
     ).toEqual([])
+  })
+
+  it('needs every picked origin, but any picked roast level', async () => {
+    const context = await setup()
+    await threeCoffees(context)
+
+    expect(await names(context, { originCode: ['ET', 'KE'] })).toEqual([
+      'Ayele Fulasa',
+    ])
+    expect(await names(context, { originCode: ['ET', 'BR'] })).toEqual([])
+    expect(await names(context, { roastLevel: ['light', 'medium'] })).toEqual([
+      'Ayele Fulasa',
+      'El Paraiso',
+    ])
+    expect(
+      await names(context, { roastLevel: ['dark', 'medium'], search: 'lime' }),
+    ).toEqual(['Red Brick'])
   })
 
   it('searches only the shelf’s coffees, by the same fields as Discover', async () => {

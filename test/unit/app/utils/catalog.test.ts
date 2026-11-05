@@ -25,7 +25,7 @@ describe('catalogQuery', () => {
 
   it('asks for what was typed and the filters', () => {
     expect(
-      catalogQuery(' lime ', { ...emptyBrowsingFilter(), roaster: laCabra }),
+      catalogQuery(' lime ', { ...emptyBrowsingFilter(), roaster: [laCabra] }),
     ).toEqual({ search: 'lime', roasterId: 'r1' })
   })
 })
@@ -45,7 +45,7 @@ describe('catalogAddress', () => {
     expect(
       catalogAddress.toRoute({
         search: ' lime ',
-        filter: { ...emptyBrowsingFilter(), roaster: laCabra },
+        filter: { ...emptyBrowsingFilter(), roaster: [laCabra] },
         sort: 'communityRating',
       }),
     ).toEqual({ q: 'lime', roasterId: 'r1', sort: 'communityRating' })
@@ -63,11 +63,11 @@ describe('catalogAddress', () => {
     expect(
       catalogAddress.fromRoute(
         { q: 'lime', mine: 'true', roasterId: 'r1', sort: 'communityRating' },
-        { roasterId: 'La Cabra' },
+        { roasterId: { r1: 'La Cabra' } },
       ),
     ).toEqual({
       search: 'lime',
-      filter: { ...emptyBrowsingFilter(), roaster: laCabra },
+      filter: { ...emptyBrowsingFilter(), roaster: [laCabra] },
       sort: 'communityRating',
     })
   })
@@ -80,10 +80,10 @@ describe('catalogAddress', () => {
     expect(
       catalogAddress.labelsOf({
         search: '',
-        filter: { ...emptyBrowsingFilter(), roaster: laCabra },
+        filter: { ...emptyBrowsingFilter(), roaster: [laCabra] },
         sort: 'newest',
       }),
-    ).toEqual({ roasterId: 'La Cabra' })
+    ).toEqual({ roasterId: { r1: 'La Cabra' } })
   })
 })
 
@@ -105,13 +105,25 @@ describe('discoverLink', () => {
     expect(
       discoverLink(shelf, ' lime ', {
         ...emptyBrowsingFilter(),
-        roaster: laCabra,
-        roastedFor: { value: 'espresso', label: 'Espresso' },
+        roaster: [laCabra],
+        roastedFor: [{ value: 'espresso', label: 'Espresso' }],
       }),
     ).toEqual({
       path: '/shelves/home-s1/discover',
       query: { q: 'lime', roasterId: 'r1', roastedFor: 'espresso' },
     })
+  })
+
+  it('brings every pick of a filter along', () => {
+    expect(
+      discoverLink(shelf, '', {
+        ...emptyBrowsingFilter(),
+        flavorNote: [
+          { value: 'n1', label: 'Lime' },
+          { value: 'n2', label: 'Jasmine' },
+        ],
+      }).query,
+    ).toEqual({ flavorNoteId: ['n1', 'n2'] })
   })
 
   it('leaves out Favourites, which only the Library has', () => {

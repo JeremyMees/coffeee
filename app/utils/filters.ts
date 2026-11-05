@@ -27,36 +27,47 @@ export function queryText(value: unknown) {
   return typeof value === 'string' ? value : ''
 }
 
+export function queryValues(value: unknown) {
+  const values = (Array.isArray(value) ? value : [value]).filter(
+    (picked): picked is string => typeof picked === 'string' && picked !== '',
+  )
+
+  return [...new Set(values)]
+}
+
 export function labelIds(query: Record<string, unknown>) {
   return Object.fromEntries(
-    labelledParams.flatMap(param =>
-      queryText(query[param]) ? [[param, queryText(query[param])]] : [],
-    ),
-  ) as Record<string, string>
+    labelledParams.flatMap(param => {
+      const ids = queryValues(query[param])
+
+      return ids.length ? [[param, ids]] : []
+    }),
+  ) as Record<string, string[]>
 }
 
-export function pickedOption(
+export function pickedOptions(
   value: unknown,
-  label: string | undefined,
-): LibraryOption | null {
-  const picked = queryText(value)
-
-  return picked && label ? { value: picked, label } : null
+  labels: Record<string, string> | undefined,
+): LibraryOption[] {
+  return queryValues(value).flatMap(picked =>
+    labels && Object.hasOwn(labels, picked)
+      ? [{ value: picked, label: labels[picked]! }]
+      : [],
+  )
 }
 
-export function fixedLabel(labels: Record<string, string>, value: unknown) {
-  const picked = queryText(value)
-
-  return Object.hasOwn(labels, picked) ? labels[picked] : undefined
-}
-
-export function labelsOf(
-  picked: [string, LibraryOption | null][],
-): FilterLabels {
+export function labelsOf(picked: [string, LibraryOption[]][]): FilterLabels {
   return Object.fromEntries(
-    picked.flatMap(([param, option]) =>
-      option && (labelledParams as readonly string[]).includes(param)
-        ? [[param, option.label]]
+    picked.flatMap(([param, options]) =>
+      options.length && (labelledParams as readonly string[]).includes(param)
+        ? [
+            [
+              param,
+              Object.fromEntries(
+                options.map(option => [option.value, option.label]),
+              ),
+            ],
+          ]
         : [],
     ),
   )

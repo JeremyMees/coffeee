@@ -82,6 +82,32 @@ function optionalId(noun: string) {
     .default('')
 }
 
+const pickLimit = 20
+
+function picks<Item extends z.ZodType>(item: Item, noun: string) {
+  return z.preprocess(
+    value =>
+      (Array.isArray(value)
+        ? value
+        : value === undefined
+          ? []
+          : [value]
+      ).filter(picked => picked !== ''),
+    z
+      .array(item)
+      .max(pickLimit, `Pick at most ${pickLimit} ${noun}s at a time`),
+  )
+}
+
+function ids(noun: string) {
+  return picks(
+    z
+      .string({ error: `Pick each ${noun} as a piece of text` })
+      .max(100, `Pick each ${noun} by its id`),
+    noun,
+  )
+}
+
 function yesOrNo(noun: string) {
   return z
     .enum(['true', 'false'], { error: `Say true or false for ${noun}` })
@@ -99,17 +125,19 @@ function pageSize(noun: string, fallback: number) {
 }
 
 export const browsingSearchSchema = listSearchSchema.extend({
-  roasterId: optionalId('roaster'),
-  flavorNoteId: optionalId('flavor note'),
-  originCode: optionalId('origin'),
-  processId: optionalId('process'),
-  varietalId: optionalId('varietal'),
-  roastLevel: z
-    .enum(roastLevels, { error: 'Pick one of the roast levels' })
-    .optional(),
-  roastedFor: z
-    .enum(roastedForOptions, { error: 'Pick espresso, filter or omni' })
-    .optional(),
+  roasterId: ids('roaster'),
+  flavorNoteId: ids('flavor note'),
+  originCode: ids('origin'),
+  processId: ids('process'),
+  varietalId: ids('varietal'),
+  roastLevel: picks(
+    z.enum(roastLevels, { error: 'Pick one of the roast levels' }),
+    'roast level',
+  ),
+  roastedFor: picks(
+    z.enum(roastedForOptions, { error: 'Pick espresso, filter or omni' }),
+    'brew style',
+  ),
   page: pageNumber(),
 })
 
@@ -133,11 +161,11 @@ export const catalogSearchSchema = browsingSearchSchema.extend({
 })
 
 export const filterLabelsSchema = z.object({
-  roasterId: optionalId('roaster'),
-  flavorNoteId: optionalId('flavor note'),
-  originCode: optionalId('origin'),
-  processId: optionalId('process'),
-  varietalId: optionalId('varietal'),
+  roasterId: ids('roaster'),
+  flavorNoteId: ids('flavor note'),
+  originCode: ids('origin'),
+  processId: ids('process'),
+  varietalId: ids('varietal'),
 })
 
 export const roasterSearchSchema = z.object({

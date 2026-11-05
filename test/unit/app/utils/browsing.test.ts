@@ -10,22 +10,24 @@ import {
 } from '~/utils/browsing'
 
 const laCabra = { value: 'r1', label: 'La Cabra' }
+const lime = { value: 'n1', label: 'Lime' }
+const jasmine = { value: 'n2', label: 'Jasmine' }
 
 const everything = {
-  flavorNote: { value: 'n1', label: 'Lime' },
-  origin: { value: 'ET', label: 'Ethiopia' },
-  roaster: laCabra,
-  process: { value: 's1', label: 'Washed' },
-  varietal: { value: 'v1', label: 'Geisha' },
-  roastLevel: { value: 'light', label: 'Light' },
-  roastedFor: { value: 'filter', label: 'Filter' },
+  flavorNote: [lime],
+  origin: [{ value: 'ET', label: 'Ethiopia' }],
+  roaster: [laCabra],
+  process: [{ value: 's1', label: 'Washed' }],
+  varietal: [{ value: 'v1', label: 'Geisha' }],
+  roastLevel: [{ value: 'light', label: 'Light' }],
+  roastedFor: [{ value: 'filter', label: 'Filter' }],
 }
 
 describe('isBrowsingFiltered', () => {
   it('knows when any filter is picked', () => {
     expect(isBrowsingFiltered(emptyBrowsingFilter())).toBe(false)
     expect(
-      isBrowsingFiltered({ ...emptyBrowsingFilter(), varietal: laCabra }),
+      isBrowsingFiltered({ ...emptyBrowsingFilter(), varietal: [laCabra] }),
     ).toBe(true)
   })
 })
@@ -47,12 +49,21 @@ describe('browsingQuery', () => {
       roastedFor: 'filter',
     })
   })
+
+  it('asks for every value of a filter with several picked', () => {
+    expect(
+      browsingQuery('', {
+        ...emptyBrowsingFilter(),
+        flavorNote: [lime, jasmine],
+      }),
+    ).toEqual({ flavorNoteId: ['n1', 'n2'] })
+  })
 })
 
 describe('browsingRoute', () => {
   it('keeps the search as q, next to the filters', () => {
     expect(
-      browsingRoute(' lime ', { ...emptyBrowsingFilter(), roaster: laCabra }),
+      browsingRoute(' lime ', { ...emptyBrowsingFilter(), roaster: [laCabra] }),
     ).toEqual({ q: 'lime', roasterId: 'r1' })
     expect(browsingRoute(' ', emptyBrowsingFilter())).toEqual({})
   })
@@ -62,16 +73,30 @@ describe('browsingFromRoute', () => {
   it('reads the search and filters, naming each filter', () => {
     expect(
       browsingFromRoute(
-        { q: 'lime', roasterId: 'r1', varietalId: 'v1', roastLevel: 'light' },
-        { roasterId: 'La Cabra', varietalId: 'Geisha' },
+        {
+          q: 'lime',
+          roasterId: 'r1',
+          flavorNoteId: ['n1', 'n2'],
+          varietalId: 'v1',
+          roastLevel: ['light', 'dark'],
+        },
+        {
+          roasterId: { r1: 'La Cabra' },
+          flavorNoteId: { n1: 'Lime', n2: 'Jasmine' },
+          varietalId: { v1: 'Geisha' },
+        },
       ),
     ).toEqual({
       search: 'lime',
       filter: {
         ...emptyBrowsingFilter(),
-        roaster: laCabra,
-        varietal: { value: 'v1', label: 'Geisha' },
-        roastLevel: { value: 'light', label: 'Light' },
+        roaster: [laCabra],
+        flavorNote: [lime, jasmine],
+        varietal: [{ value: 'v1', label: 'Geisha' }],
+        roastLevel: [
+          { value: 'light', label: 'Light' },
+          { value: 'dark', label: 'Dark' },
+        ],
       },
     })
   })
@@ -85,12 +110,14 @@ describe('browsingFromRoute', () => {
 
 describe('browsingLabels', () => {
   it('remembers the names of the filters that need looking up', () => {
-    expect(browsingLabels(everything)).toEqual({
-      flavorNoteId: 'Lime',
-      originCode: 'Ethiopia',
-      roasterId: 'La Cabra',
-      processId: 'Washed',
-      varietalId: 'Geisha',
+    expect(
+      browsingLabels({ ...everything, flavorNote: [lime, jasmine] }),
+    ).toEqual({
+      flavorNoteId: { n1: 'Lime', n2: 'Jasmine' },
+      originCode: { ET: 'Ethiopia' },
+      roasterId: { r1: 'La Cabra' },
+      processId: { s1: 'Washed' },
+      varietalId: { v1: 'Geisha' },
     })
   })
 })

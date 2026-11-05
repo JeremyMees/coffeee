@@ -93,7 +93,7 @@ async function addTo(
 
 async function catalog(
   { db, home }: Setup,
-  query: Record<string, string> = {},
+  query: Record<string, string | string[]> = {},
 ) {
   return listCatalog(db, {
     shelfId: home.id,
@@ -101,7 +101,10 @@ async function catalog(
   })
 }
 
-async function names(setup: Setup, query: Record<string, string> = {}) {
+async function names(
+  setup: Setup,
+  query: Record<string, string | string[]> = {},
+) {
   return (await catalog(setup, query)).coffees.map(coffee => coffee.name)
 }
 
@@ -340,6 +343,55 @@ describe('the catalog', () => {
     expect(
       await names(context, { roastedFor: 'espresso', mine: 'true' }),
     ).toEqual([])
+  })
+
+  it('needs every picked flavor note, origin, process and varietal, but any picked roaster, roast level and brew style', async () => {
+    const context = await setup()
+    await twoShelvesOfCoffee(context)
+    const options = async (kind: BrowsingFilterKind, label: string) =>
+      (
+        await listCatalogFilterOptions(context.db, {
+          kind,
+          search: libraryFilterSearchSchema.parse({}),
+        })
+      ).options.find(option => option.label === label)!.value
+    const geisha = await options('varietals', 'Geisha')
+    const pinkBourbon = await options('varietals', 'Pink Bourbon')
+    const heirloom = await options('varietals', 'Heirloom')
+    const lime = await options('flavor-notes', 'Lime')
+    const strawberry = await options('flavor-notes', 'Strawberry')
+    const washed = await options('processes', 'Washed')
+    const anaerobic = await options('processes', 'Anaerobic')
+    const squareMile = await options('roasters', 'Square Mile')
+    const laCabra = await options('roasters', 'La Cabra')
+
+    expect(await names(context, { varietalId: [geisha, pinkBourbon] })).toEqual(
+      ['El Paraiso'],
+    )
+    expect(await names(context, { varietalId: [geisha, heirloom] })).toEqual([])
+    expect(await names(context, { flavorNoteId: [lime, strawberry] })).toEqual(
+      [],
+    )
+    expect(await names(context, { originCode: ['ET', 'KE'] })).toEqual([
+      'Ayele Fulasa',
+    ])
+    expect(await names(context, { originCode: ['ET', 'CO'] })).toEqual([])
+    expect(await names(context, { processId: [washed, anaerobic] })).toEqual([])
+    expect(await names(context, { roasterId: [squareMile, laCabra] })).toEqual([
+      'Red Brick',
+      'El Paraiso',
+      'Ayele Fulasa',
+    ])
+    expect(await names(context, { roastLevel: ['light', 'dark'] })).toEqual([
+      'Red Brick',
+      'Ayele Fulasa',
+    ])
+    expect(
+      await names(context, {
+        roastedFor: ['filter', 'espresso'],
+        roasterId: [laCabra],
+      }),
+    ).toEqual(['El Paraiso'])
   })
 
   it('pages through the coffees and counts them all', async () => {

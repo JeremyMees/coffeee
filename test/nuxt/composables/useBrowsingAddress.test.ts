@@ -23,7 +23,7 @@ describe('useBrowsingAddress', () => {
       search: 'lime',
       filter: {
         ...emptyBrowsingFilter(),
-        roaster: { value: laCabra, label: 'La Cabra' },
+        roaster: [{ value: laCabra, label: 'La Cabra' }],
       },
       sort: 'newest',
     })
@@ -37,7 +37,11 @@ describe('useBrowsingAddress', () => {
       search: 'lime',
       filter: {
         ...emptyBrowsingFilter(),
-        roaster: { value: 'r1', label: 'La Cabra' },
+        roaster: [{ value: 'r1', label: 'La Cabra' }],
+        flavorNote: [
+          { value: 'n1', label: 'Lime' },
+          { value: 'n2', label: 'Jasmine' },
+        ],
       },
       sort: 'newest' as const,
     }
@@ -46,6 +50,7 @@ describe('useBrowsingAddress', () => {
     await vi.waitFor(() =>
       expect(useRouter().currentRoute.value.query).toEqual({
         q: 'lime',
+        flavorNoteId: ['n1', 'n2'],
         roasterId: 'r1',
       }),
     )
@@ -54,7 +59,7 @@ describe('useBrowsingAddress', () => {
       message: 'The names are out of reach',
     })
     const back = await runOn(
-      `/shelves/${sarah.shelf.id}/discover?q=lime&roasterId=r1`,
+      `/shelves/${sarah.shelf.id}/discover?q=lime&flavorNoteId=n1&flavorNoteId=n2&roasterId=r1`,
       () => useBrowsingAddress(sarah.shelf.id, catalogAddress),
     )
 

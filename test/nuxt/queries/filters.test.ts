@@ -80,18 +80,23 @@ describe('useFilterOptions', () => {
 })
 
 describe('useFilterLabels', () => {
-  it('names the filters in the address', async () => {
+  it('names every filter value in the address', async () => {
     await scenario.coffee(sarah.shelf, { roaster: 'Square Mile' })
-    const roasterId = await idOf(roaster, 'Square Mile')
+    await scenario.coffee(sarah.shelf, { name: 'Bombe', roaster: 'La Cabra' })
+    const squareMile = await idOf(roaster, 'Square Mile')
+    const laCabra = await idOf(roaster, 'La Cabra')
     const labels = await runOn('/', () =>
-      useFilterLabels(sarah.shelf.id, { roasterId, originCode: 'ET' }),
+      useFilterLabels(sarah.shelf.id, {
+        roasterId: [squareMile, laCabra],
+        originCode: ['ET'],
+      }),
     )
 
     await labels.suspense()
 
     expect(labels.data.value).toEqual({
-      roasterId: 'Square Mile',
-      originCode: 'Ethiopia',
+      roasterId: { [squareMile]: 'Square Mile', [laCabra]: 'La Cabra' },
+      originCode: { ET: 'Ethiopia' },
     })
   })
 
@@ -118,14 +123,14 @@ describe('useFilterLabels', () => {
     }))
 
     labels.remember(
-      { q: 'lime', roasterId: 'r1', mine: 'true' },
-      { roasterId: 'La Cabra' },
+      { q: 'lime', roasterId: ['r1', 'r2'], sort: 'newest' },
+      { roasterId: { r1: 'La Cabra', r2: 'Square Mile' } },
     )
 
     expect(
       client.getQueryData(
-        queryKeys.filterLabels(sarah.shelf.id, { roasterId: 'r1' }),
+        queryKeys.filterLabels(sarah.shelf.id, { roasterId: ['r1', 'r2'] }),
       ),
-    ).toEqual({ roasterId: 'La Cabra' })
+    ).toEqual({ roasterId: { r1: 'La Cabra', r2: 'Square Mile' } })
   })
 })
