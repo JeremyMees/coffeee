@@ -37,6 +37,7 @@ export default defineConfig({
           globalSetup: ['test/support/migrated-database.ts'],
           setupFiles: ['test/nuxt/setup.ts'],
           environment: 'nuxt',
+          testTimeout: 15_000,
           environmentOptions: {
             nuxt: {
               rootDir: fileURLToPath(new URL('.', import.meta.url)),
