@@ -36,7 +36,7 @@ describe('CoffeeHeader', () => {
       '/roasters/square-mile-r2',
     )
     expect(header.get(tid('coffee-link-out')).attributes('href')).toBe(
-      'https://example.com/ayele',
+      'https://example.com/ayele?utm_source=coffeee&utm_medium=referral',
     )
     expect(header.find(tid('coffee-edit')).exists()).toBe(false)
   })

@@ -33,7 +33,7 @@ const morph = useMorph('coffee', () => props.coffee.id)
       </h1>
       <a
         v-if="coffee.link"
-        :href="coffee.link"
+        :href="referredLink(coffee.link)"
         target="_blank"
         rel="noopener noreferrer"
         data-testid="coffee-link-out"

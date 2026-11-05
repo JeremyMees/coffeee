@@ -44,7 +44,7 @@ const editing = ref(false)
         </p>
         <a
           v-if="roaster.website"
-          :href="roaster.website"
+          :href="referredLink(roaster.website)"
           target="_blank"
           rel="noopener noreferrer"
           data-testid="roaster-details-website"

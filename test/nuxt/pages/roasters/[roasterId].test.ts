@@ -61,7 +61,7 @@ describe('the page of a roaster', () => {
     expect(page.get(tid('roaster-title')).text()).toBe('Square Mile')
     expect(page.get(tid('roaster-place')).text()).toBe('London, United Kingdom')
     expect(page.get(tid('roaster-website')).attributes('href')).toBe(
-      'https://www.squaremilecoffee.com',
+      'https://www.squaremilecoffee.com/?utm_source=coffeee&utm_medium=referral',
     )
     expect(page.get(tid('roaster-logo-placeholder')).text()).toBe('S')
     expect(page.get(tid('roaster-back')).attributes('href')).toBe('/roasters')

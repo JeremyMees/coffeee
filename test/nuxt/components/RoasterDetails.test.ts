@@ -54,7 +54,9 @@ describe('RoasterDetails', () => {
     )
     const website = details.get(tid('roaster-details-website'))
     expect(website.text()).toBe('squaremilecoffee.com')
-    expect(website.attributes('href')).toBe('https://www.squaremilecoffee.com')
+    expect(website.attributes('href')).toBe(
+      'https://www.squaremilecoffee.com/?utm_source=coffeee&utm_medium=referral',
+    )
     expect(website.attributes('target')).toBe('_blank')
   })
 

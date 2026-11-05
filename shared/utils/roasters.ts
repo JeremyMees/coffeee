@@ -14,3 +14,14 @@ export function roasterPlace(roaster: {
 export function websiteHost(website: string) {
   return new URL(website).host.replace(/^www\./, '')
 }
+
+export function referredLink(link: string) {
+  const url = new URL(link)
+
+  if (!url.searchParams.has('utm_source')) {
+    url.searchParams.set('utm_source', 'coffeee')
+    url.searchParams.set('utm_medium', 'referral')
+  }
+
+  return url.toString()
+}

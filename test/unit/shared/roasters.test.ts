@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { roasterPlace, websiteHost } from '#shared/utils/roasters'
+import { referredLink, roasterPlace, websiteHost } from '#shared/utils/roasters'
 
 describe('roasterPlace', () => {
   it('names the city and the country', () => {
@@ -21,5 +21,25 @@ describe('websiteHost', () => {
       'squaremilecoffee.com',
     )
     expect(websiteHost('http://lacabra.dk')).toBe('lacabra.dk')
+  })
+})
+
+describe('referredLink', () => {
+  it('tells the roaster the visitor came from coffeee', () => {
+    expect(referredLink('https://www.squaremilecoffee.com')).toBe(
+      'https://www.squaremilecoffee.com/?utm_source=coffeee&utm_medium=referral',
+    )
+  })
+
+  it('keeps what the link already asks for', () => {
+    expect(referredLink('https://lacabra.dk/shop?variant=250g#beans')).toBe(
+      'https://lacabra.dk/shop?variant=250g&utm_source=coffeee&utm_medium=referral#beans',
+    )
+  })
+
+  it('leaves a link that already names its source alone', () => {
+    expect(referredLink('https://lacabra.dk/?utm_source=newsletter')).toBe(
+      'https://lacabra.dk/?utm_source=newsletter',
+    )
   })
 })

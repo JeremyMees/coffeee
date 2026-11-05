@@ -504,7 +504,7 @@ test('says how a coffee was made and links to the roaster', async ({
   await expect(page.getByTestId('detail-flavor-notes')).toHaveText(flavor)
   await expect(page.getByTestId('coffee-link-out')).toHaveAttribute(
     'href',
-    'https://example.com/thermal',
+    'https://example.com/thermal?utm_source=coffeee&utm_medium=referral',
   )
 
   await page.getByTestId('coffee-edit').click()
