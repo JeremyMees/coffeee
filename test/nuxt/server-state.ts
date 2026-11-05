@@ -7,4 +7,5 @@ export const server = {
   cookie: undefined as string | undefined,
   outbox: [] as Email[],
   failures: [] as (() => void)[],
+  inFlight: new Set<Promise<unknown>>(),
 }

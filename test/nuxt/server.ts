@@ -85,8 +85,15 @@ function installRoutes() {
     )
     .use(routes())
 
+  const tracked = eventHandler(event => {
+    const handled = Promise.resolve(app.handler(event))
+    server.inFlight.add(handled)
+
+    return handled.finally(() => server.inFlight.delete(handled))
+  })
+
   registered.has = (url: string) => url.startsWith('/api/') || has(url)
-  window.__app.use('/_', app.handler, {
+  window.__app.use('/_', tracked, {
     match: (_path, event) => !event || !registeredFor(window, event),
   })
 }
@@ -121,8 +128,15 @@ export function failRequest(
   )
 }
 
+export async function settleRequests() {
+  while (server.inFlight.size) {
+    await Promise.allSettled([...server.inFlight])
+  }
+}
+
 export async function resetServer() {
   installRoutes()
+  await settleRequests()
   server.cookie = undefined
   server.outbox.length = 0
   server.failures.splice(0).forEach(unregister => unregister())

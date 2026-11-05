@@ -32,6 +32,11 @@ vi.mock('#server/utils/email', async importOriginal => {
   }
 })
 
+afterEach(async () => {
+  const { settleRequests } = await import('#test/nuxt/server')
+  await settleRequests()
+})
+
 enableAutoUnmount(afterEach)
 
 beforeEach(async () => {
@@ -41,6 +46,8 @@ beforeEach(async () => {
 })
 
 afterAll(async () => {
+  const { settleRequests } = await import('#test/nuxt/server')
   const { closeTestDatabase } = await import('#test/support/database')
+  await settleRequests()
   await closeTestDatabase()
 })
