@@ -324,7 +324,9 @@ describe('a coffee page', () => {
     expect(page.get(tid('detail-varietals')).text()).toBe('Geisha')
     expect(page.get(tid('detail-flavor-notes')).text()).toBe('Lime')
     const link = page.get(tid('coffee-link-out'))
-    expect(link.attributes('href')).toBe('https://example.com/ayele')
+    expect(link.attributes('href')).toBe(
+      'https://example.com/ayele?utm_source=coffeee&utm_medium=referral',
+    )
     expect(link.attributes('target')).toBe('_blank')
     expect(link.attributes('rel')).toBe('noopener noreferrer')
   })

@@ -219,3 +219,14 @@ export async function runOn<T>(route: string, use: () => T) {
 
   return result
 }
+
+export async function logoBlob() {
+  const { default: sharp } = await import('sharp')
+  const logo = await sharp({
+    create: { width: 40, height: 20, channels: 3, background: '#e4572e' },
+  })
+    .webp()
+    .toBuffer()
+
+  return new Blob([new Uint8Array(logo)], { type: 'image/webp' })
+}

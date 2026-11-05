@@ -9,7 +9,7 @@ import { byTestId, click, submit, type } from '../fixtures'
 import { database, scenario, signIn } from '../server'
 
 const { compressPhoto } = vi.hoisted(() => ({
-  compressPhoto: vi.fn(async () => new Blob(['small'], { type: 'image/webp' })),
+  compressPhoto: vi.fn(async () => (await import('../fixtures')).logoBlob()),
 }))
 
 mockNuxtImport('compressPhoto', () => compressPhoto)
