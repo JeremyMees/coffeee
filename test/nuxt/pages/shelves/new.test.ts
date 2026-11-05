@@ -46,7 +46,11 @@ describe('creating a shelf', () => {
       expect(garage).toBeDefined()
       expect(currentPath()).toBe(shelfPath(garage!))
     })
-    expect(page.get(tid('top-bar-shelf-switcher')).text()).toBe('Shelf: Garage')
+    await vi.waitFor(() =>
+      expect(page.get(tid('top-bar-shelf-switcher')).text()).toBe(
+        'Shelf: Garage',
+      ),
+    )
   })
 
   it('asks for a name before sending anything', async () => {

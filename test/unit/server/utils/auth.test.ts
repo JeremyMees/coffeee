@@ -418,11 +418,15 @@ describe('signing up from a shelf invite', () => {
     current.oauthState = { additionalData: { inviteToken: token } }
 
     const { user } = await signUpWithGoogle('tom@example.com')
+    const shelves = await listShelves(db, user.id)
 
-    expect(await listShelves(db, user.id)).toEqual([
-      expect.objectContaining({ name: "Someone's shelf", ownerId: user.id }),
-      expect.objectContaining({ id: home.id, name: 'Home' }),
-    ])
+    expect(shelves).toHaveLength(2)
+    expect(shelves).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "Someone's shelf", ownerId: user.id }),
+        expect.objectContaining({ id: home.id, name: 'Home' }),
+      ]),
+    )
   })
 
   it('tells the members of the shelf that they joined', async () => {

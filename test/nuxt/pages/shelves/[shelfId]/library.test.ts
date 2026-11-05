@@ -192,11 +192,13 @@ describe('the Library page', () => {
     await vi.waitFor(() => expect(cards()).toEqual(['El Paraiso']))
     await pickFilter('roast-levels', 'Dark')
 
-    await vi.waitFor(() => expect(cards()).toEqual([]))
-    expect(useRouter().currentRoute.value.query).toEqual({
-      roastedFor: 'espresso',
-      varietalId: expect.any(String),
-      roastLevel: 'dark',
+    await vi.waitFor(() => {
+      expect(cards()).toEqual([])
+      expect(useRouter().currentRoute.value.query).toEqual({
+        roastedFor: 'espresso',
+        varietalId: expect.any(String),
+        roastLevel: 'dark',
+      })
     })
   })
 

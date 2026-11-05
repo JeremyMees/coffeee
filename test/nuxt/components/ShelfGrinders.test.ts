@@ -89,8 +89,10 @@ describe('ShelfGrinders', () => {
       'Fellow Ode Gen 3',
       'Fellow Opus Gen 2',
     ])
-    expect(inputValue('grinder-brand')).toBe('')
-    expect(inputValue('grinder-model')).toBe('')
+    await vi.waitFor(() => {
+      expect(inputValue('grinder-brand')).toBe('')
+      expect(inputValue('grinder-model')).toBe('')
+    })
   })
 
   it('asks for a brand and a model before adding', async () => {

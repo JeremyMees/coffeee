@@ -186,8 +186,10 @@ describe('the Discover page', () => {
     )
     await click('discover-no-match-clear')
 
-    await vi.waitFor(() => expect(names()).toHaveLength(3))
-    expect(currentPath()).toBe(discoverPath())
+    await vi.waitFor(() => {
+      expect(names()).toHaveLength(3)
+      expect(currentPath()).toBe(discoverPath())
+    })
   })
 
   it('says when no coffee matches the filters', async () => {
@@ -284,9 +286,11 @@ describe('the Discover page', () => {
     expect(page.get(tid('catalog-applied-filter')).text()).toBe(
       'Varietal: Pink Bourbon',
     )
-    expect(useRouter().currentRoute.value.query).toEqual({
-      varietalId: expect.any(String),
-    })
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({
+        varietalId: expect.any(String),
+      }),
+    )
   })
 
   it('finds coffees with every flavor note picked, and comes back to them', async () => {

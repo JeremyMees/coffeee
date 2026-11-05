@@ -85,12 +85,12 @@ describe('ShelfLeave', () => {
 
     await click('confirm-dialog-confirm')
 
-    await vi.waitFor(() =>
+    await vi.waitFor(() => {
       expect(useCurrentUser().value?.shelves.map(found => found.id)).toEqual([
         sarah.shelf.id,
-      ]),
-    )
-    expect(currentPath()).toBe(shelfPath(sarah.shelf))
+      ])
+      expect(currentPath()).toBe(shelfPath(sarah.shelf))
+    })
     expect(await exists(home)).toBe(false)
   })
 
@@ -118,12 +118,12 @@ describe('ShelfLeave', () => {
     await click('shelf-leave-button')
     await click('confirm-dialog-confirm')
 
-    await vi.waitFor(() =>
+    await vi.waitFor(() => {
       expect(useCurrentUser().value?.shelves.map(found => found.id)).toEqual([
         sarah.shelf.id,
-      ]),
-    )
-    expect(currentPath()).toBe(shelfPath(sarah.shelf))
+      ])
+      expect(currentPath()).toBe(shelfPath(sarah.shelf))
+    })
     expect(await storedShelves(sarah)).toEqual([sarah.shelf.id])
   })
 

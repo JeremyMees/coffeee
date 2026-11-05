@@ -161,10 +161,10 @@ describe('CoffeeFormSheet', () => {
 
     await submit('coffee-form-form')
 
-    await vi.waitFor(() =>
-      expect(sheet.emitted('update:open')).toEqual([[false]]),
-    )
-    expect(currentPath()).toBe(shelfPath(sarah.shelf))
+    await vi.waitFor(() => {
+      expect(sheet.emitted('update:open')).toEqual([[false]])
+      expect(currentPath()).toBe(shelfPath(sarah.shelf))
+    })
   })
 
   it('shows what the server refused next to the field, on its step', async () => {

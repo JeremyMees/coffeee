@@ -177,9 +177,12 @@ describe('a coffee page', () => {
     const page = await coffeePage(shown)
 
     await page.get(tid('verdict-star-5')).trigger('click')
-    await vi.waitFor(() =>
-      expect(page.get(tid('verdict-rating')).text()).toBe('5 stars'),
-    )
+    await vi.waitFor(() => {
+      expect(page.get(tid('verdict-rating')).text()).toBe('5 stars')
+      expect(
+        page.get(tid('verdict-buy-again')).attributes('disabled'),
+      ).toBeUndefined()
+    })
     expect(page.find(tid('verdict-favourite')).exists()).toBe(false)
 
     await page.get(tid('verdict-buy-again')).trigger('click')
@@ -433,11 +436,11 @@ describe('a coffee page', () => {
 
     await submit('purchase-form')
 
-    await vi.waitFor(() =>
-      expect(page.findAll(tid('purchase'))).toHaveLength(3),
-    )
-    expect(page.get(tid('summary-times-bought')).text()).toBe('3 times')
-    expect(byTestId('purchase-sheet')).toBeNull()
+    await vi.waitFor(() => {
+      expect(page.findAll(tid('purchase'))).toHaveLength(3)
+      expect(page.get(tid('summary-times-bought')).text()).toBe('3 times')
+      expect(byTestId('purchase-sheet')).toBeNull()
+    })
     expect(await storedPurchases(shown.id)).toHaveLength(3)
   })
 
