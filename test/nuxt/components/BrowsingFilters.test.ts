@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { BookmarkIcon, HeartIcon } from '@lucide/vue'
+import { HeartIcon } from '@lucide/vue'
 import BrowsingFilters from '~/components/BrowsingFilters.vue'
 import type { Member } from '#test/support/types'
 import { allByTestId, click, tid } from '../fixtures'
@@ -15,20 +15,14 @@ beforeEach(async () => {
 
 const laCabra = { value: 'r1', label: 'La Cabra' }
 
-async function catalogFilters(filter: Partial<CatalogFilter> = {}) {
-  const changes: CatalogFilter[] = []
+async function catalogFilters(filter: Partial<BrowsingFilter> = {}) {
+  const changes: BrowsingFilter[] = []
   const wrapper = await mountSuspended(BrowsingFilters, {
     props: {
-      modelValue: { ...emptyCatalogFilter(), ...filter },
-      'onUpdate:modelValue': (changed: BrowsingFilter) =>
-        changes.push(changed as CatalogFilter),
+      modelValue: { ...emptyBrowsingFilter(), ...filter },
+      'onUpdate:modelValue': (changed: BrowsingFilter) => changes.push(changed),
       shelfId: sarah.shelf.id,
       area: 'catalog',
-      toggle: {
-        key: 'mine' as keyof BrowsingFilter,
-        label: 'Mine',
-        icon: BookmarkIcon,
-      },
     },
     attachTo: document.body,
   })
@@ -59,17 +53,37 @@ async function libraryFilters(filter: Partial<LibraryFilter> = {}) {
 
 describe('BrowsingFilters', () => {
   it('turns its toggle on and shows it as on', async () => {
-    const { wrapper, changes } = await catalogFilters()
+    const { wrapper, changes } = await libraryFilters()
 
-    await wrapper.get(tid('catalog-filter-mine')).trigger('click')
+    await wrapper.get(tid('library-filter-favourites')).trigger('click')
 
-    expect(wrapper.get(tid('catalog-filter-mine')).text()).toBe('Mine')
-    expect(changes).toEqual([{ ...emptyCatalogFilter(), mine: true }])
+    expect(wrapper.get(tid('library-filter-favourites')).text()).toBe(
+      'Favourites',
+    )
+    expect(changes).toEqual([{ ...emptyLibraryFilter(), favourites: true }])
     expect(
       (await libraryFilters({ favourites: true })).wrapper
         .get(tid('library-filter-favourites'))
         .attributes('aria-pressed'),
     ).toBe('true')
+  })
+
+  it('starts with the pickers when it has no toggle', async () => {
+    const { wrapper } = await catalogFilters()
+    const buttons = wrapper.findAll('button')
+
+    expect(buttons[0]?.attributes('data-testid')).toBe(
+      'catalog-filter-flavor-notes',
+    )
+    expect(wrapper.find(tid('catalog-filter-mine')).exists()).toBe(false)
+  })
+
+  it('clears every filter without a toggle', async () => {
+    const { wrapper, changes } = await catalogFilters({ roaster: laCabra })
+
+    await wrapper.get(tid('catalog-filter-clear')).trigger('click')
+
+    expect(changes).toEqual([emptyBrowsingFilter()])
   })
 
   it('has the same chips on Discover and in the Library', async () => {
@@ -95,7 +109,7 @@ describe('BrowsingFilters', () => {
   })
 
   it('combines a picked chip with the others', async () => {
-    const { changes } = await catalogFilters({ mine: true, roaster: laCabra })
+    const { changes } = await catalogFilters({ roaster: laCabra })
 
     await click('catalog-filter-roasted-for')
     const option = await vi.waitFor(() => {
@@ -111,8 +125,7 @@ describe('BrowsingFilters', () => {
     await vi.waitFor(() =>
       expect(changes).toEqual([
         {
-          ...emptyCatalogFilter(),
-          mine: true,
+          ...emptyBrowsingFilter(),
           roaster: laCabra,
           roastedFor: { value: 'espresso', label: 'Espresso' },
         },

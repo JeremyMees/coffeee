@@ -235,6 +235,46 @@ describe('the Library page', () => {
     await vi.waitFor(() => expect(cards()).toHaveLength(3))
   })
 
+  it('sends an empty search to Discover with the same search and filters', async () => {
+    await threeCoffees()
+    const laCabra = await scenario.roaster(sarah, 'La Cabra')
+    const { page } = await library(
+      libraryPath(`?q=nope&roasterId=${laCabra}&favourites=true`),
+    )
+
+    const link = page.get(tid('library-no-match-discover'))
+
+    expect(link.text()).toBe('Search Discover for “nope”')
+    expect(link.attributes('href')).toBe(
+      `${shelfPath(sarah.shelf)}/discover?q=nope&roasterId=${laCabra}`,
+    )
+  })
+
+  it('sends empty filters to Discover to look there', async () => {
+    await threeCoffees()
+    const { page } = await library(
+      libraryPath('?roastLevel=light&roastedFor=espresso'),
+    )
+
+    const link = page.get(tid('library-no-match-discover'))
+
+    expect(link.text()).toBe('Look in Discover')
+    expect(link.attributes('href')).toBe(
+      `${shelfPath(sarah.shelf)}/discover?roastLevel=light&roastedFor=espresso`,
+    )
+  })
+
+  it('points to Discover from an empty table too', async () => {
+    setViewport(1280, 800)
+    await threeCoffees()
+    const { page } = await library(libraryPath('?view=table&q=nope'))
+
+    expect(page.find(tid('library-table')).exists()).toBe(false)
+    expect(page.get(tid('library-no-match-discover')).text()).toBe(
+      'Search Discover for “nope”',
+    )
+  })
+
   it('always shows the grid on a phone', async () => {
     await threeCoffees()
 

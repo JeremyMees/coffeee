@@ -7,10 +7,12 @@ const filter = defineModel<Filter>({ required: true })
 const props = defineProps<{
   shelfId: string
   area: FilterArea
-  toggle: { key: keyof Filter & string; label: string; icon: Component }
+  toggle?: { key: keyof Filter & string; label: string; icon: Component }
 }>()
 
-const toggled = computed(() => Boolean(filter.value[props.toggle.key]))
+const toggled = computed(() =>
+  Boolean(props.toggle && filter.value[props.toggle.key]),
+)
 const filtered = computed(
   () => toggled.value || isBrowsingFiltered(filter.value),
 )
@@ -22,7 +24,7 @@ function change(changes: Partial<Filter>) {
 function clear() {
   change({
     ...emptyBrowsingFilter(),
-    [props.toggle.key]: false,
+    ...(props.toggle && { [props.toggle.key]: false }),
   } as Partial<Filter>)
 }
 </script>
@@ -35,6 +37,7 @@ function clear() {
     :data-testid="`${area}-filters`"
   >
     <button
+      v-if="toggle"
       type="button"
       :data-testid="`${area}-filter-${toggle.key}`"
       :aria-pressed="toggled"

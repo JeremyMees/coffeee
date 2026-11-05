@@ -1,12 +1,8 @@
 import type { InternalApi } from 'nitropack/types'
 
-export interface CatalogFilter extends BrowsingFilter {
-  mine: boolean
-}
-
 export interface CatalogState {
   search: string
-  filter: CatalogFilter
+  filter: BrowsingFilter
   sort: CatalogSort
 }
 

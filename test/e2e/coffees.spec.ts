@@ -1017,3 +1017,34 @@ test('searches the Library by what a coffee is and filters it like Discover', as
     .click()
   await expect(names).toHaveText(['Ayele Fulasa'])
 })
+
+test('an empty Library search leads to Discover, which opens the shelf’s own coffee on the shelf', async ({
+  page,
+  member,
+}) => {
+  const name = uniqueName('Ayele')
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, { name, roaster, newRoaster: true })
+
+  await page.goto(`/shelves/${member.shelfId}/library?favourites=true`)
+  await page.getByTestId('search-input').fill(name)
+  const discover = page.getByTestId('library-no-match-discover')
+  await expect(discover).toHaveText(`Search Discover for “${name}”`)
+
+  await discover.click()
+  await expect(page).toHaveURL(/\/discover\?q=/)
+  await expect(page).not.toHaveURL(/favourites/)
+  await expect(page.getByTestId('catalog-filter-mine')).toHaveCount(0)
+  const result = page.getByTestId('catalog-result')
+  await expect(result.getByTestId('catalog-result-name')).toHaveText([name])
+  await expect(result.getByTestId('catalog-result-mine')).toHaveText(
+    'On your shelf',
+  )
+
+  await result.click()
+  await expect(page).toHaveURL(
+    new RegExp(`/shelves/[^/]*${member.shelfId}/coffees/`),
+  )
+  await expect(page.getByTestId('purchases')).toBeVisible()
+})

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core'
-import { BookmarkIcon } from '@lucide/vue'
 import { useCatalogPages } from '~/queries/catalog'
 
 useHead({ title: 'Discover · Coffeee' })
 
 const route = useRoute('shelves-shelfId-discover')
 const shelfId = computed(() => idFrom(route.params.shelfId))
+const shelf = useCurrentShelf()
 
 const address = useBrowsingAddress(shelfId, catalogAddress)
 const initial = await address.start()
@@ -25,7 +25,7 @@ const coffees = computed(
   () => catalog.data.value?.pages.flatMap(loaded => loaded.coffees) ?? [],
 )
 const narrowed = computed(
-  () => Boolean(searched.value.trim()) || isCatalogFiltered(filter.value),
+  () => Boolean(searched.value.trim()) || isBrowsingFiltered(filter.value),
 )
 
 watch([searched, filter, sort], () =>
@@ -51,10 +51,8 @@ watch(focus, focusIfAsked, { flush: 'post' })
 
 function clear() {
   search.value = ''
-  filter.value = emptyCatalogFilter()
+  filter.value = emptyBrowsingFilter()
 }
-
-const mine = { key: 'mine', label: 'Mine', icon: BookmarkIcon } as const
 </script>
 
 <template>
@@ -76,7 +74,6 @@ const mine = { key: 'mine', label: 'Mine', icon: BookmarkIcon } as const
       class="mt-4"
       :shelf-id="shelfId"
       area="catalog"
-      :toggle="mine"
     />
     <p
       v-if="!coffees.length && !narrowed"
@@ -120,7 +117,10 @@ const mine = { key: 'mine', label: 'Mine', icon: BookmarkIcon } as const
         class="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3"
       >
         <li v-for="coffee in coffees" :key="coffee.id">
-          <CatalogResult :coffee="coffee" :to="coffeePath(coffee)" />
+          <CatalogResult
+            :coffee="coffee"
+            :to="catalogCoffeePath(shelf!, coffee)"
+          />
         </li>
       </ul>
       <LoadMore :pages="catalog" data-testid="discover-more" />

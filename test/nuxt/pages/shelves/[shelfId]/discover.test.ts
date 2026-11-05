@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { coffeePath, shelfPath, useRouter, useSearchFocus } from '#imports'
+import {
+  coffeePath,
+  shelfCoffeePath,
+  shelfPath,
+  useRouter,
+  useSearchFocus,
+} from '#imports'
 import type { Member } from '#test/support/types'
 import {
   allByTestId,
@@ -77,17 +83,35 @@ describe('the Discover page', () => {
     )
   })
 
-  it('lists every coffee in the catalog, newest first, opening each on its own page', async () => {
-    const { gesha } = await threeCoffees()
+  it('lists every coffee in the catalog, newest first, marking the shelf’s own', async () => {
+    await threeCoffees()
 
     const { page, names } = await discover()
 
     expect(names()).toEqual(['Gesha Village', 'Ayele Fulasa', 'El Paraiso'])
     expect(page.get(tid('discover-total')).text()).toBe('3 coffees')
-    expect(page.get(tid('catalog-result')).attributes('href')).toBe(
-      coffeePath(gesha),
-    )
     expect(allByTestId('catalog-result-mine')).toHaveLength(1)
+  })
+
+  it('opens a coffee the shelf bought on the shelf, and any other in the catalog', async () => {
+    const { ayele, gesha } = await threeCoffees()
+
+    const { page } = await discover()
+    const links = page
+      .findAll(tid('catalog-result'))
+      .map(result => result.attributes('href'))
+
+    expect(links[0]).toBe(coffeePath(gesha))
+    expect(links[1]).toBe(shelfCoffeePath(sarah.shelf, ayele))
+  })
+
+  it('has no Mine toggle, and ignores it in old links', async () => {
+    await threeCoffees()
+
+    const { page, names } = await discover(discoverPath('?mine=true'))
+
+    expect(page.find(tid('catalog-filter-mine')).exists()).toBe(false)
+    expect(names()).toHaveLength(3)
   })
 
   it('searches for what was typed and keeps it in the address', async () => {
@@ -135,15 +159,6 @@ describe('the Discover page', () => {
     ).toBe('jasmine')
   })
 
-  it('keeps only the shelf’s own coffees with Mine', async () => {
-    await threeCoffees()
-    const { names } = await discover()
-
-    await click('catalog-filter-mine')
-
-    await vi.waitFor(() => expect(names()).toEqual(['Ayele Fulasa']))
-  })
-
   it('sorts by community rating', async () => {
     const { elParaiso, ayele, gesha } = await threeCoffees()
     await scenario.verdict(tom, gesha.id, { rating: 2 })
@@ -177,9 +192,7 @@ describe('the Discover page', () => {
 
   it('says when no coffee matches the filters', async () => {
     await scenario.coffee(tom.shelf)
-    const { page } = await discover()
-
-    await click('catalog-filter-mine')
+    const { page } = await discover(discoverPath('?roastLevel=dark'))
 
     await vi.waitFor(() =>
       expect(page.get(tid('discover-no-match')).text()).toContain(
@@ -218,13 +231,11 @@ describe('the Discover page', () => {
     await discover()
 
     await type('search-input', 'a')
-    await click('catalog-filter-mine')
     await click('catalog-sort-communityRating')
 
     await vi.waitFor(() =>
       expect(useRouter().currentRoute.value.query).toEqual({
         q: 'a',
-        mine: 'true',
         sort: 'communityRating',
       }),
     )
@@ -240,14 +251,11 @@ describe('the Discover page', () => {
 
     const { page, names } = await discover(
       discoverPath(
-        `?mine=true&roasterId=${laCabra}&roastedFor=filter&sort=communityRating`,
+        `?roasterId=${laCabra}&roastedFor=filter&sort=communityRating`,
       ),
     )
 
-    expect(names()).toEqual(['Bombe'])
-    expect(
-      page.get(tid('catalog-filter-mine')).attributes('aria-pressed'),
-    ).toBe('true')
+    expect(names()).toEqual(['Bombe', 'El Paraiso'])
     expect(page.get(tid('catalog-filter-roasters')).text()).toBe('La Cabra')
     expect(page.get(tid('catalog-filter-roasted-for')).text()).toBe('Filter')
   })

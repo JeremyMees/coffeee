@@ -22,7 +22,7 @@ describe('useBrowsingAddress', () => {
     expect(await address.start()).toEqual({
       search: 'lime',
       filter: {
-        ...emptyCatalogFilter(),
+        ...emptyBrowsingFilter(),
         roaster: { value: laCabra, label: 'La Cabra' },
       },
       sort: 'newest',
@@ -36,7 +36,7 @@ describe('useBrowsingAddress', () => {
     const state = {
       search: 'lime',
       filter: {
-        ...emptyCatalogFilter(),
+        ...emptyBrowsingFilter(),
         roaster: { value: 'r1', label: 'La Cabra' },
       },
       sort: 'newest' as const,

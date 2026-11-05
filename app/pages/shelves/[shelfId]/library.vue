@@ -148,17 +148,8 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
           </button>
         </div>
       </div>
-      <LibraryTable
-        v-if="table"
-        v-model:sorting="sorting"
-        v-model:pagination="pagination"
-        class="mt-8"
-        :coffees="page.data.value?.coffees ?? []"
-        :total="total"
-        :shelf="shelf!"
-      />
       <div
-        v-else-if="!cards.length"
+        v-if="!total"
         class="mt-8 flex flex-col items-start gap-4"
         data-testid="library-no-match"
       >
@@ -169,15 +160,37 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
               : 'No coffee in your library matches these filters.'
           }}
         </p>
-        <button
-          type="button"
-          data-testid="library-no-match-clear"
-          class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
-          @click="clear"
-        >
-          {{ searched.trim() ? 'Clear search' : 'Clear filters' }}
-        </button>
+        <div class="flex flex-wrap gap-3">
+          <NuxtLink
+            :to="discoverLink(shelf!, searched, filter)"
+            data-testid="library-no-match-discover"
+            class="rounded-full bg-primary px-6 py-2.5 text-sm text-primary-foreground uppercase"
+          >
+            {{
+              searched.trim()
+                ? `Search Discover for “${searched.trim()}”`
+                : 'Look in Discover'
+            }}
+          </NuxtLink>
+          <button
+            type="button"
+            data-testid="library-no-match-clear"
+            class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
+            @click="clear"
+          >
+            {{ searched.trim() ? 'Clear search' : 'Clear filters' }}
+          </button>
+        </div>
       </div>
+      <LibraryTable
+        v-else-if="table"
+        v-model:sorting="sorting"
+        v-model:pagination="pagination"
+        class="mt-8"
+        :coffees="page.data.value?.coffees ?? []"
+        :total="total"
+        :shelf="shelf!"
+      />
       <template v-else>
         <ul
           aria-label="Library"

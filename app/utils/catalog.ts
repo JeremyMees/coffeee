@@ -1,24 +1,17 @@
+type Named = { id: string; name: string }
+
 export const catalogSortLabels: Record<CatalogSort, string> = {
   newest: 'Newest',
   communityRating: 'Community rating',
 }
 
-export function emptyCatalogFilter(): CatalogFilter {
-  return { mine: false, ...emptyBrowsingFilter() }
-}
-
-export function isCatalogFiltered(filter: CatalogFilter) {
-  return filter.mine || isBrowsingFiltered(filter)
-}
-
 export function catalogQuery(
   search: string,
-  filter: CatalogFilter,
+  filter: BrowsingFilter,
   sort: CatalogSort = 'newest',
 ) {
   return {
     ...browsingQuery(search, filter),
-    ...(filter.mine && { mine: 'true' }),
     ...(sort !== 'newest' && { sort }),
   } as Record<string, string>
 }
@@ -29,15 +22,32 @@ export const catalogAddress: BrowsingAddress<CatalogState> = {
 
     return {
       search,
-      filter: { mine: query.mine === 'true', ...filter },
+      filter,
       sort: catalogSorts.find(sort => sort === query.sort) ?? 'newest',
     }
   },
   toRoute: ({ search, filter, sort }) =>
     ({
       ...browsingRoute(search, filter),
-      ...(filter.mine && { mine: 'true' }),
       ...(sort !== 'newest' && { sort }),
     }) as Record<string, string>,
   labelsOf: state => browsingLabels(state.filter),
+}
+
+export function catalogCoffeePath(
+  shelf: Named,
+  coffee: Named & { onShelf: boolean },
+) {
+  return coffee.onShelf ? shelfCoffeePath(shelf, coffee) : coffeePath(coffee)
+}
+
+export function discoverLink(
+  shelf: Named,
+  search: string,
+  filter: BrowsingFilter,
+) {
+  return {
+    path: `${shelfPath(shelf)}/discover`,
+    query: browsingRoute(search, filter),
+  }
 }

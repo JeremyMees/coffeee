@@ -146,7 +146,10 @@ const coffees = computed(
           class="mt-4 flex flex-col gap-3"
         >
           <li v-for="coffee in coffees" :key="coffee.id">
-            <CatalogResult :coffee="coffee" :to="coffeePath(coffee)" />
+            <CatalogResult
+              :coffee="coffee"
+              :to="catalogCoffeePath(shelf, coffee)"
+            />
           </li>
         </ul>
         <LoadMore :pages="catalog" data-testid="roaster-coffees-more" />

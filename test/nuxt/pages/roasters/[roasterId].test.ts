@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { clearError, coffeePath, roasterPath, useError } from '#imports'
+import {
+  clearError,
+  coffeePath,
+  roasterPath,
+  shelfCoffeePath,
+  useError,
+} from '#imports'
 import type { Member } from '#test/support/types'
 import { click, forgetLastShelf, tid } from '../../fixtures'
 import { scenario, signIn } from '../../server'
@@ -61,19 +67,27 @@ describe('the page of a roaster', () => {
     expect(page.get(tid('roaster-back')).attributes('href')).toBe('/roasters')
   })
 
-  it('lists every coffee from it, each opening its own page', async () => {
+  it('lists every coffee from it, opening the shelf’s own on the shelf', async () => {
+    const tom = await scenario.member('Tom')
     const ayele = await scenario.coffee(sarah.shelf)
+    const redBrick = await scenario.coffee(
+      tom.shelf,
+      { name: 'Red Brick' },
+      tom,
+    )
     await scenario.coffee(sarah.shelf, {
-      name: 'Red Brick',
+      name: 'Bombe',
       roaster: 'La Cabra',
     })
 
     const { page, names } = await roaster()
 
-    expect(names()).toEqual(['Ayele Fulasa'])
-    expect(page.get(tid('catalog-result')).attributes('href')).toBe(
-      coffeePath(ayele),
-    )
+    expect(names()).toEqual(['Red Brick', 'Ayele Fulasa'])
+    expect(
+      page
+        .findAll(tid('catalog-result'))
+        .map(result => result.attributes('href')),
+    ).toEqual([coffeePath(redBrick), shelfCoffeePath(sarah.shelf, ayele)])
     expect(page.findAll(tid('catalog-result-mine'))).toHaveLength(1)
   })
 
