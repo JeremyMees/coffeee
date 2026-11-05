@@ -1,4 +1,5 @@
 import { createApp, createRouter, toWebHandler } from 'h3'
+import sharp from 'sharp'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { shelfMember } from '#server/db/schemas'
 import photoHandler from '#server/api/photos/[...pathname].get'
@@ -107,9 +108,36 @@ function edit(path: string, headers: Headers, body: unknown) {
   return request(path, { method: 'PATCH', headers, body: JSON.stringify(body) })
 }
 
-function uploadLogo(path: string, headers: Headers, content = 'logo') {
+function logoImage(ink = '#e4572e') {
+  return sharp({
+    create: { width: 300, height: 100, channels: 3, background: '#ffffff' },
+  })
+    .composite([
+      {
+        input: {
+          create: { width: 200, height: 40, channels: 3, background: ink },
+        },
+        left: 50,
+        top: 30,
+      },
+    ])
+    .webp()
+    .toBuffer()
+}
+
+async function uploadLogo(
+  path: string,
+  headers: Headers,
+  content?: Buffer | string,
+) {
   const body = new FormData()
-  body.append('photo', new Blob([content], { type: 'image/webp' }), 'logo.webp')
+  body.append(
+    'photo',
+    new Blob([new Uint8Array(Buffer.from(content ?? (await logoImage())))], {
+      type: 'image/webp',
+    }),
+    'logo.webp',
+  )
   const multipart = new Headers(headers)
   multipart.delete('content-type')
 
@@ -356,7 +384,21 @@ describe('the logo of a roaster', () => {
     expect(logoUrl).toMatch(/^\/api\/photos\/roasters\/[\w-]+\.webp$/)
     expect((await roasterOn(coffeePath, tom)).logoUrl).toBe(logoUrl)
     expect(served.headers.get('content-type')).toBe('image/webp')
-    expect(await served.text()).toBe('logo')
+
+    const shaped = await sharp(
+      Buffer.from(await served.arrayBuffer()),
+    ).metadata()
+
+    expect(shaped.width).toBe(shaped.height)
+  })
+
+  it('refuses a logo that is not an image', async () => {
+    const { sarah, coffeePath, roasterPath } = await sharedShelf()
+
+    const response = await uploadLogo(roasterPath, sarah, 'not a logo')
+
+    expect(response.status).toBe(422)
+    expect((await roasterOn(coffeePath, sarah)).logoUrl).toBeNull()
   })
 
   it('deletes the old logo when it is replaced', async () => {
@@ -366,11 +408,11 @@ describe('the logo of a roaster', () => {
     ).json()
 
     const { logoUrl: newUrl } = await (
-      await uploadLogo(roasterPath, sarah, 'new logo')
+      await uploadLogo(roasterPath, sarah, await logoImage('#1d4ed8'))
     ).json()
 
     expect((await request(oldUrl)).status).toBe(404)
-    expect(await (await request(newUrl)).text()).toBe('new logo')
+    expect((await request(newUrl)).status).toBe(200)
   })
 
   it('removes the logo and its file', async () => {

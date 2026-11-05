@@ -12,7 +12,7 @@ defineProps<{ roaster: Pick<ShelfRoaster, 'name' | 'logoUrl'> }>()
       :src="roaster.logoUrl"
       :alt="`The logo of ${roaster.name}`"
       sizes="128px"
-      class="size-full object-contain"
+      class="size-full object-cover"
       data-testid="roaster-logo-image"
     />
     <span
