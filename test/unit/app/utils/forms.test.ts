@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import {
   coffeeFormSteps,
+  coffeeFormValues,
+  coffeeSteps,
   firstStepWithError,
   stepHasError,
   serverErrors,
@@ -106,5 +108,33 @@ describe('firstStepWithError', () => {
     expect(firstStepWithError(steps, [])).toBeNull()
     expect(firstStepWithError(steps, ['shelf'])).toBeNull()
     expect(firstStepWithError(coffeeFormSteps(false), ['price'])).toBeNull()
+  })
+})
+
+describe('coffeeFormValues', () => {
+  it('starts a new coffee with every detail empty', () => {
+    expect(coffeeFormValues()).toStrictEqual({
+      name: '',
+      roaster: '',
+      roastLevel: undefined,
+      roastedFor: undefined,
+      origins: [],
+      regions: [],
+      farms: [],
+      washingStations: [],
+      producers: [],
+      processes: [],
+      varietals: [],
+      flavorNotes: [],
+      link: '',
+      altitudeFrom: '',
+      altitudeTo: '',
+    })
+  })
+
+  it('has a value for every field on the coffee steps', () => {
+    const fields = coffeeSteps.flatMap(step => step.fields)
+
+    expect(Object.keys(coffeeFormValues()).sort()).toEqual([...fields].sort())
   })
 })

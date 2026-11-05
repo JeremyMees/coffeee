@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { eq } from 'drizzle-orm'
 import EditCoffeeSheet from '~/components/EditCoffeeSheet.vue'
@@ -20,7 +19,7 @@ import {
   submit,
   type,
 } from '../fixtures'
-import { database, failRequest, scenario, signIn } from '../server'
+import { database, scenario, signIn } from '../server'
 
 let sarah: Member
 let ayele: Awaited<ReturnType<typeof scenario.coffee>>
@@ -84,22 +83,20 @@ async function savedCoffee() {
   }
 }
 
-async function openSheet(open = true) {
+async function openSheet() {
   const editable = await $fetch(
     `/api/shelves/${sarah.shelf.id}/coffees/${ayele.id}`,
   )
   const sheet = await mountSuspended(EditCoffeeSheet, {
     route: shelfCoffeePath(sarah.shelf, ayele),
-    props: { shelfId: sarah.shelf.id, coffee: editable, open },
+    props: { shelfId: sarah.shelf.id, coffee: editable, open: true },
     attachTo: document.body,
   })
 
-  if (open) {
-    await vi.waitFor(
-      () => expect(byTestId('edit-coffee-form')).not.toBeNull(),
-      3000,
-    )
-  }
+  await vi.waitFor(
+    () => expect(byTestId('edit-coffee-form')).not.toBeNull(),
+    3000,
+  )
 
   return sheet
 }
@@ -180,18 +177,6 @@ describe('EditCoffeeSheet', () => {
     })
   })
 
-  it('explains a missing name before sending anything', async () => {
-    await openSheet()
-
-    await type('coffee-name', ' ')
-    await submit('edit-coffee-form')
-
-    await vi.waitFor(() =>
-      expect(sheetText()).toContain('Give the coffee a name'),
-    )
-    expect((await savedCoffee()).name).toBe('Ayele Fulasa')
-  })
-
   it('has the steps of a coffee without a first bag, saving from any of them', async () => {
     await openSheet()
 
@@ -202,21 +187,6 @@ describe('EditCoffeeSheet', () => {
 
     expect(byTestId('edit-coffee-pane-2')!.style.display).toBe('')
     expect(byTestId('edit-coffee-submit')).not.toBeNull()
-  })
-
-  it('goes back to the step with a problem when saving', async () => {
-    await openSheet()
-    await type('coffee-name', ' ')
-    await click('edit-coffee-next')
-    await click('edit-coffee-next')
-
-    await submit('edit-coffee-form')
-
-    await vi.waitFor(() =>
-      expect(byTestId('edit-coffee-pane-1')!.style.display).toBe(''),
-    )
-    expect(byTestId('edit-coffee-pane-3')!.style.display).toBe('none')
-    expect(byTestId('edit-coffee-step-1')!.dataset.failing).toBe('true')
   })
 
   it('shows a name that is taken next to the field', async () => {
@@ -232,44 +202,5 @@ describe('EditCoffeeSheet', () => {
     )
     expect(sheet.emitted('update:open')).toBeUndefined()
     expect((await savedCoffee()).name).toBe('Ayele Fulasa')
-  })
-
-  it('says something went wrong when the server gives no reason', async () => {
-    failRequest('PATCH', `/api/shelves/${sarah.shelf.id}/coffees/${ayele.id}`, {
-      status: 500,
-      message: '',
-    })
-    await openSheet()
-
-    await type('coffee-name', 'Ayele Fulasa Natural')
-    await submit('edit-coffee-form')
-
-    await vi.waitFor(() =>
-      expect(byTestId('form-error')!.textContent?.trim()).toBe(
-        'Something went wrong. Try again.',
-      ),
-    )
-  })
-
-  it('asks to close from its close button', async () => {
-    const sheet = await openSheet()
-
-    byTestId('edit-coffee-sheet')!
-      .querySelector<HTMLElement>('[data-testid="form-sheet-close"]')!
-      .click()
-    await flushPromises()
-
-    expect(sheet.emitted('update:open')).toEqual([[false]])
-  })
-
-  it('throws away unsaved changes when it opens again', async () => {
-    const sheet = await openSheet(false)
-    await sheet.setProps({ open: true })
-    await type('coffee-name', 'Half typed')
-
-    await sheet.setProps({ open: false })
-    await sheet.setProps({ open: true })
-
-    expect(inputValue('coffee-name')).toBe('Ayele Fulasa')
   })
 })

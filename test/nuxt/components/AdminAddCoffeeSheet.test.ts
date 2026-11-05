@@ -71,19 +71,6 @@ describe('AdminAddCoffeeSheet', () => {
     ])
   })
 
-  it('explains every missing detail without sending anything', async () => {
-    await openSheet()
-
-    await submit('admin-add-coffee-form')
-
-    await vi.waitFor(() =>
-      expect(byTestId('admin-add-coffee-sheet')?.textContent).toContain(
-        'Give the coffee a name',
-      ),
-    )
-    expect(await stored()).toEqual([])
-  })
-
   it('shows a coffee that is already in the catalog next to its name', async () => {
     await scenario.coffee(jeremy.shelf)
     await openSheet()

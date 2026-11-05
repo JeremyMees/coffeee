@@ -73,6 +73,34 @@ export function coffeeFormSteps(withFirstBag: boolean): FormStep[] {
   return withFirstBag ? [...coffeeSteps, firstBagStep] : [...coffeeSteps]
 }
 
+function originEntries(entries: OriginEntry[]) {
+  return entries.map(({ origin, name }) => ({ origin, name }))
+}
+
+function names(entries: ListEntry[]) {
+  return entries.map(entry => entry.name)
+}
+
+export function coffeeFormValues(coffee?: EditableCoffee) {
+  return {
+    name: coffee?.name ?? '',
+    roaster: coffee?.roaster ?? '',
+    roastLevel: coffee?.roastLevel,
+    roastedFor: coffee?.roastedFor,
+    origins: coffee?.origins.map(origin => origin.code) ?? [],
+    regions: originEntries(coffee?.regions ?? []),
+    farms: originEntries(coffee?.farms ?? []),
+    washingStations: originEntries(coffee?.washingStations ?? []),
+    producers: names(coffee?.producers ?? []),
+    processes: names(coffee?.processes ?? []),
+    varietals: names(coffee?.varietals ?? []),
+    flavorNotes: names(coffee?.flavorNotes ?? []),
+    link: coffee?.link ?? '',
+    altitudeFrom: coffee?.altitudeFrom?.toString() ?? '',
+    altitudeTo: coffee?.altitudeTo?.toString() ?? '',
+  }
+}
+
 export function stepHasError(step: FormStep, fields: string[]) {
   return step.fields.some(field =>
     fields.some(error => error === field || error.startsWith(`${field}.`)),
