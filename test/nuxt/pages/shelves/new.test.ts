@@ -1,18 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import App from '~/app.vue'
-import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../../fake-api'
+import { shelfPath } from '#imports'
+import { shelf } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { currentPath, forgetLastShelf, tid } from '../../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, failRequest, scenario, signIn } from '../../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
+beforeEach(async () => {
   forgetLastShelf()
-  resetApi()
-  useCurrentUser().value = testUser()
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
 })
 
 async function create(name: string) {
@@ -25,11 +27,25 @@ async function create(name: string) {
   return page
 }
 
+async function sarahsShelves() {
+  const db = await database()
+  return db
+    .select({ id: shelf.id, name: shelf.name, ownerId: shelf.ownerId })
+    .from(shelf)
+    .where(eq(shelf.ownerId, sarah.id))
+}
+
 describe('creating a shelf', () => {
   it('names the shelf and goes to it', async () => {
     const page = await create('Garage')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/garage-garage'))
+    await vi.waitFor(async () => {
+      const garage = (await sarahsShelves()).find(
+        found => found.name === 'Garage',
+      )
+      expect(garage).toBeDefined()
+      expect(currentPath()).toBe(shelfPath(garage!))
+    })
     expect(page.get(tid('top-bar-shelf-switcher')).text()).toBe('Shelf: Garage')
   })
 
@@ -41,12 +57,19 @@ describe('creating a shelf', () => {
         'Give the shelf a name',
       ),
     )
-    expect(api.shelves).toEqual([])
+    expect((await sarahsShelves()).map(found => found.name)).toEqual([
+      "Sarah's shelf",
+    ])
     expect(currentPath()).toBe('/shelves/new')
   })
 
   it('says why the server refused the shelf', async () => {
-    const page = await create('Broken')
+    failRequest('POST', '/api/shelves', {
+      status: 409,
+      message: 'That shelf could not be made',
+    })
+
+    const page = await create('Garage')
 
     await vi.waitFor(() =>
       expect(page.get(tid('form-error')).text()).toBe(

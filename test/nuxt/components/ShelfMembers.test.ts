@@ -1,21 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import ShelfMembers from '~/components/ShelfMembers.vue'
 import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { shelf } from '#server/db/schemas'
+import { listShelfMembers } from '#server/utils/shelves'
+import type { Member } from '#test/support/types'
 import { allByTestId, byTestId, click } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let tom: Member
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser()
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  tom = await scenario.member('Tom')
+  await scenario.joinShelf(tom, sarah.shelf)
+  await signIn(sarah)
 })
 
 function mountMembers() {
   return mountSuspended(ShelfMembers, {
-    props: { shelfId: 'home' },
+    props: { shelfId: sarah.shelf.id },
     attachTo: document.body,
   })
 }
@@ -24,10 +30,20 @@ function memberNames() {
   return allByTestId('shelf-member-name').map(name => name.textContent?.trim())
 }
 
-function joinTomsShelf() {
-  useCurrentUser().value = testUser({
-    shelves: [{ id: 'home', name: 'Home', ownerId: 'tom' }],
-  })
+async function storedMembers() {
+  const members = await listShelfMembers(await database(), sarah.shelf.id)
+
+  return members.map(member => member.name)
+}
+
+async function storedOwner() {
+  const db = await database()
+  const [found] = await db
+    .select({ ownerId: shelf.ownerId })
+    .from(shelf)
+    .where(eq(shelf.id, sarah.shelf.id))
+
+  return found?.ownerId
 }
 
 describe('ShelfMembers', () => {
@@ -36,9 +52,7 @@ describe('ShelfMembers', () => {
 
     expect(memberNames()).toEqual(['Sarah (you)', 'Tom'])
     expect(allByTestId('shelf-member')[0]?.textContent).toContain('Owner')
-    expect(allByTestId('shelf-member')[1]?.textContent).toContain(
-      'tom@example.com',
-    )
+    expect(allByTestId('shelf-member')[1]?.textContent).toContain(tom.email)
   })
 
   it('lets the shelf owner remove a member after confirming', async () => {
@@ -53,7 +67,7 @@ describe('ShelfMembers', () => {
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() => expect(memberNames()).toEqual(['Sarah (you)']))
-    expect(api.shelfCalls).toEqual([{ remove: 'tom' }])
+    expect(await storedMembers()).toEqual(['Sarah'])
   })
 
   it('lets the shelf owner hand the shelf to a member', async () => {
@@ -68,14 +82,17 @@ describe('ShelfMembers', () => {
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
-      expect(useCurrentUser().value?.shelves[0]?.ownerId).toBe('tom'),
+      expect(useCurrentUser().value?.shelves[0]?.ownerId).toBe(tom.id),
     )
-    expect(api.shelfCalls).toEqual([{ handOver: { ownerId: 'tom' } }])
+    expect(await storedOwner()).toBe(tom.id)
     expect(byTestId('shelf-member-remove')).toBeNull()
   })
 
   it('shows why a change was refused', async () => {
-    api.shelfFails = 'Only the shelf owner can do that'
+    failRequest('DELETE', `/api/shelves/${sarah.shelf.id}/members/${tom.id}`, {
+      status: 403,
+      message: 'Only the shelf owner can do that',
+    })
     await mountMembers()
 
     await click('shelf-member-remove')
@@ -87,15 +104,16 @@ describe('ShelfMembers', () => {
       ),
     )
     expect(memberNames()).toEqual(['Sarah (you)', 'Tom'])
+    expect(await storedMembers()).toEqual(['Sarah', 'Tom'])
   })
 
   it('gives other members no way to remove anyone or hand the shelf over', async () => {
-    joinTomsShelf()
+    await signIn(tom)
 
     await mountMembers()
 
     expect(byTestId('shelf-member-remove')).toBeNull()
     expect(byTestId('shelf-member-hand-over')).toBeNull()
-    expect(allByTestId('shelf-member')[1]?.textContent).toContain('Owner')
+    expect(allByTestId('shelf-member')[0]?.textContent).toContain('Owner')
   })
 })

@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest'
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { createError } from 'h3'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
+import { useCurrentUser, useRouter } from '#imports'
 
-registerEndpoint('/api/me', () => {
-  throw createError({ statusCode: 401, statusMessage: 'Sign in first' })
+beforeEach(() => {
+  useCurrentUser().value = null
 })
 
 describe('signed-out visitors', () => {
@@ -15,6 +15,7 @@ describe('signed-out visitors', () => {
       '/sign-in?redirect=/admin/invites',
     )
   })
+
   it.each(['/sign-up', '/forgot-password', '/reset-password?token=t'])(
     'can open %s without signing in',
     async route => {

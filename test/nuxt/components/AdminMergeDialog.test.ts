@@ -1,17 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { asc } from 'drizzle-orm'
 import AdminMergeDialog from '~/components/AdminMergeDialog.vue'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { flavorNote } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { allByTestId, byTestId, submit, type } from '../fixtures'
-import { flavorNoteEntries } from '#test/fixtures/admin'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let jeremy: Member
+let limes: { id: string; name: string }
 
-beforeEach(resetApi)
+beforeEach(async () => {
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await scenario.adminEntry(jeremy, 'flavorNotes', { name: 'Lime' })
+  limes = await scenario.adminEntry(jeremy, 'flavorNotes', { name: 'Limes' })
+  await scenario.adminEntry(jeremy, 'flavorNotes', { name: 'Jasmine' })
+  await signIn(jeremy)
+})
 
 async function mountDialog() {
   const dialog = await mountSuspended(AdminMergeDialog, {
-    props: { list: 'flavorNotes', entry: flavorNoteEntries()[1]!, open: true },
+    props: {
+      list: 'flavorNotes',
+      entry: { ...limes, detail: null, detailId: null, uses: 0 },
+      open: true,
+    },
     attachTo: document.body,
   })
   await vi.waitFor(() =>
@@ -34,12 +47,21 @@ async function pick(row: number) {
   )
 }
 
+async function stored() {
+  const db = await database()
+  const notes = await db
+    .select({ name: flavorNote.name })
+    .from(flavorNote)
+    .orderBy(asc(flavorNote.nameKey))
+
+  return notes.map(note => note.name)
+}
+
 describe('AdminMergeDialog', () => {
   it('offers every other entry to keep', async () => {
     await mountDialog()
 
-    expect(options()).toEqual(['Lime', 'Jasmine'])
-    expect(api.adminQueries.at(-1)).toMatchObject({ except: 'n2' })
+    expect(options()).toEqual(['Jasmine', 'Lime'])
   })
 
   it('searches the entries to keep', async () => {
@@ -53,13 +75,13 @@ describe('AdminMergeDialog', () => {
   it('merges into the picked entry and closes', async () => {
     const dialog = await mountDialog()
 
-    await pick(0)
+    await pick(1)
     await submit('admin-merge-form')
 
     await vi.waitFor(() =>
       expect(dialog.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.adminCalls).toEqual([{ merge: 'n2', intoId: 'n1' }])
+    expect(await stored()).toEqual(['Jasmine', 'Lime'])
   })
 
   it('asks which entry to keep', async () => {
@@ -70,14 +92,17 @@ describe('AdminMergeDialog', () => {
     expect(byTestId('form-error')?.textContent).toContain(
       'Pick the flavor note to keep',
     )
-    expect(api.adminCalls).toEqual([])
+    expect(await stored()).toEqual(['Jasmine', 'Lime', 'Limes'])
   })
 
   it('explains what went wrong', async () => {
-    api.adminFails = 'The list is out of reach'
+    failRequest('POST', `/api/admin/lists/flavorNotes/${limes.id}/merge`, {
+      status: 500,
+      message: 'The list is out of reach',
+    })
     await mountDialog()
 
-    await pick(1)
+    await pick(0)
     await submit('admin-merge-form')
 
     await vi.waitFor(() =>
@@ -85,5 +110,6 @@ describe('AdminMergeDialog', () => {
         'The list is out of reach',
       ),
     )
+    expect(await stored()).toEqual(['Jasmine', 'Lime', 'Limes'])
   })
 })

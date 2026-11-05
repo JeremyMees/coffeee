@@ -85,8 +85,7 @@ function installRoutes() {
     )
     .use(routes())
 
-  registered.has = (url: string) =>
-    (!server.fakeOnly && url.startsWith('/api/')) || has(url)
+  registered.has = (url: string) => url.startsWith('/api/') || has(url)
   window.__app.use('/_', app.handler, {
     match: (_path, event) => !event || !registeredFor(window, event),
   })

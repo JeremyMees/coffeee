@@ -1,4 +1,3 @@
-import type { ProfileStats } from '#shared/types/stats'
 import type { CurrentUser } from '~/types/users'
 
 export function testUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
@@ -13,17 +12,5 @@ export function testUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
       { id: 'work', name: 'Work', ownerId: 'user-2' },
     ],
     ...overrides,
-  }
-}
-
-export function profileStats(): ProfileStats {
-  return {
-    bags: 12,
-    grams: 3000,
-    spentCents: 19800,
-    rated: 9,
-    averageRating: 4.2,
-    wouldBuyAgain: 5,
-    topRoaster: 'Square Mile',
   }
 }

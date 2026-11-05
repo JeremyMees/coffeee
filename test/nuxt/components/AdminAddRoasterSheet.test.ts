@@ -1,23 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import AdminAddRoasterSheet from '~/components/AdminAddRoasterSheet.vue'
-import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { photoMaxBytes } from '#imports'
+import { roaster } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { byTestId, click, submit, type } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, scenario, signIn } from '../server'
 
-mockNuxtImport(
-  'compressPhoto',
-  () => async () => new Blob(['small'], { type: 'image/webp' }),
-)
+const { compressPhoto } = vi.hoisted(() => ({
+  compressPhoto: vi.fn(async () => new Blob(['small'], { type: 'image/webp' })),
+}))
 
-fakeApi()
+mockNuxtImport('compressPhoto', () => compressPhoto)
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser({ role: 'admin' })
+let jeremy: Member
+
+beforeEach(async () => {
+  compressPhoto.mockClear()
   URL.createObjectURL = vi.fn(() => 'blob:logo')
   URL.revokeObjectURL = vi.fn()
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await signIn(jeremy)
 })
 
 function openSheet() {
@@ -50,6 +54,21 @@ async function fill() {
   await type('roaster-city', 'Aarhus')
 }
 
+async function stored() {
+  const db = await database()
+
+  return db
+    .select({
+      name: roaster.name,
+      website: roaster.website,
+      countryCode: roaster.countryCode,
+      city: roaster.city,
+      logoUrl: roaster.logoUrl,
+    })
+    .from(roaster)
+    .where(eq(roaster.name, 'La Cabra'))
+}
+
 describe('AdminAddRoasterSheet', () => {
   it('adds a roaster with all its details and closes', async () => {
     const sheet = await openSheet()
@@ -60,15 +79,13 @@ describe('AdminAddRoasterSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.adminCalls).toEqual([
+    expect(await stored()).toEqual([
       {
-        add: 'roasters',
-        body: {
-          name: 'La Cabra',
-          website: 'https://lacabra.dk',
-          countryCode: 'DK',
-          city: 'Aarhus',
-        },
+        name: 'La Cabra',
+        website: 'https://lacabra.dk',
+        countryCode: 'DK',
+        city: 'Aarhus',
+        logoUrl: null,
       },
     ])
   })
@@ -88,10 +105,8 @@ describe('AdminAddRoasterSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.adminCalls).toEqual([
-      expect.objectContaining({ add: 'roasters' }),
-      { logo: 'new-3' },
-    ])
+    const [added] = await stored()
+    expect(added!.logoUrl).toMatch(/^\/api\/photos\/roasters\/[\w-]+\.webp$/)
   })
 
   it('drops the picked logo when asked', async () => {
@@ -120,24 +135,28 @@ describe('AdminAddRoasterSheet', () => {
     expect(byTestId('admin-add-roaster-form')?.textContent).toContain(
       'Enter a website that starts with https://',
     )
-    expect(api.adminCalls).toEqual([])
+    expect(await stored()).toEqual([])
   })
 
   it('shows a roaster that is already on the list next to its name', async () => {
+    await scenario.roaster(jeremy, 'La Cabra')
     await openSheet()
 
-    await type('roaster-name', 'Taken')
+    await type('roaster-name', 'La Cabra')
     await submit('admin-add-roaster-form')
 
     await vi.waitFor(() =>
       expect(byTestId('admin-add-roaster-form')?.textContent).toContain(
-        'Taken is already on the list',
+        'La Cabra is already on the list',
       ),
     )
+    expect(await stored()).toHaveLength(1)
   })
 
   it('says when the roaster was added but its logo was not', async () => {
-    api.roasterFails = true
+    compressPhoto.mockResolvedValueOnce(
+      new Blob([new Uint8Array(photoMaxBytes + 1)], { type: 'image/webp' }),
+    )
     const sheet = await openSheet()
 
     await fill()
@@ -150,5 +169,7 @@ describe('AdminAddRoasterSheet', () => {
       ),
     )
     expect(sheet.emitted('update:open')).toBeUndefined()
+    const [added] = await stored()
+    expect(added!.logoUrl).toBeNull()
   })
 })

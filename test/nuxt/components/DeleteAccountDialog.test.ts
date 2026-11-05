@@ -1,17 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import DeleteAccountDialog from '~/components/DeleteAccountDialog.vue'
 import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { shelf, user } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { allByTestId, byTestId, click, currentPath } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let tom: Member
+let lisa: Member
+let home: Awaited<ReturnType<typeof scenario.shelf>>
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser()
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  tom = await scenario.member('Tom')
+  lisa = await scenario.member('Lisa')
+  home = await scenario.shelf(sarah, 'Home')
+  await scenario.joinShelf(tom, home)
+  await scenario.joinShelf(lisa, home)
+  await signIn(sarah)
 })
 
 async function mountDialog() {
@@ -34,6 +44,12 @@ async function chooseHeir(shelfId: string, userId: string) {
   await flushPromises()
 }
 
+async function storedUser() {
+  const db = await database()
+
+  return db.select({ id: user.id }).from(user).where(eq(user.id, sarah.id))
+}
+
 describe('DeleteAccountDialog', () => {
   it('warns what leaves with the account', async () => {
     await mountDialog()
@@ -50,7 +66,7 @@ describe('DeleteAccountDialog', () => {
     await mountDialog()
 
     const options = [
-      ...byTestId<HTMLSelectElement>('delete-account-heir-home')!.options,
+      ...byTestId<HTMLSelectElement>(`delete-account-heir-${home.id}`)!.options,
     ].map(option => option.text.trim())
 
     expect(options).toEqual(['Pick a member', 'Tom', 'Lisa'])
@@ -72,25 +88,31 @@ describe('DeleteAccountDialog', () => {
     expect(byTestId('form-error')?.textContent).toContain(
       'Choose who takes over Home',
     )
-    expect(api.accountDeletes).toEqual([])
+    expect(await storedUser()).toHaveLength(1)
   })
 
   it('deletes the account and goes to sign in', async () => {
+    await scenario.member('Jeremy', { role: 'admin' })
     await mountDialog()
 
-    await chooseHeir('home', 'lisa')
+    await chooseHeir(home.id, lisa.id)
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() => expect(currentPath()).toBe('/sign-in'))
-    expect(api.accountDeletes).toEqual([{ heirs: { home: 'lisa' } }])
+    const db = await database()
+    const [handedOver] = await db
+      .select({ ownerId: shelf.ownerId })
+      .from(shelf)
+      .where(eq(shelf.id, home.id))
+    expect(handedOver?.ownerId).toBe(lisa.id)
+    expect(await storedUser()).toEqual([])
     expect(useCurrentUser().value).toBeNull()
   })
 
   it('explains why the account was not deleted', async () => {
-    api.accountDeleteFails = 'Coffeee needs another admin'
     await mountDialog()
 
-    await chooseHeir('home', 'tom')
+    await chooseHeir(home.id, tom.id)
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
@@ -98,5 +120,6 @@ describe('DeleteAccountDialog', () => {
         'Coffeee needs another admin',
       ),
     )
+    expect(await storedUser()).toHaveLength(1)
   })
 })

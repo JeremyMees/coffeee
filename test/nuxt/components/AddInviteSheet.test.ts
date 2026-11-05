@@ -1,45 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { createError, readBody } from 'h3'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AddInviteSheet from '~/components/AddInviteSheet.vue'
+import { findInviteByToken, listPendingInvites } from '#server/utils/invites'
+import type { Member } from '#test/support/types'
 import { byTestId, click, inputValue, submit, type } from '../fixtures'
+import { database, failRequest, scenario, signIn } from '../server'
 
-const server = vi.hoisted(() => ({ invites: [] as unknown[] }))
+let jeremy: Member
 
-registerEndpoint('/api/invites', {
-  method: 'GET',
-  handler: () => server.invites,
-})
-
-registerEndpoint('/api/invites', {
-  method: 'POST',
-  handler: async event => {
-    const body = await readBody(event)
-
-    if (body.link) {
-      return { id: 'link-1', url: 'http://localhost:3000/invite/the-token' }
-    }
-
-    if (body.email === 'tom@example.com') {
-      const invite = { id: 'invite-3', email: body.email, expiresAt: null }
-      server.invites.push(invite)
-
-      return invite
-    }
-
-    if (body.email === 'broken@example.com') {
-      throw createError({ statusCode: 500 })
-    }
-
-    throw createError({
-      statusCode: 409,
-      statusMessage: 'That email is already invited',
-    })
-  },
-})
-
-beforeEach(() => {
-  server.invites = []
+beforeEach(async () => {
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await signIn(jeremy)
 })
 
 function openSheet() {
@@ -47,6 +18,18 @@ function openSheet() {
     props: { open: true },
     attachTo: document.body,
   })
+}
+
+async function invitedEmails() {
+  const invites = await listPendingInvites(await database())
+
+  return invites.map(found => found.email)
+}
+
+async function inviterOf(link: string) {
+  const token = link.split('/invite/')[1]!
+
+  return (await findInviteByToken(await database(), token))?.invitedBy
 }
 
 describe('AddInviteSheet', () => {
@@ -59,9 +42,7 @@ describe('AddInviteSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
-    expect(server.invites).toEqual([
-      expect.objectContaining({ email: 'tom@example.com' }),
-    ])
+    expect(await invitedEmails()).toEqual(['tom@example.com'])
   })
 
   it('explains an email that is not an email', async () => {
@@ -75,9 +56,11 @@ describe('AddInviteSheet', () => {
         'Enter a valid email',
       ),
     )
+    expect(await invitedEmails()).toEqual([])
   })
 
   it('shows why an email could not be allowed', async () => {
+    await scenario.adminInvite(jeremy, 'sarah@example.com')
     await openSheet()
 
     await type('invite-email', 'sarah@example.com')
@@ -91,9 +74,10 @@ describe('AddInviteSheet', () => {
   })
 
   it('explains a failure the server gave no reason for', async () => {
+    failRequest('POST', '/api/invites', { status: 500, message: '' })
     await openSheet()
 
-    await type('invite-email', 'broken@example.com')
+    await type('invite-email', 'tom@example.com')
     await submit('invite-email-form')
 
     await vi.waitFor(() =>
@@ -101,6 +85,7 @@ describe('AddInviteSheet', () => {
         'Something went wrong. Try again.',
       ),
     )
+    expect(await invitedEmails()).toEqual([])
   })
 
   it('shows a new invite link to copy and stays open', async () => {
@@ -109,10 +94,9 @@ describe('AddInviteSheet', () => {
     await click('invite-link-create')
 
     await vi.waitFor(() =>
-      expect(inputValue('invite-link')).toBe(
-        'http://localhost:3000/invite/the-token',
-      ),
+      expect(inputValue('invite-link')).toMatch(/\/invite\/[\w-]+$/),
     )
+    expect(await inviterOf(inputValue('invite-link'))).toBe('Jeremy')
     expect(sheet.emitted('update:open')).toBeUndefined()
   })
 
@@ -122,13 +106,12 @@ describe('AddInviteSheet', () => {
     await openSheet()
     await click('invite-link-create')
     await vi.waitFor(() => expect(byTestId('invite-link-copy')).not.toBeNull())
+    const link = inputValue('invite-link')
 
     await click('invite-link-copy')
 
     await vi.waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(
-        'http://localhost:3000/invite/the-token',
-      )
+      expect(writeText).toHaveBeenCalledWith(link)
       expect(byTestId('invite-link-copy')?.getAttribute('aria-label')).toBe(
         'Copied',
       )

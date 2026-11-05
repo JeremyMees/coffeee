@@ -1,24 +1,54 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import AdminDeleteDialog from '~/components/AdminDeleteDialog.vue'
-import { api, fakeApi, resetApi } from '../fake-api'
+import type { AdminEntry, AdminList } from '#imports'
+import { flavorNote, roaster } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { byTestId, click } from '../fixtures'
-import { flavorNoteEntries } from '#test/fixtures/admin'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let jeremy: Member
 
-beforeEach(resetApi)
+beforeEach(async () => {
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await signIn(jeremy)
+})
 
-function mountDialog(list: AdminList = 'flavorNotes') {
+async function entry(name: string, uses = 0): Promise<AdminEntry> {
+  const added = await scenario.adminEntry(jeremy, 'flavorNotes', { name })
+
+  return { ...added, detail: null, detailId: null, uses }
+}
+
+function mountDialog(shown: AdminEntry, list: AdminList = 'flavorNotes') {
   return mountSuspended(AdminDeleteDialog, {
-    props: { list, entry: flavorNoteEntries()[2]!, open: true },
+    props: { list, entry: shown, open: true },
     attachTo: document.body,
   })
 }
 
+async function stored(id: string) {
+  const db = await database()
+
+  return db
+    .select({ name: flavorNote.name })
+    .from(flavorNote)
+    .where(eq(flavorNote.id, id))
+}
+
+async function storedRoaster(id: string) {
+  const db = await database()
+
+  return db
+    .select({ name: roaster.name })
+    .from(roaster)
+    .where(eq(roaster.id, id))
+}
+
 describe('AdminDeleteDialog', () => {
   it('asks before deleting', async () => {
-    await mountDialog()
+    await mountDialog(await entry('Jasmine'))
 
     expect(byTestId('confirm-dialog-title')?.textContent).toContain(
       'Delete Jasmine?',
@@ -32,7 +62,12 @@ describe('AdminDeleteDialog', () => {
   })
 
   it('warns that deleting a coffee takes every bag with it', async () => {
-    await mountDialog('coffees')
+    const ayele = await scenario.coffee(jeremy.shelf)
+
+    await mountDialog(
+      { id: ayele.id, name: ayele.name, detail: null, detailId: null, uses: 1 },
+      'coffees',
+    )
 
     expect(byTestId('confirm-dialog-description')?.textContent).toContain(
       'Every shelf loses its bags',
@@ -40,26 +75,38 @@ describe('AdminDeleteDialog', () => {
   })
 
   it('deletes the entry and closes', async () => {
-    const dialog = await mountDialog()
+    const jasmine = await entry('Jasmine')
+    const dialog = await mountDialog(jasmine)
 
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
       expect(dialog.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.adminCalls).toEqual([{ delete: 'n3' }])
+    expect(await stored(jasmine.id)).toEqual([])
   })
 
   it('explains why it was not deleted', async () => {
-    api.adminFails = 'This flavor note still has coffees'
-    await mountDialog()
+    await scenario.coffee(jeremy.shelf)
+    const squareMile = await scenario.roaster(jeremy, 'Square Mile')
+    await mountDialog(
+      {
+        id: squareMile,
+        name: 'Square Mile',
+        detail: null,
+        detailId: null,
+        uses: 1,
+      },
+      'roasters',
+    )
 
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
       expect(byTestId('form-error')?.textContent).toContain(
-        'This flavor note still has coffees',
+        'This roaster still has coffees',
       ),
     )
+    expect(await storedRoaster(squareMile)).toEqual([{ name: 'Square Mile' }])
   })
 })

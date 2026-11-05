@@ -1,23 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AdminEditCoffeeSheet from '~/components/AdminEditCoffeeSheet.vue'
-import { useCurrentUser } from '#imports'
-import { fakeApi, resetApi } from '../fake-api'
+import type { Member } from '#test/support/types'
 import { byTestId, inputValue } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { scenario, signIn } from '../server'
 
-fakeApi()
+let jeremy: Member
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser({ role: 'admin' })
+beforeEach(async () => {
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await signIn(jeremy)
 })
 
 describe('AdminEditCoffeeSheet', () => {
   it('opens the full coffee form filled in with the coffee', async () => {
+    const ayele = await scenario.coffee(jeremy.shelf)
+
     await mountSuspended(AdminEditCoffeeSheet, {
       route: '/admin/lists/coffees',
-      props: { coffeeId: 'c1', open: true },
+      props: { coffeeId: ayele.id, open: true },
       attachTo: document.body,
     })
 

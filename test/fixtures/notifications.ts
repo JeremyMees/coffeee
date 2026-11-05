@@ -33,20 +33,3 @@ export function notifications() {
     },
   ]
 }
-
-export function inviteNotification(
-  overrides: Partial<ReturnType<typeof notifications>[number]> = {},
-) {
-  return {
-    ...notifications()[0]!,
-    id: 'n3',
-    kind: 'invited' as NotificationKind,
-    shelfId: 'office',
-    shelf: 'Office',
-    coffeeId: null,
-    coffee: null,
-    inviteId: 'mi1',
-    inviteStatus: 'pending' as InviteStatus | null,
-    ...overrides,
-  }
-}

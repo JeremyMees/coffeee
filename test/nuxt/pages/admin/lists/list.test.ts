@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VueWrapper } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { clearError, useCurrentUser, useError, useRouter } from '#imports'
-import { api, fakeApi, resetApi } from '../../../fake-api'
+import { clearError, shelfPath, useError, useRouter } from '#imports'
+import type { Member } from '#test/support/types'
 import {
   allByTestId,
   byTestId,
@@ -12,14 +12,20 @@ import {
   tid,
   type,
 } from '../../../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { scenario, signIn } from '../../../server'
 
-fakeApi()
+let jeremy: Member
 
-beforeEach(() => {
+beforeEach(async () => {
   clearError()
-  resetApi()
-  useCurrentUser().value = testUser({ role: 'admin' })
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await scenario.coffee(jeremy.shelf, { flavorNotes: ['Lime'] })
+  await scenario.coffee(jeremy.shelf, {
+    name: 'Kochere',
+    flavorNotes: ['Lime', 'Limes'],
+  })
+  await scenario.adminEntry(jeremy, 'flavorNotes', { name: 'Jasmine' })
+  await signIn(jeremy)
 })
 
 function names(page: VueWrapper) {
@@ -39,10 +45,10 @@ describe('a shared list on the admin page', () => {
     const page = await openFlavorNotes()
 
     expect(page.get(tid('page-title')).text()).toBe('Flavor notes')
-    expect(names(page)).toEqual(['Lime', 'Limes', 'Jasmine'])
+    expect(names(page)).toEqual(['Jasmine', 'Lime', 'Limes'])
     expect(
       page.findAll(tid('data-table-cell-uses')).map(cell => cell.text()),
-    ).toEqual(['3', '1', '0'])
+    ).toEqual(['0', '2', '1'])
     expect(page.get(tid('admin-back')).attributes('href')).toBe('/admin')
   })
 
@@ -58,6 +64,12 @@ describe('a shared list on the admin page', () => {
   })
 
   it('opens on the search and page from the address', async () => {
+    for (let number = 10; number < 35; number++) {
+      await scenario.adminEntry(jeremy, 'flavorNotes', {
+        name: `Lime ${number}`,
+      })
+    }
+
     const page = await mountSuspended(App, {
       route: '/admin/lists/flavorNotes?search=lim&page=2',
     })
@@ -65,7 +77,7 @@ describe('a shared list on the admin page', () => {
     expect(page.get<HTMLInputElement>(tid('admin-search')).element.value).toBe(
       'lim',
     )
-    expect(api.adminQueries.at(-1)).toEqual({ search: 'lim', page: '1' })
+    expect(names(page)).toEqual(['Lime 34', 'Limes'])
   })
 
   it('adds an entry from the button in the header', async () => {
@@ -76,7 +88,7 @@ describe('a shared list on the admin page', () => {
     await submit('admin-add-form')
 
     await vi.waitFor(() =>
-      expect(names(page)).toEqual(['Lime', 'Limes', 'Jasmine', 'Bergamot']),
+      expect(names(page)).toEqual(['Bergamot', 'Jasmine', 'Lime', 'Limes']),
     )
     expect(page.find(tid('page-add-coffee')).exists()).toBe(false)
   })
@@ -106,16 +118,13 @@ describe('a shared list on the admin page', () => {
   it('updates an entry', async () => {
     const page = await openFlavorNotes()
 
-    await act(page, 'update', 1)
+    await act(page, 'update', 2)
     await type('admin-entry-name', 'Key lime')
     await submit('admin-update-form')
 
     await vi.waitFor(() =>
-      expect(names(page)).toEqual(['Lime', 'Key lime', 'Jasmine']),
+      expect(names(page)).toEqual(['Jasmine', 'Key lime', 'Lime']),
     )
-    expect(api.adminCalls).toEqual([
-      { update: 'n2', body: { name: 'Key lime' } },
-    ])
   })
 
   it('updates a coffee with the full coffee form', async () => {
@@ -140,11 +149,11 @@ describe('a shared list on the admin page', () => {
   it('merges a duplicate into the entry that is kept', async () => {
     const page = await openFlavorNotes()
 
-    await act(page, 'merge', 1)
+    await act(page, 'merge', 2)
     await vi.waitFor(() =>
       expect(allByTestId('admin-merge-option')).toHaveLength(2),
     )
-    allByTestId('admin-merge-option')[0]!.querySelector('input')!.click()
+    allByTestId('admin-merge-option')[1]!.querySelector('input')!.click()
     await vi.waitFor(() =>
       expect(byTestId('admin-merge-submit')!.textContent).toContain(
         'Merge into Lime',
@@ -152,33 +161,30 @@ describe('a shared list on the admin page', () => {
     )
     await submit('admin-merge-form')
 
-    await vi.waitFor(() => expect(names(page)).toEqual(['Lime', 'Jasmine']))
-    expect(api.adminCalls).toEqual([{ merge: 'n2', intoId: 'n1' }])
+    await vi.waitFor(() => expect(names(page)).toEqual(['Jasmine', 'Lime']))
   })
 
   it('deletes an entry after asking', async () => {
     const page = await openFlavorNotes()
 
-    await act(page, 'delete', 2)
+    await act(page, 'delete', 0)
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() => expect(names(page)).toEqual(['Lime', 'Limes']))
-    expect(api.adminCalls).toEqual([{ delete: 'n3' }])
   })
 
   it('explains why an entry could not be deleted', async () => {
-    api.adminFails = 'This flavor note still has coffees'
-    const page = await openFlavorNotes()
+    const page = await mountSuspended(App, { route: '/admin/lists/roasters' })
 
     await act(page, 'delete', 0)
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
       expect(byTestId('admin-delete', 'form-error')?.textContent).toContain(
-        'This flavor note still has coffees',
+        'This roaster still has coffees',
       ),
     )
-    expect(names(page)).toEqual(['Lime', 'Limes', 'Jasmine'])
+    expect(names(page)).toEqual(['Square Mile'])
   })
 
   it('shows no page for a list that does not exist', async () => {
@@ -188,15 +194,14 @@ describe('a shared list on the admin page', () => {
   })
 
   it('sends users who are not admins home', async () => {
-    useCurrentUser().value = testUser()
+    const sarah = await scenario.member('Sarah')
+    await signIn(sarah)
     await mountSuspended(App, { route: '/profile' })
 
     await useRouter().push('/admin/lists/flavorNotes')
 
     await vi.waitFor(() =>
-      expect(useRouter().currentRoute.value.path).toBe(
-        '/shelves/sarahs-shelf-home',
-      ),
+      expect(useRouter().currentRoute.value.path).toBe(shelfPath(sarah.shelf)),
     )
   })
 })

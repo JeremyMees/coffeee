@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ShelfGrinders from '~/components/ShelfGrinders.vue'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { grinderName } from '#imports'
+import { listShelfGrinders } from '#server/utils/grinders'
+import type { Member } from '#test/support/types'
 import {
   allByTestId,
   byTestId,
@@ -12,20 +14,37 @@ import {
   submit,
   type,
 } from '../fixtures'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let opus: { id: string }
 
-beforeEach(resetApi)
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  const tom = await scenario.member('Tom')
+  await scenario.grinder(tom.shelf, { brand: 'Fellow', model: 'Ode Gen 2' })
+  opus = await scenario.grinder(sarah.shelf, {
+    brand: 'Fellow',
+    model: 'Opus Gen 2',
+  })
+  await signIn(sarah)
+})
 
 function mountGrinders() {
   return mountSuspended(ShelfGrinders, {
-    props: { shelfId: 'home' },
+    props: { shelfId: sarah.shelf.id },
     attachTo: document.body,
   })
 }
 
 function grinderNames() {
   return allByTestId('shelf-grinder-name').map(name => name.textContent?.trim())
+}
+
+async function storedGrinders() {
+  const owned = await listShelfGrinders(await database(), sarah.shelf.id)
+
+  return owned.map(grinderName)
 }
 
 describe('ShelfGrinders', () => {
@@ -37,9 +56,13 @@ describe('ShelfGrinders', () => {
   })
 
   it('says when the shelf owns no grinders', async () => {
-    api.grinders = []
+    const lisa = await scenario.member('Lisa')
+    await signIn(lisa)
 
-    await mountGrinders()
+    await mountSuspended(ShelfGrinders, {
+      props: { shelfId: lisa.shelf.id },
+      attachTo: document.body,
+    })
 
     expect(byTestId('shelf-grinders-empty')!.textContent?.trim()).toBe(
       'No grinders on this shelf yet.',
@@ -60,10 +83,11 @@ describe('ShelfGrinders', () => {
     await submit('grinder-form')
 
     await vi.waitFor(() =>
-      expect(grinderNames()).toEqual(['Fellow Opus Gen 2', 'Fellow Ode Gen 3']),
+      expect(grinderNames()).toEqual(['Fellow Ode Gen 3', 'Fellow Opus Gen 2']),
     )
-    expect(api.grinderCalls).toEqual([
-      { own: { brand: 'Fellow', model: 'Ode Gen 3' } },
+    expect(await storedGrinders()).toEqual([
+      'Fellow Ode Gen 3',
+      'Fellow Opus Gen 2',
     ])
     expect(inputValue('grinder-brand')).toBe('')
     expect(inputValue('grinder-model')).toBe('')
@@ -82,17 +106,20 @@ describe('ShelfGrinders', () => {
     expect(byTestId('grinder-form')!.textContent).toContain(
       'Pick a model or add a new one',
     )
-    expect(api.grinderCalls).toEqual([])
+    expect(await storedGrinders()).toEqual(['Fellow Opus Gen 2'])
   })
 
   it('says why a grinder could not be added', async () => {
-    api.grinderFails = true
+    failRequest('POST', `/api/shelves/${sarah.shelf.id}/grinders`, {
+      status: 500,
+      message: 'The grinder could not be added',
+    })
     await mountGrinders()
 
-    await type('grinder-brand', 'Niche')
-    await pickOption('Niche')
-    await type('grinder-model', 'Zero')
-    await pickOption('Add “Zero”')
+    await type('grinder-brand', 'fel')
+    await pickOption('Fellow')
+    await type('grinder-model', 'Ode')
+    await pickOption('Ode Gen 2')
     await submit('grinder-form')
 
     await vi.waitFor(() =>
@@ -100,6 +127,7 @@ describe('ShelfGrinders', () => {
         'The grinder could not be added',
       ),
     )
+    expect(await storedGrinders()).toEqual(['Fellow Opus Gen 2'])
   })
 
   it('removes a grinder from the shelf', async () => {
@@ -111,11 +139,18 @@ describe('ShelfGrinders', () => {
     await click('shelf-grinder-remove')
 
     await vi.waitFor(() => expect(grinderNames()).toEqual([]))
-    expect(api.grinderCalls).toEqual([{ disown: 'opus' }])
+    expect(await storedGrinders()).toEqual([])
   })
 
   it('says why a grinder could not be removed', async () => {
-    api.grinderFails = true
+    failRequest(
+      'DELETE',
+      `/api/shelves/${sarah.shelf.id}/grinders/${opus.id}`,
+      {
+        status: 404,
+        message: 'This shelf does not own that grinder',
+      },
+    )
     await mountGrinders()
 
     await click('shelf-grinder-remove')
@@ -125,5 +160,6 @@ describe('ShelfGrinders', () => {
         'This shelf does not own that grinder',
       ),
     )
+    expect(await storedGrinders()).toEqual(['Fellow Opus Gen 2'])
   })
 })

@@ -1,23 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AdminEditRoasterSheet from '~/components/AdminEditRoasterSheet.vue'
-import { useCurrentUser } from '#imports'
-import { fakeApi, resetApi } from '../fake-api'
+import type { Member } from '#test/support/types'
 import { byTestId, inputValue } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { scenario, signIn } from '../server'
 
-fakeApi()
+let jeremy: Member
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser({ role: 'admin' })
+beforeEach(async () => {
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await signIn(jeremy)
 })
 
 describe('AdminEditRoasterSheet', () => {
   it('opens the full roaster form with its logo, filled in with the roaster', async () => {
+    const squareMile = await scenario.roaster(jeremy, 'Square Mile')
+
     await mountSuspended(AdminEditRoasterSheet, {
       route: '/admin/lists/roasters',
-      props: { roasterId: 'r2', open: true },
+      props: { roasterId: squareMile, open: true },
       attachTo: document.body,
     })
 

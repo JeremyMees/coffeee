@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import AdminAddCoffeeSheet from '~/components/AdminAddCoffeeSheet.vue'
-import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { coffee, roaster } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import {
   byTestId,
   click,
@@ -12,13 +13,14 @@ import {
   submit,
   type,
 } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let jeremy: Member
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser({ role: 'admin' })
+beforeEach(async () => {
+  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  await scenario.roaster(jeremy, 'Square Mile')
+  await signIn(jeremy)
 })
 
 function openSheet() {
@@ -38,6 +40,15 @@ async function fillRequired(name: string) {
   await click('coffee-roasted-for', 'option-filter')
 }
 
+async function stored() {
+  const db = await database()
+
+  return db
+    .select({ name: coffee.name, roaster: roaster.name })
+    .from(coffee)
+    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+}
+
 describe('AdminAddCoffeeSheet', () => {
   it('asks only for the coffee, not a first bag', async () => {
     await openSheet()
@@ -55,16 +66,8 @@ describe('AdminAddCoffeeSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
-    expect(api.adminCalls).toEqual([
-      {
-        add: 'coffees',
-        body: expect.objectContaining({
-          name: 'Ayele Fulasa',
-          roaster: 'Square Mile',
-          origins: ['ET'],
-          processes: ['Washed'],
-        }),
-      },
+    expect(await stored()).toEqual([
+      { name: 'Ayele Fulasa', roaster: 'Square Mile' },
     ])
   })
 
@@ -78,19 +81,21 @@ describe('AdminAddCoffeeSheet', () => {
         'Give the coffee a name',
       ),
     )
-    expect(api.adminCalls).toEqual([])
+    expect(await stored()).toEqual([])
   })
 
   it('shows a coffee that is already in the catalog next to its name', async () => {
+    await scenario.coffee(jeremy.shelf)
     await openSheet()
 
-    await fillRequired('Taken')
+    await fillRequired('Ayele Fulasa')
     await submit('admin-add-coffee-form')
 
     await vi.waitFor(() =>
       expect(byTestId('admin-add-coffee-sheet')?.textContent).toContain(
-        'Taken is already on the list',
+        'Square Mile Ayele Fulasa is already on the list',
       ),
     )
+    expect(await stored()).toHaveLength(1)
   })
 })

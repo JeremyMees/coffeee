@@ -1,20 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import ProfileName from '~/components/ProfileName.vue'
 import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { user } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { byTestId, inputValue, submit, type } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser()
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
 })
 
 function mountName() {
   return mountSuspended(ProfileName, { attachTo: document.body })
+}
+
+async function storedName() {
+  const db = await database()
+  const [found] = await db
+    .select({ name: user.name })
+    .from(user)
+    .where(eq(user.id, sarah.id))
+
+  return found?.name
 }
 
 describe('ProfileName', () => {
@@ -29,7 +41,7 @@ describe('ProfileName', () => {
     await vi.waitFor(() =>
       expect(byTestId('profile-name-saved')).not.toBeNull(),
     )
-    expect(api.profileRenames).toEqual([{ name: 'Sarah Mees' }])
+    expect(await storedName()).toBe('Sarah Mees')
     expect(useCurrentUser().value?.name).toBe('Sarah Mees')
   })
 
@@ -44,6 +56,6 @@ describe('ProfileName', () => {
         'Enter your name',
       ),
     )
-    expect(api.profileRenames).toEqual([])
+    expect(await storedName()).toBe('Sarah')
   })
 })

@@ -1,20 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import NotificationsLink from '~/components/NotificationsLink.vue'
-import { api, fakeApi, resetApi } from '../fake-api'
-import { notifications } from '#test/fixtures/notifications'
+import type { Member } from '#test/support/types'
 import { tid } from '../fixtures'
+import { scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let tom: Member
 
-beforeEach(resetApi)
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  tom = await scenario.member('Tom')
+  await scenario.joinShelf(tom, sarah.shelf)
+  await scenario.readNotifications(sarah)
+  await signIn(sarah)
+})
 
 describe('NotificationsLink', () => {
   it('links to the notifications with the unread count', async () => {
-    api.notifications = [
-      ...notifications(),
-      { ...notifications()[0]!, id: 'n3' },
-    ]
+    const ayele = await scenario.coffee(sarah.shelf, {}, tom)
+    await scenario.bag(sarah.shelf, ayele.id, {}, tom)
 
     const link = await mountSuspended(NotificationsLink)
 
@@ -39,10 +44,10 @@ describe('NotificationsLink', () => {
   })
 
   it('caps a big count', async () => {
-    api.notifications = Array.from({ length: 120 }, (_, index) => ({
-      ...notifications()[0]!,
-      id: `n${index}`,
-    }))
+    const ayele = await scenario.coffee(sarah.shelf, {}, tom)
+    for (let bag = 0; bag < 100; bag++) {
+      await scenario.bag(sarah.shelf, ayele.id, {}, tom)
+    }
 
     const link = await mountSuspended(NotificationsLink, {
       props: { labelled: true },

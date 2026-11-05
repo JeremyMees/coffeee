@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ShelfInvites from '~/components/ShelfInvites.vue'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { listShelfInvites } from '#server/utils/invites'
+import type { Member } from '#test/support/types'
 import {
   allByTestId,
   byTestId,
@@ -10,14 +11,19 @@ import {
   submit,
   type,
 } from '../fixtures'
+import { database, scenario, signIn } from '../server'
+import { server } from '../server-state'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(resetApi)
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
+})
 
 function mountInvites() {
   return mountSuspended(ShelfInvites, {
-    props: { shelfId: 'home' },
+    props: { shelfId: sarah.shelf.id },
     attachTo: document.body,
   })
 }
@@ -28,8 +34,16 @@ function pendingEmails() {
   )
 }
 
+async function storedEmails() {
+  const invites = await listShelfInvites(await database(), sarah.shelf.id)
+
+  return invites.map(found => found.email)
+}
+
 describe('ShelfInvites', () => {
   it('lists pending invites with who sent them', async () => {
+    await scenario.shelfInvite(sarah.shelf, 'anna@example.com')
+
     await mountInvites()
 
     expect(pendingEmails()).toEqual(['anna@example.com'])
@@ -37,8 +51,6 @@ describe('ShelfInvites', () => {
   })
 
   it('says when nothing is pending', async () => {
-    api.shelfInvites = []
-
     await mountInvites()
 
     expect(byTestId('shelf-invites-empty')?.textContent).toContain(
@@ -47,6 +59,7 @@ describe('ShelfInvites', () => {
   })
 
   it('invites an email and shows it pending', async () => {
+    await scenario.shelfInvite(sarah.shelf, 'anna@example.com')
     await mountInvites()
 
     await type('shelf-invite-email', 'Tom@Example.com')
@@ -55,7 +68,11 @@ describe('ShelfInvites', () => {
     await vi.waitFor(() =>
       expect(pendingEmails()).toEqual(['tom@example.com', 'anna@example.com']),
     )
-    expect(api.inviteCalls).toEqual([{ invite: { email: 'tom@example.com' } }])
+    expect(await storedEmails()).toEqual([
+      'tom@example.com',
+      'anna@example.com',
+    ])
+    expect(server.outbox.map(email => email.to)).toEqual(['tom@example.com'])
     expect(byTestId('shelf-invite-sent')?.textContent).toContain(
       'Invite sent to tom@example.com.',
     )
@@ -73,14 +90,15 @@ describe('ShelfInvites', () => {
         'Enter a valid email',
       ),
     )
-    expect(api.inviteCalls).toEqual([])
+    expect(await storedEmails()).toEqual([])
   })
 
   it('shows why an invite was refused', async () => {
-    api.inviteFails = 'That person is already on this shelf'
+    const tom = await scenario.member('Tom')
+    await scenario.joinShelf(tom, sarah.shelf)
     await mountInvites()
 
-    await type('shelf-invite-email', 'tom@example.com')
+    await type('shelf-invite-email', tom.email)
     await submit('shelf-invite-form')
 
     await vi.waitFor(() =>
@@ -89,14 +107,16 @@ describe('ShelfInvites', () => {
       ),
     )
     expect(byTestId('shelf-invite-sent')).toBeNull()
+    expect(await storedEmails()).toEqual([])
   })
 
   it('cancels a pending invite', async () => {
+    await scenario.shelfInvite(sarah.shelf, 'anna@example.com')
     await mountInvites()
 
     await click('shelf-invite-cancel')
 
     await vi.waitFor(() => expect(pendingEmails()).toEqual([]))
-    expect(api.inviteCalls).toEqual([{ cancel: 'i1' }])
+    expect(await storedEmails()).toEqual([])
   })
 })

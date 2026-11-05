@@ -1,19 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
-import {
-  mockNuxtImport,
-  mountSuspended,
-  registerEndpoint,
-} from '@nuxt/test-utils/runtime'
-import { createError } from 'h3'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
+import { shelfPath, useCurrentUser } from '#imports'
+import { listShelfInvites } from '#server/utils/invites'
+import { listShelves } from '#server/utils/shelves'
+import type { Member } from '#test/support/types'
 import { byTestId, click, currentPath, submit, tid, type } from '../../fixtures'
-import { testUser } from '#test/fixtures/users'
-
-const server = vi.hoisted(() => ({
-  signedIn: false,
-  accepted: [] as string[],
-  declined: [] as string[],
-}))
+import { database, scenario, signIn } from '../../server'
 
 const { social, signUpEmail } = vi.hoisted(() => ({
   social: vi.fn(),
@@ -25,61 +18,28 @@ mockNuxtImport('authClient', () => ({
   signUp: { email: signUpEmail },
 }))
 
-registerEndpoint('/api/me', () => {
-  if (!server.signedIn) throw createError({ statusCode: 401 })
+let tom: Member
+let home: { id: string; name: string; ownerId: string }
+let token: string
 
-  return testUser()
-})
-
-registerEndpoint('/api/me/invites', () => [])
-
-registerEndpoint('/api/invites/link/shelf-token', () => ({
-  shelfId: 'home2',
-  shelf: 'Home',
-  invitedBy: 'Sarah',
-}))
-
-registerEndpoint('/api/invites/link/admin-token', () => ({
-  shelfId: null,
-  shelf: null,
-  invitedBy: 'Jeremy',
-}))
-
-registerEndpoint('/api/invites/link/used-token', () => {
-  throw createError({ statusCode: 404 })
-})
-
-registerEndpoint('/api/invites/link/shelf-token/accept', {
-  method: 'POST',
-  handler: () => {
-    server.accepted.push('shelf-token')
-
-    return { id: 'home2', name: 'Home', ownerId: 'user-2' }
-  },
-})
-
-registerEndpoint('/api/invites/link/shelf-token/decline', {
-  method: 'POST',
-  handler: () => {
-    server.declined.push('shelf-token')
-
-    return null
-  },
-})
-
-function visit(token: string, signedIn = false) {
-  server.signedIn = signedIn
+beforeEach(async () => {
+  const sarah = await scenario.member('Sarah')
+  tom = await scenario.member('Tom')
+  home = await scenario.shelf(sarah, 'Home')
+  token = (await scenario.shelfInvite(home, tom.email)).token
   useCurrentUser().value = null
+})
 
+function visit(link = token) {
   return mountSuspended(App, {
-    route: `/invite/${token}`,
+    route: `/invite/${link}`,
     attachTo: document.body,
   })
 }
 
 describe('invite page', () => {
   it('names the shelf and who sent the invite', async () => {
-    const page = await visit('shelf-token')
+    const page = await visit()
 
     expect(page.get(tid('invite-description')).text()).toContain(
       'Sarah invited you to their shelf Home',
@@ -87,16 +47,16 @@ describe('invite page', () => {
   })
 
   it('signs up with Google carrying the invite token, landing on the shelf', async () => {
-    const page = await visit('shelf-token')
+    const page = await visit()
 
     await page.get(tid('invite-google')).trigger('click')
 
     expect(social).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: 'google',
-        callbackURL: '/invite/shelf-token',
-        newUserCallbackURL: '/shelves/home-home2',
-        additionalData: { inviteToken: 'shelf-token' },
+        callbackURL: `/invite/${token}`,
+        newUserCallbackURL: shelfPath(home),
+        additionalData: { inviteToken: token },
       }),
     )
   })
@@ -106,7 +66,7 @@ describe('invite page', () => {
       data: { user: { emailVerified: false } },
       error: null,
     })
-    await visit('shelf-token')
+    await visit()
 
     await type('sign-up-name', 'Tom')
     await type('sign-up-email', 'tom@example.com')
@@ -117,48 +77,53 @@ describe('invite page', () => {
       expect(signUpEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           email: 'tom@example.com',
-          callbackURL: '/shelves/home-home2',
-          fetchOptions: { query: { inviteToken: 'shelf-token' } },
+          callbackURL: shelfPath(home),
+          fetchOptions: { query: { inviteToken: token } },
         }),
       ),
     )
   })
 
   it('lets someone with an account sign in and come back to answer', async () => {
-    const page = await visit('shelf-token')
+    const page = await visit()
 
     expect(page.get(tid('invite-sign-in')).attributes('href')).toBe(
-      '/sign-in?redirect=/invite/shelf-token',
+      `/sign-in?redirect=/invite/${token}`,
     )
   })
 
   it('lets someone signed in join the shelf', async () => {
-    server.accepted = []
-    await visit('shelf-token', true)
+    await signIn(tom)
+    await visit()
 
     await click('invite-accept')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/home-home2'))
-    expect(server.accepted).toEqual(['shelf-token'])
+    await vi.waitFor(() => expect(currentPath()).toBe(shelfPath(home)))
     expect(useCurrentUser().value?.shelves).toContainEqual(
-      expect.objectContaining({ id: 'home2' }),
+      expect.objectContaining({ id: home.id }),
     )
+    const joined = await listShelves(await database(), tom.id)
+    expect(joined.map(found => found.id)).toContain(home.id)
   })
 
   it('lets someone signed in decline', async () => {
-    server.declined = []
-    await visit('shelf-token', true)
+    await signIn(tom)
+    await visit()
 
     await click('invite-decline')
 
-    await vi.waitFor(() =>
-      expect(currentPath()).not.toBe('/invite/shelf-token'),
-    )
-    expect(server.declined).toEqual(['shelf-token'])
+    await vi.waitFor(() => expect(currentPath()).not.toBe(`/invite/${token}`))
+    expect(await listShelfInvites(await database(), home.id)).toEqual([])
+    const shelves = await listShelves(await database(), tom.id)
+    expect(shelves.map(found => found.id)).not.toContain(home.id)
   })
 
   it('tells someone signed in that an admin link is not for them', async () => {
-    await visit('admin-token', true)
+    const jeremy = await scenario.member('Jeremy', { role: 'admin' })
+    const link = await scenario.inviteLink(jeremy)
+    await signIn(tom)
+
+    await visit(link.token)
 
     expect(byTestId('invite-signed-in')?.textContent).toContain(
       'You already have an account.',
@@ -167,7 +132,9 @@ describe('invite page', () => {
   })
 
   it('explains a link that no longer works', async () => {
-    const page = await visit('used-token')
+    await scenario.acceptInvite(tom, token)
+
+    const page = await visit()
 
     expect(page.get(tid('invite-description')).text()).toContain(
       'This invite has expired or was already used.',

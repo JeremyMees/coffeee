@@ -1,23 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import ShelfName from '~/components/ShelfName.vue'
 import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { shelf } from '#server/db/schemas'
+import type { Member } from '#test/support/types'
 import { byTestId, inputValue, submit, type } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
 
-beforeEach(() => {
-  resetApi()
-  useCurrentUser().value = testUser()
+beforeEach(async () => {
+  sarah = await scenario.member('Sarah')
+  await signIn(sarah)
 })
 
-function mountName(shelfId = 'home') {
+function mountName(shelfId = sarah.shelf.id) {
   return mountSuspended(ShelfName, {
     props: { shelfId },
     attachTo: document.body,
   })
+}
+
+async function storedName(shelfId = sarah.shelf.id) {
+  const db = await database()
+  const [found] = await db
+    .select({ name: shelf.name })
+    .from(shelf)
+    .where(eq(shelf.id, shelfId))
+
+  return found?.name
 }
 
 describe('ShelfName', () => {
@@ -30,11 +42,11 @@ describe('ShelfName', () => {
     await submit('shelf-name-form')
 
     await vi.waitFor(() => expect(byTestId('shelf-name-saved')).not.toBeNull())
-    expect(api.shelfCalls).toEqual([{ rename: { name: 'Flat' } }])
+    expect(await storedName()).toBe('Flat')
     expect(useCurrentUser().value?.shelves[0]).toEqual({
-      id: 'home',
+      id: sarah.shelf.id,
       name: 'Flat',
-      ownerId: 'user-1',
+      ownerId: sarah.id,
     })
   })
 
@@ -49,11 +61,14 @@ describe('ShelfName', () => {
         'Give the shelf a name',
       ),
     )
-    expect(api.shelfCalls).toEqual([])
+    expect(await storedName()).toBe("Sarah's shelf")
   })
 
   it('shows why a rename was refused', async () => {
-    api.shelfFails = 'Only the shelf owner can do that'
+    failRequest('PATCH', `/api/shelves/${sarah.shelf.id}`, {
+      status: 403,
+      message: 'Only the shelf owner can do that',
+    })
     await mountName()
 
     await type('shelf-name-input', 'Flat')
@@ -64,10 +79,16 @@ describe('ShelfName', () => {
         'Only the shelf owner can do that',
       ),
     )
+    expect(await storedName()).toBe("Sarah's shelf")
   })
 
   it('only shows the name to other members', async () => {
-    await mountName('work')
+    const tom = await scenario.member('Tom')
+    const work = await scenario.shelf(tom, 'Work')
+    await scenario.joinShelf(sarah, work)
+    await signIn(sarah)
+
+    await mountName(work.id)
 
     expect(byTestId('shelf-name-form')).toBeNull()
     expect(byTestId('shelf-name-locked')?.textContent).toContain(

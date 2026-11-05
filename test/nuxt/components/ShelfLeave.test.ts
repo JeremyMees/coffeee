@@ -1,23 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import ShelfLeave from '~/components/ShelfLeave.vue'
-import { useCurrentUser } from '#imports'
-import { api, fakeApi, resetApi } from '../fake-api'
+import { shelfPath, useCurrentUser } from '#imports'
+import { shelf } from '#server/db/schemas'
+import { listShelves } from '#server/utils/shelves'
+import type { Member, ScenarioShelf } from '#test/support/types'
 import { byTestId, click, currentPath, forgetLastShelf } from '../fixtures'
-import { shelfMembers } from '#test/fixtures/shelves'
-import { testUser } from '#test/fixtures/users'
+import { database, failRequest, scenario, signIn } from '../server'
 
-fakeApi()
+let sarah: Member
+let tom: Member
 
-beforeEach(() => {
-  resetApi()
+beforeEach(async () => {
   forgetLastShelf()
-  useCurrentUser().value = testUser()
+  sarah = await scenario.member('Sarah')
+  tom = await scenario.member('Tom')
 })
 
-function mountLeave() {
+function mountLeave(on: { id: string; name: string }) {
   return mountSuspended(ShelfLeave, {
-    props: { shelfId: 'home' },
+    props: { shelfId: on.id },
+    route: `${shelfPath(on)}/settings`,
     attachTo: document.body,
   })
 }
@@ -26,18 +30,40 @@ function isDisabled(testId: string) {
   return byTestId<HTMLButtonElement>(testId)!.disabled
 }
 
-function joinTomsShelf() {
-  useCurrentUser().value = testUser({
-    shelves: [
-      { id: 'mine', name: "Sarah's shelf", ownerId: 'user-1' },
-      { id: 'home', name: 'Home', ownerId: 'tom' },
-    ],
-  })
+async function storedShelves(member: Member) {
+  const shelves = await listShelves(await database(), member.id)
+
+  return shelves.map(found => found.id)
+}
+
+async function exists(on: ScenarioShelf) {
+  const db = await database()
+  const found = await db
+    .select({ id: shelf.id })
+    .from(shelf)
+    .where(eq(shelf.id, on.id))
+
+  return found.length > 0
+}
+
+async function sarahOwnsHomeWithTom() {
+  const home = await scenario.shelf(sarah, 'Home')
+  await scenario.joinShelf(tom, home)
+  await signIn(sarah)
+
+  return home
+}
+
+async function sarahJoinsTomsShelf() {
+  await scenario.joinShelf(sarah, tom.shelf)
+  await signIn(sarah)
 }
 
 describe('ShelfLeave', () => {
   it('makes the shelf owner hand the shelf over before leaving', async () => {
-    await mountLeave()
+    const home = await sarahOwnsHomeWithTom()
+
+    await mountLeave(home)
 
     expect(isDisabled('shelf-leave-button')).toBe(true)
     expect(byTestId('shelf-leave-hand-over')).not.toBeNull()
@@ -45,12 +71,13 @@ describe('ShelfLeave', () => {
   })
 
   it('lets the shelf owner delete the shelf for everyone', async () => {
-    await mountLeave()
+    const home = await sarahOwnsHomeWithTom()
+    await mountLeave(home)
 
     await click('shelf-delete-button')
 
     expect(byTestId('confirm-dialog-title')?.textContent).toContain(
-      "Delete Sarah's shelf?",
+      'Delete Home?',
     )
     expect(byTestId('confirm-dialog-description')?.textContent).toContain(
       'The other member loses it too.',
@@ -58,16 +85,19 @@ describe('ShelfLeave', () => {
 
     await click('confirm-dialog-confirm')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/shelves/work-work'))
-    expect(api.shelfCalls).toEqual([{ delete: 'home' }])
-    expect(useCurrentUser().value?.shelves.map(shelf => shelf.id)).toEqual([
-      'work',
-    ])
+    await vi.waitFor(() =>
+      expect(useCurrentUser().value?.shelves.map(found => found.id)).toEqual([
+        sarah.shelf.id,
+      ]),
+    )
+    expect(currentPath()).toBe(shelfPath(sarah.shelf))
+    expect(await exists(home)).toBe(false)
   })
 
   it('warns the last member that leaving deletes the shelf', async () => {
-    api.shelfMembers = shelfMembers().slice(0, 1)
-    await mountLeave()
+    const home = await scenario.shelf(sarah, 'Home')
+    await signIn(sarah)
+    await mountLeave(home)
 
     await click('shelf-leave-button')
 
@@ -80,8 +110,8 @@ describe('ShelfLeave', () => {
   })
 
   it('lets a member leave', async () => {
-    joinTomsShelf()
-    await mountLeave()
+    await sarahJoinsTomsShelf()
+    await mountLeave(tom.shelf)
 
     expect(byTestId('shelf-delete-button')).toBeNull()
 
@@ -89,20 +119,17 @@ describe('ShelfLeave', () => {
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
-      expect(currentPath()).toBe('/shelves/sarahs-shelf-mine'),
+      expect(useCurrentUser().value?.shelves.map(found => found.id)).toEqual([
+        sarah.shelf.id,
+      ]),
     )
-    expect(api.shelfCalls).toEqual([{ leave: 'home' }])
-    expect(useCurrentUser().value?.shelves.map(shelf => shelf.id)).toEqual([
-      'mine',
-    ])
+    expect(currentPath()).toBe(shelfPath(sarah.shelf))
+    expect(await storedShelves(sarah)).toEqual([sarah.shelf.id])
   })
 
   it('keeps someone on their only shelf', async () => {
-    useCurrentUser().value = testUser({
-      shelves: [{ id: 'home', name: 'Home', ownerId: 'user-1' }],
-    })
-    api.shelfMembers = shelfMembers().slice(0, 1)
-    await mountLeave()
+    await signIn(sarah)
+    await mountLeave(sarah.shelf)
 
     expect(byTestId('shelf-leave-only')).not.toBeNull()
     expect(isDisabled('shelf-leave-button')).toBe(true)
@@ -110,9 +137,12 @@ describe('ShelfLeave', () => {
   })
 
   it('shows why leaving was refused', async () => {
-    joinTomsShelf()
-    api.shelfFails = "This is your only shelf, so you can't leave it"
-    await mountLeave()
+    await sarahJoinsTomsShelf()
+    failRequest('POST', `/api/shelves/${tom.shelf.id}/leave`, {
+      status: 409,
+      message: "This is your only shelf, so you can't leave it",
+    })
+    await mountLeave(tom.shelf)
 
     await click('shelf-leave-button')
     await click('confirm-dialog-confirm')
@@ -123,5 +153,6 @@ describe('ShelfLeave', () => {
       ),
     )
     expect(useCurrentUser().value?.shelves).toHaveLength(2)
+    expect(await storedShelves(sarah)).toEqual([sarah.shelf.id, tom.shelf.id])
   })
 })

@@ -1,22 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { useCurrentUser } from '#imports'
-import { fakeApi } from '../fake-api'
+import { useRouter } from '#imports'
 import { byTestId, tid } from '../fixtures'
-import { testUser } from '#test/fixtures/users'
+import { scenario, signIn } from '../server'
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }))
 
 mockNuxtImport('authClient', () => ({ signOut }))
 
-fakeApi()
-
-function signInAs(role: 'admin' | 'user') {
-  useCurrentUser().value = testUser({ role })
-}
-
-beforeEach(() => signInAs('user'))
+beforeEach(async () => {
+  await signIn(await scenario.member('Sarah'))
+})
 
 describe('profile page', () => {
   it('shows who is signed in', async () => {
@@ -24,11 +19,13 @@ describe('profile page', () => {
 
     expect(page.get(tid('page-title')).text()).toBe('Profile')
     expect(page.get(tid('profile-name')).text()).toBe('Sarah')
-    expect(page.get(tid('profile-email')).text()).toBe('sarah@example.com')
+    expect(page.get(tid('profile-email')).text()).toMatch(
+      /^sarah-.+@example\.com$/,
+    )
   })
 
   it('keeps the admin tools off the profile, even for admins', async () => {
-    signInAs('admin')
+    await signIn(await scenario.member('Jeremy', { role: 'admin' }))
 
     const page = await mountSuspended(App, { route: '/profile' })
 
