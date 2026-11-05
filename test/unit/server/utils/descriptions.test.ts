@@ -659,10 +659,14 @@ describe('the admin lists', () => {
     })
     const { db } = context
 
-    await descriptionAdminLists.flavorNotes.merge(db, {
-      from: await idOf(db, 'flavorNotes', 'Limes'),
-      to: await idOf(db, 'flavorNotes', 'Lime'),
-    })
+    await descriptionAdminLists.flavorNotes.merge(
+      db,
+      {
+        from: await idOf(db, 'flavorNotes', 'Limes'),
+        to: await idOf(db, 'flavorNotes', 'Lime'),
+      },
+      () => {},
+    )
 
     const notesOf = async (coffeeId: string) =>
       (await descriptionOf(db, coffeeId)).flavorNotes.map(note => note.name)
@@ -683,8 +687,9 @@ describe('the admin lists', () => {
       await descriptionAdminLists.varietals.remove(
         context.db,
         await idOf(context.db, 'varietals', 'Geisha'),
+        () => {},
       ),
-    ).toEqual({ outcome: 'deleted', photoUrl: null })
+    ).toEqual({ outcome: 'deleted' })
     expect((await descriptionOf(context.db, ayele)).varietals).toEqual([
       { id: expect.any(String), name: 'Bourbon' },
     ])

@@ -29,12 +29,14 @@ import {
   roaster,
   shelfGrinder,
 } from '#server/db/schemas'
-import { findOrCreateCoffee, removeCoffee } from '#server/utils/coffees'
 import {
-  describeCoffee,
-  descriptionAdminLists,
-} from '#server/utils/descriptions'
-import { withFreshId } from '#server/utils/ids'
+  addCatalogCoffee,
+  changeCatalog,
+  findOrCreateRoaster,
+  findTakenName,
+} from '#server/utils/catalog-entries'
+import { removeCoffee } from '#server/utils/coffees'
+import { descriptionAdminLists } from '#server/utils/descriptions'
 import { findOrCreateEntry } from '#server/utils/lists'
 import { addBrewMethod } from '#server/utils/brew-methods'
 import {
@@ -44,7 +46,6 @@ import {
   mergeGrinders,
   mergeRoasters,
 } from '#server/utils/merges'
-import { deletePhoto } from '#server/utils/photos'
 
 function counted(from: SQL) {
   return sql<number>`(select cast(count(*) as integer) ${from})`
@@ -67,7 +68,7 @@ async function removeUnused(
 
   await db.delete(table).where(eq(table.id, entryId))
 
-  return { outcome: 'deleted' as const, photoUrl: null }
+  return { outcome: 'deleted' as const }
 }
 
 const adminListTables: Record<AdminList, AdminListTable> = {
@@ -81,15 +82,16 @@ const adminListTables: Record<AdminList, AdminListTable> = {
       sql`from ${purchase} where ${purchase.coffeeId} = ${coffee.id}`,
     ),
     merge: mergeCoffees,
-    remove: async (db, entryId) => {
+    remove: async (db, entryId, dropPhoto) => {
       const [current] = await db
         .select({ photoUrl: coffee.photoUrl })
         .from(coffee)
         .where(eq(coffee.id, entryId))
 
       await removeCoffee(db, entryId)
+      dropPhoto(current!.photoUrl)
 
-      return { outcome: 'deleted', photoUrl: current!.photoUrl }
+      return { outcome: 'deleted' }
     },
   },
   roasters: {
@@ -99,7 +101,7 @@ const adminListTables: Record<AdminList, AdminListTable> = {
       sql`from ${coffee} where ${coffee.roasterId} = ${roaster.id}`,
     ),
     merge: mergeRoasters,
-    remove: async (db, entryId) => {
+    remove: async (db, entryId, dropPhoto) => {
       const [current] = await db
         .select({ logoUrl: roaster.logoUrl })
         .from(roaster)
@@ -111,9 +113,9 @@ const adminListTables: Record<AdminList, AdminListTable> = {
         sql<boolean>`exists (select 1 from ${coffee} where ${coffee.roasterId} = ${entryId})`,
       )
 
-      return removed.outcome === 'deleted'
-        ? { ...removed, photoUrl: current!.logoUrl }
-        : removed
+      if (removed.outcome === 'deleted') dropPhoto(current!.logoUrl)
+
+      return removed
     },
   },
   ...descriptionAdminLists,
@@ -274,17 +276,11 @@ export function updateAdminEntry(
       scoped = changes.originCode
     }
 
-    const key = nameKey(changes.name)
-    const [taken] = await tx
-      .select({ name: sql<string>`${table.name}` })
-      .from(table)
-      .where(
-        and(
-          eq(table.nameKey, key),
-          ne(table.id, input.entryId),
-          scope ? eq(scope, scoped) : undefined,
-        ),
-      )
+    const taken = await findTakenName(tx, table, {
+      name: changes.name,
+      except: input.entryId,
+      scope: scope && { column: scope, value: scoped },
+    })
 
     if (taken) return { outcome: 'taken' as const, taken }
 
@@ -292,7 +288,7 @@ export function updateAdminEntry(
       .update(table)
       .set({
         name: changes.name,
-        nameKey: key,
+        nameKey: nameKey(changes.name),
         ...(scope && { [scope.name]: scoped }),
       } as never)
       .where(eq(table.id, input.entryId))
@@ -312,7 +308,7 @@ export async function mergeAdminEntry(
 
   const definition = adminListTables[input.list]
 
-  const result = await db.transaction(async tx => {
+  return changeCatalog(db, async (tx, dropPhoto) => {
     const found = await findEntries(tx, definition, [
       input.entryId,
       input.intoId,
@@ -326,42 +322,32 @@ export async function mergeAdminEntry(
       return { outcome: 'otherScope' as const }
     }
 
-    const photos = await definition.merge(tx, {
-      from: input.entryId,
-      to: input.intoId,
-    })
+    await definition.merge(
+      tx,
+      { from: input.entryId, to: input.intoId },
+      dropPhoto,
+    )
 
     return {
       outcome: 'merged' as const,
-      photos,
       entry: { id: into.id, name: into.name },
     }
   })
-
-  if (result.outcome !== 'merged') return result
-
-  for (const photo of result.photos) await deletePhoto(photo)
-
-  return { outcome: result.outcome, entry: result.entry }
 }
 
-export async function deleteAdminEntry(
+export function deleteAdminEntry(
   db: Database,
   input: { list: AdminList; entryId: string },
 ) {
   const definition = adminListTables[input.list]
 
-  const result = await db.transaction(async tx => {
+  return changeCatalog(db, async (tx, dropPhoto) => {
     const [current] = await findEntries(tx, definition, [input.entryId])
 
     if (!current) return { outcome: 'notFound' as const }
 
-    return definition.remove(tx, input.entryId)
+    return definition.remove(tx, input.entryId, dropPhoto)
   })
-
-  if (result.outcome === 'deleted') await deletePhoto(result.photoUrl)
-
-  return { outcome: result.outcome }
 }
 
 type Addition =
@@ -401,16 +387,10 @@ async function insertRoaster(
   db: Database,
   details: RoasterDetails & { createdBy: string },
 ): Promise<Addition> {
-  const [added] = await withFreshId(db, (db, id) =>
-    db
-      .insert(roaster)
-      .values({ ...details, id, nameKey: nameKey(details.name) })
-      .onConflictDoNothing({ target: roaster.nameKey })
-      .returning({ id: roaster.id, name: roaster.name }),
-  )
+  const added = await findOrCreateRoaster(db, details)
 
-  return added
-    ? { outcome: 'added', entry: added }
+  return added.created
+    ? { outcome: 'added', entry: added.roaster }
     : taken('name', details.name)
 }
 
@@ -435,30 +415,15 @@ const adminListAdders: Record<AdminList, AdminListAdder> = {
     schema: coffeeDetailsSchema,
     add: (db, details: CoffeeDetails, createdBy) =>
       db.transaction(async tx => {
-        const roasterId = await findOrCreateEntry(tx, roaster, {
-          name: details.roaster,
-          createdBy,
-        })
-        const { coffee: found, created } = await findOrCreateCoffee(tx, {
-          roasterId,
-          name: details.name,
-          roastLevel: details.roastLevel,
-          roastedFor: details.roastedFor,
-          altitudeFrom: details.altitudeFrom,
-          altitudeTo: details.altitudeTo,
-          link: details.link,
-          createdBy,
+        const { coffee: found, created } = await addCatalogCoffee(tx, {
+          userId: createdBy,
+          details,
+          whenFound: 'keep',
         })
 
         if (!created) {
           return taken('name', `${found.roaster} ${found.name}`)
         }
-
-        await describeCoffee(tx, {
-          coffeeId: found.id,
-          userId: createdBy,
-          description: details,
-        })
 
         return {
           outcome: 'added' as const,

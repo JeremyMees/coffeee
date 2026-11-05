@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { coffee, roaster, shelf } from '#server/db/schemas'
 import { addAdminEntry } from '#server/utils/admin-lists'
-import { findOrCreateCoffee } from '#server/utils/coffees'
+import {
+  addCatalogCoffee,
+  findOrCreateRoaster,
+} from '#server/utils/catalog-entries'
 import { withFreshId } from '#server/utils/ids'
-import { findOrCreateEntry } from '#server/utils/lists'
 import { createShelf } from '#server/utils/shelves'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
@@ -91,14 +93,26 @@ describe('creating with a taken id', () => {
 
   it('still creates the coffee', async () => {
     const { db, sarah, mok } = await setup()
-    codes.next = ['takencof', 'cof12345']
+    codes.next = ['rst12345', 'takencof', 'cof12345']
 
-    const { coffee: created, created: isNew } = await findOrCreateCoffee(db, {
-      roasterId: mok.id,
-      name: 'Las Lajas',
-      roastLevel: 'light',
-      roastedFor: 'filter',
-      createdBy: sarah.id,
+    const { coffee: created, created: isNew } = await addCatalogCoffee(db, {
+      userId: sarah.id,
+      details: {
+        roaster: mok.name,
+        name: 'Las Lajas',
+        roastLevel: 'light',
+        roastedFor: 'filter',
+        origins: [],
+        regions: [],
+        farms: [],
+        washingStations: [],
+        producers: [],
+        processes: [],
+        varietals: [],
+        flavorNotes: [],
+        link: null,
+      },
+      whenFound: 'keep',
     })
 
     expect(isNew).toBe(true)
@@ -109,12 +123,12 @@ describe('creating with a taken id', () => {
     const { db, sarah } = await setup()
     codes.next = ['takenrst', 'rst12345']
 
-    const id = await findOrCreateEntry(db, roaster, {
+    const { roaster: created } = await findOrCreateRoaster(db, {
       name: 'La Cabra',
       createdBy: sarah.id,
     })
 
-    expect(id).toBe('rst12345')
+    expect(created.id).toBe('rst12345')
   })
 
   it('still adds the roaster from the admin lists, not calling it taken', async () => {

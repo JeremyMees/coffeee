@@ -1,4 +1,4 @@
-import { and, asc, eq, ne, sql } from 'drizzle-orm'
+import { asc, eq, sql } from 'drizzle-orm'
 import type { RoasterDetails, RoasterSearch } from '#shared/types/roasters'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
@@ -6,7 +6,7 @@ import type { Viewer } from '#server/types/coffees'
 import type { EditableRoasterLogo } from '#server/types/photos'
 import { coffee, purchase, roaster } from '#server/db/schemas'
 import { canEditCatalogEntry } from '#server/utils/catalog'
-import { deletePhoto } from '#server/utils/photos'
+import { changeCatalog, findTakenName } from '#server/utils/catalog-entries'
 
 const roasterColumns = {
   id: roaster.id,
@@ -97,11 +97,10 @@ export function editRoaster(
 
     if (current.outcome !== 'editable') return current
 
-    const key = nameKey(details.name)
-    const [taken] = await tx
-      .select({ name: roaster.name })
-      .from(roaster)
-      .where(and(eq(roaster.nameKey, key), ne(roaster.id, input.roasterId)))
+    const taken = await findTakenName(tx, roaster, {
+      name: details.name,
+      except: input.roasterId,
+    })
 
     if (taken) return { outcome: 'taken' as const, taken }
 
@@ -109,7 +108,7 @@ export function editRoaster(
       .update(roaster)
       .set({
         name: details.name,
-        nameKey: key,
+        nameKey: nameKey(details.name),
         website: details.website,
         countryCode: details.countryCode,
         city: details.city,
@@ -121,16 +120,18 @@ export function editRoaster(
   })
 }
 
-export async function replaceRoasterLogo(
+export function replaceRoasterLogo(
   db: Database,
   current: EditableRoasterLogo,
   logoUrl: string | null,
 ) {
-  await db
-    .update(roaster)
-    .set({ logoUrl })
-    .where(eq(roaster.id, current.roasterId))
-  await deletePhoto(current.logoUrl)
+  return changeCatalog(db, async (tx, dropPhoto) => {
+    await tx
+      .update(roaster)
+      .set({ logoUrl })
+      .where(eq(roaster.id, current.roasterId))
+    dropPhoto(current.logoUrl)
 
-  return { logoUrl }
+    return { logoUrl }
+  })
 }

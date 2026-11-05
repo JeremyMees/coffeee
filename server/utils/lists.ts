@@ -6,9 +6,7 @@ import { listSearchSchema } from '#shared/utils/schemas'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
 import type { NewListEntry, SharedList } from '#server/types/lists'
-import { roaster } from '#server/db/schemas'
 import { useDb } from '#server/utils/db'
-import { withFreshId } from '#server/utils/ids'
 import { requireUser } from '#server/utils/session'
 import { readValidQuery } from '#server/utils/validation'
 
@@ -75,15 +73,12 @@ export async function findOrCreateEntry(
   const key = nameKey(entry.name)
   const scope = list.originCode && entry.originCode ? list.originCode : null
 
-  const insert = (db: Database, id?: string) =>
-    db
-      .insert(list)
-      .values({ ...entry, ...(id && { id }), nameKey: key } as never)
-      .onConflictDoNothing({
-        target: scope ? [scope, list.nameKey] : list.nameKey,
-      })
-
-  await (list === roaster ? withFreshId(db, insert) : insert(db))
+  await db
+    .insert(list)
+    .values({ ...entry, nameKey: key } as never)
+    .onConflictDoNothing({
+      target: scope ? [scope, list.nameKey] : list.nameKey,
+    })
 
   const [found] = await db
     .select({ id: sql<string>`${list.id}` })

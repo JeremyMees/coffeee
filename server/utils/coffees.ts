@@ -1,19 +1,22 @@
-import { and, desc, eq, isNull, max, ne, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, max, sql } from 'drizzle-orm'
 import type { CoffeeDetails, NewCoffee } from '#shared/types/coffee'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
-import { withFreshId } from '#server/utils/ids'
 import { coffee, coffeeVerdict, purchase, roaster } from '#server/db/schemas'
-import { findOrCreateEntry } from '#server/utils/lists'
 import type { Viewer } from '#server/types/coffees'
 import { canEditCatalogEntry } from '#server/utils/catalog'
 import type { EditableCoffeePhoto } from '#server/types/photos'
+import {
+  addCatalogCoffee,
+  changeCatalog,
+  findOrCreateRoaster,
+  findTakenName,
+} from '#server/utils/catalog-entries'
 import {
   cardDescriptionsOf,
   describeCoffee,
   descriptionOf,
 } from '#server/utils/descriptions'
-import { deletePhoto } from '#server/utils/photos'
 import {
   grindSettingsOf,
   otherGrindSettingsOf,
@@ -45,29 +48,6 @@ const detailColumns = {
   link: coffee.link,
 }
 
-export async function findOrCreateCoffee(
-  db: Database,
-  input: Omit<typeof coffee.$inferInsert, 'nameKey'>,
-) {
-  const key = nameKey(input.name)
-
-  const [created] = await withFreshId(db, (db, id) =>
-    db
-      .insert(coffee)
-      .values({ ...input, id, nameKey: key })
-      .onConflictDoNothing({ target: [coffee.roasterId, coffee.nameKey] })
-      .returning({ id: coffee.id }),
-  )
-
-  const [found] = await db
-    .select(coffeeColumns)
-    .from(coffee)
-    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
-    .where(and(eq(coffee.roasterId, input.roasterId), eq(coffee.nameKey, key)))
-
-  return { coffee: found!, created: created !== undefined }
-}
-
 export function addCoffee(
   db: Database,
   input: { shelfId: string; userId: string; coffee: NewCoffee; origin: string },
@@ -75,28 +55,11 @@ export function addCoffee(
   const details = input.coffee
 
   return changeShelf(db, input.origin, async (tx, notify) => {
-    const roasterId = await findOrCreateEntry(tx, roaster, {
-      name: details.roaster,
-      createdBy: input.userId,
+    const { coffee: found } = await addCatalogCoffee(tx, {
+      userId: input.userId,
+      details,
+      whenFound: 'keep',
     })
-    const { coffee: found, created } = await findOrCreateCoffee(tx, {
-      roasterId,
-      name: details.name,
-      roastLevel: details.roastLevel,
-      roastedFor: details.roastedFor,
-      altitudeFrom: details.altitudeFrom,
-      altitudeTo: details.altitudeTo,
-      link: details.link,
-      createdBy: input.userId,
-    })
-
-    if (created) {
-      await describeCoffee(tx, {
-        coffeeId: found.id,
-        userId: input.userId,
-        description: details,
-      })
-    }
     const added = await addPurchase(tx, {
       shelfId: input.shelfId,
       coffeeId: found.id,
@@ -162,18 +125,20 @@ export async function findEditableCoffee(
   return { outcome: 'editable' as const, photoUrl: current.photoUrl }
 }
 
-export async function replaceCoffeePhoto(
+export function replaceCoffeePhoto(
   db: Database,
   current: EditableCoffeePhoto,
   photoUrl: string | null,
 ) {
-  await db
-    .update(coffee)
-    .set({ photoUrl })
-    .where(eq(coffee.id, current.coffeeId))
-  await deletePhoto(current.photoUrl)
+  return changeCatalog(db, async (tx, dropPhoto) => {
+    await tx
+      .update(coffee)
+      .set({ photoUrl })
+      .where(eq(coffee.id, current.coffeeId))
+    dropPhoto(current.photoUrl)
 
-  return { photoUrl }
+    return { photoUrl }
+  })
 }
 
 async function findCatalogCoffee(
@@ -283,31 +248,30 @@ export function editCoffee(
 
     if (current.outcome !== 'editable') return current
 
-    const roasterId = await findOrCreateEntry(tx, roaster, {
+    const { roaster: kept } = await findOrCreateRoaster(tx, {
       name: details.roaster,
       createdBy: input.editor.id,
     })
-    const key = nameKey(details.name)
-    const [taken] = await tx
-      .select({ roaster: roaster.name, name: coffee.name })
-      .from(coffee)
-      .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
-      .where(
-        and(
-          eq(coffee.roasterId, roasterId),
-          eq(coffee.nameKey, key),
-          ne(coffee.id, input.coffeeId),
-        ),
-      )
+    const roasterId = kept.id
+    const taken = await findTakenName(tx, coffee, {
+      name: details.name,
+      except: input.coffeeId,
+      scope: { column: coffee.roasterId, value: roasterId },
+    })
 
-    if (taken) return { outcome: 'taken' as const, taken }
+    if (taken) {
+      return {
+        outcome: 'taken' as const,
+        taken: { roaster: kept.name, name: taken.name },
+      }
+    }
 
     await tx
       .update(coffee)
       .set({
         roasterId,
         name: details.name,
-        nameKey: key,
+        nameKey: nameKey(details.name),
         roastLevel: details.roastLevel,
         roastedFor: details.roastedFor,
         altitudeFrom: details.altitudeFrom,
@@ -378,21 +342,18 @@ export async function removeCoffee(db: Database, coffeeId: string) {
   await db.delete(coffee).where(eq(coffee.id, coffeeId))
 }
 
-export async function deleteCoffee(
+export function deleteCoffee(
   db: Database,
   input: { coffeeId: string; deleter: Viewer },
 ) {
-  const result = await db.transaction(async tx => {
+  return changeCatalog(db, async (tx, dropPhoto) => {
     const current = await findDeletableCoffee(tx, input)
 
     if (current.outcome !== 'deletable') return current
 
     await removeCoffee(tx, input.coffeeId)
+    dropPhoto(current.photoUrl)
 
-    return { outcome: 'deleted' as const, photoUrl: current.photoUrl }
+    return { outcome: 'deleted' as const }
   })
-
-  if (result.outcome === 'deleted') await deletePhoto(result.photoUrl)
-
-  return result
 }

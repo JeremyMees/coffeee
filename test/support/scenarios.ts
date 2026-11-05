@@ -6,7 +6,7 @@ import type { VerdictChange } from '#shared/types/verdicts'
 import type { NewPurchase } from '#shared/types/purchases'
 import type { OptionalEmailKind } from '#shared/types/notifications'
 import { newCoffeeSchema } from '#shared/utils/schemas'
-import { coffee, invite, purchase, roaster } from '#server/db/schemas'
+import { coffee, invite, purchase } from '#server/db/schemas'
 import { addAdminEntry } from '#server/utils/admin-lists'
 import { listBrewMethods } from '#server/utils/brew-methods'
 import { addCoffee, replaceCoffeePhoto } from '#server/utils/coffees'
@@ -17,7 +17,7 @@ import {
   inviteEmail,
   inviteToShelf,
 } from '#server/utils/invites'
-import { findOrCreateEntry } from '#server/utils/lists'
+import { findOrCreateRoaster } from '#server/utils/catalog-entries'
 import {
   markNotificationsRead,
   notifyInvited,
@@ -163,10 +163,12 @@ export function createScenario(database: () => Promise<TestDatabase>) {
     },
 
     async roaster(member: { id: string }, name: string) {
-      return findOrCreateEntry(await database(), roaster, {
+      const { roaster: found } = await findOrCreateRoaster(await database(), {
         name,
         createdBy: member.id,
       })
+
+      return found.id
     },
 
     shelfInvite,

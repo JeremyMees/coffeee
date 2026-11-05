@@ -435,8 +435,6 @@ export function descriptionSuggestionHandler<
 async function mergeEntries(db: Database, coffeeList: CoffeeList, move: Move) {
   await moveReferences(db, coffeeList.link, coffeeList.entryId, move)
   await db.delete(coffeeList.list).where(eq(coffeeList.list.id, move.from))
-
-  return [] as (string | null)[]
 }
 
 function adminList(field: DescriptionListField): AdminListTable {
@@ -459,7 +457,7 @@ function adminList(field: DescriptionListField): AdminListTable {
       await db.delete(link).where(eq(entryId, id))
       await db.delete(list).where(eq(list.id, id))
 
-      return { outcome: 'deleted', photoUrl: null }
+      return { outcome: 'deleted' }
     },
   }
 }

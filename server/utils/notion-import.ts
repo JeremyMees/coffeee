@@ -12,16 +12,8 @@ import type {
   NotionImport,
   NotionPage,
 } from '#server/types/notion'
-import {
-  coffee,
-  flavorNote,
-  purchase,
-  roaster,
-  shelf,
-  user,
-} from '#server/db/schemas'
-import { findOrCreateCoffee } from '#server/utils/coffees'
-import { describeCoffee } from '#server/utils/descriptions'
+import { coffee, flavorNote, purchase, shelf, user } from '#server/db/schemas'
+import { addCatalogCoffee } from '#server/utils/catalog-entries'
 import { ownGrinder } from '#server/utils/grinders'
 import { findOrCreateEntry } from '#server/utils/lists'
 import {
@@ -192,22 +184,12 @@ async function importCoffee(
   }
 
   return db.transaction(async tx => {
-    const roasterId = await findOrCreateEntry(tx, roaster, {
-      name: latest.roaster,
-      createdBy: input.userId,
-    })
-    const { coffee: found } = await findOrCreateCoffee(tx, {
-      roasterId,
-      name: latest.name,
-      createdBy: input.userId,
-      ...described,
-    })
-
-    await tx.update(coffee).set(described).where(eq(coffee.id, found.id))
-    await describeCoffee(tx, {
-      coffeeId: found.id,
+    const { coffee: found } = await addCatalogCoffee(tx, {
       userId: input.userId,
-      description: {
+      details: {
+        roaster: latest.roaster,
+        name: latest.name,
+        ...described,
         origins: mergedEntries(bought, 'origins'),
         regions: [],
         farms: [],
@@ -217,6 +199,7 @@ async function importCoffee(
         varietals: mergedEntries(bought, 'varietals'),
         flavorNotes: mergedEntries(bought, 'flavorNotes'),
       },
+      whenFound: 'update',
     })
     await storePurchases(tx, { ...input, coffeeId: found.id }, bought)
     await tx

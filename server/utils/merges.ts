@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import type { Database } from '#server/types/database'
+import type { DropPhoto } from '#server/types/catalog-entries'
 import type { Move } from '#server/types/merges'
 import {
   brewMethod,
@@ -15,7 +16,11 @@ import {
 } from '#server/db/schemas'
 import { moveReferences } from '#server/utils/lists'
 
-export async function mergeCoffees(db: Database, move: Move) {
+export async function mergeCoffees(
+  db: Database,
+  move: Move,
+  dropPhoto: DropPhoto,
+) {
   const photos = { photoUrl: coffee.photoUrl }
   const [from] = await db
     .select(photos)
@@ -48,11 +53,14 @@ export async function mergeCoffees(db: Database, move: Move) {
 
   await db.delete(coffee).where(eq(coffee.id, move.from))
 
-  return photoMoves ? [] : [from!.photoUrl]
+  if (!photoMoves) dropPhoto(from!.photoUrl)
 }
 
-export async function mergeRoasters(db: Database, move: Move) {
-  const photos: (string | null)[] = []
+export async function mergeRoasters(
+  db: Database,
+  move: Move,
+  dropPhoto: DropPhoto,
+) {
   const coffees = await db
     .select({ id: coffee.id, nameKey: coffee.nameKey })
     .from(coffee)
@@ -67,7 +75,7 @@ export async function mergeRoasters(db: Database, move: Move) {
       )
 
     if (same) {
-      photos.push(...(await mergeCoffees(db, { from: moved.id, to: same.id })))
+      await mergeCoffees(db, { from: moved.id, to: same.id }, dropPhoto)
     } else {
       await db
         .update(coffee)
@@ -102,15 +110,13 @@ export async function mergeRoasters(db: Database, move: Move) {
     })
     .where(eq(roaster.id, move.to))
 
-  return [...photos, to!.logoUrl ? from!.logoUrl : null]
+  if (to!.logoUrl) dropPhoto(from!.logoUrl)
 }
 
 export async function mergeGrinders(db: Database, move: Move) {
   await moveReferences(db, shelfGrinder, shelfGrinder.grinderId, move)
   await moveReferences(db, grindSetting, grindSetting.grinderId, move)
   await db.delete(grinder).where(eq(grinder.id, move.from))
-
-  return [] as (string | null)[]
 }
 
 export async function mergeGrinderBrands(db: Database, move: Move) {
@@ -138,13 +144,9 @@ export async function mergeGrinderBrands(db: Database, move: Move) {
   }
 
   await db.delete(grinderBrand).where(eq(grinderBrand.id, move.from))
-
-  return [] as (string | null)[]
 }
 
 export async function mergeBrewMethods(db: Database, move: Move) {
   await moveReferences(db, grindSetting, grindSetting.brewMethodId, move)
   await db.delete(brewMethod).where(eq(brewMethod.id, move.from))
-
-  return [] as (string | null)[]
 }
