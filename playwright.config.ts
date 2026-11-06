@@ -19,6 +19,7 @@ export default defineConfig({
       NUXT_BETTER_AUTH_SECRET: 'a-test-secret-that-is-long-enough-to-use',
       NUXT_PRODUCTION_URL: `http://localhost:${port}`,
       BLOB_READ_WRITE_TOKEN: '',
+      NUXT_PUBLIC_SENTRY_DSN: '',
     },
     url: `http://localhost:${port}`,
     reuseExistingServer: false,

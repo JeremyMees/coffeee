@@ -113,6 +113,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    externals: { inline: ['xtend'] },
     storage: {
       photos: { driver: 'fs', base: './.data/photos' },
     },
