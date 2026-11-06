@@ -6,21 +6,6 @@ import { blobHost } from './shared/utils/photos.ts'
 const photoHost = blobHost(process.env)
 const description = 'Your coffee shelf, and every coffee you ever bought.'
 
-const consentWithoutPrompt = {
-  mode: local({
-    policyRules: [
-      {
-        id: 'test',
-        match: { isDefault: true },
-        model: 'none',
-        prompt: 'none',
-        rights: ['disclosure', 'preferences'],
-      },
-    ],
-  }),
-  colorScheme: 'light',
-} as const
-
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
@@ -44,9 +29,26 @@ export default defineNuxtConfig({
     viewTransition: true,
   },
 
-  $test: { c15t: consentWithoutPrompt },
+  $test: { c15t: false },
 
-  $env: { e2e: { c15t: consentWithoutPrompt } },
+  $env: {
+    e2e: {
+      c15t: {
+        mode: local({
+          policyRules: [
+            {
+              id: 'test',
+              match: { isDefault: true },
+              model: 'none',
+              prompt: 'none',
+              rights: ['disclosure', 'preferences'],
+            },
+          ],
+        }),
+        colorScheme: 'light',
+      },
+    },
+  },
 
   $development: {
     nitro: { experimental: { tasks: true } },

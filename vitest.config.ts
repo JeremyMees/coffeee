@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 import { defineVitestProject } from '@nuxt/test-utils/config'
 import { nuxtAutoImports } from './test/support/auto-imports.ts'
 
-const ignoredLogs = [/^<Suspense>/, /^\[c15t\] Local mode keeps consent/]
+const ignoredLogs = [/^<Suspense>/]
 
 export default defineConfig({
   test: {
