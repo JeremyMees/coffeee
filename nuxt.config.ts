@@ -1,9 +1,25 @@
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
+import { local } from 'c15t/vue'
 import { blobHost } from './shared/utils/photos.ts'
 
 const photoHost = blobHost(process.env)
 const description = 'Your coffee shelf, and every coffee you ever bought.'
+
+const consentWithoutPrompt = {
+  mode: local({
+    policyRules: [
+      {
+        id: 'test',
+        match: { isDefault: true },
+        model: 'none',
+        prompt: 'none',
+        rights: ['disclosure', 'preferences'],
+      },
+    ],
+  }),
+  colorScheme: 'light',
+} as const
 
 export default defineNuxtConfig({
   modules: [
@@ -27,6 +43,10 @@ export default defineNuxtConfig({
   experimental: {
     viewTransition: true,
   },
+
+  $test: { c15t: consentWithoutPrompt },
+
+  $env: { e2e: { c15t: consentWithoutPrompt } },
 
   $development: {
     nitro: { experimental: { tasks: true } },

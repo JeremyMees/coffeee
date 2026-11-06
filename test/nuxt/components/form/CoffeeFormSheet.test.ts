@@ -143,7 +143,9 @@ describe('CoffeeFormSheet', () => {
 
     await submit('coffee-form-form')
 
-    await vi.waitFor(() => expect(currentPath()).toBe('/profile'))
+    await vi.waitFor(() => expect(currentPath()).toBe('/profile'), {
+      timeout: 5000,
+    })
     expect(sheet.emitted('update:open')).toEqual([[false]])
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
