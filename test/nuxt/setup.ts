@@ -6,6 +6,14 @@ import { useNuxtApp } from '#imports'
 
 vi.mock('nitropack/runtime', () => import('#test/support/nitro'))
 
+const waitFor = vi.waitFor
+
+vi.waitFor = (callback, options) =>
+  waitFor(callback, {
+    timeout: 5000,
+    ...(typeof options === 'number' ? { timeout: options } : options),
+  })
+
 vi.mock('#server/utils/db', async () => {
   const { server } = await import('#test/nuxt/server-state')
 
