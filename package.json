@@ -41,6 +41,7 @@
     "@nuxt/hints": "1.1.5",
     "@nuxt/image": "^2.2.1",
     "@nuxt/test-utils": "4.3.4",
+    "@sentry/nuxt": "^11.11.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/vue-query": "^5.105.1",
     "@tanstack/vue-table": "^8.21.3",

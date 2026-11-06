@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     '@vite-pwa/nuxt',
     'shadcn-nuxt',
     '@maizzle/nuxt',
+    '@sentry/nuxt/module',
   ],
 
   future: { compatibilityVersion: 5 },
@@ -27,6 +28,16 @@ export default defineNuxtConfig({
   },
 
   devtools: { enabled: true },
+
+  sourcemap: { client: 'hidden' },
+
+  sentry: {
+    org: 'kees',
+    project: 'coffeee',
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    release: { name: process.env.SENTRY_RELEASE },
+    sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  },
 
   css: ['~/assets/css/main.css'],
 
@@ -81,6 +92,12 @@ export default defineNuxtConfig({
     googleClientSecret: '',
     plunkApiKey: '',
     emailFrom: '',
+    public: {
+      sentry: {
+        dsn: '',
+        environment: process.env.VERCEL_ENV ?? 'development',
+      },
+    },
   },
 
   imports: { dirs: ['types/*.ts'] },
