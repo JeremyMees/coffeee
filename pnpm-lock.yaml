@@ -220,6 +220,9 @@ importers:
       better-auth:
         specifier: 1.7.10
         version: 1.7.10(@opentelemetry/api@1.10.0)(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.10)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1))(pg@8.23.1)(vitest@5.0.5)(vue@3.5.44(typescript@5.9.3))
+      c15t:
+        specifier: 3.2.2
+        version: 3.2.2(@nuxt/schema@4.6.3)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.3(76a6145bb5c2f8a7d8ec2cc08249e751))(oxc-parser@0.153.0)(rolldown@1.2.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vue@3.5.44(typescript@5.9.3))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -967,6 +970,114 @@ packages:
   '@better-fetch/fetch@1.3.2':
     resolution: {integrity: sha512-Gs7n99b5tqUC6cQAPbV0uED3IraHB6xQbHLQ/C3l7ZFafHScOx9pQ+DYmP5blbLFShVWLqxNUlI9wi4xU/X+ow==}
 
+  '@c15t/astro@3.2.2':
+    resolution: {integrity: sha512-gQE8afFIfYwUZ9MFOJVXdDMgeIAk3gSQMhu4WRvRGU1JlRpnkUEKvDa9hBpnKWlHvgLtl376P0MBFe/z23/Eow==}
+    peerDependencies:
+      '@c15t/react': ^3.2.2
+      '@c15t/vue': ^3.2.2
+      astro: ^5.0.0 || ^6.0.0 || ^7.0.0
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+      svelte: ^5.0.0
+      vue: ^3.5.0
+    peerDependenciesMeta:
+      '@c15t/react':
+        optional: true
+      '@c15t/vue':
+        optional: true
+      astro:
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
+
+  '@c15t/core@3.2.2':
+    resolution: {integrity: sha512-GqMuXlTUqz8CHUvuof8+boAi0o4b/Qmhuh599gB05EerWzU78TywVqEOT48ymEhzZHMiPwhZO8J29nVm91kdVA==}
+
+  '@c15t/dev-tools@3.2.2':
+    resolution: {integrity: sha512-K+yO0sF77b4s8UlSMU788huSU7M1KMzWJi4LiJk0GTLU1UcJUBMH/cLA4+xSTRVP6QRCG9EW+mrQQTZfKh4qJw==}
+
+  '@c15t/iab@3.2.2':
+    resolution: {integrity: sha512-67Cun+PxdJPYHMuSgZHrje88XtqokDF7s3P18r00vTPl+aoQfpr1qGanFFmGXLAP3zjt1JAJr67Nw33+RzhNnw==}
+
+  '@c15t/nextjs@3.2.2':
+    resolution: {integrity: sha512-eSTprkXK+3PMu4KDlZLocQlrYMyLlthFZ+3MqfO1lD9ejkQAnH+EeOxPUM+RSRdJwcneydYlw3PRth0SoRfwuw==}
+    peerDependencies:
+      next: ^15.0.0 || ^16.0.0
+      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+    peerDependenciesMeta:
+      next:
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
+  '@c15t/react@3.2.2':
+    resolution: {integrity: sha512-afO5v1F/N4ZGGrZhPZd3y+boQMWKKRMfbM4x5YthlP69bXL7smKRQV9YY2QOxm/9BqLUCqDWD0Y3be3n4kqJ0g==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
+  '@c15t/schema@3.1.3':
+    resolution: {integrity: sha512-ZRa32yJgblybMF4SZQItPgRdMU+wRxu5NFYcg6vJHHhiWkutXszF8DZYmUrAzv/AtUcoxaftyVQd6s5ZksTRwg==}
+
+  '@c15t/svelte@3.2.2':
+    resolution: {integrity: sha512-WIM7JC63q27InzldRfVz0OJj2/bFxrnAdcBjufNySYBEVjgrtohUmiJk4r+cvEQpHRF3sfiOH4ZPlZb0BNkbAg==}
+    peerDependencies:
+      '@sveltejs/kit': ^2.63.0 || ^3.0.0
+      svelte: ^5.20.0
+    peerDependenciesMeta:
+      '@sveltejs/kit':
+        optional: true
+      svelte:
+        optional: true
+
+  '@c15t/tanstack-start@3.2.2':
+    resolution: {integrity: sha512-k2qaYR+ckMxbI6y9NrZ1eZLK8KPFikyCsGxvlTtPAeAIq0WYmRIBcUMDohqtjEpUhS25kiGKY3+tWxx+lnI9TQ==}
+    peerDependencies:
+      '@tanstack/react-router': ^1.170.41
+      '@tanstack/react-start': ^1.168.60
+      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+    peerDependenciesMeta:
+      '@tanstack/react-router':
+        optional: true
+      '@tanstack/react-start':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
+  '@c15t/translations@3.2.2':
+    resolution: {integrity: sha512-hjtwHbyOFtbG0iEIBmgiyZH1fQpxxnKR4voQTywZD+uKd0Vb1asgzb27WcL+Dua3pBcNFw0nbH6KTxwe+d3vHg==}
+
+  '@c15t/ui@3.1.2':
+    resolution: {integrity: sha512-xo758DbRhhlXAGLVRkwdgA6Ke6Zzx+C9EKt28a2WnVMXqXR+FyUy3ko4OE0CVgiBB8zYvCbJupGA2NrN7uZvsg==}
+
+  '@c15t/vue@3.2.2':
+    resolution: {integrity: sha512-XT7Ri8FVmw63MgD9kYF+84eIAlaeBdCht9N3M8/5TsguGY/TwnZcH3SyPBipi9MGf1j/UxOVpitX1LPA6D8Bxg==}
+    peerDependencies:
+      nuxt: ^3.0.0 || ^4.0.0
+      vue: ^3.5.39 || ^3.6.0-0
+    peerDependenciesMeta:
+      nuxt:
+        optional: true
+      vue:
+        optional: true
+
   '@cacheable/memory@2.2.0':
     resolution: {integrity: sha512-CTLKqLItRCEixEAewD3/j9DB3/o96gpTPD4eJ1v+DGOlxZRZncRQkGYqqnAGCscYd6RNeXfGeiuCphsPtqyIfQ==}
 
@@ -1655,6 +1766,9 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  '@iabtechlabtcf/core@1.5.22':
+    resolution: {integrity: sha512-Iaz42mXXflxLL19nU7S7RBV1hjELln32mettVVTxdzFFqxVPze6dOzgaNMHP/L9a2Anr017D7yFAcPzMgnfchw==}
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -3333,6 +3447,9 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
+  '@types/google.maps@3.65.3':
+    resolution: {integrity: sha512-tqbbx7MUtoDk+RwpZMymPDj6Skez0FhqDZNhLhS5UDmCx4D1dgP+BJOHTebiO/rhjJLa1f8te2p6mJJeFKVFOQ==}
+
   '@types/hast@3.0.5':
     resolution: {integrity: sha512-rp/ezSWaD1m44dPKICGhiskI13nVr7qTloFwDa/IYkhhf5nzwP+zIQcIJh3WIFSBOy/H1PzB40jPjMDksN4F+g==}
 
@@ -4050,6 +4167,9 @@ packages:
   bare-url@2.5.5:
     resolution: {integrity: sha512-iM9qJCruvpt2rPaLsrumVDru9pogI7PHziHIa9kTNRFt8C8HuSa+kI9kFezK+NvHEFnnz71rKGZ1EAilq/3V/Q==}
 
+  base-x@5.0.1:
+    resolution: {integrity: sha512-M7uio8Zt++eg3jPj+rHMfCC+IuygQHHCOU+IYsVtik6FWjuYpVt/+MRKcgsAMHh8mMFAwnB+Bs+mTrFiXjMzKg==}
+
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
 
@@ -4186,6 +4306,9 @@ packages:
     peerDependenciesMeta:
       magicast:
         optional: true
+
+  c15t@3.2.2:
+    resolution: {integrity: sha512-nFfawzWCX2Odu3cHLfJYrQUwh2dbn9LNDYwhZseH+O1LMTQOEUZF+Y0+5jhF8oyRx2hpQ5qpg9RAzOmRtEVYUA==}
 
   cac@7.1.0:
     resolution: {integrity: sha512-LMDU/U2yA4IPIY8KT0NsNPWEYZvAMkbgyspxJ6btJaYV+WMDOHAZCmB0lsTObiHaRS1V/ztKAl7+TSkTqXyeoA==}
@@ -4976,6 +5099,9 @@ packages:
     peerDependenciesMeta:
       jiti:
         optional: true
+
+  esm-env@1.2.2:
+    resolution: {integrity: sha512-Epxrv+Nr/CaL4ZcFGPJIYLWFom+YeV1DqMLHJoEd9SYRxNbaFruBwfEX/kkHUJf55j2+TUbmDcmuilbP1TmXHA==}
 
   espree@10.4.0:
     resolution: {integrity: sha512-j6PAQ2uUr79PZhBjP5C5fhl8e39FmRnOjsD5lGnWrFU8i2G776tBK7+nP8KuQUTTyAZUwfQqXAgrVH5MbH9CYQ==}
@@ -7816,6 +7942,14 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
+  valibot@1.4.2:
+    resolution: {integrity: sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   valibot@1.5.0:
     resolution: {integrity: sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ==}
     peerDependencies:
@@ -9045,6 +9179,130 @@ snapshots:
 
   '@better-fetch/fetch@1.3.2': {}
 
+  '@c15t/astro@3.2.2(@c15t/react@3.2.2(typescript@5.9.3))(@c15t/vue@3.2.2(@nuxt/schema@4.6.3)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.3(76a6145bb5c2f8a7d8ec2cc08249e751))(oxc-parser@0.153.0)(rolldown@1.2.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vue@3.5.44(typescript@5.9.3)))(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/iab': 3.2.2(typescript@5.9.3)
+      '@c15t/schema': 3.1.3(typescript@5.9.3)
+      '@c15t/svelte': 3.2.2(typescript@5.9.3)
+      '@c15t/translations': 3.2.2
+      '@c15t/ui': 3.1.2(typescript@5.9.3)
+    optionalDependencies:
+      '@c15t/react': 3.2.2(typescript@5.9.3)
+      '@c15t/vue': 3.2.2(@nuxt/schema@4.6.3)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.3(76a6145bb5c2f8a7d8ec2cc08249e751))(oxc-parser@0.153.0)(rolldown@1.2.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vue@3.5.44(typescript@5.9.3))
+      vue: 3.5.44(typescript@5.9.3)
+    transitivePeerDependencies:
+      - '@sveltejs/kit'
+      - typescript
+
+  '@c15t/core@3.2.2(typescript@5.9.3)':
+    dependencies:
+      '@c15t/schema': 3.1.3(typescript@5.9.3)
+      '@c15t/translations': 3.2.2
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/dev-tools@3.2.2(typescript@5.9.3)':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/iab@3.2.2(typescript@5.9.3)':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/schema': 3.1.3(typescript@5.9.3)
+      '@iabtechlabtcf/core': 1.5.22
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/nextjs@3.2.2(typescript@5.9.3)':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/react': 3.2.2(typescript@5.9.3)
+      '@c15t/schema': 3.1.3(typescript@5.9.3)
+      '@c15t/translations': 3.2.2
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/react@3.2.2(typescript@5.9.3)':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/dev-tools': 3.2.2(typescript@5.9.3)
+      '@c15t/iab': 3.2.2(typescript@5.9.3)
+      '@c15t/schema': 3.1.3(typescript@5.9.3)
+      '@c15t/translations': 3.2.2
+      '@c15t/ui': 3.1.2(typescript@5.9.3)
+      '@types/google.maps': 3.65.3
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/schema@3.1.3(typescript@5.9.3)':
+    dependencies:
+      '@c15t/translations': 3.2.2
+      base-x: 5.0.1
+      valibot: 1.4.2(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/svelte@3.2.2(typescript@5.9.3)':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/dev-tools': 3.2.2(typescript@5.9.3)
+      '@c15t/iab': 3.2.2(typescript@5.9.3)
+      '@c15t/schema': 3.1.3(typescript@5.9.3)
+      '@c15t/translations': 3.2.2
+      '@c15t/ui': 3.1.2(typescript@5.9.3)
+      clsx: 2.1.1
+      esm-env: 1.2.2
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/tanstack-start@3.2.2(typescript@5.9.3)':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/react': 3.2.2(typescript@5.9.3)
+      '@c15t/schema': 3.1.3(typescript@5.9.3)
+      '@c15t/translations': 3.2.2
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/translations@3.2.2': {}
+
+  '@c15t/ui@3.1.2(typescript@5.9.3)':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/translations': 3.2.2
+    transitivePeerDependencies:
+      - typescript
+
+  '@c15t/vue@3.2.2(@nuxt/schema@4.6.3)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.3(76a6145bb5c2f8a7d8ec2cc08249e751))(oxc-parser@0.153.0)(rolldown@1.2.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vue@3.5.44(typescript@5.9.3))':
+    dependencies:
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/dev-tools': 3.2.2(typescript@5.9.3)
+      '@c15t/iab': 3.2.2(typescript@5.9.3)
+      '@c15t/schema': 3.1.3(typescript@5.9.3)
+      '@c15t/translations': 3.2.2
+      '@c15t/ui': 3.1.2(typescript@5.9.3)
+      '@nuxt/kit': 4.6.3(@nuxt/schema@4.6.3)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(oxc-parser@0.153.0)(rolldown@1.2.15)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))
+      defu: 6.1.7
+      ufo: 1.6.4
+    optionalDependencies:
+      nuxt: 4.6.3(76a6145bb5c2f8a7d8ec2cc08249e751)
+      vue: 3.5.44(typescript@5.9.3)
+    transitivePeerDependencies:
+      - '@nuxt/schema'
+      - confbox
+      - dotenv
+      - giget
+      - jiti
+      - magic-string
+      - mlly
+      - oxc-parser
+      - rolldown
+      - typescript
+      - unplugin
+
   '@cacheable/memory@2.2.0':
     dependencies:
       '@cacheable/utils': 2.5.0
@@ -9530,6 +9788,8 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
+
+  '@iabtechlabtcf/core@1.5.22': {}
 
   '@img/colour@1.1.0': {}
 
@@ -11397,6 +11657,8 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
+  '@types/google.maps@3.65.3': {}
+
   '@types/hast@3.0.5':
     dependencies:
       '@types/unist': 3.0.3
@@ -12182,6 +12444,8 @@ snapshots:
     dependencies:
       bare-path: 3.1.2
 
+  base-x@5.0.1: {}
+
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.11.34: {}
@@ -12290,6 +12554,39 @@ snapshots:
       rc9: 3.1.0
     optionalDependencies:
       magicast: 0.5.5
+
+  c15t@3.2.2(@nuxt/schema@4.6.3)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.3(76a6145bb5c2f8a7d8ec2cc08249e751))(oxc-parser@0.153.0)(rolldown@1.2.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vue@3.5.44(typescript@5.9.3)):
+    dependencies:
+      '@c15t/astro': 3.2.2(@c15t/react@3.2.2(typescript@5.9.3))(@c15t/vue@3.2.2(@nuxt/schema@4.6.3)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.3(76a6145bb5c2f8a7d8ec2cc08249e751))(oxc-parser@0.153.0)(rolldown@1.2.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vue@3.5.44(typescript@5.9.3)))(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
+      '@c15t/core': 3.2.2(typescript@5.9.3)
+      '@c15t/nextjs': 3.2.2(typescript@5.9.3)
+      '@c15t/react': 3.2.2(typescript@5.9.3)
+      '@c15t/svelte': 3.2.2(typescript@5.9.3)
+      '@c15t/tanstack-start': 3.2.2(typescript@5.9.3)
+      '@c15t/ui': 3.1.2(typescript@5.9.3)
+      '@c15t/vue': 3.2.2(@nuxt/schema@4.6.3)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.3(76a6145bb5c2f8a7d8ec2cc08249e751))(oxc-parser@0.153.0)(rolldown@1.2.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.15)(rollup@4.65.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vue@3.5.44(typescript@5.9.3))
+    transitivePeerDependencies:
+      - '@nuxt/schema'
+      - '@sveltejs/kit'
+      - '@tanstack/react-router'
+      - '@tanstack/react-start'
+      - astro
+      - confbox
+      - dotenv
+      - giget
+      - jiti
+      - magic-string
+      - mlly
+      - next
+      - nuxt
+      - oxc-parser
+      - react
+      - react-dom
+      - rolldown
+      - svelte
+      - typescript
+      - unplugin
+      - vue
 
   cac@7.1.0: {}
 
@@ -13119,6 +13416,8 @@ snapshots:
       jiti: 2.7.0
     transitivePeerDependencies:
       - supports-color
+
+  esm-env@1.2.2: {}
 
   espree@10.4.0:
     dependencies:
@@ -16359,6 +16658,10 @@ snapshots:
       punycode: 2.3.1
 
   util-deprecate@1.0.2: {}
+
+  valibot@1.4.2(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
 
   valibot@1.5.0(typescript@5.9.3):
     optionalDependencies:

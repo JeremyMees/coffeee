@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { buttonVariants } from '@/components/ui/button'
+
 const user = useCurrentUser()
 const deleting = ref(false)
 const tab = useTab(['account', 'notifications', 'danger'])
@@ -50,14 +52,14 @@ useHead({ title: 'Profile · Coffeee' })
         </dl>
         <ProfileName class="mt-8" />
         <ProfileStats class="mt-12" />
-        <Button
-          class="mt-12"
-          variant="outline"
-          data-testid="sign-out"
-          @click="signOut"
-        >
-          Sign out
-        </Button>
+        <div class="mt-12 flex flex-wrap gap-3">
+          <Button variant="outline" data-testid="sign-out" @click="signOut">
+            Sign out
+          </Button>
+          <ConsentDialogLink :class="buttonVariants({ variant: 'outline' })">
+            Privacy settings
+          </ConsentDialogLink>
+        </div>
       </TabsContent>
       <TabsContent value="notifications" class="mt-6">
         <ProfileNotificationEmails />

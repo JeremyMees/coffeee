@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ShieldIcon } from '@lucide/vue'
+import { CookieIcon, ShieldIcon } from '@lucide/vue'
 
 const destinations = useDestinations()
 const user = useCurrentUser()
@@ -57,6 +57,12 @@ const links = computed(() =>
     <div class="mt-auto flex flex-col gap-1 px-3 pb-3">
       <NotificationsLink labelled />
       <AppShortcuts />
+      <ConsentDialogLink
+        class="flex w-full items-center gap-3 rounded-full px-4 py-2.5 text-[13px] uppercase hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        <CookieIcon class="size-4" aria-hidden="true" />
+        Privacy settings
+      </ConsentDialogLink>
     </div>
     <div class="border-t p-3">
       <ShelfSwitcher

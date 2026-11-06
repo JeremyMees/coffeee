@@ -63,6 +63,8 @@ jobs:
             --env NUXT_PLUNK_API_KEY=${{ secrets.PLUNK_API_KEY }}
             --env NUXT_EMAIL_FROM=hello@coffeee.app
             --env NUXT_PRODUCTION_URL=https://www.coffeee.app
+            --env NUXT_PUBLIC_C15T_BACKEND_URL=${{ vars.C15T_BACKEND_URL }}
+            --build-env NUXT_PUBLIC_C15T_BACKEND_URL=${{ vars.C15T_BACKEND_URL }}
             --meta prNumber=${{ github.event.number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check health

@@ -3,6 +3,9 @@ name: Validate
 on:
   workflow_call:
 
+env:
+  NUXT_PUBLIC_C15T_BACKEND_URL: ${{ vars.C15T_BACKEND_URL }}
+
 jobs:
   linting:
     name: Linting
