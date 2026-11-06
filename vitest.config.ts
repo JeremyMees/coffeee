@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import { defineVitestProject } from '@nuxt/test-utils/config'
+import { local } from 'c15t/vue'
 import { nuxtAutoImports } from './test/support/auto-imports.ts'
 
 const ignoredLogs = [/^<Suspense>/]
@@ -42,6 +43,22 @@ export default defineConfig({
             nuxt: {
               rootDir: fileURLToPath(new URL('.', import.meta.url)),
               domEnvironment: 'happy-dom',
+              overrides: {
+                c15t: {
+                  mode: local({
+                    policyRules: [
+                      {
+                        id: 'test',
+                        match: { isDefault: true },
+                        model: 'none',
+                        prompt: 'none',
+                        rights: ['disclosure', 'preferences'],
+                      },
+                    ],
+                  }),
+                  colorScheme: 'light',
+                },
+              },
             },
           },
         },
