@@ -41,7 +41,9 @@ vi.mock('#server/utils/email', async importOriginal => {
 })
 
 afterEach(async () => {
-  const { settleRequests } = await import('#test/nuxt/server')
+  const { releaseHeldRequests, settleRequests } =
+    await import('#test/nuxt/server')
+  releaseHeldRequests()
   await settleRequests()
 })
 

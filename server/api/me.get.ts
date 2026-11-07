@@ -4,7 +4,7 @@ import { requireUser } from '#server/utils/session'
 import { listShelves } from '#server/utils/shelves'
 
 export default defineEventHandler(async event => {
-  const user = await requireUser(event)
+  const user = await requireUser(event, { fresh: true })
 
   return {
     id: user.id,

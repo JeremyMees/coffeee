@@ -7,6 +7,7 @@ export function useStock(shelfId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => queryKeys.stock(toValue(shelfId))),
     queryFn: () => request(`/api/shelves/${toValue(shelfId)}/stock`),
+    enabled: import.meta.client,
   })
 }
 

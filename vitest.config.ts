@@ -52,6 +52,7 @@ export default defineConfig({
       include: ['app/**/*.{ts,vue}', 'server/**/*.ts', 'shared/**/*.ts'],
       exclude: [
         'app/components/ui/**',
+        'app/components/skeletons/**',
         'app/assets/**',
         'app/emails/**',
         'server/utils/db.ts',

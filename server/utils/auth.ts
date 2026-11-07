@@ -72,6 +72,7 @@ export function createAuth(config: AuthConfig) {
         })
       },
     },
+    session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
     socialProviders: { google: config.google },
     databaseHooks: {
       user: {

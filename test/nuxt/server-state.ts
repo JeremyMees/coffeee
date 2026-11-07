@@ -8,4 +8,10 @@ export const server = {
   outbox: [] as Email[],
   failures: [] as (() => void)[],
   inFlight: new Set<Promise<unknown>>(),
+  holds: [] as {
+    method: string
+    path: string
+    gate: Promise<void>
+    release: () => void
+  }[],
 }

@@ -61,8 +61,12 @@ function routes() {
   return router
 }
 
+function pathOf(event: H3Event) {
+  return event.path.replace(/^\/_/, '').replace(/[?#].*$/, '')
+}
+
 function registeredFor(window: TestWindow, event: H3Event) {
-  const path = event.path.replace(/^\/_/, '').replace(/[?#].*$/, '')
+  const path = pathOf(event)
   const registered = window.__app._registeredEndpointRegistry?.[path] ?? []
 
   return registered.some(
@@ -80,6 +84,10 @@ function installRoutes() {
     .use(
       eventHandler(async event => {
         await database()
+        const held = server.holds.find(
+          hold => hold.method === event.method && hold.path === pathOf(event),
+        )
+        if (held) await held.gate
         if (server.cookie) event.headers.set('cookie', server.cookie)
       }),
     )
@@ -105,8 +113,24 @@ export async function signIn(member: Member) {
   useCurrentUser().value = await $fetch('/api/me')
 }
 
+type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
+
+export function holdRequest(method: Method, path: string) {
+  let release!: () => void
+  const gate = new Promise<void>(resolve => {
+    release = resolve
+  })
+  server.holds.push({ method, path, gate, release })
+
+  return { release }
+}
+
+export function releaseHeldRequests() {
+  server.holds.splice(0).forEach(hold => hold.release())
+}
+
 export function failRequest(
-  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  method: Method,
   path: string,
   failure: {
     status: number
@@ -114,18 +138,25 @@ export function failRequest(
     errors?: Record<string, string>
   },
 ) {
-  server.failures.push(
-    registerEndpoint(path, {
-      method,
-      handler: () => {
-        throw createError({
-          statusCode: failure.status,
-          statusMessage: failure.message,
-          data: failure.errors && { errors: failure.errors },
-        })
-      },
-    }),
-  )
+  let lifted = false
+  const unregister = registerEndpoint(path, {
+    method,
+    handler: () => {
+      throw createError({
+        statusCode: failure.status,
+        statusMessage: failure.message,
+        data: failure.errors && { errors: failure.errors },
+      })
+    },
+  })
+  const lift = () => {
+    if (lifted) return
+    lifted = true
+    unregister()
+  }
+  server.failures.push(lift)
+
+  return lift
 }
 
 export async function settleRequests() {

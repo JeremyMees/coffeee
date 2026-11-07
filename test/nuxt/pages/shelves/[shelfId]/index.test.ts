@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { onlineManager } from '@tanstack/vue-query'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { shelfCoffeePath, shelfPath, useAddCoffee } from '#imports'
 import type { Member } from '#test/support/types'
 import { daysAgo, forgetLastShelf, tid } from '../../../fixtures'
-import { scenario, signIn } from '../../../server'
+import { failRequest, holdRequest, scenario, signIn } from '../../../server'
 
 let sarah: Member
 
@@ -14,6 +15,12 @@ beforeEach(async () => {
   sarah = await scenario.member('Sarah')
   await signIn(sarah)
 })
+
+afterEach(() => onlineManager.setOnline(true))
+
+function stockPath() {
+  return `/api/shelves/${sarah.shelf.id}/stock`
+}
 
 function stock() {
   return mountSuspended(App, { route: shelfPath(sarah.shelf) })
@@ -36,6 +43,9 @@ describe('the Stock page', () => {
     await scenario.verdict(sarah, ayele.id, { rating: 4 })
 
     const page = await stock()
+    await vi.waitFor(() =>
+      expect(page.find(tid('stock', 'coffee-card')).exists()).toBe(true),
+    )
     const card = page.get(tid('stock', 'coffee-card'))
 
     expect(card.attributes('href')).toBe(shelfCoffeePath(sarah.shelf, ayele))
@@ -50,6 +60,9 @@ describe('the Stock page', () => {
 
   it('invites adding a coffee when nothing is in stock', async () => {
     const page = await stock()
+    await vi.waitFor(() =>
+      expect(page.find(tid('stock-empty')).exists()).toBe(true),
+    )
 
     await page.get(tid('stock-empty-add-coffee')).trigger('click')
 
@@ -57,5 +70,58 @@ describe('the Stock page', () => {
       'Nothing in stock yet',
     )
     expect(useAddCoffee().value).toBe(true)
+  })
+
+  it('shows the page and a skeleton while the coffees load', async () => {
+    await scenario.coffee(sarah.shelf)
+    const hold = holdRequest('GET', stockPath())
+
+    const page = await stock()
+
+    expect(page.get(tid('page-title')).text()).toBe('Stock')
+    expect(page.find(tid('stock-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('stock')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() => expect(page.find(tid('stock')).exists()).toBe(true))
+    expect(page.find(tid('stock-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error with a retry when the coffees fail to load', async () => {
+    await scenario.coffee(sarah.shelf)
+    const lift = failRequest('GET', stockPath(), {
+      status: 403,
+      message: 'Nope',
+    })
+
+    const page = await stock()
+    await vi.waitFor(() =>
+      expect(page.find(tid('stock-error')).exists()).toBe(true),
+    )
+    expect(page.get(tid('page-title')).text()).toBe('Stock')
+    expect(page.find(tid('stock-skeleton')).exists()).toBe(false)
+
+    lift()
+    await page.get(tid('stock-retry')).trigger('click')
+
+    await vi.waitFor(() => expect(page.find(tid('stock')).exists()).toBe(true))
+    expect(page.find(tid('stock-error')).exists()).toBe(false)
+  })
+
+  it('says it is offline instead of showing a skeleton forever', async () => {
+    await scenario.coffee(sarah.shelf)
+    onlineManager.setOnline(false)
+
+    const page = await stock()
+
+    expect(page.find(tid('stock-offline')).exists()).toBe(true)
+    expect(page.find(tid('stock-skeleton')).exists()).toBe(false)
+
+    onlineManager.setOnline(true)
+    await page.get(tid('stock-retry')).trigger('click')
+
+    await vi.waitFor(() => expect(page.find(tid('stock')).exists()).toBe(true))
+    expect(page.find(tid('stock-offline')).exists()).toBe(false)
   })
 })

@@ -1,4 +1,4 @@
-import { createError, getRouterParam } from 'h3'
+import { appendResponseHeader, createError, getRouterParam } from 'h3'
 import type { H3Event } from 'h3'
 import { isAdminList } from '#shared/utils/admin'
 import { useAuth } from '#server/utils/auth'
@@ -7,8 +7,19 @@ import { useDb } from '#server/utils/db'
 import { findEditableRoaster } from '#server/utils/roasters'
 import { findShelf } from '#server/utils/shelves'
 
-export async function requireUser(event: H3Event) {
-  const session = await useAuth().api.getSession({ headers: event.headers })
+export async function requireUser(
+  event: H3Event,
+  options: { fresh?: boolean } = {},
+) {
+  const { headers, response: session } = await useAuth().api.getSession({
+    headers: event.headers,
+    query: options.fresh ? { disableCookieCache: true } : undefined,
+    returnHeaders: true,
+  })
+
+  for (const cookie of headers.getSetCookie()) {
+    appendResponseHeader(event, 'set-cookie', cookie)
+  }
 
   if (!session) {
     throw createError({ statusCode: 401, statusMessage: 'Sign in first' })

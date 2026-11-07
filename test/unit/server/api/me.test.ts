@@ -7,7 +7,7 @@ import meHandler from '#server/api/me.get'
 import patchHandler from '#server/api/me.patch'
 import ownedShelvesHandler from '#server/api/me/owned-shelves.get'
 import statsHandler from '#server/api/me/stats.get'
-import { shelf, shelfMember, user } from '#server/db/schemas'
+import { session, shelf, shelfMember, user } from '#server/db/schemas'
 import { createShelf } from '#server/utils/shelves'
 import { createTestAuth } from '#test/support/auth'
 import type { TestAuth, TestDatabase } from '#test/support/types'
@@ -71,6 +71,29 @@ describe('GET /api/me', () => {
     })
   })
 
+  it('shows a new name straight away although sessions are cached', async () => {
+    const sarah = await createTestUser(db, { name: 'Sarah' })
+    const headers = await testAuth.signIn(sarah.id)
+
+    await request('/api/me', { headers })
+    await db
+      .update(user)
+      .set({ name: 'Sarah Mees' })
+      .where(eq(user.id, sarah.id))
+    const response = await request('/api/me', { headers })
+
+    expect(await response.json()).toMatchObject({ name: 'Sarah Mees' })
+  })
+
+  it('hands out a refreshed session cookie', async () => {
+    const sarah = await createTestUser(db)
+    const headers = await testAuth.signIn(sarah.id)
+
+    const response = await request('/api/me', { headers })
+
+    expect(response.headers.getSetCookie().join(';')).toContain('session_data')
+  })
+
   it('refuses requests after signing out', async () => {
     const user = await createTestUser(db)
     const headers = await testAuth.signIn(user.id)
@@ -84,6 +107,26 @@ describe('GET /api/me', () => {
 
     expect(signOut.status).toBe(200)
     expect(response.status).toBe(401)
+  })
+})
+
+describe('the session cache', () => {
+  it('keeps other requests working without looking the session up again', async () => {
+    const sarah = await createTestUser(db)
+    const headers = await testAuth.signIn(sarah.id)
+    const first = await request('/api/me', { headers })
+    const cookies = [
+      headers.get('cookie'),
+      ...first.headers.getSetCookie().map(cookie => cookie.split(';')[0]),
+    ]
+    headers.set('cookie', cookies.join('; '))
+    await db.delete(session)
+
+    const cached = await request('/api/me/owned-shelves', { headers })
+    const fresh = await request('/api/me', { headers })
+
+    expect(cached.status).toBe(200)
+    expect(fresh.status).toBe(401)
   })
 })
 

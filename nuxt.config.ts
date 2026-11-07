@@ -75,6 +75,7 @@ export default defineNuxtConfig({
 
   components: [
     { path: '~/components/form', pathPrefix: false },
+    { path: '~/components/skeletons', pathPrefix: false },
     '~/components',
   ],
 
