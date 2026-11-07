@@ -4,7 +4,7 @@ import { coffeeVerdict, shelfMember } from '#server/db/schemas'
 import {
   addCoffee,
   findCoffee,
-  findShelfCoffee,
+  findCoffeeReviews,
   listStock,
 } from '#server/utils/coffees'
 import { createShelf } from '#server/utils/shelves'
@@ -161,9 +161,10 @@ describe('judging a coffee', () => {
     expect(
       (await listStock(db, { shelfId: home.id, userId: tom.id }))[0],
     ).toMatchObject({ rating: 1 })
-    expect(
-      await findShelfCoffee(db, { shelfId: home.id, coffeeId, viewer: tom }),
-    ).toMatchObject({ rating: 1, wouldBuyAgain: false })
+    expect(await findVerdict(db, { userId: tom.id, coffeeId })).toMatchObject({
+      rating: 1,
+      wouldBuyAgain: false,
+    })
   })
 })
 
@@ -262,13 +263,13 @@ describe('the reviews', () => {
   })
 
   it('shows them on the coffee to anyone, also off the shelf', async () => {
-    const { db, home, tom, coffeeId, judge } = await setup()
+    const { db, tom, coffeeId, judge } = await setup()
     const ana = await createTestUser(db, { name: 'Ana' })
 
     await judge(tom.id, { rating: 2 })
 
     expect(
-      await findShelfCoffee(db, { shelfId: home.id, coffeeId, viewer: tom }),
+      await findCoffeeReviews(db, { coffeeId, viewer: tom }),
     ).toMatchObject({
       communityRating: { average: 2, raters: 1, wouldBuyAgain: 0 },
       reviews: [{ name: 'Tom', rating: 2, mine: true }],

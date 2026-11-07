@@ -2,6 +2,7 @@ import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import finishCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/finish.post'
+import listPurchasesHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/purchases/index.get'
 import deletePurchaseHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/purchases/[purchaseId].delete'
 import editPurchaseHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/purchases/[purchaseId].patch'
 import finishPurchaseHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/purchases/[purchaseId]/finish.post'
@@ -46,6 +47,7 @@ function request(path: string, init: RequestInit = {}) {
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get(coffeePath, showCoffeeHandler)
     .post(`${coffeePath}/finish`, finishCoffeeHandler)
+    .get(`${coffeePath}/purchases`, listPurchasesHandler)
     .post(`${coffeePath}/purchases`, buyAgainHandler)
     .patch(purchasePath, editPurchaseHandler)
     .delete(purchasePath, deletePurchaseHandler)
@@ -93,9 +95,9 @@ async function shelfWithCoffee() {
 }
 
 async function purchasesAt(path: string, headers: Headers) {
-  const response = await request(path, { headers })
+  const response = await request(`${path}/purchases`, { headers })
 
-  return (await response.json()).purchases
+  return response.json()
 }
 
 async function stockOf(shelfId: string, headers: Headers) {
@@ -111,6 +113,39 @@ async function stranger() {
 
   return headers
 }
+
+describe('GET /api/shelves/:shelfId/coffees/:coffeeId/purchases', () => {
+  it('lists the bags of this shelf, newest first', async () => {
+    const { path, headers } = await shelfWithCoffee()
+    await request(`${path}/purchases`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...bag, purchasedOn: '2026-12-01' }),
+    })
+
+    const purchases = await purchasesAt(path, headers)
+
+    expect(
+      purchases.map((found: { purchasedOn: string }) => found.purchasedOn),
+    ).toEqual(['2026-12-01', '2026-09-01'])
+  })
+
+  it('refuses anyone off the shelf', async () => {
+    const { path } = await shelfWithCoffee()
+
+    const response = await request(`${path}/purchases`, {
+      headers: await stranger(),
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('asks to sign in first', async () => {
+    const { path } = await shelfWithCoffee()
+
+    expect((await request(`${path}/purchases`)).status).toBe(401)
+  })
+})
 
 describe('POST /api/shelves/:shelfId/coffees/:coffeeId/purchases', () => {
   it('adds another purchase of the same coffee', async () => {

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
 export function useStock(shelfId: MaybeRefOrGetter<string>) {
@@ -23,6 +23,79 @@ export function useShelfCoffee(
     ),
     queryFn: () =>
       request(`/api/shelves/${toValue(shelfId)}/coffees/${toValue(coffeeId)}`),
+    enabled: import.meta.client,
+  })
+}
+
+export function useCoffeeVerdict(coffeeId: MaybeRefOrGetter<string>) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: computed(() => queryKeys.coffeeVerdict(toValue(coffeeId))),
+    queryFn: () => request(`/api/coffees/${toValue(coffeeId)}/verdict`),
+    enabled: import.meta.client,
+  })
+}
+
+export function useCoffeeReviews(coffeeId: MaybeRefOrGetter<string>) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: computed(() => queryKeys.coffeeReviews(toValue(coffeeId))),
+    queryFn: () => request(`/api/coffees/${toValue(coffeeId)}/reviews`),
+    enabled: import.meta.client,
+  })
+}
+
+export function useCoffeeRoaster(coffeeId: MaybeRefOrGetter<string>) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: computed(() => queryKeys.coffeeRoaster(toValue(coffeeId))),
+    queryFn: () => request(`/api/coffees/${toValue(coffeeId)}/roaster`),
+    enabled: import.meta.client,
+  })
+}
+
+function previewRows(data: unknown): CoffeePreview[] {
+  if (Array.isArray(data)) return data
+  const found = (data ?? {}) as {
+    pages?: { coffees: CoffeePreview[] }[]
+    coffees?: CoffeePreview[]
+  }
+
+  return found.pages?.flatMap(page => page.coffees) ?? found.coffees ?? []
+}
+
+export function useCoffeePreview(
+  shelfId: MaybeRefOrGetter<string>,
+  coffeeId: MaybeRefOrGetter<string>,
+) {
+  const queryClient = useQueryClient()
+
+  return computed(() => {
+    const shelf = queryKeys.shelf(toValue(shelfId))
+    const lists = [
+      queryKeys.stock(toValue(shelfId)),
+      [...shelf, 'library'],
+      [...shelf, 'catalog'],
+    ]
+
+    for (const queryKey of lists) {
+      for (const [, data] of queryClient.getQueriesData({ queryKey })) {
+        const found = previewRows(data).find(
+          coffee => coffee.id === toValue(coffeeId),
+        )
+
+        if (found) {
+          const { id, name, roaster, photoUrl } = found
+
+          return { id, name, roaster, photoUrl }
+        }
+      }
+    }
+
+    return undefined
   })
 }
 

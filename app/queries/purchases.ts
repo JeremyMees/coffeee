@@ -1,4 +1,5 @@
-import { useMutation } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
+import type { MaybeRefOrGetter } from 'vue'
 
 function usePurchaseSaved() {
   const changed = useChanged()
@@ -17,6 +18,24 @@ function purchasePath(input: {
   purchaseId: string
 }) {
   return `${coffeePath(input)}/purchases/${input.purchaseId}`
+}
+
+export function useShelfPurchases(
+  shelfId: MaybeRefOrGetter<string>,
+  coffeeId: MaybeRefOrGetter<string>,
+) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: computed(() =>
+      queryKeys.shelfCoffeePurchases(toValue(shelfId), toValue(coffeeId)),
+    ),
+    queryFn: () =>
+      request(
+        `/api/shelves/${toValue(shelfId)}/coffees/${toValue(coffeeId)}/purchases`,
+      ),
+    enabled: import.meta.client,
+  })
 }
 
 export function useBuyAgain() {

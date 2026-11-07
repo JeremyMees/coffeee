@@ -1,15 +1,5 @@
 <script setup lang="ts" generic="Data">
-import type { Ref } from 'vue'
-
-defineProps<{
-  query: {
-    data: Readonly<Ref<Data | undefined>>
-    isError: Readonly<Ref<boolean>>
-    fetchStatus: Readonly<Ref<'fetching' | 'paused' | 'idle'>>
-    refetch: () => unknown
-  }
-  testid: string
-}>()
+defineProps<{ query: QueryState<Data>; testid: string }>()
 </script>
 
 <template>

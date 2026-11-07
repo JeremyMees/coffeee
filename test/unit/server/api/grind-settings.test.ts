@@ -2,6 +2,7 @@ import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { shelfMember } from '#server/db/schemas'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
+import listGrindSettingsHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/grind-settings.get'
 import grindSettingsHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/grind-settings.put'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
@@ -43,6 +44,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/stock', stockHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get(coffeePath, showCoffeeHandler)
+    .get(`${coffeePath}/grind-settings`, listGrindSettingsHandler)
     .put(`${coffeePath}/grind-settings`, grindSettingsHandler)
   const app = createApp().use(router)
 
@@ -100,6 +102,12 @@ function grind(path: string, headers: Headers, change: unknown) {
   })
 }
 
+async function grindSettingsAt(path: string, headers: Headers) {
+  const response = await request(`${path}/grind-settings`, { headers })
+
+  return response.json()
+}
+
 describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
   it('remembers a grind setting for the signed-in user', async () => {
     const { sarah, path, setting } = await sharedShelf()
@@ -116,7 +124,7 @@ describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
     await grind(path, sarah, { ...setting, setting: '12' })
     await grind(path, tom, { ...setting, setting: '10' })
 
-    const asSarah = await (await request(path, { headers: sarah })).json()
+    const asSarah = await grindSettingsAt(path, sarah)
 
     expect(asSarah.grindSettings).toEqual([
       {
@@ -144,7 +152,7 @@ describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
     await grind(path, tom, { ...setting, setting: '10' })
     await grind(path, tom, { ...setting, setting: '' })
 
-    const asSarah = await (await request(path, { headers: sarah })).json()
+    const asSarah = await grindSettingsAt(path, sarah)
 
     expect(
       asSarah.grindSettings.map((saved: { setting: string }) => saved.setting),
@@ -159,7 +167,7 @@ describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
     const response = await grind(path, sarah, { ...setting, setting: '' })
 
     expect(await response.json()).toEqual({ ...setting, setting: null })
-    const coffee = await (await request(path, { headers: sarah })).json()
+    const coffee = await grindSettingsAt(path, sarah)
     expect(coffee.grindSettings).toEqual([])
   })
 
@@ -180,8 +188,12 @@ describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
     const outsider = await signedIn((await createTestUser(db)).id)
 
     const response = await grind(path, outsider, { ...setting, setting: '1' })
+    const listed = await request(`${path}/grind-settings`, {
+      headers: outsider,
+    })
 
     expect(response.status).toBe(404)
+    expect(listed.status).toBe(404)
   })
 
   it('refuses a grinder the shelf does not own', async () => {
@@ -211,6 +223,14 @@ describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
     expect((await response.json()).data.errors).toEqual({
       setting: 'Keep the setting to 30 characters or fewer',
     })
+  })
+
+  it('asks to sign in before showing them', async () => {
+    const { path } = await sharedShelf()
+
+    const response = await request(`${path}/grind-settings`)
+
+    expect(response.status).toBe(401)
   })
 
   it('asks to sign in first', async () => {

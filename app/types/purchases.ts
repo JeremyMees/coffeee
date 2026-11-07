@@ -1,1 +1,4 @@
-export type ShelfPurchase = ShelfCoffee['purchases'][number]
+import type { InternalApi } from 'nitropack/types'
+
+export type ShelfPurchase =
+  InternalApi['/api/shelves/:shelfId/coffees/:coffeeId/purchases']['get'][number]

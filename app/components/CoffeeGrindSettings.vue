@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { useBrewMethods } from '~/queries/brew-methods'
 import { useShelfGrinders } from '~/queries/grinders'
-import { useGrindSettingSave } from '~/queries/grind-settings'
+import {
+  useGrindSettingSave,
+  useShelfGrindSettings,
+} from '~/queries/grind-settings'
 
-const props = defineProps<{
-  shelfId: string
-  coffeeId: string
-  grindSettings: OwnGrindSetting[]
-}>()
+const props = defineProps<{ shelfId: string; coffeeId: string }>()
 
 const user = useCurrentUser()
 const settingsLink = computed(() => {
@@ -15,10 +14,24 @@ const settingsLink = computed(() => {
 
   return `${shelf ? shelfPath(shelf) : `/shelves/${props.shelfId}`}/settings?tab=grinders`
 })
+const settingsQuery = useShelfGrindSettings(
+  () => props.shelfId,
+  () => props.coffeeId,
+)
 const grinderQuery = useShelfGrinders(() => props.shelfId)
 const brewMethodQuery = useBrewMethods()
-await Promise.all([grinderQuery.suspense(), brewMethodQuery.suspense()])
+const loading = combineQueries({
+  settings: settingsQuery,
+  grinders: grinderQuery,
+  brewMethods: brewMethodQuery,
+})
 
+const grindSettings = computed(
+  () => settingsQuery.data.value?.grindSettings ?? [],
+)
+const otherGrindSettings = computed(
+  () => settingsQuery.data.value?.otherGrindSettings ?? [],
+)
 const grinders = computed(() => grinderQuery.data.value ?? [])
 const brewMethods = computed(() => brewMethodQuery.data.value ?? [])
 
@@ -51,13 +64,13 @@ watch(
 )
 
 function settingFor(grinder: string, brewMethod: string) {
-  return props.grindSettings.find(
+  return grindSettings.value.find(
     saved => saved.grinderId === grinder && saved.brewMethodId === brewMethod,
   )?.setting
 }
 
 watch(
-  [grinderId, brewMethodId, () => props.grindSettings],
+  [grinderId, brewMethodId, grindSettings],
   () => {
     setting.value = settingFor(grinderId.value, brewMethodId.value) ?? ''
   },
@@ -106,139 +119,149 @@ const action =
 <template>
   <section class="mt-10" data-testid="grind-settings">
     <h2 class="text-[28px]">Grind settings</h2>
-    <p
-      v-if="!grinders.length"
-      class="mt-3 text-xs"
-      data-testid="grind-no-grinders"
-    >
-      This shelf owns no grinders yet.
-      <NuxtLink
-        :to="settingsLink"
-        data-testid="grind-add-grinder"
-        class="underline underline-offset-4"
-      >
-        Add a grinder
-      </NuxtLink>
-    </p>
-    <template v-else>
-      <p
-        v-if="!grindSettings.length"
-        class="mt-3 text-xs"
-        data-testid="grind-settings-empty"
-      >
-        You have no grind settings for this coffee yet.
-      </p>
-      <ul
-        v-else
-        class="mt-4 divide-y rounded-[18px] border text-xs"
-        data-testid="grind-settings-list"
-      >
-        <li
-          v-for="saved in grindSettings"
-          :key="`${saved.grinderId}:${saved.brewMethodId}`"
-          data-testid="grind-setting"
-          class="flex flex-wrap items-center justify-between gap-3 p-4"
+    <QuerySection :query="loading" testid="grind-settings">
+      <template #default>
+        <p
+          v-if="!grinders.length"
+          class="mt-3 text-xs"
+          data-testid="grind-no-grinders"
         >
-          <span data-testid="grind-setting-for">
-            {{ grinderName(saved) }} · {{ saved.brewMethod }}
-          </span>
-          <span class="flex items-center gap-2">
-            <strong
-              class="font-sans text-sm font-semibold"
-              data-testid="grind-setting-value"
+          This shelf owns no grinders yet.
+          <NuxtLink
+            :to="settingsLink"
+            data-testid="grind-add-grinder"
+            class="underline underline-offset-4"
+          >
+            Add a grinder
+          </NuxtLink>
+        </p>
+        <template v-else>
+          <p
+            v-if="!grindSettings.length"
+            class="mt-3 text-xs"
+            data-testid="grind-settings-empty"
+          >
+            You have no grind settings for this coffee yet.
+          </p>
+          <ul
+            v-else
+            class="mt-4 divide-y rounded-[18px] border text-xs"
+            data-testid="grind-settings-list"
+          >
+            <li
+              v-for="saved in grindSettings"
+              :key="`${saved.grinderId}:${saved.brewMethodId}`"
+              data-testid="grind-setting"
+              class="flex flex-wrap items-center justify-between gap-3 p-4"
             >
-              {{ saved.setting }}
-            </strong>
+              <span data-testid="grind-setting-for">
+                {{ grinderName(saved) }} · {{ saved.brewMethod }}
+              </span>
+              <span class="flex items-center gap-2">
+                <strong
+                  class="font-sans text-sm font-semibold"
+                  data-testid="grind-setting-value"
+                >
+                  {{ saved.setting }}
+                </strong>
+                <button
+                  type="button"
+                  data-testid="grind-setting-edit"
+                  :class="action"
+                  @click="edit(saved)"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  data-testid="grind-setting-clear"
+                  :class="action"
+                  :disabled="saving"
+                  @click="clear(saved)"
+                >
+                  Clear
+                </button>
+              </span>
+            </li>
+          </ul>
+          <form
+            class="mt-4 grid gap-3 text-xs sm:grid-cols-[1fr_1fr_8rem_auto] sm:items-end"
+            novalidate
+            data-testid="grind-setting-form"
+            @submit.prevent="submit"
+          >
+            <Field>
+              <FieldLabel for="grind-grinder" class="text-xs"
+                >Grinder</FieldLabel
+              >
+              <NativeSelect
+                id="grind-grinder"
+                v-model="grinderId"
+                class="w-full"
+                data-testid="grind-grinder"
+              >
+                <NativeSelectOption
+                  v-for="grinder in grinders"
+                  :key="grinder.id"
+                  :value="grinder.id"
+                >
+                  {{ grinderName(grinder) }}
+                </NativeSelectOption>
+              </NativeSelect>
+            </Field>
+            <Field>
+              <FieldLabel for="grind-brew-method" class="text-xs">
+                Brew method
+              </FieldLabel>
+              <NativeSelect
+                id="grind-brew-method"
+                v-model="brewMethodId"
+                class="w-full"
+                data-testid="grind-brew-method"
+              >
+                <NativeSelectOption
+                  v-for="method in brewMethods"
+                  :key="method.id"
+                  :value="method.id"
+                >
+                  {{ method.name }}
+                </NativeSelectOption>
+              </NativeSelect>
+            </Field>
+            <Field>
+              <FieldLabel for="grind-setting" class="text-xs"
+                >Setting</FieldLabel
+              >
+              <Input
+                id="grind-setting"
+                v-model="setting"
+                data-testid="grind-setting-input"
+                autocomplete="off"
+                maxlength="30"
+                placeholder="12"
+              />
+            </Field>
             <button
-              type="button"
-              data-testid="grind-setting-edit"
-              :class="action"
-              @click="edit(saved)"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              data-testid="grind-setting-clear"
-              :class="action"
+              type="submit"
+              data-testid="grind-setting-save"
+              :class="[action, 'h-8 border-primary']"
               :disabled="saving"
-              @click="clear(saved)"
             >
-              Clear
+              Save
             </button>
-          </span>
-        </li>
-      </ul>
-      <form
-        class="mt-4 grid gap-3 text-xs sm:grid-cols-[1fr_1fr_8rem_auto] sm:items-end"
-        novalidate
-        data-testid="grind-setting-form"
-        @submit.prevent="submit"
-      >
-        <Field>
-          <FieldLabel for="grind-grinder" class="text-xs">Grinder</FieldLabel>
-          <NativeSelect
-            id="grind-grinder"
-            v-model="grinderId"
-            class="w-full"
-            data-testid="grind-grinder"
+          </form>
+          <Alert
+            v-if="error"
+            variant="destructive"
+            class="mt-4"
+            data-testid="grind-setting-error"
           >
-            <NativeSelectOption
-              v-for="grinder in grinders"
-              :key="grinder.id"
-              :value="grinder.id"
-            >
-              {{ grinderName(grinder) }}
-            </NativeSelectOption>
-          </NativeSelect>
-        </Field>
-        <Field>
-          <FieldLabel for="grind-brew-method" class="text-xs">
-            Brew method
-          </FieldLabel>
-          <NativeSelect
-            id="grind-brew-method"
-            v-model="brewMethodId"
-            class="w-full"
-            data-testid="grind-brew-method"
-          >
-            <NativeSelectOption
-              v-for="method in brewMethods"
-              :key="method.id"
-              :value="method.id"
-            >
-              {{ method.name }}
-            </NativeSelectOption>
-          </NativeSelect>
-        </Field>
-        <Field>
-          <FieldLabel for="grind-setting" class="text-xs">Setting</FieldLabel>
-          <Input
-            id="grind-setting"
-            v-model="setting"
-            data-testid="grind-setting-input"
-            autocomplete="off"
-            maxlength="30"
-            placeholder="12"
-          />
-        </Field>
-        <button
-          type="submit"
-          data-testid="grind-setting-save"
-          :class="[action, 'h-8 border-primary']"
-          :disabled="saving"
-        >
-          Save
-        </button>
-      </form>
-      <Alert
-        v-if="error"
-        variant="destructive"
-        class="mt-4"
-        data-testid="grind-setting-error"
-      >
-        <AlertDescription>{{ error }}</AlertDescription>
-      </Alert>
-    </template>
+            <AlertDescription>{{ error }}</AlertDescription>
+          </Alert>
+        </template>
+        <OtherGrindSettings :settings="otherGrindSettings" />
+      </template>
+      <template #skeleton><CoffeeGrindSettingsSkeleton /></template>
+    </QuerySection>
   </section>
 </template>

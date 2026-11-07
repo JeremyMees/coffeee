@@ -8,6 +8,7 @@ import showRoasterHandler from '#server/api/roasters/[roasterId].get'
 import roastersHandler from '#server/api/shelves/[shelfId]/roasters/index.get'
 import removeLogoHandler from '#server/api/roasters/[roasterId]/logo.delete'
 import replaceLogoHandler from '#server/api/roasters/[roasterId]/logo.put'
+import coffeeRoasterHandler from '#server/api/coffees/[coffeeId]/roaster.get'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import { createShelf } from '#server/utils/shelves'
@@ -43,6 +44,7 @@ function request(path: string, init: RequestInit = {}) {
   const router = createRouter()
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
+    .get('/api/coffees/:coffeeId/roaster', coffeeRoasterHandler)
     .get('/api/shelves/:shelfId/roasters', roastersHandler)
     .get('/api/roasters/:roasterId', showRoasterHandler)
     .patch('/api/roasters/:roasterId', editRoasterHandler)
@@ -84,7 +86,9 @@ async function sharedShelf() {
   const { coffee } = await added.json()
   const coffeePath = `/api/shelves/${shelf.id}/coffees/${coffee.id}`
   const shown = await (
-    await request(coffeePath, { headers: sarahHeaders })
+    await request(`/api/coffees/${coffee.id}/roaster`, {
+      headers: sarahHeaders,
+    })
   ).json()
 
   return {
@@ -93,7 +97,8 @@ async function sharedShelf() {
     tom: await signedIn(tom.id),
     admin: await signedIn(admin.id),
     coffeePath,
-    roasterPath: `/api/roasters/${shown.roasterDetails.id}`,
+    coffeeId: coffee.id as string,
+    roasterPath: `/api/roasters/${shown.id}`,
   }
 }
 
@@ -144,8 +149,12 @@ async function uploadLogo(
   return request(`${path}/logo`, { method: 'PUT', headers: multipart, body })
 }
 
-async function roasterOn(coffeePath: string, headers: Headers) {
-  return (await (await request(coffeePath, { headers })).json()).roasterDetails
+async function roasterOn(coffeeId: string, headers: Headers) {
+  const response = await request(`/api/coffees/${coffeeId}/roaster`, {
+    headers,
+  })
+
+  return response.json()
 }
 
 describe('the roasters', () => {
@@ -235,9 +244,9 @@ describe('the roasters', () => {
 
 describe('the details of a roaster', () => {
   it('starts with only a name, editable by the person who added it', async () => {
-    const { sarah, tom, coffeePath } = await sharedShelf()
+    const { sarah, tom, coffeeId } = await sharedShelf()
 
-    expect(await roasterOn(coffeePath, sarah)).toEqual({
+    expect(await roasterOn(coffeeId, sarah)).toEqual({
       id: expect.any(String),
       name: 'Square Mile',
       website: null,
@@ -246,17 +255,18 @@ describe('the details of a roaster', () => {
       logoUrl: null,
       canEdit: true,
     })
-    expect((await roasterOn(coffeePath, tom)).canEdit).toBe(false)
+    expect((await roasterOn(coffeeId, tom)).canEdit).toBe(false)
   })
 
   it('lets the person who added it fill in its details', async () => {
-    const { sarah, tom, coffeePath, roasterPath } = await sharedShelf()
+    const { sarah, tom, coffeePath, roasterPath, coffeeId } =
+      await sharedShelf()
 
     const response = await edit(roasterPath, sarah, details)
 
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject(details)
-    expect(await roasterOn(coffeePath, tom)).toMatchObject(details)
+    expect(await roasterOn(coffeeId, tom)).toMatchObject(details)
     const coffee = await (await request(coffeePath, { headers: tom })).json()
     expect(coffee.roaster).toBe('Square Mile Coffee Roasters')
   })
@@ -270,7 +280,7 @@ describe('the details of a roaster', () => {
   })
 
   it('refuses everyone else, even a member of the same shelf', async () => {
-    const { tom, sarah, coffeePath, roasterPath } = await sharedShelf()
+    const { tom, sarah, coffeeId, roasterPath } = await sharedShelf()
 
     const responses = await Promise.all([
       edit(roasterPath, tom, details),
@@ -282,14 +292,14 @@ describe('the details of a roaster', () => {
     expect((await responses[0]!.json()).statusMessage).toBe(
       'Only the person who added this roaster or an admin can edit it',
     )
-    expect(await roasterOn(coffeePath, sarah)).toMatchObject({
+    expect(await roasterOn(coffeeId, sarah)).toMatchObject({
       name: 'Square Mile',
       logoUrl: null,
     })
   })
 
   it('clears the details left blank', async () => {
-    const { sarah, coffeePath, roasterPath } = await sharedShelf()
+    const { sarah, coffeeId, roasterPath } = await sharedShelf()
     await edit(roasterPath, sarah, details)
 
     await edit(roasterPath, sarah, {
@@ -299,7 +309,7 @@ describe('the details of a roaster', () => {
       city: ' ',
     })
 
-    expect(await roasterOn(coffeePath, sarah)).toMatchObject({
+    expect(await roasterOn(coffeeId, sarah)).toMatchObject({
       website: null,
       countryCode: null,
       city: null,
@@ -375,14 +385,14 @@ describe('the details of a roaster', () => {
 
 describe('the logo of a roaster', () => {
   it('is stored like a coffee photo and shown to everyone', async () => {
-    const { sarah, tom, coffeePath, roasterPath } = await sharedShelf()
+    const { sarah, tom, coffeeId, roasterPath } = await sharedShelf()
 
     const response = await uploadLogo(roasterPath, sarah)
     const { logoUrl } = await response.json()
     const served = await request(logoUrl)
 
     expect(logoUrl).toMatch(/^\/api\/photos\/roasters\/[\w-]+\.webp$/)
-    expect((await roasterOn(coffeePath, tom)).logoUrl).toBe(logoUrl)
+    expect((await roasterOn(coffeeId, tom)).logoUrl).toBe(logoUrl)
     expect(served.headers.get('content-type')).toBe('image/webp')
 
     const shaped = await sharp(
@@ -393,12 +403,12 @@ describe('the logo of a roaster', () => {
   })
 
   it('refuses a logo that is not an image', async () => {
-    const { sarah, coffeePath, roasterPath } = await sharedShelf()
+    const { sarah, coffeeId, roasterPath } = await sharedShelf()
 
     const response = await uploadLogo(roasterPath, sarah, 'not a logo')
 
     expect(response.status).toBe(422)
-    expect((await roasterOn(coffeePath, sarah)).logoUrl).toBeNull()
+    expect((await roasterOn(coffeeId, sarah)).logoUrl).toBeNull()
   })
 
   it('deletes the old logo when it is replaced', async () => {
@@ -416,7 +426,7 @@ describe('the logo of a roaster', () => {
   })
 
   it('removes the logo and its file', async () => {
-    const { admin, sarah, coffeePath, roasterPath } = await sharedShelf()
+    const { admin, sarah, coffeeId, roasterPath } = await sharedShelf()
     const { logoUrl } = await (await uploadLogo(roasterPath, sarah)).json()
 
     const response = await request(`${roasterPath}/logo`, {
@@ -425,7 +435,7 @@ describe('the logo of a roaster', () => {
     })
 
     expect(await response.json()).toEqual({ logoUrl: null })
-    expect((await roasterOn(coffeePath, sarah)).logoUrl).toBeNull()
+    expect((await roasterOn(coffeeId, sarah)).logoUrl).toBeNull()
     expect((await request(logoUrl)).status).toBe(404)
   })
 })

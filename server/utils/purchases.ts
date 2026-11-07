@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { NewPurchase } from '#shared/types/purchases'
 import { priceCents } from '#shared/utils/purchases'
 import type { Database } from '#server/types/database'
@@ -14,6 +14,22 @@ export const purchaseColumns = {
   sizeGrams: purchase.sizeGrams,
   priceCents: purchase.priceCents,
   finishedAt: purchase.finishedAt,
+}
+
+export async function listShelfPurchases(
+  db: Database,
+  input: { shelfId: string; coffeeId: string },
+) {
+  return db
+    .select(purchaseColumns)
+    .from(purchase)
+    .where(
+      and(
+        eq(purchase.shelfId, input.shelfId),
+        eq(purchase.coffeeId, input.coffeeId),
+      ),
+    )
+    .orderBy(desc(purchase.purchasedOn), desc(purchase.createdAt))
 }
 
 function purchaseValues(details: NewPurchase) {

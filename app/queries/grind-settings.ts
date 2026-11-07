@@ -1,4 +1,23 @@
-import { useMutation } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
+import type { MaybeRefOrGetter } from 'vue'
+
+export function useShelfGrindSettings(
+  shelfId: MaybeRefOrGetter<string>,
+  coffeeId: MaybeRefOrGetter<string>,
+) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: computed(() =>
+      queryKeys.shelfCoffeeGrindSettings(toValue(shelfId), toValue(coffeeId)),
+    ),
+    queryFn: () =>
+      request(
+        `/api/shelves/${toValue(shelfId)}/coffees/${toValue(coffeeId)}/grind-settings`,
+      ),
+    enabled: import.meta.client,
+  })
+}
 
 export function useGrindSettingSave() {
   const changed = useChanged()

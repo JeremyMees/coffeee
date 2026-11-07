@@ -30,9 +30,10 @@ export function database() {
 
 export const scenario = createScenario(database)
 
-const handlers = import.meta.glob<EventHandler>('../../server/api/**/*.ts', {
-  import: 'default',
-})
+const handlers: Record<string, () => Promise<EventHandler>> = import.meta.glob(
+  '../../server/api/**/*.ts',
+  { import: 'default' },
+)
 
 const methods = /\.(get|post|patch|put|delete)$/
 

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { grindSetting, shelfMember } from '#server/db/schemas'
 import { listBrewMethods } from '#server/utils/brew-methods'
-import { addCoffee, findShelfCoffee, listStock } from '#server/utils/coffees'
+import { addCoffee, listStock } from '#server/utils/coffees'
 import { disownGrinder, ownGrinder } from '#server/utils/grinders'
 import {
+  findGrindSettings,
   grindSettingsOf,
   otherGrindSettingsOf,
   setGrindSetting,
@@ -233,8 +234,11 @@ describe('grind settings', () => {
 
     await grind('12')
 
-    const coffee = await findShelfCoffee(db, { ...ref, viewer: sarah })
-    expect(coffee?.grindSettings.map(saved => saved.setting)).toEqual(['12'])
+    const coffee = await findGrindSettings(db, {
+      ...ref,
+      userId: sarah.id,
+    })
+    expect(coffee.grindSettings.map(saved => saved.setting)).toEqual(['12'])
     expect(
       (await listStock(db, { shelfId: home.id, userId: sarah.id }))[0],
     ).not.toHaveProperty('grindSettings')
@@ -295,10 +299,10 @@ describe('everyone else’s grind settings', () => {
 
     await grind('12')
 
-    const coffee = await findShelfCoffee(db, {
+    const coffee = await findGrindSettings(db, {
       shelfId: anaShelf.id,
       coffeeId: ref.coffeeId,
-      viewer: ana,
+      userId: ana.id,
     })
 
     expect(coffee).toMatchObject({

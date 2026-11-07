@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { asc, eq } from 'drizzle-orm'
 import { useProfileStats } from '~/queries/account'
-import { useShelfCoffee, useStock } from '~/queries/coffees'
+import { useStock } from '~/queries/coffees'
 import {
   useBuyAgain,
   useCoffeeFinish,
   usePurchaseFinish,
   usePurchaseRemoval,
   usePurchaseUpdate,
+  useShelfPurchases,
 } from '~/queries/purchases'
 import { purchase } from '#server/db/schemas'
 import { purchaseColumns } from '#server/utils/purchases'
@@ -36,7 +37,7 @@ async function watching<T>(use: () => T) {
     result: use(),
     stats: useProfileStats(),
     stock: useStock(target.shelfId),
-    coffee: useShelfCoffee(target.shelfId, target.coffeeId),
+    coffee: useShelfPurchases(target.shelfId, target.coffeeId),
   }))
   await Promise.all([stats.suspense(), stock.suspense(), coffee.suspense()])
 
@@ -44,7 +45,7 @@ async function watching<T>(use: () => T) {
     result,
     stats: () => stats.data.value,
     inStock: () => stock.data.value?.map(found => found.id),
-    purchases: () => coffee.data.value?.purchases,
+    purchases: () => coffee.data.value,
   }
 }
 

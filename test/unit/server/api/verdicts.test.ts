@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { shelfMember } from '#server/db/schemas'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import sharedCoffeeHandler from '#server/api/coffees/[coffeeId].get'
+import reviewsHandler from '#server/api/coffees/[coffeeId]/reviews.get'
+import getVerdictHandler from '#server/api/coffees/[coffeeId]/verdict.get'
 import verdictHandler from '#server/api/coffees/[coffeeId]/verdict.patch'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import stockHandler from '#server/api/shelves/[shelfId]/stock.get'
@@ -43,6 +45,8 @@ function request(path: string, init: RequestInit = {}) {
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get(coffeePath, showCoffeeHandler)
     .get('/api/coffees/:coffeeId', sharedCoffeeHandler)
+    .get('/api/coffees/:coffeeId/verdict', getVerdictHandler)
+    .get('/api/coffees/:coffeeId/reviews', reviewsHandler)
     .patch('/api/coffees/:coffeeId/verdict', verdictHandler)
   const app = createApp().use(router)
 
@@ -99,6 +103,22 @@ async function stranger() {
   return signedIn((await createTestUser(db)).id)
 }
 
+async function verdictOf(coffeeId: string, headers: Headers) {
+  const response = await request(`/api/coffees/${coffeeId}/verdict`, {
+    headers,
+  })
+
+  return response.json()
+}
+
+async function reviewsOf(coffeeId: string, headers: Headers) {
+  const response = await request(`/api/coffees/${coffeeId}/reviews`, {
+    headers,
+  })
+
+  return response.json()
+}
+
 describe('PATCH /api/coffees/:coffeeId/verdict', () => {
   it('rates a coffee and says it would be bought again', async () => {
     const { sarah, coffeeId } = await sharedShelf()
@@ -113,20 +133,21 @@ describe('PATCH /api/coffees/:coffeeId/verdict', () => {
   })
 
   it('keeps each member’s own verdict', async () => {
-    const { shelf, coffeeId, tomId, sarah, tom, path } = await sharedShelf()
+    const { shelf, coffeeId, tomId, sarah, tom } = await sharedShelf()
 
     await judge(coffeeId, sarah, { rating: 5, wouldBuyAgain: true })
     await judge(coffeeId, tom, { rating: 2 })
 
-    const asSarah = await (await request(path, { headers: sarah })).json()
-    const asTom = await (await request(path, { headers: tom })).json()
+    const verdictSarah = await verdictOf(coffeeId, sarah)
+    const verdictTom = await verdictOf(coffeeId, tom)
+    const asSarah = await reviewsOf(coffeeId, sarah)
+    const asTom = await reviewsOf(coffeeId, tom)
     const tomStock = await (
       await request(`/api/shelves/${shelf.id}/stock`, { headers: tom })
     ).json()
 
+    expect(verdictSarah).toEqual({ rating: 5, wouldBuyAgain: true })
     expect(asSarah).toMatchObject({
-      rating: 5,
-      wouldBuyAgain: true,
       communityRating: { average: 3.5, raters: 2, wouldBuyAgain: 1 },
     })
     expect(asSarah.reviews).toHaveLength(2)
@@ -137,33 +158,34 @@ describe('PATCH /api/coffees/:coffeeId/verdict', () => {
       wouldBuyAgain: false,
       mine: false,
     })
-    expect(asTom).toMatchObject({ rating: 2, wouldBuyAgain: false })
+    expect(verdictTom).toEqual({ rating: 2, wouldBuyAgain: false })
     expect(asTom.reviews[0]).toMatchObject({ name: 'Tom', mine: true })
     expect(tomStock[0]).toMatchObject({ rating: 2 })
     expect(tomStock[0]).not.toHaveProperty('communityRating')
   })
 
   it('never changes another member’s verdict', async () => {
-    const { coffeeId, sarah, tom, path } = await sharedShelf()
+    const { coffeeId, sarah, tom } = await sharedShelf()
 
     await judge(coffeeId, sarah, { rating: 4, wouldBuyAgain: true })
     await judge(coffeeId, tom, { rating: 1 })
     await judge(coffeeId, tom, { wouldBuyAgain: false })
     await judge(coffeeId, tom, { rating: null })
 
-    const asSarah = await (await request(path, { headers: sarah })).json()
-
-    expect(asSarah).toMatchObject({ rating: 4, wouldBuyAgain: true })
+    expect(await verdictOf(coffeeId, sarah)).toEqual({
+      rating: 4,
+      wouldBuyAgain: true,
+    })
   })
 
   it('starts out not yet rated', async () => {
-    const { sarah, path } = await sharedShelf()
+    const { sarah, coffeeId } = await sharedShelf()
 
-    const coffee = await (await request(path, { headers: sarah })).json()
-
-    expect(coffee).toMatchObject({
+    expect(await verdictOf(coffeeId, sarah)).toEqual({
       rating: null,
       wouldBuyAgain: false,
+    })
+    expect(await reviewsOf(coffeeId, sarah)).toEqual({
       communityRating: { average: null, raters: 0, wouldBuyAgain: 0 },
       reviews: [],
     })
@@ -174,11 +196,10 @@ describe('PATCH /api/coffees/:coffeeId/verdict', () => {
     const outsider = await stranger()
 
     const judged = await judge(coffeeId, outsider, { rating: 1 })
-    const coffee = await (await request(path, { headers: sarah })).json()
 
     expect(judged.status).toBe(200)
-    expect(coffee).toMatchObject({
-      rating: null,
+    expect(await verdictOf(coffeeId, sarah)).toMatchObject({ rating: null })
+    expect(await reviewsOf(coffeeId, sarah)).toMatchObject({
       communityRating: { average: 1, raters: 1 },
       reviews: [{ rating: 1, mine: false }],
     })

@@ -43,6 +43,7 @@ useHead({ title: () => `${coffee.value?.name} · Coffeee` })
     <CoffeePhoto class="mt-4" :shelf-id="shelf.id" :coffee="coffee" />
     <CoffeeHeader
       :coffee="coffee"
+      :roaster-id="coffee.roasterDetails.id"
       :editable="coffee.canEdit"
       :deletable="coffee.canDelete"
       @edit="editing = true"

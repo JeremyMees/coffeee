@@ -7,6 +7,9 @@ import producersHandler from '#server/api/producers.get'
 import regionsHandler from '#server/api/regions.get'
 import roastersHandler from '#server/api/roasters.get'
 import coffeeHandler from '#server/api/coffees/[coffeeId].get'
+import coffeeReviewsHandler from '#server/api/coffees/[coffeeId]/reviews.get'
+import coffeeRoasterHandler from '#server/api/coffees/[coffeeId]/roaster.get'
+import coffeeVerdictHandler from '#server/api/coffees/[coffeeId]/verdict.get'
 import deleteCoffeeHandler from '#server/api/coffees/[coffeeId].delete'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
@@ -68,6 +71,9 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/catalog/:filter', catalogFilterHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .get('/api/coffees/:coffeeId', coffeeHandler)
+    .get('/api/coffees/:coffeeId/verdict', coffeeVerdictHandler)
+    .get('/api/coffees/:coffeeId/reviews', coffeeReviewsHandler)
+    .get('/api/coffees/:coffeeId/roaster', coffeeRoasterHandler)
     .delete('/api/coffees/:coffeeId', deleteCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
@@ -394,7 +400,8 @@ describe('the catalog', () => {
     const body = await response.json()
 
     expect(response.status).toBe(200)
-    expect(body).toMatchObject({ name: 'El Paraiso', purchases: [] })
+    expect(body).toMatchObject({ name: 'El Paraiso' })
+    expect(body).not.toHaveProperty('purchases')
     expect(JSON.stringify(body)).not.toMatch(/priceCents":\d|2026-11-01/)
   })
 
@@ -481,7 +488,7 @@ describe('the catalog', () => {
 })
 
 describe('GET /api/shelves/:shelfId/coffees/:coffeeId', () => {
-  it('shows a coffee with the purchases of the shelf', async () => {
+  it('shows the coffee itself, without its bags, verdicts or roaster', async () => {
     const { shelf, headers } = await member()
     const added = await add(shelf.id, headers)
     const { coffee: created } = await added.json()
@@ -490,12 +497,24 @@ describe('GET /api/shelves/:shelfId/coffees/:coffeeId', () => {
       `/api/shelves/${shelf.id}/coffees/${created.id}`,
       { headers },
     )
+    const body = await response.json()
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toMatchObject({
+    expect(body).toMatchObject({
       name: 'Ayele Fulasa',
-      purchases: [{ purchasedOn: '2026-11-01', priceCents: 1650 }],
+      roaster: 'Square Mile',
+      roasterId: expect.any(String),
+      canEdit: true,
     })
+    for (const other of [
+      'purchases',
+      'rating',
+      'reviews',
+      'roasterDetails',
+      'grindSettings',
+    ]) {
+      expect(body).not.toHaveProperty(other)
+    }
   })
 
   it('says when there is no such coffee', async () => {
@@ -506,6 +525,80 @@ describe('GET /api/shelves/:shelfId/coffees/:coffeeId', () => {
     })
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('the parts of a coffee shown on their own', () => {
+  async function added() {
+    const { user, shelf, headers } = await member()
+    const response = await add(shelf.id, headers)
+    const { coffee: created } = await response.json()
+
+    return { user, headers, coffeeId: created.id as string }
+  }
+
+  it('shows the verdict of whoever is signed in', async () => {
+    const { user, headers, coffeeId } = await added()
+    await judgeCoffee(db, {
+      userId: user.id,
+      coffeeId,
+      verdict: { rating: 4, wouldBuyAgain: true },
+    })
+
+    const response = await request(`/api/coffees/${coffeeId}/verdict`, {
+      headers,
+    })
+
+    expect(await response.json()).toEqual({ rating: 4, wouldBuyAgain: true })
+  })
+
+  it('shows the community rating and the reviews', async () => {
+    const { user, headers, coffeeId } = await added()
+    await judgeCoffee(db, {
+      userId: user.id,
+      coffeeId,
+      verdict: { rating: 5, wouldBuyAgain: true },
+    })
+
+    const response = await request(`/api/coffees/${coffeeId}/reviews`, {
+      headers,
+    })
+
+    expect(await response.json()).toMatchObject({
+      communityRating: { average: 5, raters: 1, wouldBuyAgain: 1 },
+      reviews: [{ rating: 5, mine: true }],
+    })
+  })
+
+  it('shows the roaster of the coffee', async () => {
+    const { headers, coffeeId } = await added()
+
+    const response = await request(`/api/coffees/${coffeeId}/roaster`, {
+      headers,
+    })
+
+    expect(await response.json()).toMatchObject({
+      name: 'Square Mile',
+      canEdit: true,
+    })
+  })
+
+  it('says when the roaster’s coffee does not exist', async () => {
+    const { headers } = await added()
+
+    const response = await request('/api/coffees/nope/roaster', { headers })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('asks to sign in first', async () => {
+    const { coffeeId } = await added()
+
+    for (const part of ['verdict', 'reviews', 'roaster']) {
+      const response = await request(`/api/coffees/${coffeeId}/${part}`)
+
+      expect(response.status).toBe(401)
+    }
   })
 })
 

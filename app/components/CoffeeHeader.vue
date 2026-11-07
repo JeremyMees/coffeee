@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ArrowUpRightIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
+import { NuxtLink } from '#components'
 
 const props = defineProps<{
-  coffee: Pick<SharedCoffee, 'id' | 'name' | 'roaster' | 'link'> & {
-    roasterDetails: Pick<ShelfRoaster, 'id' | 'name'>
+  coffee: Pick<SharedCoffee, 'id' | 'name' | 'roaster'> & {
+    link?: string | null
   }
-  editable: boolean
+  roasterId?: string
+  editable?: boolean
   deletable?: boolean
 }>()
 
@@ -17,13 +19,14 @@ const morph = useMorph('coffee', () => props.coffee.id)
 <template>
   <header class="mt-6 flex items-end justify-between gap-4">
     <div>
-      <NuxtLink
-        :to="roasterPath(coffee.roasterDetails)"
-        class="text-xs uppercase underline-offset-4 hover:underline"
+      <component
+        :is="roasterId ? NuxtLink : 'span'"
+        :to="roasterId && roasterPath({ id: roasterId, name: coffee.roaster })"
+        class="block w-fit text-xs uppercase underline-offset-4 hover:underline"
         data-testid="coffee-roaster-name"
       >
         {{ coffee.roaster }}
-      </NuxtLink>
+      </component>
       <h1
         class="mt-2 w-fit text-[48px] lg:text-[72px]"
         :style="morph.name('name')"

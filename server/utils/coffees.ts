@@ -17,12 +17,8 @@ import {
   describeCoffee,
   descriptionOf,
 } from '#server/utils/descriptions'
-import {
-  grindSettingsOf,
-  otherGrindSettingsOf,
-} from '#server/utils/grind-settings'
 import { changeShelf } from '#server/utils/notifications'
-import { addPurchase, purchaseColumns } from '#server/utils/purchases'
+import { addPurchase } from '#server/utils/purchases'
 import { findRoaster } from '#server/utils/roasters'
 import { shelvesHolding } from '#server/utils/shelves'
 import {
@@ -141,7 +137,7 @@ export function replaceCoffeePhoto(
   })
 }
 
-async function findCatalogCoffee(
+export async function findCoffeeCore(
   db: Database,
   input: { coffeeId: string; viewer: Viewer },
 ) {
@@ -157,83 +153,71 @@ async function findCatalogCoffee(
 
   if (!found) return undefined
 
-  const { roasterId, createdBy, ...details } = found
+  const { createdBy, ...details } = found
+  const [description, deletable] = await Promise.all([
+    descriptionOf(db, input.coffeeId),
+    findDeletableCoffee(db, {
+      coffeeId: input.coffeeId,
+      deleter: input.viewer,
+    }),
+  ])
 
   return {
     ...details,
-    ...(await descriptionOf(db, input.coffeeId)),
-    ...(await findVerdict(db, {
-      userId: input.viewer.id,
-      coffeeId: input.coffeeId,
-    })),
-    communityRating: await communityRatingOf(db, input.coffeeId),
-    reviews: await reviewsOf(db, {
-      coffeeId: input.coffeeId,
-      userId: input.viewer.id,
-    }),
+    ...description,
     canEdit: canEditCatalogEntry(input.viewer, createdBy),
-    canDelete:
-      (
-        await findDeletableCoffee(db, {
-          coffeeId: input.coffeeId,
-          deleter: input.viewer,
-        })
-      ).outcome === 'deletable',
-    roasterDetails: (await findRoaster(db, {
-      roasterId,
-      viewer: input.viewer,
-    }))!,
+    canDelete: deletable.outcome === 'deletable',
   }
+}
+
+export async function findCoffeeRoaster(
+  db: Database,
+  input: { coffeeId: string; viewer: Viewer },
+) {
+  const [found] = await db
+    .select({ roasterId: coffee.roasterId })
+    .from(coffee)
+    .where(eq(coffee.id, input.coffeeId))
+
+  if (!found) return undefined
+
+  return findRoaster(db, { roasterId: found.roasterId, viewer: input.viewer })
+}
+
+export async function findCoffeeReviews(
+  db: Database,
+  input: { coffeeId: string; viewer: Viewer },
+) {
+  const [communityRating, reviews] = await Promise.all([
+    communityRatingOf(db, input.coffeeId),
+    reviewsOf(db, { coffeeId: input.coffeeId, userId: input.viewer.id }),
+  ])
+
+  return { communityRating, reviews }
 }
 
 export async function findCoffee(
   db: Database,
   input: { coffeeId: string; viewer: Viewer },
 ) {
-  const found = await findCatalogCoffee(db, input)
+  const core = await findCoffeeCore(db, input)
 
-  if (!found) return undefined
+  if (!core) return undefined
 
-  return {
-    ...found,
-    shelves: await shelvesHolding(db, {
-      coffeeId: input.coffeeId,
-      userId: input.viewer.id,
-    }),
-  }
-}
-
-export async function findShelfCoffee(
-  db: Database,
-  input: { shelfId: string; coffeeId: string; viewer: Viewer },
-) {
-  const found = await findCatalogCoffee(db, input)
-
-  if (!found) return undefined
-
-  const purchases = await db
-    .select(purchaseColumns)
-    .from(purchase)
-    .where(
-      and(
-        eq(purchase.shelfId, input.shelfId),
-        eq(purchase.coffeeId, input.coffeeId),
-      ),
-    )
-    .orderBy(desc(purchase.purchasedOn), desc(purchase.createdAt))
+  const { roasterId, ...details } = core
+  const [verdict, reviews, roasterDetails, shelves] = await Promise.all([
+    findVerdict(db, { userId: input.viewer.id, coffeeId: input.coffeeId }),
+    findCoffeeReviews(db, input),
+    findRoaster(db, { roasterId, viewer: input.viewer }),
+    shelvesHolding(db, { coffeeId: input.coffeeId, userId: input.viewer.id }),
+  ])
 
   return {
-    ...found,
-    purchases,
-    grindSettings: await grindSettingsOf(db, {
-      userId: input.viewer.id,
-      coffeeId: input.coffeeId,
-    }),
-    otherGrindSettings: await otherGrindSettingsOf(db, {
-      shelfId: input.shelfId,
-      userId: input.viewer.id,
-      coffeeId: input.coffeeId,
-    }),
+    ...details,
+    ...verdict,
+    ...reviews,
+    roasterDetails: roasterDetails!,
+    shelves,
   }
 }
 

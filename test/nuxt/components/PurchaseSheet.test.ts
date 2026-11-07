@@ -30,11 +30,9 @@ beforeEach(async () => {
     price: 16.5,
   })
   await signIn(sarah)
-  purchases = (
-    await $fetch<{ purchases: ShelfPurchase[] }>(
-      `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}`,
-    )
-  ).purchases
+  purchases = await $fetch<ShelfPurchase[]>(
+    `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}/purchases`,
+  )
 })
 
 async function openSheet(

@@ -5,6 +5,10 @@ export type OwnedGrinder =
 
 export type ListedBrewMethod = InternalApi['/api/brew-methods']['get'][number]
 
-export type OwnGrindSetting = ShelfCoffee['grindSettings'][number]
+export type CoffeeGrindSettings =
+  InternalApi['/api/shelves/:shelfId/coffees/:coffeeId/grind-settings']['get']
 
-export type OtherGrindSetting = ShelfCoffee['otherGrindSettings'][number]
+export type OwnGrindSetting = CoffeeGrindSettings['grindSettings'][number]
+
+export type OtherGrindSetting =
+  CoffeeGrindSettings['otherGrindSettings'][number]

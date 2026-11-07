@@ -29,10 +29,10 @@ beforeEach(async () => {
     price: 16.5,
   })
   await signIn(sarah)
-  const shelfCoffee = await $fetch<{ purchases: ShelfPurchase[] }>(
-    `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}`,
+  const purchases = await $fetch<ShelfPurchase[]>(
+    `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}/purchases`,
   )
-  ;[inStock, finished] = shelfCoffee.purchases as [ShelfPurchase, ShelfPurchase]
+  ;[inStock, finished] = purchases as [ShelfPurchase, ShelfPurchase]
 })
 
 function mountRow(shown = inStock) {

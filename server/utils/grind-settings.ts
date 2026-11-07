@@ -43,6 +43,18 @@ export function grindSettingsOf(
     )
 }
 
+export async function findGrindSettings(
+  db: Database,
+  input: { shelfId: string; userId: string; coffeeId: string },
+) {
+  const [grindSettings, otherGrindSettings] = await Promise.all([
+    grindSettingsOf(db, input),
+    otherGrindSettingsOf(db, input),
+  ])
+
+  return { grindSettings, otherGrindSettings }
+}
+
 export function otherGrindSettingsOf(
   db: Database,
   input: { shelfId: string; userId: string; coffeeId: string },

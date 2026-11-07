@@ -2,12 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { eq } from 'drizzle-orm'
 import CoffeeGrindSettings from '~/components/CoffeeGrindSettings.vue'
-import type { OwnGrindSetting } from '#imports'
 import { shelfPath } from '#imports'
 import { grindSetting } from '#server/db/schemas'
 import type { Member } from '#test/support/types'
 import { tid } from '../fixtures'
-import { database, failRequest, scenario, signIn } from '../server'
+import { database, failRequest, holdRequest, scenario, signIn } from '../server'
 
 let sarah: Member
 let coffeeId: string
@@ -35,22 +34,28 @@ async function keep(brewMethod: { id: string }, setting: string) {
   })
 }
 
-async function ownSettings() {
-  const shelfCoffee = await $fetch<{ grindSettings: OwnGrindSetting[] }>(
-    `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}`,
+function settingsPath() {
+  return `/api/shelves/${sarah.shelf.id}/coffees/${coffeeId}/grind-settings`
+}
+
+function openSettings(shelfId = sarah.shelf.id, id = coffeeId) {
+  return mountSuspended(CoffeeGrindSettings, {
+    props: { shelfId, coffeeId: id },
+  })
+}
+
+async function loaded(settings: Awaited<ReturnType<typeof openSettings>>) {
+  await vi.waitFor(() =>
+    expect(settings.find(tid('coffee-grind-settings-skeleton')).exists()).toBe(
+      false,
+    ),
   )
 
-  return shelfCoffee.grindSettings
+  return settings
 }
 
 async function mountSettings() {
-  return mountSuspended(CoffeeGrindSettings, {
-    props: {
-      shelfId: sarah.shelf.id,
-      coffeeId,
-      grindSettings: await ownSettings(),
-    },
-  })
+  return loaded(await openSettings())
 }
 
 async function stored() {
@@ -92,13 +97,9 @@ describe('CoffeeGrindSettings', () => {
     await signIn(tom)
     const tomsCoffee = await scenario.coffee(tom.shelf)
 
-    const settings = await mountSuspended(CoffeeGrindSettings, {
-      props: {
-        shelfId: tom.shelf.id,
-        coffeeId: tomsCoffee.id,
-        grindSettings: [],
-      },
-    })
+    const settings = await loaded(
+      await openSettings(tom.shelf.id, tomsCoffee.id),
+    )
 
     expect(settings.get(tid('grind-no-grinders')).text()).toContain(
       'This shelf owns no grinders yet.',
@@ -174,5 +175,71 @@ describe('CoffeeGrindSettings', () => {
       ),
     )
     expect(await stored()).toEqual([])
+  })
+
+  it('shows the settings other people keep for the coffee', async () => {
+    const tom = await scenario.member('Tom')
+    await scenario.grindSetting(tom, sarah.shelf, coffeeId, {
+      grinderId: opus.id,
+      brewMethodId: espresso.id,
+      setting: '9',
+    })
+
+    const settings = await mountSettings()
+
+    expect(settings.get(tid('other-grind-setting')).text()).toContain('9')
+  })
+
+  it('shows a skeleton while the settings load and the form after', async () => {
+    const hold = holdRequest('GET', settingsPath())
+
+    const settings = await openSettings()
+
+    expect(settings.find(tid('coffee-grind-settings-skeleton')).exists()).toBe(
+      true,
+    )
+    expect(settings.find(tid('grind-setting-form')).exists()).toBe(false)
+    expect(settings.find('h2').text()).toBe('Grind settings')
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(settings.find(tid('grind-setting-form')).exists()).toBe(true),
+    )
+    expect(settings.find(tid('coffee-grind-settings-skeleton')).exists()).toBe(
+      false,
+    )
+  })
+
+  it('waits for the grinders of the shelf too', async () => {
+    const hold = holdRequest('GET', `/api/shelves/${sarah.shelf.id}/grinders`)
+
+    const settings = await openSettings()
+
+    expect(settings.find(tid('coffee-grind-settings-skeleton')).exists()).toBe(
+      true,
+    )
+
+    hold.release()
+    await loaded(settings)
+  })
+
+  it('shows an error that can be retried when the settings fail to load', async () => {
+    const lift = failRequest('GET', settingsPath(), {
+      status: 403,
+      message: 'Nope',
+    })
+
+    const settings = await openSettings()
+    await vi.waitFor(() =>
+      expect(settings.find(tid('grind-settings-error')).exists()).toBe(true),
+    )
+
+    lift()
+    await settings.get(tid('grind-settings-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(settings.find(tid('grind-setting-form')).exists()).toBe(true),
+    )
   })
 })

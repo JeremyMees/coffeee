@@ -12,17 +12,12 @@ export type StockCoffee =
 
 export type EditableCoffee = Omit<
   ShelfCoffee,
-  | 'canEdit'
-  | 'canDelete'
-  | 'purchases'
-  | 'photoUrl'
-  | 'rating'
-  | 'wouldBuyAgain'
-  | 'communityRating'
-  | 'reviews'
-  | 'grindSettings'
-  | 'otherGrindSettings'
-  | 'roasterDetails'
+  'canEdit' | 'canDelete' | 'photoUrl' | 'roasterId'
+>
+
+export type CoffeePreview = Pick<
+  StockCoffee,
+  'id' | 'name' | 'roaster' | 'photoUrl'
 >
 
 export type CardCoffee = Pick<
@@ -38,10 +33,9 @@ export type CardCoffee = Pick<
   | 'rating'
 > & { matches?: CatalogMatch[] }
 
-export type PhotoCoffee = Pick<
-  ShelfCoffee,
-  'id' | 'name' | 'photoUrl' | 'canEdit'
->
+export type PhotoCoffee = Pick<ShelfCoffee, 'id' | 'name' | 'photoUrl'> & {
+  canEdit?: boolean
+}
 
 export type Review = SharedCoffee['reviews'][number]
 

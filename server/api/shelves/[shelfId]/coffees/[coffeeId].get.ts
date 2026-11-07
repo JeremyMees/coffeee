@@ -1,12 +1,11 @@
 import { createError, defineEventHandler, getRouterParam } from 'h3'
-import { findShelfCoffee } from '#server/utils/coffees'
+import { findCoffeeCore } from '#server/utils/coffees'
 import { useDb } from '#server/utils/db'
 import { requireShelf } from '#server/utils/session'
 
 export default defineEventHandler(async event => {
-  const { user, shelf } = await requireShelf(event)
-  const coffee = await findShelfCoffee(useDb(), {
-    shelfId: shelf.id,
+  const { user } = await requireShelf(event)
+  const coffee = await findCoffeeCore(useDb(), {
     coffeeId: getRouterParam(event, 'coffeeId')!,
     viewer: user,
   })

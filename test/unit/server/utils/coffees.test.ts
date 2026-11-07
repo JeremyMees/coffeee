@@ -12,11 +12,12 @@ import {
   editCoffee,
   findCoffee,
   findEditableCoffee,
-  findShelfCoffee,
+  findCoffeeCore,
   listStock,
 } from '#server/utils/coffees'
 import { findSimilar } from '#server/utils/lists'
 import { listNotifications } from '#server/utils/notifications'
+import { listShelfPurchases } from '#server/utils/purchases'
 import { createShelf } from '#server/utils/shelves'
 import { seededProcesses } from '#shared/utils/coffee'
 import type { CoffeeDetails, NewCoffee } from '#shared/types/coffee'
@@ -295,36 +296,35 @@ describe('a coffee on a shelf', () => {
       origin: testOrigin,
     })
 
-    const found = await findShelfCoffee(db, {
-      shelfId: home.id,
+    const found = await findCoffeeCore(db, {
       coffeeId: added.id,
       viewer: sarah,
+    })
+    const purchases = await listShelfPurchases(db, {
+      shelfId: home.id,
+      coffeeId: added.id,
     })
 
     expect(found).toMatchObject({
       name: 'Ayele Fulasa',
       roaster: 'Square Mile',
-      purchases: [
-        {
-          purchasedOn: '2026-11-01',
-          roastedOn: '2026-10-28',
-          sizeGrams: 250,
-          priceCents: 1650,
-          finishedAt: null,
-        },
-      ],
     })
+    expect(purchases).toMatchObject([
+      {
+        purchasedOn: '2026-11-01',
+        roastedOn: '2026-10-28',
+        sizeGrams: 250,
+        priceCents: 1650,
+        finishedAt: null,
+      },
+    ])
   })
 
   it('is not found when it does not exist', async () => {
-    const { db, sarah, home } = await setup()
+    const { db, sarah } = await setup()
 
     expect(
-      await findShelfCoffee(db, {
-        shelfId: home.id,
-        coffeeId: 'unknown',
-        viewer: sarah,
-      }),
+      await findCoffeeCore(db, { coffeeId: 'unknown', viewer: sarah }),
     ).toBeUndefined()
   })
 
@@ -340,13 +340,12 @@ describe('a coffee on a shelf', () => {
     }
     const [only] = await db.select({ id: coffee.id }).from(coffee)
 
-    const found = await findShelfCoffee(db, {
+    const found = await listShelfPurchases(db, {
       shelfId: home.id,
       coffeeId: only!.id,
-      viewer: sarah,
     })
 
-    expect(found!.purchases.map(item => item.purchasedOn)).toEqual([
+    expect(found.map(item => item.purchasedOn)).toEqual([
       '2026-11-01',
       '2026-09-01',
     ])
@@ -363,11 +362,7 @@ describe('a coffee on a shelf', () => {
     })
 
     const canEdit = async (viewer: { id: string; role: string | null }) =>
-      (await findShelfCoffee(db, {
-        shelfId: home.id,
-        coffeeId: added.id,
-        viewer,
-      }))!.canEdit
+      (await findCoffeeCore(db, { coffeeId: added.id, viewer }))!.canEdit
 
     expect(await canEdit(sarah)).toBe(true)
     expect(await canEdit(admin)).toBe(true)
@@ -583,8 +578,7 @@ describe('processes and link', () => {
       origin: testOrigin,
     })
     const show = () =>
-      findShelfCoffee(context.db, {
-        shelfId: context.home.id,
+      findCoffeeCore(context.db, {
         coffeeId: added.id,
         viewer: context.sarah,
       })
@@ -635,11 +629,7 @@ describe('where a coffee was grown', () => {
     })
 
     expect(
-      await findShelfCoffee(db, {
-        shelfId: home.id,
-        coffeeId: added.id,
-        viewer: sarah,
-      }),
+      await findCoffeeCore(db, { coffeeId: added.id, viewer: sarah }),
     ).toMatchObject({
       origins: [{ code: 'CO', name: 'Colombia' }],
       regions: [{ name: 'Huila', origin: 'CO' }],
@@ -673,11 +663,7 @@ describe('where a coffee was grown', () => {
     })
 
     expect(
-      await findShelfCoffee(db, {
-        shelfId: home.id,
-        coffeeId: added.id,
-        viewer: sarah,
-      }),
+      await findCoffeeCore(db, { coffeeId: added.id, viewer: sarah }),
     ).toMatchObject({
       origins: [{ code: 'CO' }],
       regions: [{ name: 'Huila' }],

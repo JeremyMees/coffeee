@@ -9,7 +9,6 @@ const coffee = {
   name: 'Ayele Fulasa',
   roaster: 'Square Mile',
   link: 'https://example.com/ayele' as string | null,
-  roasterDetails: { id: 'r2', name: 'Square Mile' },
 }
 
 describe('CoffeeHeader', () => {
@@ -27,7 +26,7 @@ describe('CoffeeHeader', () => {
 
   it('names the coffee and its roaster and links to the roaster', async () => {
     const header = await mountSuspended(CoffeeHeader, {
-      props: { coffee, editable: false },
+      props: { coffee, roasterId: 'r2', editable: false },
     })
 
     expect(header.get(tid('coffee-title')).text()).toBe('Ayele Fulasa')
@@ -39,6 +38,15 @@ describe('CoffeeHeader', () => {
       'https://example.com/ayele?utm_source=coffeee&utm_medium=referral',
     )
     expect(header.find(tid('coffee-edit')).exists()).toBe(false)
+  })
+
+  it('names the roaster without a link until the roaster is known', async () => {
+    const header = await mountSuspended(CoffeeHeader, { props: { coffee } })
+
+    expect(header.get(tid('coffee-roaster-name')).text()).toBe('Square Mile')
+    expect(header.get(tid('coffee-roaster-name')).attributes('href')).toBe(
+      undefined,
+    )
   })
 
   it('leaves out the link when there is none', async () => {

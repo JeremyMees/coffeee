@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { ArrowLeftIcon, CheckIcon, PlusIcon } from '@lucide/vue'
-import { useShelfCoffee } from '~/queries/coffees'
-import { useCoffeeFinish } from '~/queries/purchases'
+import { ArrowLeftIcon } from '@lucide/vue'
+import {
+  useCoffeePreview,
+  useCoffeeReviews,
+  useCoffeeRoaster,
+  useCoffeeVerdict,
+  useShelfCoffee,
+} from '~/queries/coffees'
 
 const route = useRoute('shelves-shelfId-coffees-coffeeId')
 const shelfId = computed(() => idFrom(route.params.shelfId))
@@ -14,52 +19,36 @@ const { link: back, back: goBack } = useBackLink(() => ({
 
 const editing = ref(false)
 const deleting = ref(false)
-const buying = ref(false)
-const editingPurchase = ref<ShelfPurchase>()
-const editingPurchaseOpen = ref(false)
-const finishError = ref('')
-const { mutateAsync: finishCoffee, isPending: finishing } = useCoffeeFinish()
 
-const { data: coffee, error, suspense } = useShelfCoffee(shelfId, coffeeId)
-await suspense()
+const coffeeQuery = useShelfCoffee(shelfId, coffeeId)
+const { data: coffee, error } = coffeeQuery
+const preview = useCoffeePreview(shelfId, coffeeId)
+const shown = computed(() => coffee.value ?? preview.value)
+const verdict = useCoffeeVerdict(coffeeId)
+const reviews = useCoffeeReviews(coffeeId)
+const roaster = useCoffeeRoaster(coffeeId)
 
-if (error.value || !coffee.value) {
-  showError({ statusCode: 404, statusMessage: 'Coffee not found' })
-}
+watch(
+  error,
+  failure => {
+    if ((failure as { statusCode?: number } | null)?.statusCode === 404) {
+      showError({ statusCode: 404, statusMessage: 'Coffee not found' })
+    }
+  },
+  { immediate: true },
+)
 
-await useCanonicalSlug(
+useCanonicalSlug(
   'coffees',
   () => route.params.coffeeId,
   () => coffee.value,
 )
 
-useHead({ title: () => `${coffee.value?.name} · Coffeee` })
-
-const inStock = computed(
-  () => coffee.value?.purchases.some(purchase => !purchase.finishedAt) ?? false,
-)
-
-function editPurchase(purchase: ShelfPurchase) {
-  editingPurchase.value = purchase
-  editingPurchaseOpen.value = true
-}
-
-async function finish() {
-  finishError.value = ''
-
-  try {
-    await finishCoffee({ shelfId: shelfId.value, coffeeId: coffeeId.value })
-  } catch (error) {
-    finishError.value = serverErrors(error).message
-  }
-}
-
-const outlined =
-  'flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60'
+useHead({ title: () => `${shown.value?.name ?? 'Coffee'} · Coffeee` })
 </script>
 
 <template>
-  <main v-if="coffee" class="max-w-2xl">
+  <main class="max-w-2xl">
     <NuxtLink
       :to="back.to"
       data-testid="coffee-back"
@@ -69,107 +58,62 @@ const outlined =
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
       {{ back.label }}
     </NuxtLink>
-    <CoffeePhoto class="mt-4" :shelf-id="shelfId" :coffee="coffee" />
-    <CoffeeHeader
-      :coffee="coffee"
-      :editable="coffee.canEdit"
-      :deletable="coffee.canDelete"
-      @edit="editing = true"
-      @delete="deleting = true"
-    />
-    <CoffeeDetailList :coffee="coffee" />
-    <CoffeeVerdict :coffee-id="coffee.id" :verdict="coffee" />
-    <CoffeeReviews
-      :community-rating="coffee.communityRating"
-      :reviews="coffee.reviews"
-    />
-    <RoasterDetails :roaster="coffee.roasterDetails" />
-    <CoffeeGrindSettings
-      :shelf-id="shelfId"
-      :coffee-id="coffee.id"
-      :grind-settings="coffee.grindSettings"
-    />
-    <OtherGrindSettings :settings="coffee.otherGrindSettings" />
-    <section class="mt-10">
-      <div class="flex flex-wrap items-end justify-between gap-4">
-        <h2 class="text-[28px]">Bags on this shelf</h2>
-        <div class="flex gap-2">
-          <button
-            v-if="inStock"
-            type="button"
-            data-testid="coffee-finish"
-            :class="outlined"
-            :disabled="finishing"
-            @click="finish"
-          >
-            <CheckIcon class="size-4" aria-hidden="true" />
-            Finished
-          </button>
-          <button
-            type="button"
-            data-testid="coffee-buy-again"
-            :class="outlined"
-            @click="buying = true"
-          >
-            <PlusIcon class="size-4" aria-hidden="true" />
-            {{ coffee.purchases.length ? 'Buy again' : 'Add to shelf' }}
-          </button>
-        </div>
-      </div>
-      <Alert
-        v-if="finishError"
-        variant="destructive"
+    <template v-if="shown">
+      <CoffeePhoto
         class="mt-4"
-        data-testid="coffee-finish-error"
-      >
-        <AlertDescription>{{ finishError }}</AlertDescription>
-      </Alert>
-      <p
-        v-if="!coffee.purchases.length"
-        class="mt-3 text-xs"
-        data-testid="purchases-empty"
-      >
-        Nobody on this shelf has bought it yet.
-      </p>
-      <template v-else>
-        <PurchaseSummary class="mt-4" :purchases="coffee.purchases" />
-        <ul class="mt-4 divide-y rounded-[18px] border" data-testid="purchases">
-          <PurchaseRow
-            v-for="purchase in coffee.purchases"
-            :key="purchase.id"
-            :shelf-id="shelfId"
-            :coffee-id="coffee.id"
-            :purchase="purchase"
-            @edit="editPurchase(purchase)"
-          />
-        </ul>
+        :shelf-id="shelfId"
+        :coffee="{ ...shown, canEdit: coffee?.canEdit }"
+      />
+      <CoffeeHeader
+        :coffee="coffee ?? shown"
+        :roaster-id="coffee?.roasterId"
+        :editable="coffee?.canEdit"
+        :deletable="coffee?.canDelete"
+        @edit="editing = true"
+        @delete="deleting = true"
+      />
+    </template>
+    <CoffeeHeaderSkeleton v-else-if="!error" />
+    <QuerySection :query="coffeeQuery" testid="coffee">
+      <template #default="{ data }">
+        <CoffeeDetailList :coffee="data" />
+        <DeleteCoffeeDialog
+          v-if="data.canDelete"
+          v-model:open="deleting"
+          :coffee="data"
+          @deleted="navigateTo(back.to)"
+        />
+        <EditCoffeeSheet
+          v-if="data.canEdit"
+          v-model:open="editing"
+          :shelf-id="shelfId"
+          :coffee="data"
+        />
       </template>
-    </section>
-    <PurchaseSheet
-      v-model:open="buying"
-      :shelf-id="shelfId"
-      :coffee-id="coffee.id"
-      :purchases="coffee.purchases"
-    />
-    <PurchaseSheet
-      v-if="editingPurchase"
-      v-model:open="editingPurchaseOpen"
-      :shelf-id="shelfId"
-      :coffee-id="coffee.id"
-      :purchases="coffee.purchases"
-      :purchase="editingPurchase"
-    />
-    <DeleteCoffeeDialog
-      v-if="coffee.canDelete"
-      v-model:open="deleting"
-      :coffee="coffee"
-      @deleted="navigateTo(back.to)"
-    />
-    <EditCoffeeSheet
-      v-if="coffee.canEdit"
-      v-model:open="editing"
-      :shelf-id="shelfId"
-      :coffee="coffee"
-    />
+      <template #skeleton><CoffeeDetailListSkeleton /></template>
+    </QuerySection>
+    <QuerySection :query="verdict" testid="coffee-verdict">
+      <template #default="{ data }">
+        <CoffeeVerdict :coffee-id="coffeeId" :verdict="data" />
+      </template>
+      <template #skeleton><CoffeeVerdictSkeleton /></template>
+    </QuerySection>
+    <QuerySection :query="reviews" testid="coffee-reviews">
+      <template #default="{ data }">
+        <CoffeeReviews
+          :community-rating="data.communityRating"
+          :reviews="data.reviews"
+        />
+      </template>
+      <template #skeleton><CoffeeReviewsSkeleton /></template>
+    </QuerySection>
+    <QuerySection :query="roaster" testid="roaster-details">
+      <template #default="{ data }">
+        <RoasterDetails :roaster="data" />
+      </template>
+      <template #skeleton><RoasterDetailsSkeleton /></template>
+    </QuerySection>
+    <CoffeeGrindSettings :shelf-id="shelfId" :coffee-id="coffeeId" />
+    <CoffeePurchases :shelf-id="shelfId" :coffee-id="coffeeId" />
   </main>
 </template>

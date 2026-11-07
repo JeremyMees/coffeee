@@ -7,8 +7,10 @@ import {
   purchase,
   roaster,
 } from '#server/db/schemas'
-import { findShelfCoffee } from '#server/utils/coffees'
+import { findCoffeeCore } from '#server/utils/coffees'
 import { listShelfGrinders } from '#server/utils/grinders'
+import { listShelfPurchases } from '#server/utils/purchases'
+import { findVerdict } from '#server/utils/verdicts'
 import {
   findImportShelf,
   importNotion,
@@ -232,10 +234,10 @@ describe('importing the Notion inventory', () => {
     })
 
     const [imported] = await db.select().from(coffee)
-    const found = await findShelfCoffee(db, {
-      shelfId: home.id,
+    const viewer = { id: jeremy.id, role: 'user' }
+    const found = await findCoffeeCore(db, {
       coffeeId: imported!.id,
-      viewer: { id: jeremy.id, role: 'user' },
+      viewer,
     })
 
     expect(found).toMatchObject({
@@ -248,18 +250,24 @@ describe('importing the Notion inventory', () => {
       processes: [{ name: 'Washed' }],
       varietals: [{ name: 'Bourbon' }],
       flavorNotes: [{ name: 'Plum' }],
-      rating: 5,
-      wouldBuyAgain: true,
-      purchases: [
-        {
-          purchasedOn: '2025-12-25',
-          roastedOn: null,
-          sizeGrams: 200,
-          priceCents: 2500,
-          finishedAt: null,
-        },
-      ],
     })
+    expect(
+      await findVerdict(db, { userId: jeremy.id, coffeeId: imported!.id }),
+    ).toEqual({ rating: 5, wouldBuyAgain: true })
+    expect(
+      await listShelfPurchases(db, {
+        shelfId: home.id,
+        coffeeId: imported!.id,
+      }),
+    ).toMatchObject([
+      {
+        purchasedOn: '2025-12-25',
+        roastedOn: null,
+        sizeGrams: 200,
+        priceCents: 2500,
+        finishedAt: null,
+      },
+    ])
   })
 
   it('keeps flavor notes no coffee uses', async () => {

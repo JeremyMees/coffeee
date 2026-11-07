@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { useShelfCoffee } from '~/queries/coffees'
-import { useGrindSettingSave } from '~/queries/grind-settings'
+import {
+  useGrindSettingSave,
+  useShelfGrindSettings,
+} from '~/queries/grind-settings'
 import { grindSettingsOf } from '#server/utils/grind-settings'
 import { runOn } from '../fixtures'
 import { database, scenario, signIn } from '../server'
@@ -17,7 +19,7 @@ describe('useGrindSettingSave', () => {
     await signIn(sarah)
     const { result, coffee } = await runOn('/', () => ({
       result: useGrindSettingSave(),
-      coffee: useShelfCoffee(sarah.shelf.id, ayele.id),
+      coffee: useShelfGrindSettings(sarah.shelf.id, ayele.id),
     }))
     await coffee.suspense()
 

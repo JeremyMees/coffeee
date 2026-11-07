@@ -1,8 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { onlineManager } from '@tanstack/vue-query'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { and, eq } from 'drizzle-orm'
 import App from '~/app.vue'
-import { clearError, shelfCoffeePath, shelfPath, useError } from '#imports'
+import {
+  clearError,
+  shelfCoffeePath,
+  shelfPath,
+  useError,
+  useRouter,
+} from '#imports'
 import { coffee, coffeeVerdict, purchase } from '#server/db/schemas'
 import type { Member, ScenarioCoffee } from '#test/support/types'
 import {
@@ -15,7 +22,13 @@ import {
   tid,
   type,
 } from '../../../../fixtures'
-import { database, scenario, signIn } from '../../../../server'
+import {
+  database,
+  failRequest,
+  holdRequest,
+  scenario,
+  signIn,
+} from '../../../../server'
 
 mockNuxtImport(
   'compressPhoto',
@@ -32,6 +45,8 @@ beforeEach(async () => {
   sarah = await scenario.member('Sarah')
   await signIn(sarah)
 })
+
+afterEach(() => onlineManager.setOnline(true))
 
 const ayeleDetails: ScenarioCoffee = {
   origins: ['ET'],
@@ -76,11 +91,20 @@ async function ayele(details: ScenarioCoffee = {}) {
   return added
 }
 
-async function coffeePage(shown: ShelfCoffee) {
+async function openCoffee(shown: ShelfCoffee) {
   return mountSuspended(App, {
     route: shelfCoffeePath(sarah.shelf, shown),
     attachTo: document.body,
   })
+}
+
+async function coffeePage(shown: ShelfCoffee) {
+  const page = await openCoffee(shown)
+  await vi.waitFor(() =>
+    expect(page.find('[data-testid$="-skeleton"]').exists()).toBe(false),
+  )
+
+  return page
 }
 
 async function storedPurchases(coffeeId: string) {
@@ -297,7 +321,21 @@ describe('a coffee page', () => {
       route: `${shelfPath(sarah.shelf)}/coffees/nope`,
     })
 
-    expect(useError().value).toMatchObject({ statusCode: 404 })
+    await vi.waitFor(() =>
+      expect(useError().value).toMatchObject({ statusCode: 404 }),
+    )
+  })
+
+  it('sends an outdated slug on to the current one', async () => {
+    const shown = await ayele()
+
+    await mountSuspended(App, {
+      route: `${shelfPath(sarah.shelf)}/coffees/old-name-${shown.id}`,
+    })
+
+    await vi.waitFor(() =>
+      expect(currentPath()).toBe(shelfCoffeePath(sarah.shelf, shown)),
+    )
   })
 
   it('says where it was grown', async () => {
@@ -548,5 +586,160 @@ describe('a coffee page', () => {
     const page = await coffeePage(shown)
 
     expect(page.find(tid('coffee-delete')).exists()).toBe(false)
+  })
+})
+
+describe('a coffee page that loads per section', () => {
+  const sections = [
+    {
+      name: 'details',
+      path: (id: string) => `/api/shelves/${sarah.shelf.id}/coffees/${id}`,
+      skeleton: 'coffee-details-skeleton',
+      content: 'coffee-details',
+      error: 'coffee',
+    },
+    {
+      name: 'verdict',
+      path: (id: string) => `/api/coffees/${id}/verdict`,
+      skeleton: 'coffee-verdict-skeleton',
+      content: 'coffee-verdict',
+      error: 'coffee-verdict',
+    },
+    {
+      name: 'reviews',
+      path: (id: string) => `/api/coffees/${id}/reviews`,
+      skeleton: 'coffee-reviews-skeleton',
+      content: 'coffee-reviews',
+      error: 'coffee-reviews',
+    },
+    {
+      name: 'roaster',
+      path: (id: string) => `/api/coffees/${id}/roaster`,
+      skeleton: 'roaster-details-skeleton',
+      content: 'roaster-details',
+      error: 'roaster-details',
+    },
+    {
+      name: 'grind settings',
+      path: (id: string) =>
+        `/api/shelves/${sarah.shelf.id}/coffees/${id}/grind-settings`,
+      skeleton: 'coffee-grind-settings-skeleton',
+      content: 'grind-no-grinders',
+      error: 'grind-settings',
+    },
+    {
+      name: 'purchases',
+      path: (id: string) =>
+        `/api/shelves/${sarah.shelf.id}/coffees/${id}/purchases`,
+      skeleton: 'coffee-purchases-skeleton',
+      content: 'purchases',
+      error: 'coffee-purchases',
+    },
+  ]
+
+  function skeletonOf(page: Awaited<ReturnType<typeof openCoffee>>) {
+    return (name: string) => page.find(tid(name)).exists()
+  }
+
+  it.each(sections)(
+    'shows a skeleton for the $name until its request finishes',
+    async ({ path, skeleton, content }) => {
+      const shown = await ayele()
+      const hold = holdRequest('GET', path(shown.id))
+
+      const page = await openCoffee(shown)
+      const present = skeletonOf(page)
+      const others = sections
+        .map(section => section.skeleton)
+        .filter(name => name !== skeleton)
+      await vi.waitFor(() => expect(others.some(present)).toBe(false))
+
+      expect(present(skeleton)).toBe(true)
+      expect(page.find(tid(content)).exists()).toBe(false)
+
+      hold.release()
+
+      await vi.waitFor(() =>
+        expect(page.find(tid(content)).exists()).toBe(true),
+      )
+      expect(present(skeleton)).toBe(false)
+    },
+  )
+
+  it.each(sections)(
+    'shows an error and a retry for the $name and keeps the rest of the page',
+    async ({ path, skeleton, content, error }) => {
+      const shown = await ayele()
+      const lift = failRequest('GET', path(shown.id), {
+        status: 403,
+        message: 'Nope',
+      })
+
+      const page = await openCoffee(shown)
+      await vi.waitFor(() =>
+        expect(page.find(tid(`${error}-error`)).exists()).toBe(true),
+      )
+
+      expect(page.find(tid(skeleton)).exists()).toBe(false)
+      const rest = sections.filter(section => section.error !== error)
+      await vi.waitFor(() =>
+        expect(
+          rest.every(section => page.find(tid(section.content)).exists()),
+        ).toBe(true),
+      )
+
+      lift()
+      await page.get(tid(`${error}-retry`)).trigger('click')
+
+      await vi.waitFor(() =>
+        expect(page.find(tid(content)).exists()).toBe(true),
+      )
+      expect(page.find(tid(`${error}-error`)).exists()).toBe(false)
+    },
+  )
+
+  it('shows the photo, name and roaster at once when opened from the stock', async () => {
+    const shown = await ayele()
+    const page = await mountSuspended(App, {
+      route: shelfPath(sarah.shelf),
+      attachTo: document.body,
+    })
+    await vi.waitFor(() =>
+      expect(page.find(tid('stock', 'coffee-card')).exists()).toBe(true),
+    )
+    const hold = holdRequest(
+      'GET',
+      `/api/shelves/${sarah.shelf.id}/coffees/${shown.id}`,
+    )
+
+    await useRouter().push(shelfCoffeePath(sarah.shelf, shown))
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('coffee-title')).text()).toBe('Ayele Fulasa'),
+    )
+    expect(page.get(tid('coffee-roaster-name')).text()).toBe('Square Mile')
+    expect(page.find(tid('coffee-details-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('coffee-edit')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('coffee-details')).exists()).toBe(true),
+    )
+    expect(page.find(tid('coffee-edit')).exists()).toBe(true)
+  })
+
+  it('says each section is offline instead of showing skeletons that never end', async () => {
+    const shown = await ayele()
+    onlineManager.setOnline(false)
+
+    const page = await openCoffee(shown)
+
+    for (const { error, skeleton } of sections) {
+      await vi.waitFor(() =>
+        expect(page.find(tid(`${error}-offline`)).exists()).toBe(true),
+      )
+      expect(page.find(tid(skeleton)).exists()).toBe(false)
+    }
   })
 })
