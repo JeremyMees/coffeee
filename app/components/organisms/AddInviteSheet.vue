@@ -76,7 +76,7 @@ async function copyLink() {
           </p>
         </div>
         <FieldGroup>
-          <LabelledField
+          <LazyLabelledField
             v-slot="{ componentField, invalid }"
             name="email"
             label="Email"
@@ -90,7 +90,7 @@ async function copyLink() {
               autocomplete="off"
               :aria-invalid="invalid || undefined"
             />
-          </LabelledField>
+          </LazyLabelledField>
         </FieldGroup>
         <Alert v-if="formError" variant="destructive" data-testid="form-error">
           <AlertDescription>{{ formError }}</AlertDescription>

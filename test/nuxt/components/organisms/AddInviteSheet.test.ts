@@ -13,11 +13,14 @@ beforeEach(async () => {
   await signIn(jeremy)
 })
 
-function openSheet() {
-  return mountSuspended(AddInviteSheet, {
+async function openSheet() {
+  const sheet = await mountSuspended(AddInviteSheet, {
     props: { open: true },
     attachTo: document.body,
   })
+  await vi.waitFor(() => expect(byTestId('invite-email')).not.toBeNull())
+
+  return sheet
 }
 
 async function invitedEmails() {
