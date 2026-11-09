@@ -142,12 +142,8 @@ export function useCoffeeUpdate() {
   const saved = useCoffeeSaved()
 
   return useMutation({
-    mutationFn: (input: {
-      shelfId: string
-      coffeeId: string
-      details: CoffeeDetails
-    }) =>
-      $fetch(`/api/shelves/${input.shelfId}/coffees/${input.coffeeId}`, {
+    mutationFn: (input: { coffeeId: string; details: CoffeeDetails }) =>
+      $fetch(`/api/coffees/${input.coffeeId}`, {
         method: 'PATCH',
         body: input.details,
       }),
@@ -155,23 +151,19 @@ export function useCoffeeUpdate() {
   })
 }
 
-function photoPath(input: { shelfId: string; coffeeId: string }) {
-  return `/api/shelves/${input.shelfId}/coffees/${input.coffeeId}/photo`
+function photoPath(coffeeId: string) {
+  return `/api/coffees/${coffeeId}/photo`
 }
 
 export function useCoffeePhotoUpdate() {
   const saved = useCoffeeSaved()
 
   return useMutation({
-    mutationFn: async (input: {
-      shelfId: string
-      coffeeId: string
-      photo: Blob
-    }) => {
+    mutationFn: async (input: { coffeeId: string; photo: Blob }) => {
       const body = new FormData()
       body.append('photo', await compressPhoto(input.photo))
 
-      return $fetch(photoPath(input), { method: 'PUT', body })
+      return $fetch(photoPath(input.coffeeId), { method: 'PUT', body })
     },
     onSuccess: (_data, input) => saved(input.coffeeId),
   })
@@ -181,9 +173,9 @@ export function useCoffeePhotoRemoval() {
   const saved = useCoffeeSaved()
 
   return useMutation({
-    mutationFn: (input: { shelfId: string; coffeeId: string }) =>
-      $fetch(photoPath(input), { method: 'DELETE' }),
-    onSuccess: (_data, input) => saved(input.coffeeId),
+    mutationFn: (coffeeId: string) =>
+      $fetch(photoPath(coffeeId), { method: 'DELETE' }),
+    onSuccess: (_data, coffeeId) => saved(coffeeId),
   })
 }
 

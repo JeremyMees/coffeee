@@ -30,7 +30,7 @@ async function withPhoto() {
 
 function mountPhoto(shown: PhotoCoffee = ayele) {
   return mountSuspended(CoffeePhoto, {
-    props: { shelfId: sarah.shelf.id, coffee: shown },
+    props: { coffee: shown },
   })
 }
 
@@ -124,11 +124,10 @@ describe('CoffeePhoto', () => {
   })
 
   it('explains why a photo could not be uploaded', async () => {
-    failRequest(
-      'PUT',
-      `/api/shelves/${sarah.shelf.id}/coffees/${ayele.id}/photo`,
-      { status: 413, message: 'That photo is too large' },
-    )
+    failRequest('PUT', `/api/coffees/${ayele.id}/photo`, {
+      status: 413,
+      message: 'That photo is too large',
+    })
     const wrapper = await mountPhoto()
 
     await choose(wrapper, [

@@ -13,9 +13,9 @@ import coffeeShelvesHandler from '#server/api/coffees/[coffeeId]/shelves.get'
 import coffeeVerdictHandler from '#server/api/coffees/[coffeeId]/verdict.get'
 import deleteCoffeeHandler from '#server/api/coffees/[coffeeId].delete'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
-import editCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].patch'
-import removePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/photo.delete'
-import replacePhotoHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/photo.put'
+import editCoffeeHandler from '#server/api/coffees/[coffeeId].patch'
+import removePhotoHandler from '#server/api/coffees/[coffeeId]/photo.delete'
+import replacePhotoHandler from '#server/api/coffees/[coffeeId]/photo.put'
 import photoHandler from '#server/api/photos/[...pathname].get'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
 import catalogFilterHandler from '#server/api/shelves/[shelfId]/catalog/[filter].get'
@@ -77,10 +77,10 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/coffees/:coffeeId/roaster', coffeeRoasterHandler)
     .get('/api/coffees/:coffeeId/shelves', coffeeShelvesHandler)
     .delete('/api/coffees/:coffeeId', deleteCoffeeHandler)
+    .patch('/api/coffees/:coffeeId', editCoffeeHandler)
+    .put('/api/coffees/:coffeeId/photo', replacePhotoHandler)
+    .delete('/api/coffees/:coffeeId/photo', removePhotoHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
-    .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
-    .put('/api/shelves/:shelfId/coffees/:coffeeId/photo', replacePhotoHandler)
-    .delete('/api/shelves/:shelfId/coffees/:coffeeId/photo', removePhotoHandler)
     .get('/api/photos/**:pathname', photoHandler)
   const app = createApp().use(router)
 
@@ -658,7 +658,7 @@ describe('GET /api/coffees/:coffeeId', () => {
   })
 })
 
-describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
+describe('PATCH /api/coffees/:coffeeId', () => {
   const details = {
     name: 'Ayele Fulasa Natural',
     roaster: 'Square Mile',
@@ -677,13 +677,8 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
     return { creator, coffeeId: created.id as string }
   }
 
-  function edit(
-    shelfId: string,
-    coffeeId: string,
-    headers: Headers,
-    body: unknown = details,
-  ) {
-    return request(`/api/shelves/${shelfId}/coffees/${coffeeId}`, {
+  function edit(coffeeId: string, headers: Headers, body: unknown = details) {
+    return request(`/api/coffees/${coffeeId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify(body),
@@ -702,7 +697,7 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
   it('lets the person who added it change its details', async () => {
     const { creator, coffeeId } = await addedCoffee()
 
-    const response = await edit(creator.shelf.id, coffeeId, creator.headers)
+    const response = await edit(coffeeId, creator.headers)
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
@@ -725,11 +720,11 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
     )
   })
 
-  it('lets an admin change it from their own shelf', async () => {
+  it('lets an admin change it', async () => {
     const { coffeeId } = await addedCoffee()
     const admin = await member('admin')
 
-    const response = await edit(admin.shelf.id, coffeeId, admin.headers)
+    const response = await edit(coffeeId, admin.headers)
 
     expect(response.status).toBe(200)
     expect(await canEdit(admin.shelf.id, coffeeId, admin.headers)).toBe(true)
@@ -739,7 +734,7 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
     const { coffeeId } = await addedCoffee()
     const other = await member()
 
-    const response = await edit(other.shelf.id, coffeeId, other.headers)
+    const response = await edit(coffeeId, other.headers)
 
     expect(response.status).toBe(403)
     expect((await response.json()).statusMessage).toBe(
@@ -755,7 +750,7 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
       name: 'Red Brick',
     })
 
-    const response = await edit(creator.shelf.id, coffeeId, creator.headers, {
+    const response = await edit(coffeeId, creator.headers, {
       ...details,
       name: 'red brick',
     })
@@ -770,7 +765,7 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
   it('explains what is wrong in plain words', async () => {
     const { creator, coffeeId } = await addedCoffee()
 
-    const response = await edit(creator.shelf.id, coffeeId, creator.headers, {
+    const response = await edit(coffeeId, creator.headers, {
       ...details,
       roastLevel: 'burnt',
     })
@@ -782,24 +777,15 @@ describe('PATCH /api/shelves/:shelfId/coffees/:coffeeId', () => {
   it('says when there is no such coffee', async () => {
     const { creator } = await addedCoffee()
 
-    const response = await edit(creator.shelf.id, 'nope', creator.headers)
-
-    expect(response.status).toBe(404)
-  })
-
-  it('refuses a shelf the editor is not a member of', async () => {
-    const { creator, coffeeId } = await addedCoffee()
-    const admin = await member('admin')
-
-    const response = await edit(creator.shelf.id, coffeeId, admin.headers)
+    const response = await edit('nope', creator.headers)
 
     expect(response.status).toBe(404)
   })
 
   it('refuses anonymous requests', async () => {
-    const { creator, coffeeId } = await addedCoffee()
+    const { coffeeId } = await addedCoffee()
 
-    const response = await edit(creator.shelf.id, coffeeId, new Headers())
+    const response = await edit(coffeeId, new Headers())
 
     expect(response.status).toBe(401)
   })
@@ -1072,16 +1058,11 @@ describe('the photo of a coffee', () => {
     return { creator, coffeeId: created.id as string }
   }
 
-  function photoPath(shelfId: string, coffeeId: string) {
-    return `/api/shelves/${shelfId}/coffees/${coffeeId}/photo`
+  function photoPath(coffeeId: string) {
+    return `/api/coffees/${coffeeId}/photo`
   }
 
-  function upload(
-    shelfId: string,
-    coffeeId: string,
-    headers: Headers,
-    content = 'bag',
-  ) {
+  function upload(coffeeId: string, headers: Headers, content = 'bag') {
     const body = new FormData()
     body.append(
       'photo',
@@ -1091,7 +1072,7 @@ describe('the photo of a coffee', () => {
     const multipart = new Headers(headers)
     multipart.delete('content-type')
 
-    return request(photoPath(shelfId, coffeeId), {
+    return request(photoPath(coffeeId), {
       method: 'PUT',
       headers: multipart,
       body,
@@ -1116,7 +1097,7 @@ describe('the photo of a coffee', () => {
   it('lets the person who added it add a photo everyone sees', async () => {
     const { creator, coffeeId } = await addedCoffee()
 
-    const response = await upload(creator.shelf.id, coffeeId, creator.headers)
+    const response = await upload(coffeeId, creator.headers)
     const { photoUrl } = await response.json()
     const served = await request(photoUrl)
     const stock = await request(`/api/shelves/${creator.shelf.id}/stock`, {
@@ -1134,15 +1115,10 @@ describe('the photo of a coffee', () => {
 
   it('deletes the old photo when it is replaced', async () => {
     const { creator, coffeeId } = await addedCoffee()
-    const first = await upload(creator.shelf.id, coffeeId, creator.headers)
+    const first = await upload(coffeeId, creator.headers)
     const { photoUrl: oldUrl } = await first.json()
 
-    const second = await upload(
-      creator.shelf.id,
-      coffeeId,
-      creator.headers,
-      'new bag',
-    )
+    const second = await upload(coffeeId, creator.headers, 'new bag')
     const { photoUrl: newUrl } = await second.json()
 
     expect(newUrl).not.toBe(oldUrl)
@@ -1152,10 +1128,10 @@ describe('the photo of a coffee', () => {
 
   it('removes the photo and its file', async () => {
     const { creator, coffeeId } = await addedCoffee()
-    const uploaded = await upload(creator.shelf.id, coffeeId, creator.headers)
+    const uploaded = await upload(coffeeId, creator.headers)
     const { photoUrl } = await uploaded.json()
 
-    const response = await request(photoPath(creator.shelf.id, coffeeId), {
+    const response = await request(photoPath(coffeeId), {
       method: 'DELETE',
       headers: creator.headers,
     })
@@ -1171,7 +1147,7 @@ describe('the photo of a coffee', () => {
     const { coffeeId } = await addedCoffee()
     const other = await member()
 
-    const response = await upload(other.shelf.id, coffeeId, other.headers)
+    const response = await upload(coffeeId, other.headers)
 
     expect(response.status).toBe(403)
     expect(await shownPhoto(other.shelf.id, coffeeId, other.headers)).toBeNull()
@@ -1180,7 +1156,7 @@ describe('the photo of a coffee', () => {
   it('says when there is no such coffee', async () => {
     const { creator } = await addedCoffee()
 
-    const response = await request(photoPath(creator.shelf.id, 'nope'), {
+    const response = await request(photoPath('nope'), {
       method: 'DELETE',
       headers: creator.headers,
     })

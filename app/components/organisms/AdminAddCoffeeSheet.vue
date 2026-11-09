@@ -5,7 +5,9 @@ const open = defineModel<boolean>('open', { default: false })
 const { mutateAsync: createEntry } = useAdminEntryCreate()
 
 async function add(details: CoffeeDetails) {
-  await createEntry({ list: 'coffees', body: details })
+  const added = await createEntry({ list: 'coffees', body: details })
+
+  return added.id
 }
 </script>
 

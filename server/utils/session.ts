@@ -92,7 +92,7 @@ export function refuseCoffeeEdit(outcome: 'notFound' | 'forbidden'): never {
 }
 
 export async function requireEditableCoffee(event: H3Event) {
-  const { user } = await requireShelf(event)
+  const user = await requireUser(event)
   const coffeeId = getRouterParam(event, 'coffeeId')!
   const found = await findEditableCoffee(useDb(), { coffeeId, editor: user })
 

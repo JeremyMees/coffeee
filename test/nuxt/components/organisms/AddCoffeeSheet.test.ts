@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { eq } from 'drizzle-orm'
 import AddCoffeeSheet from '~/components/organisms/AddCoffeeSheet.vue'
 import { shelfPath, useAddCoffee, useCurrentUser } from '#imports'
@@ -13,6 +13,7 @@ import {
   daysAgo,
   forgetLastShelf,
   pickDate,
+  pickFile,
   pickOrigin,
   pickMulti,
   pickRoaster,
@@ -22,6 +23,12 @@ import {
   type,
 } from '../../fixtures'
 import { database, scenario, signIn } from '../../server'
+
+const { compressPhoto } = vi.hoisted(() => ({
+  compressPhoto: vi.fn(async () => new Blob(['small'], { type: 'image/webp' })),
+}))
+
+mockNuxtImport('compressPhoto', () => compressPhoto)
 
 let sarah: Member
 
@@ -62,6 +69,7 @@ async function addedCoffee(name: string) {
     .select({
       id: coffee.id,
       name: coffee.name,
+      photoUrl: coffee.photoUrl,
       roaster: roaster.name,
       roastLevel: coffee.roastLevel,
       roastedFor: coffee.roastedFor,
@@ -234,6 +242,21 @@ describe('AddCoffeeSheet', () => {
     expect(names(added.processes)).toEqual(['Washed'])
     expect(added.varietals).toEqual([])
     expect(added.flavorNotes).toEqual([])
+  })
+
+  it('adds the coffee with a photo of its bag', async () => {
+    URL.createObjectURL = vi.fn(() => 'blob:bag')
+    URL.revokeObjectURL = vi.fn()
+    await openSheet()
+
+    await fillRequired()
+    pickFile('add-coffee-photo-input')
+    await addCoffee()
+
+    await addedAndGone(shelfPath(sarah.shelf))
+    expect((await addedCoffee('Ayele Fulasa')).photoUrl).toMatch(
+      /^\/api\/photos\/coffees\/[\w-]+\.webp$/,
+    )
   })
 
   it('leaves the optional details empty and can add a new roaster', async () => {

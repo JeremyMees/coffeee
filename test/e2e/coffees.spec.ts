@@ -82,11 +82,22 @@ function pickRegion(page: Page, name: string, option: string) {
 
 async function addCoffee(
   page: Page,
-  coffee: { name: string; roaster: string; newRoaster: boolean },
+  coffee: {
+    name: string
+    roaster: string
+    newRoaster: boolean
+    photo?: Awaited<ReturnType<typeof bagPhoto>>
+  },
 ) {
   await page.getByTestId('page-add-coffee').click()
 
   const sheet = page.getByTestId('add-coffee-sheet')
+  if (coffee.photo) {
+    await sheet
+      .getByTestId('add-coffee-photo-input')
+      .setInputFiles(coffee.photo)
+    await expect(sheet.getByTestId('add-coffee-photo-preview')).toBeVisible()
+  }
   await sheet.getByTestId('coffee-name').fill(coffee.name)
   await pickRoaster(page, coffee.roaster, coffee.newRoaster)
   await sheet.getByTestId('add-coffee-next').click()
@@ -664,6 +675,36 @@ test('gives a coffee a shrunk photo of its bag and lets it be replaced or remove
 
   await expect(page.getByTestId('coffee-photo-placeholder')).toBeVisible()
   expect((await page.request.get(secondUrl!)).status()).toBe(404)
+})
+
+test('adds a coffee with a photo of its bag and removes it while editing', async ({
+  page,
+  member,
+}) => {
+  const roaster = uniqueName('Roaster')
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, {
+    name: 'Ayele Fulasa',
+    roaster,
+    newRoaster: true,
+    photo: await bagPhoto(page, '#e4572e'),
+  })
+
+  const card = stockCard(page, 'Ayele Fulasa').getByTestId('coffee-card-photo')
+  await expect(card).toHaveAttribute('src', /\.webp$/)
+  const photoUrl = await card.getAttribute('src')
+
+  const sheet = await editCoffee(page, 'Ayele Fulasa')
+  await expect(sheet.getByTestId('edit-coffee-photo-preview')).toHaveAttribute(
+    'src',
+    photoUrl!,
+  )
+  await sheet.getByTestId('edit-coffee-photo-remove').click()
+  await sheet.getByTestId('edit-coffee-submit').click()
+
+  await expect(sheet).toBeHidden()
+  await expect(page.getByTestId('coffee-photo-placeholder')).toBeVisible()
+  expect((await page.request.get(photoUrl!)).status()).toBe(404)
 })
 
 test('buys a coffee again, finishes its bags and keeps its history tidy', async ({

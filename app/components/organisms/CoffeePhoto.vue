@@ -2,7 +2,7 @@
 import { CameraIcon, ImageIcon, Trash2Icon } from '@lucide/vue'
 import { useCoffeePhotoRemoval, useCoffeePhotoUpdate } from '~/queries/coffees'
 
-const props = defineProps<{ shelfId: string; coffee: PhotoCoffee }>()
+const props = defineProps<{ coffee: PhotoCoffee }>()
 
 const morph = useMorph('coffee', () => props.coffee.id)
 morph.open()
@@ -15,10 +15,6 @@ const { mutateAsync: removePhoto, isPending: removing } =
   useCoffeePhotoRemoval()
 
 const busy = computed(() => uploading.value || removing.value)
-const target = computed(() => ({
-  shelfId: props.shelfId,
-  coffeeId: props.coffee.id,
-}))
 
 async function attempt(action: () => Promise<unknown>) {
   failure.value = ''
@@ -37,11 +33,11 @@ async function pick(event: Event) {
 
   if (!photo) return
 
-  await attempt(() => updatePhoto({ ...target.value, photo }))
+  await attempt(() => updatePhoto({ coffeeId: props.coffee.id, photo }))
 }
 
 function remove() {
-  return attempt(() => removePhoto(target.value))
+  return attempt(() => removePhoto(props.coffee.id))
 }
 </script>
 

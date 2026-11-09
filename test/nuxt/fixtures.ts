@@ -230,3 +230,12 @@ export async function logoBlob() {
 
   return new Blob([new Uint8Array(logo)], { type: 'image/webp' })
 }
+
+export function pickFile(
+  testId: string,
+  file = new File(['bag'], 'bag.png', { type: 'image/png' }),
+) {
+  const input = byTestId<HTMLInputElement>(testId)!
+  Object.defineProperty(input, 'files', { value: [file], configurable: true })
+  input.dispatchEvent(new Event('change', { bubbles: true }))
+}

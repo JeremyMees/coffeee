@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { eq } from 'drizzle-orm'
 import EditCoffeeSheet from '~/components/organisms/EditCoffeeSheet.vue'
 import { shelfCoffeePath } from '#imports'
@@ -13,6 +13,7 @@ import {
   isChecked,
   chipLabels,
   pickOrigin,
+  pickFile,
   pickMulti,
   pickRoaster,
   pickScoped,
@@ -20,6 +21,12 @@ import {
   type,
 } from '../../fixtures'
 import { database, scenario, signIn } from '../../server'
+
+const { compressPhoto } = vi.hoisted(() => ({
+  compressPhoto: vi.fn(async () => new Blob(['small'], { type: 'image/webp' })),
+}))
+
+mockNuxtImport('compressPhoto', () => compressPhoto)
 
 let sarah: Member
 let ayele: Awaited<ReturnType<typeof scenario.coffee>>
@@ -89,7 +96,7 @@ async function openSheet() {
   )
   const sheet = await mountSuspended(EditCoffeeSheet, {
     route: shelfCoffeePath(sarah.shelf, ayele),
-    props: { shelfId: sarah.shelf.id, coffee: editable, open: true },
+    props: { coffee: editable, open: true },
     attachTo: document.body,
   })
 
@@ -202,5 +209,29 @@ describe('EditCoffeeSheet', () => {
     )
     expect(sheet.emitted('update:open')).toBeUndefined()
     expect((await savedCoffee()).name).toBe('Ayele Fulasa')
+  })
+
+  it('shows the current photo and replaces it with a picked one', async () => {
+    URL.createObjectURL = vi.fn(() => 'blob:bag')
+    URL.revokeObjectURL = vi.fn()
+    const before = await scenario.coffeePhoto(ayele.id)
+    const sheet = await openSheet()
+
+    expect(byTestId('edit-coffee-photo-preview')!.getAttribute('src')).toBe(
+      before,
+    )
+    pickFile('edit-coffee-photo-input')
+    await submit('edit-coffee-form')
+
+    await vi.waitFor(() =>
+      expect(sheet.emitted('update:open')).toEqual([[false]]),
+    )
+    const db = await database()
+    const [saved] = await db
+      .select({ photoUrl: coffee.photoUrl })
+      .from(coffee)
+      .where(eq(coffee.id, ayele.id))
+    expect(saved!.photoUrl).toMatch(/^\/api\/photos\/coffees\/[\w-]+\.webp$/)
+    expect(saved!.photoUrl).not.toBe(before)
   })
 })

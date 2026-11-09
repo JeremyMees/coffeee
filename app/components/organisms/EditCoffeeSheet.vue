@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { useCoffeeUpdate } from '~/queries/coffees'
 
-const props = defineProps<{ shelfId: string; coffee: EditableCoffee }>()
+const props = defineProps<{
+  coffee: EditableCoffee & { photoUrl: string | null }
+}>()
 
 const open = defineModel<boolean>('open', { default: false })
 const { mutateAsync: updateCoffee } = useCoffeeUpdate()
 
 async function save(details: CoffeeDetails) {
-  await updateCoffee({
-    shelfId: props.shelfId,
-    coffeeId: props.coffee.id,
-    details,
-  })
+  await updateCoffee({ coffeeId: props.coffee.id, details })
+
+  return props.coffee.id
 }
 </script>
 
@@ -23,6 +23,7 @@ async function save(details: CoffeeDetails) {
     description="Fix its details for everyone who has it on a shelf."
     submit-label="Save changes"
     :coffee="coffee"
+    :photo-url="coffee.photoUrl"
     :send="save"
   />
 </template>

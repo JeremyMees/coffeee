@@ -61,7 +61,6 @@ useHead({ title: () => `${shown.value?.name ?? 'Coffee'} · Coffeee` })
     <template v-if="shown">
       <CoffeePhoto
         class="mt-4"
-        :shelf-id="shelfId"
         :coffee="{ ...shown, canEdit: coffee?.canEdit }"
       />
       <CoffeeHeader
@@ -86,7 +85,6 @@ useHead({ title: () => `${shown.value?.name ?? 'Coffee'} · Coffeee` })
         <EditCoffeeSheet
           v-if="data.canEdit"
           v-model:open="editing"
-          :shelf-id="shelfId"
           :coffee="data"
         />
       </template>

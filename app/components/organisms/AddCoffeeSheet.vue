@@ -10,7 +10,9 @@ async function add(coffee: NewCoffee) {
     throw createError({ statusMessage: 'Join a shelf before adding a coffee' })
   }
 
-  await createCoffee({ shelfId: shelf.value.id, coffee })
+  const added = await createCoffee({ shelfId: shelf.value.id, coffee })
+
+  return added.coffee.id
 }
 
 function stock() {

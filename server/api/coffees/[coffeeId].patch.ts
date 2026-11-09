@@ -2,11 +2,11 @@ import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { coffeeDetailsSchema } from '#shared/utils/schemas'
 import { editCoffee } from '#server/utils/coffees'
 import { useDb } from '#server/utils/db'
-import { refuseCoffeeEdit, requireShelf } from '#server/utils/session'
+import { refuseCoffeeEdit, requireUser } from '#server/utils/session'
 import { readValidBody } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
-  const { user } = await requireShelf(event)
+  const user = await requireUser(event)
   const details = await readValidBody(event, coffeeDetailsSchema)
   const result = await editCoffee(useDb(), {
     coffeeId: getRouterParam(event, 'coffeeId')!,

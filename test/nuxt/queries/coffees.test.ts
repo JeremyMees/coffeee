@@ -212,7 +212,6 @@ describe('useCoffeeUpdate', () => {
     const { result, stock, shown } = await watching(useCoffeeUpdate)
 
     await result.mutateAsync({
-      shelfId: sarah.shelf.id,
       coffeeId: ayele.id,
       details: coffeeDetailsSchema.parse(halo),
     })
@@ -228,7 +227,6 @@ describe('useCoffeePhotoUpdate', () => {
     const { result, shown } = await watching(useCoffeePhotoUpdate)
 
     await result.mutateAsync({
-      shelfId: sarah.shelf.id,
       coffeeId: ayele.id,
       photo: new Blob(['huge'], { type: 'image/jpeg' }),
     })
@@ -250,7 +248,7 @@ describe('useCoffeePhotoRemoval', () => {
       .where(eq(coffee.id, ayele.id))
     const { result, shown } = await watching(useCoffeePhotoRemoval)
 
-    await result.mutateAsync({ shelfId: sarah.shelf.id, coffeeId: ayele.id })
+    await result.mutateAsync(ayele.id)
 
     expect((await stored())?.photoUrl).toBeNull()
     expect(shown()?.photoUrl).toBeNull()

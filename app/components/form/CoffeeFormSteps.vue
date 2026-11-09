@@ -68,6 +68,7 @@ const last = computed(() => step.value === props.steps.length)
     </Stepper>
 
     <FieldGroup v-show="step === 1" :data-testid="`${prefix}-pane-1`">
+      <slot name="photo" />
       <CoffeeIdentityFields />
     </FieldGroup>
     <FieldGroup v-show="step === 2" :data-testid="`${prefix}-pane-2`">

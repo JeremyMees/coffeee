@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { eq } from 'drizzle-orm'
 import CoffeeFormSheet from '~/components/form/CoffeeFormSheet.vue'
-import { shelfPath } from '#imports'
+import { photoMaxBytes, shelfPath } from '#imports'
+import { coffee } from '#server/db/schemas'
 import type { Member } from '#test/support/types'
 import {
   byTestId,
@@ -11,17 +13,27 @@ import {
   currentPath,
   inputValue,
   isChecked,
+  pickFile,
   pickMulti,
   pickOrigin,
   pickRoaster,
   submit,
   type,
 } from '../../fixtures'
-import { failRequest, scenario, signIn } from '../../server'
+import { database, failRequest, scenario, signIn } from '../../server'
+
+const { compressPhoto } = vi.hoisted(() => ({
+  compressPhoto: vi.fn(async () => new Blob(['small'], { type: 'image/webp' })),
+}))
+
+mockNuxtImport('compressPhoto', () => compressPhoto)
 
 let sarah: Member
 
 beforeEach(async () => {
+  compressPhoto.mockClear()
+  URL.createObjectURL = vi.fn(() => 'blob:bag')
+  URL.revokeObjectURL = vi.fn()
   sarah = await scenario.member('Sarah')
   await scenario.roaster(sarah, 'Square Mile')
   await signIn(sarah)
@@ -31,8 +43,10 @@ function failingPath() {
   return `/api/shelves/${sarah.shelf.id}/coffees`
 }
 
-function sendToFailingRoute() {
-  return $fetch(failingPath(), { method: 'POST', body: {} })
+async function sendToFailingRoute() {
+  await $fetch(failingPath(), { method: 'POST', body: {} })
+
+  return 'coffee-id'
 }
 
 async function openSheet(
@@ -45,7 +59,7 @@ async function openSheet(
       title: 'Coffee form',
       description: 'A coffee and its details.',
       submitLabel: 'Send it',
-      send: vi.fn(async () => {}),
+      send: vi.fn(async () => 'coffee-id'),
       open: true,
       ...props,
     },
@@ -58,6 +72,16 @@ async function openSheet(
   )
 
   return sheet
+}
+
+async function storedPhoto(coffeeId: string) {
+  const db = await database()
+  const [found] = await db
+    .select({ photoUrl: coffee.photoUrl })
+    .from(coffee)
+    .where(eq(coffee.id, coffeeId))
+
+  return found!.photoUrl
 }
 
 function sheetText() {
@@ -120,7 +144,7 @@ describe('CoffeeFormSheet', () => {
   })
 
   it('goes back to the first step with a problem and sends nothing', async () => {
-    const send = vi.fn(async () => {})
+    const send = vi.fn(async () => 'coffee-id')
     await openSheet({ send })
     await type('coffee-name', 'Ayele Fulasa')
     await pickRoaster('square', 'Square Mile')
@@ -137,7 +161,7 @@ describe('CoffeeFormSheet', () => {
   })
 
   it('sends the checked coffee, closes and goes where it was told', async () => {
-    const send = vi.fn(async () => {})
+    const send = vi.fn(async () => 'coffee-id')
     const sheet = await openSheet({ send, goTo: () => '/profile' })
     await fillRequired()
 
@@ -222,7 +246,8 @@ describe('CoffeeFormSheet', () => {
   it('cannot be sent twice while sending', async () => {
     let finish = () => {}
     const send = vi.fn(
-      () => new Promise<void>(resolve => (finish = () => resolve())),
+      () =>
+        new Promise<string>(resolve => (finish = () => resolve('coffee-id'))),
     )
     await openSheet({ send })
     await fillRequired()
@@ -253,5 +278,113 @@ describe('CoffeeFormSheet', () => {
     expect(inputValue('coffee-name')).toBe('')
     expect(currentPane()).toBe(1)
     expect(byTestId('form-error')).toBeNull()
+  })
+
+  it('offers a photo on the first step', async () => {
+    await openSheet()
+
+    expect(
+      byTestId('coffee-form-pane-1', 'coffee-form-photo-pick')!.textContent,
+    ).toContain('Add photo')
+  })
+
+  it('saves the picked photo once the coffee is saved', async () => {
+    const ayele = await scenario.coffee(sarah.shelf)
+    const send = vi.fn(async () => ayele.id)
+    const sheet = await openSheet({ send })
+    await fillRequired()
+    pickFile('coffee-form-photo-input')
+
+    await submit('coffee-form-form')
+
+    await vi.waitFor(() =>
+      expect(sheet.emitted('update:open')).toEqual([[false]]),
+    )
+    expect(compressPhoto).toHaveBeenCalledOnce()
+    expect(await storedPhoto(ayele.id)).toMatch(
+      /^\/api\/photos\/coffees\/[\w-]+\.webp$/,
+    )
+  })
+
+  it('leaves the photo alone when it was not touched', async () => {
+    const ayele = await scenario.coffee(sarah.shelf)
+    const photoUrl = await scenario.coffeePhoto(ayele.id)
+    const sheet = await openSheet({
+      send: vi.fn(async () => ayele.id),
+      photoUrl,
+    })
+    await fillRequired()
+
+    await submit('coffee-form-form')
+
+    await vi.waitFor(() =>
+      expect(sheet.emitted('update:open')).toEqual([[false]]),
+    )
+    expect(compressPhoto).not.toHaveBeenCalled()
+    expect(await storedPhoto(ayele.id)).toBe(photoUrl)
+  })
+
+  it('removes the current photo when asked', async () => {
+    const ayele = await scenario.coffee(sarah.shelf)
+    const photoUrl = await scenario.coffeePhoto(ayele.id)
+    const sheet = await openSheet({
+      send: vi.fn(async () => ayele.id),
+      photoUrl,
+    })
+    expect(byTestId('coffee-form-photo-preview')!.getAttribute('src')).toBe(
+      photoUrl,
+    )
+    await fillRequired()
+
+    await click('coffee-form-photo-remove')
+    await submit('coffee-form-form')
+
+    await vi.waitFor(() =>
+      expect(sheet.emitted('update:open')).toEqual([[false]]),
+    )
+    expect(await storedPhoto(ayele.id)).toBeNull()
+  })
+
+  it('says when the coffee was saved but its photo was not, and only retries the photo', async () => {
+    compressPhoto.mockResolvedValueOnce(
+      new Blob([new Uint8Array(photoMaxBytes + 1)], { type: 'image/webp' }),
+    )
+    const ayele = await scenario.coffee(sarah.shelf)
+    const send = vi.fn(async () => ayele.id)
+    const sheet = await openSheet({ send })
+    await fillRequired()
+    pickFile('coffee-form-photo-input')
+
+    await submit('coffee-form-form')
+
+    await vi.waitFor(() =>
+      expect(byTestId('form-error')?.textContent).toContain(
+        'Ayele Fulasa was saved, but its photo was not: That photo is too large',
+      ),
+    )
+    expect(sheet.emitted('update:open')).toBeUndefined()
+    expect(await storedPhoto(ayele.id)).toBeNull()
+
+    await submit('coffee-form-form')
+
+    await vi.waitFor(() =>
+      expect(sheet.emitted('update:open')).toEqual([[false]]),
+    )
+    expect(send).toHaveBeenCalledOnce()
+    expect(await storedPhoto(ayele.id)).not.toBeNull()
+  })
+
+  it('forgets a picked photo when it opens again', async () => {
+    const sheet = await openSheet()
+    pickFile('coffee-form-photo-input')
+    await vi.waitFor(() =>
+      expect(byTestId('coffee-form-photo-preview')).not.toBeNull(),
+    )
+
+    await sheet.setProps({ open: false })
+    await sheet.setProps({ open: true })
+    await flushPromises()
+
+    expect(byTestId('coffee-form-photo-preview')).toBeNull()
   })
 })

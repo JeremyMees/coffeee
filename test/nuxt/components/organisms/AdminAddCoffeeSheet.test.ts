@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { eq } from 'drizzle-orm'
 import AdminAddCoffeeSheet from '~/components/organisms/AdminAddCoffeeSheet.vue'
 import { coffee, roaster } from '#server/db/schemas'
@@ -7,6 +7,7 @@ import type { Member } from '#test/support/types'
 import {
   byTestId,
   click,
+  pickFile,
   pickMulti,
   pickOrigin,
   pickRoaster,
@@ -14,6 +15,12 @@ import {
   type,
 } from '../../fixtures'
 import { database, scenario, signIn } from '../../server'
+
+const { compressPhoto } = vi.hoisted(() => ({
+  compressPhoto: vi.fn(async () => new Blob(['small'], { type: 'image/webp' })),
+}))
+
+mockNuxtImport('compressPhoto', () => compressPhoto)
 
 let jeremy: Member
 
@@ -44,7 +51,11 @@ async function stored() {
   const db = await database()
 
   return db
-    .select({ name: coffee.name, roaster: roaster.name })
+    .select({
+      name: coffee.name,
+      roaster: roaster.name,
+      photoUrl: coffee.photoUrl,
+    })
     .from(coffee)
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
 }
@@ -67,8 +78,24 @@ describe('AdminAddCoffeeSheet', () => {
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
     expect(await stored()).toEqual([
-      { name: 'Ayele Fulasa', roaster: 'Square Mile' },
+      { name: 'Ayele Fulasa', roaster: 'Square Mile', photoUrl: null },
     ])
+  })
+
+  it('adds the coffee with a photo of its bag', async () => {
+    URL.createObjectURL = vi.fn(() => 'blob:bag')
+    URL.revokeObjectURL = vi.fn()
+    const sheet = await openSheet()
+
+    await fillRequired('Ayele Fulasa')
+    pickFile('admin-add-coffee-photo-input')
+    await submit('admin-add-coffee-form')
+
+    await vi.waitFor(() =>
+      expect(sheet.emitted('update:open')).toEqual([[false]]),
+    )
+    const [added] = await stored()
+    expect(added!.photoUrl).toMatch(/^\/api\/photos\/coffees\/[\w-]+\.webp$/)
   })
 
   it('shows a coffee that is already in the catalog next to its name', async () => {
