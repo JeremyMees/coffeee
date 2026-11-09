@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { onlineManager } from '@tanstack/vue-query'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { roasterPath } from '#imports'
 import type { Member } from '#test/support/types'
 import { click, forgetLastShelf, tid } from '../../fixtures'
-import { scenario, signIn } from '../../server'
+import { failRequest, holdRequest, scenario, signIn } from '../../server'
 
 let sarah: Member
 
@@ -13,6 +14,16 @@ beforeEach(async () => {
   sarah = await scenario.member('Sarah')
   await signIn(sarah)
 })
+
+afterEach(() => onlineManager.setOnline(true))
+
+function listPath() {
+  return `/api/shelves/${sarah.shelf.id}/roasters`
+}
+
+function mount() {
+  return mountSuspended(App, { route: '/roasters', attachTo: document.body })
+}
 
 async function laCabra() {
   const id = await scenario.roaster(sarah, 'La Cabra')
@@ -35,10 +46,10 @@ async function twoRoasters() {
 }
 
 async function roasters() {
-  const page = await mountSuspended(App, {
-    route: '/roasters',
-    attachTo: document.body,
-  })
+  const page = await mount()
+  await vi.waitFor(() =>
+    expect(page.find(tid('roasters-skeleton')).exists()).toBe(false),
+  )
 
   return {
     page,
@@ -92,5 +103,77 @@ describe('the roasters page', () => {
         'Your shelf has not bought from any roaster yet.',
       ),
     )
+  })
+  it('shows the page and a skeleton while the roasters load', async () => {
+    await twoRoasters()
+    const hold = holdRequest('GET', listPath())
+
+    const page = await mount()
+
+    expect(page.get(tid('page-title')).text()).toBe('Roasters')
+    expect(page.find(tid('roasters-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('roasters')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(page.findAll(tid('roaster-result'))).toHaveLength(2),
+    )
+    expect(page.find(tid('roasters-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error with a retry when the roasters fail to load', async () => {
+    await twoRoasters()
+    const lift = failRequest('GET', listPath(), {
+      status: 500,
+      message: 'Nope',
+    })
+
+    const page = await mount()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('roasters-error')).exists()).toBe(true),
+    )
+    expect(page.get(tid('page-title')).text()).toBe('Roasters')
+    expect(page.find(tid('roasters-skeleton')).exists()).toBe(false)
+
+    lift()
+    await page.get(tid('roasters-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.findAll(tid('roaster-result'))).toHaveLength(2),
+    )
+    expect(page.find(tid('roasters-error')).exists()).toBe(false)
+  })
+
+  it('says it is offline instead of showing a skeleton forever', async () => {
+    onlineManager.setOnline(false)
+
+    const page = await mount()
+
+    expect(page.find(tid('roasters-offline')).exists()).toBe(true)
+    expect(page.find(tid('roasters-skeleton')).exists()).toBe(false)
+
+    onlineManager.setOnline(true)
+    await page.get(tid('roasters-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('roasters-empty')).exists()).toBe(true),
+    )
+  })
+
+  it('keeps the roasters on screen with no skeleton while the filter changes', async () => {
+    await twoRoasters()
+    const { page, names } = await roasters()
+    const hold = holdRequest('GET', listPath())
+
+    await click('roasters-filter-bought-from')
+
+    expect(page.find(tid('roasters-skeleton')).exists()).toBe(false)
+    expect(names()).toEqual(['La Cabra', 'Square Mile'])
+
+    hold.release()
+
+    await vi.waitFor(() => expect(names()).toEqual(['Square Mile']))
   })
 })

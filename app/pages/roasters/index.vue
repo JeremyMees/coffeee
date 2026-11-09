@@ -11,7 +11,6 @@ const boughtFrom = ref(false)
 const listed = useRoasterPages(shelfId, (): Record<string, string> =>
   boughtFrom.value ? { boughtFrom: 'true' } : {},
 )
-await listed.suspense()
 
 const roasters = computed(
   () => listed.data.value?.pages.flatMap(loaded => loaded.roasters) ?? [],
@@ -46,31 +45,35 @@ const total = computed(() => listed.data.value?.pages[0]?.total ?? 0)
         Bought from
       </button>
     </div>
-    <p
-      v-if="!roasters.length"
-      class="mt-8 text-xs"
-      data-testid="roasters-empty"
-    >
-      {{
-        boughtFrom
-          ? 'Your shelf has not bought from any roaster yet.'
-          : 'Nobody has added a roaster yet.'
-      }}
-    </p>
-    <template v-else>
-      <p class="mt-8 text-xs uppercase" data-testid="roasters-total">
-        {{ total }} {{ total === 1 ? 'roaster' : 'roasters' }}
-      </p>
-      <ul
-        aria-label="Roasters"
-        data-testid="roasters"
-        class="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3"
+    <QuerySection :query="listed" testid="roasters">
+      <p
+        v-if="!roasters.length"
+        class="mt-8 text-xs"
+        data-testid="roasters-empty"
       >
-        <li v-for="roaster in roasters" :key="roaster.id">
-          <RoasterResult :roaster="roaster" />
-        </li>
-      </ul>
-      <LoadMore :pages="listed" data-testid="roasters-more" />
-    </template>
+        {{
+          boughtFrom
+            ? 'Your shelf has not bought from any roaster yet.'
+            : 'Nobody has added a roaster yet.'
+        }}
+      </p>
+      <template v-else>
+        <p class="mt-8 text-xs uppercase" data-testid="roasters-total">
+          {{ total }} {{ total === 1 ? 'roaster' : 'roasters' }}
+        </p>
+        <ul
+          aria-label="Roasters"
+          data-testid="roasters"
+          class="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3"
+        >
+          <li v-for="roaster in roasters" :key="roaster.id">
+            <RoasterResult :roaster="roaster" />
+          </li>
+        </ul>
+        <LoadMore :pages="listed" data-testid="roasters-more" />
+      </template>
+
+      <template #skeleton><RoastersSkeleton /></template>
+    </QuerySection>
   </main>
 </template>
