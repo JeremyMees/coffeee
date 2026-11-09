@@ -7,7 +7,7 @@ defineProps<{ roaster: Pick<ShelfRoaster, 'name' | 'logoUrl'> }>()
     class="grid shrink-0 place-items-center overflow-hidden rounded-full border bg-background"
     data-testid="roaster-logo"
   >
-    <NuxtImg
+    <LazyNuxtImg
       v-if="roaster.logoUrl"
       :src="roaster.logoUrl"
       :alt="`The logo of ${roaster.name}`"
