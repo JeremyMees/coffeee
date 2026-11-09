@@ -70,6 +70,16 @@ describe('QuerySection', () => {
     expect(wrapper.get(tid('items-content')).text()).toBe('Ayele')
   })
 
+  it('shows data it already had while the page is hydrating', async () => {
+    const nuxtApp = useNuxtApp()
+    nuxtApp.isHydrating = true
+    const wrapper = await section({ data: ['Ayele'] }).mount()
+    nuxtApp.isHydrating = false
+
+    expect(wrapper.get(tid('items-content')).text()).toBe('Ayele')
+    expect(wrapper.find(tid('items-skeleton')).exists()).toBe(false)
+  })
+
   it('keeps the content while it refreshes or a refresh fails', async () => {
     const wrapper = await section({
       data: ['Ayele'],

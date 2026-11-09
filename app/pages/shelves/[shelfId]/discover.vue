@@ -76,7 +76,7 @@ function clear() {
       <QuerySection :query="address.labels" testid="discover-filters">
         <BrowsingFilters v-model="filter" :shelf-id="shelfId" area="catalog" />
 
-        <template #skeleton><BrowsingFiltersSkeleton /></template>
+        <template #skeleton><LazyBrowsingFiltersSkeleton /></template>
       </QuerySection>
     </div>
     <QuerySection :query="catalog" testid="discover">

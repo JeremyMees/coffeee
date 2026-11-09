@@ -131,7 +131,7 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
             :toggle="favourites"
           />
 
-          <template #skeleton><BrowsingFiltersSkeleton /></template>
+          <template #skeleton><LazyBrowsingFiltersSkeleton /></template>
         </QuerySection>
         <div
           v-if="desktop"
@@ -198,7 +198,7 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
             </button>
           </div>
         </div>
-        <LibraryTable
+        <LazyLibraryTable
           v-else-if="table"
           v-model:sorting="sorting"
           v-model:pagination="pagination"
@@ -216,20 +216,20 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
             <li
               v-for="coffee in cards"
               :key="coffee.id"
-              class="not-first:-mt-[216px] lg:not-first:mt-0"
+              class="not-first:-mt-54 lg:not-first:mt-0"
             >
-              <CoffeeCard
+              <LazyCoffeeCard
                 :coffee="coffee"
                 :to="shelfCoffeePath(shelf!, coffee)"
               />
             </li>
           </ul>
-          <LoadMore :pages="grid" data-testid="library-more" />
+          <LazyLoadMore :pages="grid" data-testid="library-more" />
         </template>
 
         <template #skeleton>
-          <LibraryTableSkeleton v-if="table" />
-          <LibrarySkeleton v-else />
+          <LazyLibraryTableSkeleton v-if="table" />
+          <LazyLibrarySkeleton v-else />
         </template>
       </QuerySection>
     </template>

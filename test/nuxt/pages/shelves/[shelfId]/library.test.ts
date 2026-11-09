@@ -70,6 +70,15 @@ const skeletons = [
   .map(id => tid(id))
   .join(', ')
 
+const content = [
+  'library-empty',
+  'library-no-match',
+  'library-table',
+  'coffee-card',
+]
+  .map(id => tid(id))
+  .join(', ')
+
 function libraryPath(query = '') {
   return `${shelfPath(sarah.shelf)}/library${query}`
 }
@@ -95,7 +104,10 @@ async function library(route = libraryPath()) {
     page.findAll(tid('library', 'coffee-card-name')).map(name => name.text())
   const rows = () =>
     page.findAll(tid('library-row-name')).map(name => name.text())
-  await vi.waitFor(() => expect(page.find(skeletons).exists()).toBe(false))
+  await vi.waitFor(() => {
+    expect(page.find(skeletons).exists()).toBe(false)
+    expect(page.find(content).exists()).toBe(true)
+  })
 
   return { page, cards, rows }
 }

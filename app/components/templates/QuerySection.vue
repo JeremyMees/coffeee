@@ -1,12 +1,14 @@
 <script setup lang="ts" generic="Data">
-defineProps<{ query: QueryState<Data>; testid: string }>()
+const props = defineProps<{ query: QueryState<Data>; testid: string }>()
 
 const hydrated = useHydrated()
+const rendersWithData = props.query.data.value !== undefined
+const ready = computed(() => hydrated.value || rendersWithData)
 </script>
 
 <template>
   <slot
-    v-if="hydrated && query.data.value !== undefined"
+    v-if="ready && query.data.value !== undefined"
     :data="query.data.value"
   />
   <Alert
