@@ -133,7 +133,7 @@ const save = handleSubmit(
           <button
             type="submit"
             :data-testid="`${prefix}-submit`"
-            class="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+            class="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
             :disabled="isSubmitting"
           >
             {{ submitLabel }}

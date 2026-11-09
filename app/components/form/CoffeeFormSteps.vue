@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckIcon } from '@lucide/vue'
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from '@lucide/vue'
 import { useFormErrors } from 'vee-validate'
 
 const props = defineProps<{ steps: FormStep[]; prefix: string }>()
@@ -15,6 +15,7 @@ const failing = computed(() =>
     ),
   ),
 )
+const first = computed(() => step.value === 1)
 const last = computed(() => step.value === props.steps.length)
 </script>
 
@@ -91,26 +92,28 @@ const last = computed(() => step.value === props.steps.length)
 
     <slot name="error" />
 
-    <div class="flex gap-3">
+    <div class="flex items-center gap-3">
       <button
-        v-if="step > 1"
         type="button"
+        aria-label="Previous step"
         :data-testid="`${prefix}-back`"
-        class="flex items-center justify-center rounded-full border border-primary px-6 py-3 text-sm uppercase"
+        class="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary disabled:opacity-30"
+        :disabled="first"
         @click="step -= 1"
       >
-        Back
+        <ChevronLeftIcon class="size-5" aria-hidden="true" />
       </button>
+      <slot name="submit" />
       <button
-        v-if="!last"
         type="button"
+        aria-label="Next step"
         :data-testid="`${prefix}-next`"
-        class="flex flex-1 items-center justify-center rounded-full border border-primary px-6 py-3 text-sm uppercase"
+        class="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary disabled:opacity-30"
+        :disabled="last"
         @click="step += 1"
       >
-        Next
+        <ChevronRightIcon class="size-5" aria-hidden="true" />
       </button>
-      <slot name="submit" :last="last" />
     </div>
   </div>
 </template>

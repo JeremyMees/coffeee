@@ -171,7 +171,7 @@ describe('AddCoffeeSheet', () => {
     expect(currentStep()).toBe('add-coffee-step-coffee')
     expect(byTestId('add-coffee-steps')!.textContent).toContain('Coffee')
     expect(byTestId('add-coffee-steps')!.textContent).toContain('First bag')
-    expect(byTestId('add-coffee-back')).toBeNull()
+    expect(byTestId<HTMLButtonElement>('add-coffee-back')!.disabled).toBe(true)
     expect(byTestId('add-coffee-submit')).not.toBeNull()
   })
 
