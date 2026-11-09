@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { timeoutManager, useQueryClient } from '@tanstack/vue-query'
+import {
+  dehydrate,
+  QueryClient,
+  timeoutManager,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import { useNuxtApp } from '#imports'
 
 function queryClient() {
@@ -8,6 +13,7 @@ function queryClient() {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  delete useNuxtApp().payload.vueQuery
 })
 
 describe('the vue-query plugin', () => {
@@ -30,6 +36,37 @@ describe('the vue-query plugin', () => {
     await useNuxtApp().hooks.callHook('app:rendered', {} as never)
 
     expect(client.getQueryCache().getAll()).toEqual([])
+  })
+
+  it('hands only the queries meant for the server render to the page', async () => {
+    const nuxtApp = useNuxtApp()
+    const client = queryClient()
+    await client.prefetchQuery({
+      queryKey: ['roaster', 'square-mile'],
+      queryFn: () => ({ name: 'Square Mile' }),
+      meta: { ssr: true },
+    })
+    client.setQueryData(['stock', 'home'], ['Ayele Fulasa'])
+
+    await nuxtApp.hooks.callHook('app:rendered', {} as never)
+
+    const handed = nuxtApp.payload.vueQuery as ReturnType<typeof dehydrate>
+    expect(handed.queries.map(query => query.queryKey)).toEqual([
+      ['roaster', 'square-mile'],
+    ])
+  })
+
+  it('starts the browser with the queries the server rendered', async () => {
+    const nuxtApp = useNuxtApp()
+    const server = new QueryClient()
+    server.setQueryData(['roaster', 'square-mile'], { name: 'Square Mile' })
+    nuxtApp.payload.vueQuery = dehydrate(server)
+
+    await nuxtApp.hooks.callHook('app:created', nuxtApp.vueApp)
+
+    expect(queryClient().getQueryData(['roaster', 'square-mile'])).toEqual({
+      name: 'Square Mile',
+    })
   })
 
   it('lets a server exit while query timers are pending', () => {

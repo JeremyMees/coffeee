@@ -305,7 +305,7 @@ describe('a coffee page', () => {
     )
 
     await page.get(tid('roaster-edit')).trigger('click')
-    await vi.waitFor(() => expect(byTestId('edit-roaster-form')).not.toBeNull())
+    await vi.waitFor(() => expect(byTestId('roaster-city')).not.toBeNull())
     await type('roaster-city', 'Bristol')
     await submit('edit-roaster-form')
 

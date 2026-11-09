@@ -55,14 +55,14 @@ const save = handleSubmit(async details => {
     <div
       class="flex flex-col gap-6 px-5 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:px-8"
     >
-      <RoasterLogo :roaster="roaster" />
+      <LazyRoasterLogo :roaster="roaster" />
       <form
         class="flex flex-col gap-6"
         novalidate
         data-testid="edit-roaster-form"
         @submit="save"
       >
-        <RoasterFields />
+        <LazyRoasterFields />
 
         <Alert v-if="formError" variant="destructive" data-testid="form-error">
           <AlertDescription>{{ formError }}</AlertDescription>

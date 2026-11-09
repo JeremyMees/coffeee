@@ -1,5 +1,12 @@
-import type { VueQueryPluginOptions } from '@tanstack/vue-query'
+import type {
+  DehydratedState,
+  Query,
+  VueQueryPluginOptions,
+} from '@tanstack/vue-query'
 import {
+  defaultShouldDehydrateQuery,
+  dehydrate,
+  hydrate,
   QueryClient,
   timeoutManager,
   VueQueryPlugin,
@@ -19,6 +26,10 @@ timeoutManager.setTimeoutProvider({
   setInterval: (callback, delay) => detach(setInterval(callback, delay)),
   clearInterval: intervalId => clearInterval(intervalId),
 })
+
+function rendersOnServer(query: Query) {
+  return query.meta?.ssr === true && defaultShouldDehydrateQuery(query)
+}
 
 function isClientError(error: unknown) {
   const status = (error as { statusCode?: number }).statusCode
@@ -44,7 +55,16 @@ export default defineNuxtPlugin({
 
     nuxt.vueApp.use(VueQueryPlugin, options)
 
+    nuxt.hooks.hook('app:created', () => {
+      const state = nuxt.payload.vueQuery as DehydratedState | undefined
+
+      if (state) hydrate(queryClient, state)
+    })
+
     nuxt.hooks.hook('app:rendered', () => {
+      nuxt.payload.vueQuery = dehydrate(queryClient, {
+        shouldDehydrateQuery: rendersOnServer,
+      })
       queryClient.clear()
     })
   },

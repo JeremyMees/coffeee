@@ -5,7 +5,6 @@ import {
   useRoaster,
   useRoasterLogoRemoval,
   useRoasterPages,
-  useRoasterPreview,
   useRoasterLogoUpdate,
   useRoasterUpdate,
 } from '~/queries/roasters'
@@ -65,31 +64,6 @@ describe('useRoasterPages', () => {
       pages.data.value?.pages[0]?.roasters.map(found => found.name),
     ).toEqual(['Square Mile'])
     expect(pages.hasNextPage.value).toBe(false)
-  })
-})
-
-describe('useRoasterPreview', () => {
-  it('knows a roaster from the list the shelf already loaded', async () => {
-    const { pages, preview } = await runOn('/', () => ({
-      pages: useRoasterPages(sarah.shelf.id, {}),
-      preview: useRoasterPreview(sarah.shelf.id, squareMile),
-    }))
-
-    await vi.waitFor(() => expect(pages.data.value?.pages).toHaveLength(1))
-
-    expect(preview.value).toEqual({
-      id: squareMile,
-      name: 'Square Mile',
-      logoUrl: null,
-    })
-  })
-
-  it('does not know a roaster no list has shown', async () => {
-    const { preview } = await runOn('/', () => ({
-      preview: useRoasterPreview(sarah.shelf.id, squareMile),
-    }))
-
-    expect(preview.value).toBeUndefined()
   })
 })
 

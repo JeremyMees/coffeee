@@ -50,10 +50,10 @@ async function openSheet(roasterId = squareMile) {
     attachTo: document.body,
   })
 
-  await vi.waitFor(
-    () => expect(byTestId('edit-roaster-form')).not.toBeNull(),
-    3000,
-  )
+  await vi.waitFor(() => {
+    expect(byTestId('roaster-name')).not.toBeNull()
+    expect(byTestId('roaster-logo-field')).not.toBeNull()
+  }, 3000)
 
   return sheet
 }

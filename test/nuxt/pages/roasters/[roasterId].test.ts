@@ -162,28 +162,21 @@ describe('a roaster page that loads per section', () => {
     await scenario.coffee(sarah.shelf)
   })
 
-  it.each(sections)(
-    'shows a skeleton for the $name until its request finishes',
-    async ({ path, skeleton, content }) => {
-      const hold = holdRequest('GET', path())
+  it('shows a skeleton for the coffees until their request finishes', async () => {
+    const hold = holdRequest('GET', `/api/shelves/${sarah.shelf.id}/catalog`)
 
-      const page = await openRoaster()
-      const other = sections.find(section => section.skeleton !== skeleton)!
-      await vi.waitFor(() =>
-        expect(page.find(tid(other.content)).exists()).toBe(true),
-      )
+    const page = await openRoaster()
 
-      expect(page.find(tid(skeleton)).exists()).toBe(true)
-      expect(page.find(tid(content)).exists()).toBe(false)
+    expect(page.get(tid('roaster-title')).text()).toBe('Square Mile')
+    expect(page.find(tid('roaster-coffees-skeleton')).exists()).toBe(true)
 
-      hold.release()
+    hold.release()
 
-      await vi.waitFor(() =>
-        expect(page.find(tid(content)).exists()).toBe(true),
-      )
-      expect(page.find(tid(skeleton)).exists()).toBe(false)
-    },
-  )
+    await vi.waitFor(() =>
+      expect(page.find(tid('roaster-coffees')).exists()).toBe(true),
+    )
+    expect(page.find(tid('roaster-coffees-skeleton')).exists()).toBe(false)
+  })
 
   it.each(sections)(
     'shows an error and a retry for the $name and keeps the rest of the page',
@@ -211,31 +204,49 @@ describe('a roaster page that loads per section', () => {
     },
   )
 
-  it('shows the name and logo at once when opened from the roasters', async () => {
+  it('keeps a heading when the roaster could not load', async () => {
+    failRequest('GET', `/api/roasters/${squareMile.id}`, {
+      status: 403,
+      message: 'Nope',
+    })
+
+    const page = await openRoaster()
+
+    expect(page.get(tid('roaster-title-placeholder')).element.tagName).toBe(
+      'H1',
+    )
+    expect(page.find(tid('roaster-title')).exists()).toBe(false)
+  })
+
+  it('shows the roaster at once on its first render', async () => {
+    const page = await openRoaster()
+
+    expect(page.get(tid('roaster-title')).text()).toBe('Square Mile')
+    expect(page.find(tid('roaster-logo')).exists()).toBe(true)
+    expect(page.find(tid('roaster-header-skeleton')).exists()).toBe(false)
+    expect(page.find(tid('roaster-title-placeholder')).exists()).toBe(false)
+  })
+
+  it('stays on the roasters until the roaster loaded', async () => {
     const page = await openRoaster('/roasters')
     await vi.waitFor(() =>
       expect(page.find(tid('roaster-result')).exists()).toBe(true),
     )
     const hold = holdRequest('GET', `/api/roasters/${squareMile.id}`)
 
-    await useRouter().push(roasterPath(squareMile))
+    const opening = useRouter().push(roasterPath(squareMile))
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    expect(page.find(tid('roaster-result')).exists()).toBe(true)
+    expect(page.find(tid('roaster-title')).exists()).toBe(false)
+
+    hold.release()
+    await opening
 
     await vi.waitFor(() =>
       expect(page.get(tid('roaster-title')).text()).toBe('Square Mile'),
     )
-    expect(page.find(tid('roaster-logo')).exists()).toBe(true)
-    expect(page.find(tid('roaster-skeleton')).exists()).toBe(true)
-    expect(page.find(tid('roaster-edit')).exists()).toBe(false)
-    await vi.waitFor(() =>
-      expect(page.find(tid('roaster-coffees')).exists()).toBe(true),
-    )
-
-    hold.release()
-
-    await vi.waitFor(() =>
-      expect(page.find(tid('roaster-place')).exists()).toBe(true),
-    )
-    expect(page.find(tid('roaster-edit')).exists()).toBe(true)
+    expect(page.find(tid('roaster-place')).exists()).toBe(true)
   })
 
   it('says each section is offline instead of showing skeletons that never end', async () => {

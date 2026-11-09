@@ -5,8 +5,9 @@ import {
   BookmarkIcon,
   PencilIcon,
 } from '@lucide/vue'
+import { onlineManager } from '@tanstack/vue-query'
 import { useCatalogPages } from '~/queries/catalog'
-import { useRoaster, useRoasterPreview } from '~/queries/roasters'
+import { useRoaster } from '~/queries/roasters'
 
 const route = useRoute('roasters-roasterId')
 const roasterId = computed(() => idFrom(route.params.roasterId))
@@ -25,8 +26,6 @@ const mine = ref(false)
 
 const roasterQuery = useRoaster(roasterId)
 const { data: roaster, error } = roasterQuery
-const preview = useRoasterPreview(shelfId, roasterId)
-const shown = computed(() => roaster.value ?? preview.value)
 
 const catalog = useCatalogPages(
   shelfId,
@@ -37,15 +36,11 @@ const catalog = useCatalogPages(
   { clientOnly: true },
 )
 
-watch(
-  error,
-  failure => {
-    if ((failure as { statusCode?: number } | null)?.statusCode === 404) {
-      showError({ statusCode: 404, statusMessage: 'Roaster not found' })
-    }
-  },
-  { immediate: true },
-)
+function showMissing(failure: unknown) {
+  if ((failure as { statusCode?: number } | null)?.statusCode === 404) {
+    showError({ statusCode: 404, statusMessage: 'Roaster not found' })
+  }
+}
 
 useCanonicalSlug(
   'roasters',
@@ -53,11 +48,15 @@ useCanonicalSlug(
   () => roaster.value,
 )
 
-useHead({ title: () => `${shown.value?.name ?? 'Roaster'} · Coffeee` })
+useHead({ title: () => `${roaster.value?.name ?? 'Roaster'} · Coffeee` })
 
 function coffeesIn(data: { pages: CatalogPage[] }) {
   return data.pages.flatMap(loaded => loaded.coffees)
 }
+
+await (onlineManager.isOnline() ? roasterQuery.suspense() : undefined)
+showMissing(error.value)
+watch(error, showMissing)
 </script>
 
 <template>
@@ -72,9 +71,9 @@ function coffeesIn(data: { pages: CatalogPage[] }) {
       {{ back.label }}
     </NuxtLink>
     <header class="mt-6 flex items-end justify-between gap-4">
-      <div v-if="shown" class="flex min-w-0 items-center gap-4">
+      <div v-if="roaster" class="flex min-w-0 items-center gap-4">
         <RoasterLogoImage
-          :roaster="shown"
+          :roaster="roaster"
           class="size-20"
           :style="morph.name('logo')"
         />
@@ -84,36 +83,34 @@ function coffeesIn(data: { pages: CatalogPage[] }) {
             :style="morph.name('name')"
             data-testid="roaster-title"
           >
-            {{ shown.name }}
+            {{ roaster.name }}
           </h1>
-          <QuerySection :query="roasterQuery" testid="roaster">
-            <template #default="{ data }">
-              <p
-                v-if="roasterPlace(data)"
-                class="mt-2 text-xs"
-                data-testid="roaster-place"
-              >
-                {{ roasterPlace(data) }}
-              </p>
-              <a
-                v-if="data.website"
-                :href="referredLink(data.website)"
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="roaster-website"
-                class="mt-1 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
-              >
-                {{ websiteHost(data.website) }}
-                <ArrowUpRightIcon class="size-4" aria-hidden="true" />
-              </a>
-            </template>
-            <template #skeleton><RoasterInfoSkeleton /></template>
-          </QuerySection>
+          <p
+            v-if="roasterPlace(roaster)"
+            class="mt-2 text-xs"
+            data-testid="roaster-place"
+          >
+            {{ roasterPlace(roaster) }}
+          </p>
+          <a
+            v-if="roaster.website"
+            :href="referredLink(roaster.website)"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="roaster-website"
+            class="mt-1 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
+          >
+            {{ websiteHost(roaster.website) }}
+            <ArrowUpRightIcon class="size-4" aria-hidden="true" />
+          </a>
         </div>
       </div>
-      <QuerySection v-else :query="roasterQuery" testid="roaster">
-        <template #skeleton><RoasterHeaderSkeleton /></template>
-      </QuerySection>
+      <template v-else>
+        <h1 class="sr-only" data-testid="roaster-title-placeholder">Roaster</h1>
+        <QuerySection :query="roasterQuery" testid="roaster">
+          <template #skeleton><LazyRoasterHeaderSkeleton /></template>
+        </QuerySection>
+      </template>
       <button
         v-if="roaster?.canEdit"
         type="button"
