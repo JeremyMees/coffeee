@@ -45,10 +45,7 @@ async function openSheet(
   })
 
   if (open) {
-    await vi.waitFor(
-      () => expect(byTestId('purchase-form')).not.toBeNull(),
-      3000,
-    )
+    await vi.waitFor(() => expect(byTestId('coffee-size')).not.toBeNull(), 3000)
   }
 
   return sheet

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeftIcon } from '@lucide/vue'
+import { onlineManager } from '@tanstack/vue-query'
 import {
-  useCoffeePreview,
   useCoffeeReviews,
   useCoffeeRoaster,
   useCoffeeVerdict,
@@ -22,21 +22,15 @@ const deleting = ref(false)
 
 const coffeeQuery = useShelfCoffee(shelfId, coffeeId)
 const { data: coffee, error } = coffeeQuery
-const preview = useCoffeePreview(shelfId, coffeeId)
-const shown = computed(() => coffee.value ?? preview.value)
 const verdict = useCoffeeVerdict(coffeeId)
 const reviews = useCoffeeReviews(coffeeId)
 const roaster = useCoffeeRoaster(coffeeId)
 
-watch(
-  error,
-  failure => {
-    if ((failure as { statusCode?: number } | null)?.statusCode === 404) {
-      showError({ statusCode: 404, statusMessage: 'Coffee not found' })
-    }
-  },
-  { immediate: true },
-)
+function showMissing(failure: unknown) {
+  if ((failure as { statusCode?: number } | null)?.statusCode === 404) {
+    showError({ statusCode: 404, statusMessage: 'Coffee not found' })
+  }
+}
 
 useCanonicalSlug(
   'coffees',
@@ -44,7 +38,11 @@ useCanonicalSlug(
   () => coffee.value,
 )
 
-useHead({ title: () => `${shown.value?.name ?? 'Coffee'} · Coffeee` })
+useHead({ title: () => `${coffee.value?.name ?? 'Coffee'} · Coffeee` })
+
+await (onlineManager.isOnline() ? coffeeQuery.suspense() : undefined)
+showMissing(error.value)
+watch(error, showMissing)
 </script>
 
 <template>
@@ -58,21 +56,21 @@ useHead({ title: () => `${shown.value?.name ?? 'Coffee'} · Coffeee` })
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
       {{ back.label }}
     </NuxtLink>
-    <template v-if="shown">
-      <CoffeePhoto
-        class="mt-4"
-        :coffee="{ ...shown, canEdit: coffee?.canEdit }"
-      />
+    <template v-if="coffee">
+      <CoffeePhoto class="mt-4" :coffee="coffee" />
       <CoffeeHeader
-        :coffee="coffee ?? shown"
-        :roaster-id="coffee?.roasterId"
-        :editable="coffee?.canEdit"
-        :deletable="coffee?.canDelete"
+        :coffee="coffee"
+        :roaster-id="coffee.roasterId"
+        :editable="coffee.canEdit"
+        :deletable="coffee.canDelete"
         @edit="editing = true"
         @delete="deleting = true"
       />
     </template>
-    <CoffeeHeaderSkeleton v-else-if="!error" />
+    <template v-else>
+      <h1 class="sr-only" data-testid="coffee-title-placeholder">Coffee</h1>
+      <LazyCoffeeHeaderSkeleton v-if="!error" />
+    </template>
     <QuerySection :query="coffeeQuery" testid="coffee">
       <template #default="{ data }">
         <CoffeeDetailList :coffee="data" />
@@ -88,7 +86,7 @@ useHead({ title: () => `${shown.value?.name ?? 'Coffee'} · Coffeee` })
           :coffee="data"
         />
       </template>
-      <template #skeleton><CoffeeDetailListSkeleton /></template>
+      <template #skeleton><LazyCoffeeDetailListSkeleton /></template>
     </QuerySection>
     <QuerySection :query="verdict" testid="coffee-verdict">
       <template #default="{ data }">

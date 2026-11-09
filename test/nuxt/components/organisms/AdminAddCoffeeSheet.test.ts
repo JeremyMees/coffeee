@@ -30,12 +30,16 @@ beforeEach(async () => {
   await signIn(jeremy)
 })
 
-function openSheet() {
-  return mountSuspended(AdminAddCoffeeSheet, {
+async function openSheet() {
+  const sheet = await mountSuspended(AdminAddCoffeeSheet, {
     route: '/admin/lists/coffees',
     props: { open: true },
     attachTo: document.body,
   })
+
+  await vi.waitFor(() => expect(byTestId('coffee-name')).not.toBeNull(), 3000)
+
+  return sheet
 }
 
 async function fillRequired(name: string) {

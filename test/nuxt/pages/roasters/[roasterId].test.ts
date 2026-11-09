@@ -5,13 +5,20 @@ import App from '~/app.vue'
 import {
   clearError,
   coffeePath,
+  queryKeys,
   roasterPath,
   shelfCoffeePath,
   useError,
   useRouter,
 } from '#imports'
 import type { Member } from '#test/support/types'
-import { click, currentPath, forgetLastShelf, tid } from '../../fixtures'
+import {
+  click,
+  currentPath,
+  forgetLastShelf,
+  isFetching,
+  tid,
+} from '../../fixtures'
 import { failRequest, holdRequest, scenario, signIn } from '../../server'
 
 let sarah: Member
@@ -235,7 +242,9 @@ describe('a roaster page that loads per section', () => {
     const hold = holdRequest('GET', `/api/roasters/${squareMile.id}`)
 
     const opening = useRouter().push(roasterPath(squareMile))
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await vi.waitFor(() =>
+      expect(isFetching(queryKeys.roaster(squareMile.id))).toBe(true),
+    )
 
     expect(page.find(tid('roaster-result')).exists()).toBe(true)
     expect(page.find(tid('roaster-title')).exists()).toBe(false)

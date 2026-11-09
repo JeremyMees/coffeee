@@ -89,7 +89,7 @@ const save = handleSubmit(async purchase => {
       data-testid="purchase-form"
       @submit="save"
     >
-      <PurchaseFields />
+      <LazyPurchaseFields />
 
       <Alert v-if="formError" variant="destructive" data-testid="form-error">
         <AlertDescription>{{ formError }}</AlertDescription>

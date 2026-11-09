@@ -1,15 +1,11 @@
-import { useQueryClient } from '@tanstack/vue-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { eq } from 'drizzle-orm'
 import { useProfileStats } from '~/queries/account'
-import { useCatalogPages } from '~/queries/catalog'
-import { useLibraryPage } from '~/queries/library'
 import {
   useCoffee,
   useCoffeeCreate,
   useCoffeeDelete,
-  useCoffeePreview,
   useCoffeePhotoRemoval,
   useCoffeePhotoUpdate,
   useCoffeeShelves,
@@ -96,55 +92,6 @@ describe('useStock', () => {
     expect(second.data.value?.map(found => found.name)).toEqual([
       'Ayele Fulasa',
     ])
-  })
-})
-
-describe('useCoffeePreview', () => {
-  it('knows a coffee from the stock the shelf already loaded', async () => {
-    const { stock, preview } = await runOn('/', () => ({
-      stock: useStock(sarah.shelf.id),
-      preview: useCoffeePreview(sarah.shelf.id, ayele.id),
-    }))
-
-    await vi.waitFor(() => expect(stock.data.value).toHaveLength(1))
-
-    expect(preview.value).toEqual({
-      id: ayele.id,
-      name: 'Ayele Fulasa',
-      roaster: 'Square Mile',
-      photoUrl: null,
-    })
-  })
-
-  it('knows a coffee from a page of the library or the catalog', async () => {
-    const { client, library, catalog, fromLibrary, fromCatalog } = await runOn(
-      '/',
-      () => ({
-        client: useQueryClient(),
-        library: useLibraryPage(sarah.shelf.id, {}, 0),
-        catalog: useCatalogPages(sarah.shelf.id, {}),
-        fromLibrary: useCoffeePreview(sarah.shelf.id, ayele.id),
-        fromCatalog: useCoffeePreview(sarah.shelf.id, ayele.id),
-      }),
-    )
-    await vi.waitFor(() => {
-      expect(library.data.value?.coffees).toHaveLength(1)
-      expect(catalog.data.value?.pages).toHaveLength(1)
-    })
-
-    expect(fromLibrary.value).toMatchObject({ name: 'Ayele Fulasa' })
-
-    client.removeQueries({ queryKey: ['shelves', sarah.shelf.id, 'library'] })
-
-    expect(fromCatalog.value).toMatchObject({ name: 'Ayele Fulasa' })
-  })
-
-  it('does not know a coffee no list has shown', async () => {
-    const { preview } = await runOn('/', () => ({
-      preview: useCoffeePreview(sarah.shelf.id, 'unknown'),
-    }))
-
-    expect(preview.value).toBeUndefined()
   })
 })
 

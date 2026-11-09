@@ -6,6 +6,7 @@ import App from '~/app.vue'
 import {
   clearError,
   coffeePath,
+  queryKeys,
   roasterPath,
   shelfCoffeePath,
   shelfPath,
@@ -19,6 +20,7 @@ import {
   currentPath,
   click,
   forgetLastShelf,
+  isFetching,
   rememberShelf,
   submit,
   tid,
@@ -251,7 +253,7 @@ describe('a coffee page that loads per section', () => {
     },
   ]
 
-  it.each(sections)(
+  it.each(sections.filter(section => section.name !== 'details'))(
     'shows a skeleton for the $name until its request finishes',
     async ({ path, skeleton, content }) => {
       const hold = holdRequest('GET', path(ayele.id))
@@ -320,56 +322,53 @@ describe('a coffee page that loads per section', () => {
           name: 'Square Mile',
         }),
     },
-  ])(
-    'shows the photo, name and roaster at once when opened from $from',
-    async ({ route }) => {
-      const page = await mountSuspended(App, {
-        route: await route(),
-        attachTo: document.body,
-      })
-      await vi.waitFor(() =>
-        expect(page.find(tid('catalog-result')).exists()).toBe(true),
-      )
-      const hold = holdRequest('GET', `/api/coffees/${ayele.id}`)
-
-      await useRouter().push(coffeePath(ayele))
-
-      await vi.waitFor(() =>
-        expect(page.get(tid('coffee-title')).text()).toBe('Ayele Fulasa'),
-      )
-      expect(page.get(tid('coffee-roaster-name')).text()).toBe('Square Mile')
-      expect(page.find(tid('coffee-details-skeleton')).exists()).toBe(true)
-      expect(page.find(tid('coffee-edit')).exists()).toBe(false)
-
-      hold.release()
-
-      await vi.waitFor(() =>
-        expect(page.find(tid('coffee-details')).exists()).toBe(true),
-      )
-      expect(page.find(tid('coffee-edit')).exists()).toBe(true)
-    },
-  )
-
-  it('lists the shelves before the coffee loads when no list has shown it', async () => {
+  ])('stays on $from until the coffee loaded', async ({ route }) => {
+    const page = await mountSuspended(App, {
+      route: await route(),
+      attachTo: document.body,
+    })
+    await vi.waitFor(() =>
+      expect(page.find(tid('catalog-result')).exists()).toBe(true),
+    )
     const hold = holdRequest('GET', `/api/coffees/${ayele.id}`)
 
-    const page = await openCoffee()
-
+    const opening = useRouter().push(coffeePath(ayele))
     await vi.waitFor(() =>
-      expect(page.find(tid(`coffee-shelf-${sarah.shelf.id}`)).exists()).toBe(
-        true,
-      ),
+      expect(isFetching(queryKeys.coffee(ayele.id))).toBe(true),
     )
-    expect(page.find(tid('coffee-header-skeleton')).exists()).toBe(true)
+
+    expect(page.find(tid('catalog-result')).exists()).toBe(true)
+    expect(page.find(tid('coffee-title')).exists()).toBe(false)
 
     hold.release()
+    await opening
 
     await vi.waitFor(() =>
       expect(page.get(tid('coffee-title')).text()).toBe('Ayele Fulasa'),
     )
-    expect(
-      page.get(tid(`coffee-shelf-${sarah.shelf.id}`)).attributes('href'),
-    ).toBe(shelfCoffeePath(sarah.shelf, ayele))
+    expect(page.find(tid('coffee-details')).exists()).toBe(true)
+    expect(page.find(tid('coffee-edit')).exists()).toBe(true)
+  })
+
+  it('shows the coffee at once on its first render', async () => {
+    const page = await openCoffee()
+
+    expect(page.get(tid('coffee-title')).text()).toBe('Ayele Fulasa')
+    expect(page.find(tid('coffee-photo')).exists()).toBe(true)
+    expect(page.find(tid('coffee-header-skeleton')).exists()).toBe(false)
+    expect(page.find(tid('coffee-title-placeholder')).exists()).toBe(false)
+  })
+
+  it('keeps a heading when the coffee could not load', async () => {
+    failRequest('GET', `/api/coffees/${ayele.id}`, {
+      status: 403,
+      message: 'Nope',
+    })
+
+    const page = await openCoffee()
+
+    expect(page.get(tid('coffee-title-placeholder')).element.tagName).toBe('H1')
+    expect(page.find(tid('coffee-title')).exists()).toBe(false)
   })
 
   it('says each section is offline instead of showing skeletons that never end', async () => {

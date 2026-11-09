@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/vue-query'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { Window as HappyWindow } from 'happy-dom'
@@ -5,7 +6,13 @@ import { useForm } from 'vee-validate'
 import { vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import type { Component } from 'vue'
-import { coffeeDetailsSchema, localDate, useRouter, zodSchema } from '#imports'
+import {
+  coffeeDetailsSchema,
+  localDate,
+  useNuxtApp,
+  useRouter,
+  zodSchema,
+} from '#imports'
 
 export function forgetLastShelf() {
   document.cookie = 'shelf=; max-age=0; path=/'
@@ -201,6 +208,12 @@ export async function pickDate(pickerTestId: string, isoDate: string) {
 
   day()!.click()
   await flushPromises()
+}
+
+export function isFetching(queryKey: readonly unknown[]) {
+  const client = useNuxtApp().vueApp.runWithContext(() => useQueryClient())
+
+  return client.isFetching({ queryKey }) > 0
 }
 
 export async function runOn<T>(route: string, use: () => T) {

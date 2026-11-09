@@ -154,9 +154,9 @@ describe('a shared list on the admin page', () => {
     await act(page, 'update', 0)
 
     await vi.waitFor(() =>
-      expect(byTestId('edit-roaster-sheet')).not.toBeNull(),
+      expect(byTestId('roaster-logo-field')).not.toBeNull(),
     )
-    expect(byTestId('roaster-logo-field')).not.toBeNull()
+    expect(byTestId('edit-roaster-sheet')).not.toBeNull()
   })
 
   it('merges a duplicate into the entry that is kept', async () => {

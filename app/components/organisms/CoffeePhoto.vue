@@ -53,6 +53,10 @@ function remove() {
         :src="coffee.photoUrl"
         :alt="`The bag of ${coffee.name}`"
         sizes="100vw sm:672px"
+        width="672"
+        height="504"
+        :preload="{ fetchPriority: 'high' }"
+        fetchpriority="high"
         class="size-full object-cover"
         data-testid="coffee-photo-image"
       />
