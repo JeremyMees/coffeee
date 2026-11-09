@@ -32,6 +32,7 @@ export function useGrindSettingSave() {
         `/api/shelves/${input.shelfId}/coffees/${input.coffeeId}/grind-settings`,
         { method: 'PUT', body: input.change },
       ),
-    onSuccess: () => changed({ type: 'grindSetting' }),
+    onSuccess: (_data, input) =>
+      changed({ type: 'grindSetting', coffeeId: input.coffeeId }),
   })
 }

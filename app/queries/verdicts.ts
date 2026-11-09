@@ -9,6 +9,7 @@ export function useVerdictUpdate() {
         method: 'PATCH',
         body: input.verdict,
       }),
-    onSuccess: () => changed({ type: 'verdict' }),
+    onSuccess: (_data, input) =>
+      changed({ type: 'verdict', coffeeId: input.coffeeId }),
   })
 }

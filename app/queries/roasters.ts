@@ -70,7 +70,8 @@ export function useRoasterPreview(
 function useRoasterSaved() {
   const changed = useChanged()
 
-  return () => changed({ type: 'roaster' })
+  return (input: { roasterId: string }) =>
+    changed({ type: 'roaster', roasterId: input.roasterId })
 }
 
 export function useRoasterUpdate() {
@@ -82,7 +83,7 @@ export function useRoasterUpdate() {
         method: 'PATCH',
         body: input.details,
       }),
-    onSuccess: saved,
+    onSuccess: (_data, input) => saved(input),
   })
 }
 
@@ -100,7 +101,7 @@ export function useRoasterLogoUpdate() {
 
       return $fetch(logoPath(input.roasterId), { method: 'PUT', body })
     },
-    onSuccess: saved,
+    onSuccess: (_data, input) => saved(input),
   })
 }
 
@@ -110,6 +111,6 @@ export function useRoasterLogoRemoval() {
   return useMutation({
     mutationFn: (input: { roasterId: string }) =>
       $fetch(logoPath(input.roasterId), { method: 'DELETE' }),
-    onSuccess: saved,
+    onSuccess: (_data, input) => saved(input),
   })
 }

@@ -1,4 +1,4 @@
-import type { QueryKey } from '@tanstack/vue-query'
+import type { Query, QueryKey } from '@tanstack/vue-query'
 
 export const queryKeys = {
   shelves: () => ['shelves'],
@@ -93,3 +93,19 @@ export const queryKeys = {
     params: Record<string, string> = {},
   ) => ['lists', endpoint, search, params],
 } satisfies Record<string, (...args: never[]) => QueryKey>
+
+export const anyPart = Symbol('anyPart')
+
+export const keyEnd = Symbol('keyEnd')
+
+export type QueryMatch = (query: Query) => boolean
+
+export function keyLike(...pattern: unknown[]): QueryMatch {
+  return ({ queryKey }) =>
+    pattern.every((part, index) => {
+      if (part === keyEnd) return index === queryKey.length
+      if (part === anyPart) return index < queryKey.length
+
+      return queryKey[index] === part
+    })
+}

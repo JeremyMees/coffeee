@@ -122,7 +122,7 @@ export function useCoffee(coffeeId: MaybeRefOrGetter<string>) {
 function useCoffeeSaved() {
   const changed = useChanged()
 
-  return () => changed({ type: 'coffee' })
+  return (coffeeId: string) => changed({ type: 'coffee', coffeeId })
 }
 
 export function useCoffeeCreate() {
@@ -134,7 +134,7 @@ export function useCoffeeCreate() {
         method: 'POST',
         body: input.coffee,
       }),
-    onSuccess: saved,
+    onSuccess: added => saved(added.coffee.id),
   })
 }
 
@@ -151,7 +151,7 @@ export function useCoffeeUpdate() {
         method: 'PATCH',
         body: input.details,
       }),
-    onSuccess: saved,
+    onSuccess: (_data, input) => saved(input.coffeeId),
   })
 }
 
@@ -173,7 +173,7 @@ export function useCoffeePhotoUpdate() {
 
       return $fetch(photoPath(input), { method: 'PUT', body })
     },
-    onSuccess: saved,
+    onSuccess: (_data, input) => saved(input.coffeeId),
   })
 }
 
@@ -183,7 +183,7 @@ export function useCoffeePhotoRemoval() {
   return useMutation({
     mutationFn: (input: { shelfId: string; coffeeId: string }) =>
       $fetch(photoPath(input), { method: 'DELETE' }),
-    onSuccess: saved,
+    onSuccess: (_data, input) => saved(input.coffeeId),
   })
 }
 
@@ -193,6 +193,6 @@ export function useCoffeeDelete() {
   return useMutation({
     mutationFn: (coffeeId: string) =>
       $fetch(`/api/coffees/${coffeeId}`, { method: 'DELETE' }),
-    onSuccess: saved,
+    onSuccess: (_data, coffeeId) => saved(coffeeId),
   })
 }

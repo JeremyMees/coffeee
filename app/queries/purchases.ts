@@ -4,8 +4,12 @@ import type { MaybeRefOrGetter } from 'vue'
 function usePurchaseSaved() {
   const changed = useChanged()
 
-  return (input: { shelfId: string }) =>
-    changed({ type: 'purchase', shelfId: input.shelfId })
+  return (input: { shelfId: string; coffeeId: string }) =>
+    changed({
+      type: 'purchase',
+      shelfId: input.shelfId,
+      coffeeId: input.coffeeId,
+    })
 }
 
 function coffeePath(input: { shelfId: string; coffeeId: string }) {
