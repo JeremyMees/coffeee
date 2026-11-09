@@ -57,7 +57,7 @@ const roast = computed(
       <h2
         data-testid="coffee-card-name"
         :style="morph.name('name')"
-        class="mt-1.5 line-clamp-2 w-fit font-sans text-[32px] leading-[0.95] font-semibold tracking-[-0.045em]"
+        class="mt-[calc(--spacing(1.5)-0.1em)] mb-[-0.1em] line-clamp-2 w-fit py-[0.1em] font-sans text-[32px] leading-none font-semibold tracking-[-0.045em]"
       >
         {{ coffee.name }}
       </h2>
