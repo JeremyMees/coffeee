@@ -4,6 +4,7 @@ import type { MaybeRefOrGetter } from 'vue'
 export function useCatalogPages(
   shelfId: MaybeRefOrGetter<string>,
   query: MaybeRefOrGetter<BrowsingQuery>,
+  options: { clientOnly?: boolean } = {},
 ) {
   const request = useRequestFetch()
 
@@ -21,5 +22,6 @@ export function useCatalogPages(
         ? pages.length
         : undefined,
     placeholderData: keepPreviousData,
+    enabled: !options.clientOnly || import.meta.client,
   })
 }

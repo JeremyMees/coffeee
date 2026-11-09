@@ -3,6 +3,7 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery,
+  useQueryClient,
 } from '@tanstack/vue-query'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -35,6 +36,34 @@ export function useRoaster(roasterId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => queryKeys.roaster(toValue(roasterId))),
     queryFn: () => request(`/api/roasters/${toValue(roasterId)}`),
+    enabled: import.meta.client,
+  })
+}
+
+export function useRoasterPreview(
+  shelfId: MaybeRefOrGetter<string>,
+  roasterId: MaybeRefOrGetter<string>,
+) {
+  const queryClient = useQueryClient()
+
+  return computed(() => {
+    const listed = queryClient.getQueriesData<{ pages: RoasterPage[] }>({
+      queryKey: [...queryKeys.shelf(toValue(shelfId)), 'roasters'],
+    })
+
+    for (const [, data] of listed) {
+      const found = data?.pages
+        .flatMap(page => page.roasters)
+        .find(roaster => roaster.id === toValue(roasterId))
+
+      if (found) {
+        const { id, name, logoUrl } = found
+
+        return { id, name, logoUrl }
+      }
+    }
+
+    return undefined
   })
 }
 

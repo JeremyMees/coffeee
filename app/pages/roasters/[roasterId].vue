@@ -6,7 +6,7 @@ import {
   PencilIcon,
 } from '@lucide/vue'
 import { useCatalogPages } from '~/queries/catalog'
-import { useRoaster } from '~/queries/roasters'
+import { useRoaster, useRoasterPreview } from '~/queries/roasters'
 
 const route = useRoute('roasters-roasterId')
 const roasterId = computed(() => idFrom(route.params.roasterId))
@@ -23,34 +23,45 @@ morph.open()
 const editing = ref(false)
 const mine = ref(false)
 
-const { data: roaster, error, suspense } = useRoaster(roasterId)
-await suspense()
+const roasterQuery = useRoaster(roasterId)
+const { data: roaster, error } = roasterQuery
+const preview = useRoasterPreview(shelfId, roasterId)
+const shown = computed(() => roaster.value ?? preview.value)
 
-if (error.value || !roaster.value) {
-  showError({ statusCode: 404, statusMessage: 'Roaster not found' })
-}
+const catalog = useCatalogPages(
+  shelfId,
+  () => ({
+    roasterId: roasterId.value,
+    ...(mine.value && { mine: 'true' }),
+  }),
+  { clientOnly: true },
+)
 
-await useCanonicalSlug(
+watch(
+  error,
+  failure => {
+    if ((failure as { statusCode?: number } | null)?.statusCode === 404) {
+      showError({ statusCode: 404, statusMessage: 'Roaster not found' })
+    }
+  },
+  { immediate: true },
+)
+
+useCanonicalSlug(
   'roasters',
   () => route.params.roasterId,
   () => roaster.value,
 )
 
-useHead({ title: () => `${roaster.value?.name} · Coffeee` })
+useHead({ title: () => `${shown.value?.name ?? 'Roaster'} · Coffeee` })
 
-const catalog = useCatalogPages(shelfId, () => ({
-  roasterId: roasterId.value,
-  ...(mine.value && { mine: 'true' }),
-}))
-await catalog.suspense()
-
-const coffees = computed(
-  () => catalog.data.value?.pages.flatMap(loaded => loaded.coffees) ?? [],
-)
+function coffeesIn(data: { pages: CatalogPage[] }) {
+  return data.pages.flatMap(loaded => loaded.coffees)
+}
 </script>
 
 <template>
-  <main v-if="roaster && shelf" class="max-w-2xl">
+  <main v-if="shelf" class="max-w-2xl">
     <NuxtLink
       :to="back.to"
       data-testid="roaster-back"
@@ -61,9 +72,9 @@ const coffees = computed(
       {{ back.label }}
     </NuxtLink>
     <header class="mt-6 flex items-end justify-between gap-4">
-      <div class="flex min-w-0 items-center gap-4">
+      <div v-if="shown" class="flex min-w-0 items-center gap-4">
         <RoasterLogoImage
-          :roaster="roaster"
+          :roaster="shown"
           class="size-20"
           :style="morph.name('logo')"
         />
@@ -73,30 +84,38 @@ const coffees = computed(
             :style="morph.name('name')"
             data-testid="roaster-title"
           >
-            {{ roaster.name }}
+            {{ shown.name }}
           </h1>
-          <p
-            v-if="roasterPlace(roaster)"
-            class="mt-2 text-xs"
-            data-testid="roaster-place"
-          >
-            {{ roasterPlace(roaster) }}
-          </p>
-          <a
-            v-if="roaster.website"
-            :href="referredLink(roaster.website)"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="roaster-website"
-            class="mt-1 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
-          >
-            {{ websiteHost(roaster.website) }}
-            <ArrowUpRightIcon class="size-4" aria-hidden="true" />
-          </a>
+          <QuerySection :query="roasterQuery" testid="roaster">
+            <template #default="{ data }">
+              <p
+                v-if="roasterPlace(data)"
+                class="mt-2 text-xs"
+                data-testid="roaster-place"
+              >
+                {{ roasterPlace(data) }}
+              </p>
+              <a
+                v-if="data.website"
+                :href="referredLink(data.website)"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="roaster-website"
+                class="mt-1 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
+              >
+                {{ websiteHost(data.website) }}
+                <ArrowUpRightIcon class="size-4" aria-hidden="true" />
+              </a>
+            </template>
+            <template #skeleton><RoasterInfoSkeleton /></template>
+          </QuerySection>
         </div>
       </div>
+      <QuerySection v-else :query="roasterQuery" testid="roaster">
+        <template #skeleton><RoasterHeaderSkeleton /></template>
+      </QuerySection>
       <button
-        v-if="roaster.canEdit"
+        v-if="roaster?.canEdit"
         type="button"
         data-testid="roaster-edit"
         class="mb-2 flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground"
@@ -128,35 +147,40 @@ const coffees = computed(
           Mine
         </button>
       </div>
-      <p
-        v-if="!coffees.length"
-        class="mt-4 text-xs"
-        data-testid="roaster-coffees-empty"
-      >
-        {{
-          mine
-            ? 'Your shelf has not bought a coffee from this roaster yet.'
-            : 'Nobody has added a coffee from this roaster yet.'
-        }}
-      </p>
-      <template v-else>
-        <ul
-          aria-label="Coffees"
-          data-testid="roaster-coffees"
-          class="mt-4 flex flex-col gap-3"
-        >
-          <li v-for="coffee in coffees" :key="coffee.id">
-            <CatalogResult
-              :coffee="coffee"
-              :to="catalogCoffeePath(shelf, coffee)"
-            />
-          </li>
-        </ul>
-        <LoadMore :pages="catalog" data-testid="roaster-coffees-more" />
-      </template>
+      <QuerySection :query="catalog" testid="roaster-coffees">
+        <template #default="{ data }">
+          <p
+            v-if="!coffeesIn(data).length"
+            class="mt-4 text-xs"
+            data-testid="roaster-coffees-empty"
+          >
+            {{
+              mine
+                ? 'Your shelf has not bought a coffee from this roaster yet.'
+                : 'Nobody has added a coffee from this roaster yet.'
+            }}
+          </p>
+          <template v-else>
+            <ul
+              aria-label="Coffees"
+              data-testid="roaster-coffees"
+              class="mt-4 flex flex-col gap-3"
+            >
+              <li v-for="coffee in coffeesIn(data)" :key="coffee.id">
+                <CatalogResult
+                  :coffee="coffee"
+                  :to="catalogCoffeePath(shelf, coffee)"
+                />
+              </li>
+            </ul>
+            <LoadMore :pages="catalog" data-testid="roaster-coffees-more" />
+          </template>
+        </template>
+        <template #skeleton><RoasterCoffeesSkeleton /></template>
+      </QuerySection>
     </section>
     <EditRoasterSheet
-      v-if="roaster.canEdit"
+      v-if="roaster?.canEdit"
       v-model:open="editing"
       :roaster="roaster"
     />

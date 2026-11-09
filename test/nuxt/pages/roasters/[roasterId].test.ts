@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { onlineManager } from '@tanstack/vue-query'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import {
@@ -7,10 +8,11 @@ import {
   roasterPath,
   shelfCoffeePath,
   useError,
+  useRouter,
 } from '#imports'
 import type { Member } from '#test/support/types'
-import { click, forgetLastShelf, tid } from '../../fixtures'
-import { scenario, signIn } from '../../server'
+import { click, currentPath, forgetLastShelf, tid } from '../../fixtures'
+import { failRequest, holdRequest, scenario, signIn } from '../../server'
 
 let sarah: Member
 let squareMile: { id: string; name: string }
@@ -30,11 +32,17 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
+afterEach(() => onlineManager.setOnline(true))
+
+function openRoaster(route = roasterPath(squareMile)) {
+  return mountSuspended(App, { route, attachTo: document.body })
+}
+
 async function roaster() {
-  const page = await mountSuspended(App, {
-    route: roasterPath(squareMile),
-    attachTo: document.body,
-  })
+  const page = await openRoaster()
+  await vi.waitFor(() =>
+    expect(page.find('[data-testid$="-skeleton"]').exists()).toBe(false),
+  )
 
   return {
     page,
@@ -120,6 +128,126 @@ describe('the page of a roaster', () => {
   it('is not found when the roaster does not exist', async () => {
     await mountSuspended(App, { route: '/roasters/nope' })
 
-    expect(useError().value).toMatchObject({ statusCode: 404 })
+    await vi.waitFor(() =>
+      expect(useError().value).toMatchObject({ statusCode: 404 }),
+    )
+  })
+
+  it('sends an outdated slug on to the current one', async () => {
+    await mountSuspended(App, { route: `/roasters/old-name-${squareMile.id}` })
+
+    await vi.waitFor(() => expect(currentPath()).toBe(roasterPath(squareMile)))
+  })
+})
+
+describe('a roaster page that loads per section', () => {
+  const sections = [
+    {
+      name: 'roaster',
+      path: () => `/api/roasters/${squareMile.id}`,
+      skeleton: 'roaster-header-skeleton',
+      content: 'roaster-place',
+      error: 'roaster',
+    },
+    {
+      name: 'catalog',
+      path: () => `/api/shelves/${sarah.shelf.id}/catalog`,
+      skeleton: 'roaster-coffees-skeleton',
+      content: 'roaster-coffees',
+      error: 'roaster-coffees',
+    },
+  ]
+
+  beforeEach(async () => {
+    await scenario.coffee(sarah.shelf)
+  })
+
+  it.each(sections)(
+    'shows a skeleton for the $name until its request finishes',
+    async ({ path, skeleton, content }) => {
+      const hold = holdRequest('GET', path())
+
+      const page = await openRoaster()
+      const other = sections.find(section => section.skeleton !== skeleton)!
+      await vi.waitFor(() =>
+        expect(page.find(tid(other.content)).exists()).toBe(true),
+      )
+
+      expect(page.find(tid(skeleton)).exists()).toBe(true)
+      expect(page.find(tid(content)).exists()).toBe(false)
+
+      hold.release()
+
+      await vi.waitFor(() =>
+        expect(page.find(tid(content)).exists()).toBe(true),
+      )
+      expect(page.find(tid(skeleton)).exists()).toBe(false)
+    },
+  )
+
+  it.each(sections)(
+    'shows an error and a retry for the $name and keeps the rest of the page',
+    async ({ path, skeleton, content, error }) => {
+      const lift = failRequest('GET', path(), { status: 403, message: 'Nope' })
+
+      const page = await openRoaster()
+      await vi.waitFor(() =>
+        expect(page.find(tid(`${error}-error`)).exists()).toBe(true),
+      )
+
+      expect(page.find(tid(skeleton)).exists()).toBe(false)
+      const other = sections.find(section => section.error !== error)!
+      await vi.waitFor(() =>
+        expect(page.find(tid(other.content)).exists()).toBe(true),
+      )
+
+      lift()
+      await page.get(tid(`${error}-retry`)).trigger('click')
+
+      await vi.waitFor(() =>
+        expect(page.find(tid(content)).exists()).toBe(true),
+      )
+      expect(page.find(tid(`${error}-error`)).exists()).toBe(false)
+    },
+  )
+
+  it('shows the name and logo at once when opened from the roasters', async () => {
+    const page = await openRoaster('/roasters')
+    await vi.waitFor(() =>
+      expect(page.find(tid('roaster-result')).exists()).toBe(true),
+    )
+    const hold = holdRequest('GET', `/api/roasters/${squareMile.id}`)
+
+    await useRouter().push(roasterPath(squareMile))
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('roaster-title')).text()).toBe('Square Mile'),
+    )
+    expect(page.find(tid('roaster-logo')).exists()).toBe(true)
+    expect(page.find(tid('roaster-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('roaster-edit')).exists()).toBe(false)
+    await vi.waitFor(() =>
+      expect(page.find(tid('roaster-coffees')).exists()).toBe(true),
+    )
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('roaster-place')).exists()).toBe(true),
+    )
+    expect(page.find(tid('roaster-edit')).exists()).toBe(true)
+  })
+
+  it('says each section is offline instead of showing skeletons that never end', async () => {
+    onlineManager.setOnline(false)
+
+    const page = await openRoaster()
+
+    for (const { error, skeleton } of sections) {
+      await vi.waitFor(() =>
+        expect(page.find(tid(`${error}-offline`)).exists()).toBe(true),
+      )
+      expect(page.find(tid(skeleton)).exists()).toBe(false)
+    }
   })
 })
