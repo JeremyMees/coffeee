@@ -9,7 +9,7 @@ defineProps<{ name: string; legend: string; required?: boolean }>()
     <FieldSet :data-invalid="field.errors.length ? true : undefined">
       <FieldLegend variant="label">
         {{ legend }}
-        <RequiredMark v-if="required" />
+        <LazyRequiredMark v-if="required" />
       </FieldLegend>
       <slot v-bind="field" :invalid="field.errors.length > 0" />
       <FieldError :errors="field.errors" />

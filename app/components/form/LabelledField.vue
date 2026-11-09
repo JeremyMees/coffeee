@@ -15,7 +15,7 @@ defineProps<{
     <Field :data-invalid="field.errors.length ? true : undefined">
       <FieldLabel :for="inputId" :class="small ? 'text-xs' : undefined">
         {{ label }}
-        <RequiredMark v-if="required" />
+        <LazyRequiredMark v-if="required" />
       </FieldLabel>
       <slot v-bind="field" :invalid="field.errors.length > 0" />
       <FieldError :errors="field.errors" />
