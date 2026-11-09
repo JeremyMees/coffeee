@@ -57,6 +57,16 @@ export function useCoffeeRoaster(coffeeId: MaybeRefOrGetter<string>) {
   })
 }
 
+export function useCoffeeShelves(coffeeId: MaybeRefOrGetter<string>) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: computed(() => queryKeys.coffeeShelves(toValue(coffeeId))),
+    queryFn: () => request(`/api/coffees/${toValue(coffeeId)}/shelves`),
+    enabled: import.meta.client,
+  })
+}
+
 function previewRows(data: unknown): CoffeePreview[] {
   if (Array.isArray(data)) return data
   const found = (data ?? {}) as {
@@ -105,6 +115,7 @@ export function useCoffee(coffeeId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: computed(() => queryKeys.coffee(toValue(coffeeId))),
     queryFn: () => request(`/api/coffees/${toValue(coffeeId)}`),
+    enabled: import.meta.client,
   })
 }
 

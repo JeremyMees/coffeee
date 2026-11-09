@@ -186,7 +186,6 @@ describe('shelf invites', () => {
       now: new Date('2026-11-01T10:00:00Z'),
     })
     const { invite: created, token } = await invite('Tom@Example.com')
-    vi.useRealTimers()
 
     expect(created).toMatchObject({
       email: 'tom@example.com',
@@ -200,6 +199,7 @@ describe('shelf invites', () => {
     expect(await listShelfInvites(db, home.id)).toEqual([
       expect.objectContaining({ email: 'tom@example.com', invitedBy: 'Sarah' }),
     ])
+    vi.useRealTimers()
   })
 
   it('refuses someone who is already a member', async () => {

@@ -5,7 +5,8 @@ export type ShelfCoffee =
 
 export type SharedCoffee = InternalApi['/api/coffees/:coffeeId']['get']
 
-export type CoffeeShelf = SharedCoffee['shelves'][number]
+export type CoffeeShelf =
+  InternalApi['/api/coffees/:coffeeId/shelves']['get'][number]
 
 export type StockCoffee =
   InternalApi['/api/shelves/:shelfId/stock']['get'][number]
@@ -37,6 +38,8 @@ export type PhotoCoffee = Pick<ShelfCoffee, 'id' | 'name' | 'photoUrl'> & {
   canEdit?: boolean
 }
 
-export type Review = SharedCoffee['reviews'][number]
+type CoffeeReviews = InternalApi['/api/coffees/:coffeeId/reviews']['get']
 
-export type CoffeeCommunityRating = SharedCoffee['communityRating']
+export type Review = CoffeeReviews['reviews'][number]
+
+export type CoffeeCommunityRating = CoffeeReviews['communityRating']

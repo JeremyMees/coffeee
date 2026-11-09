@@ -9,6 +9,7 @@ import roastersHandler from '#server/api/roasters.get'
 import coffeeHandler from '#server/api/coffees/[coffeeId].get'
 import coffeeReviewsHandler from '#server/api/coffees/[coffeeId]/reviews.get'
 import coffeeRoasterHandler from '#server/api/coffees/[coffeeId]/roaster.get'
+import coffeeShelvesHandler from '#server/api/coffees/[coffeeId]/shelves.get'
 import coffeeVerdictHandler from '#server/api/coffees/[coffeeId]/verdict.get'
 import deleteCoffeeHandler from '#server/api/coffees/[coffeeId].delete'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
@@ -74,6 +75,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/coffees/:coffeeId/verdict', coffeeVerdictHandler)
     .get('/api/coffees/:coffeeId/reviews', coffeeReviewsHandler)
     .get('/api/coffees/:coffeeId/roaster', coffeeRoasterHandler)
+    .get('/api/coffees/:coffeeId/shelves', coffeeShelvesHandler)
     .delete('/api/coffees/:coffeeId', deleteCoffeeHandler)
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .patch('/api/shelves/:shelfId/coffees/:coffeeId', editCoffeeHandler)
@@ -591,10 +593,24 @@ describe('the parts of a coffee shown on their own', () => {
     expect(response.status).toBe(404)
   })
 
+  it('shows only the shelves of whoever is signed in, with their bags', async () => {
+    const { headers, coffeeId } = await added()
+    const other = await member()
+    await add(other.shelf.id, other.headers)
+
+    const response = await request(`/api/coffees/${coffeeId}/shelves`, {
+      headers,
+    })
+    const shelves = await response.json()
+
+    expect(shelves).toMatchObject([{ name: 'Home', bags: 1, inStock: 1 }])
+    expect(JSON.stringify(shelves)).not.toContain(other.shelf.id)
+  })
+
   it('asks to sign in first', async () => {
     const { coffeeId } = await added()
 
-    for (const part of ['verdict', 'reviews', 'roaster']) {
+    for (const part of ['verdict', 'reviews', 'roaster', 'shelves']) {
       const response = await request(`/api/coffees/${coffeeId}/${part}`)
 
       expect(response.status).toBe(401)
@@ -617,8 +633,12 @@ describe('GET /api/coffees/:coffeeId', () => {
     expect(response.status).toBe(200)
     expect(body).toMatchObject({
       name: 'Ayele Fulasa',
-      shelves: [{ id: home.shelf.id, bags: 0, inStock: 0 }],
+      roaster: 'Square Mile',
+      canEdit: false,
+      canDelete: false,
     })
+    expect(body).not.toHaveProperty('shelves')
+    expect(body).not.toHaveProperty('reviews')
     expect(JSON.stringify(body)).not.toMatch(/priceCents|2026-11-01/)
     expect(JSON.stringify(body)).not.toContain(work.shelf.id)
   })

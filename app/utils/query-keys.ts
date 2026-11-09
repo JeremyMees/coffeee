@@ -60,6 +60,7 @@ export const queryKeys = {
   coffeeVerdict: (coffeeId: string) => ['coffees', coffeeId, 'verdict'],
   coffeeReviews: (coffeeId: string) => ['coffees', coffeeId, 'reviews'],
   coffeeRoaster: (coffeeId: string) => ['coffees', coffeeId, 'roaster'],
+  coffeeShelves: (coffeeId: string) => ['coffees', coffeeId, 'shelves'],
   shelfRoasters: (shelfId: string, query: Record<string, string>) => [
     'shelves',
     shelfId,

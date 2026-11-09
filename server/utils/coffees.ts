@@ -19,14 +19,8 @@ import {
 } from '#server/utils/descriptions'
 import { changeShelf } from '#server/utils/notifications'
 import { addPurchase } from '#server/utils/purchases'
-import { findRoaster, roasterColumns } from '#server/utils/roasters'
-import { shelvesHolding } from '#server/utils/shelves'
-import {
-  communityRatingOf,
-  findVerdict,
-  reviewsOf,
-  verdictOn,
-} from '#server/utils/verdicts'
+import { roasterColumns } from '#server/utils/roasters'
+import { communityRatingOf, reviewsOf, verdictOn } from '#server/utils/verdicts'
 
 export const coffeeColumns = {
   id: coffee.id,
@@ -197,31 +191,6 @@ export async function findCoffeeReviews(
   ])
 
   return { communityRating, reviews }
-}
-
-export async function findCoffee(
-  db: Database,
-  input: { coffeeId: string; viewer: Viewer },
-) {
-  const core = await findCoffeeCore(db, input)
-
-  if (!core) return undefined
-
-  const { roasterId, ...details } = core
-  const [verdict, reviews, roasterDetails, shelves] = await Promise.all([
-    findVerdict(db, { userId: input.viewer.id, coffeeId: input.coffeeId }),
-    findCoffeeReviews(db, input),
-    findRoaster(db, { roasterId, viewer: input.viewer }),
-    shelvesHolding(db, { coffeeId: input.coffeeId, userId: input.viewer.id }),
-  ])
-
-  return {
-    ...details,
-    ...verdict,
-    ...reviews,
-    roasterDetails: roasterDetails!,
-    shelves,
-  }
 }
 
 export function editCoffee(

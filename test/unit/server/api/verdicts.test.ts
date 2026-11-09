@@ -4,6 +4,7 @@ import { shelfMember } from '#server/db/schemas'
 import showCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId].get'
 import sharedCoffeeHandler from '#server/api/coffees/[coffeeId].get'
 import reviewsHandler from '#server/api/coffees/[coffeeId]/reviews.get'
+import shelvesHandler from '#server/api/coffees/[coffeeId]/shelves.get'
 import getVerdictHandler from '#server/api/coffees/[coffeeId]/verdict.get'
 import verdictHandler from '#server/api/coffees/[coffeeId]/verdict.patch'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
@@ -47,6 +48,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/coffees/:coffeeId', sharedCoffeeHandler)
     .get('/api/coffees/:coffeeId/verdict', getVerdictHandler)
     .get('/api/coffees/:coffeeId/reviews', reviewsHandler)
+    .get('/api/coffees/:coffeeId/shelves', shelvesHandler)
     .patch('/api/coffees/:coffeeId/verdict', verdictHandler)
   const app = createApp().use(router)
 
@@ -213,22 +215,29 @@ describe('PATCH /api/coffees/:coffeeId/verdict', () => {
     await judge(coffeeId, sarah, { rating: 5, wouldBuyAgain: true })
     await judge(coffeeId, tom, { rating: 3 })
 
-    const response = await request(`/api/coffees/${coffeeId}`, {
-      headers: outsider,
-    })
-    const coffee = await response.json()
+    const parts = await Promise.all(
+      ['', '/verdict', '/reviews', '/shelves'].map(async part => {
+        const response = await request(`/api/coffees/${coffeeId}${part}`, {
+          headers: outsider,
+        })
 
-    expect(response.status).toBe(200)
-    expect(coffee).toMatchObject({
-      rating: null,
+        expect(response.status).toBe(200)
+
+        return response.json()
+      }),
+    )
+    const [coffee, verdict, reviews, shelves] = parts
+
+    expect(verdict).toMatchObject({ rating: null })
+    expect(reviews).toMatchObject({
       communityRating: { average: 4, raters: 2, wouldBuyAgain: 1 },
-      shelves: [],
     })
     expect(
-      coffee.reviews.map((review: { name: string }) => review.name).sort(),
+      reviews.reviews.map((review: { name: string }) => review.name).sort(),
     ).toEqual(['Sarah', 'Tom'])
+    expect(shelves).toEqual([])
     expect(coffee).not.toHaveProperty('purchases')
-    expect(JSON.stringify(coffee)).not.toContain('priceCents')
+    expect(JSON.stringify(parts)).not.toContain('priceCents')
   })
 
   it('asks to sign in first', async () => {

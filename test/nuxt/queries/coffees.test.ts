@@ -12,6 +12,7 @@ import {
   useCoffeePreview,
   useCoffeePhotoRemoval,
   useCoffeePhotoUpdate,
+  useCoffeeShelves,
   useCoffeeUpdate,
   useShelfCoffee,
   useStock,
@@ -166,6 +167,20 @@ describe('useCoffee', () => {
     await suspense()
 
     expect(data.value).toMatchObject({ id: ayele.id, name: 'Ayele Fulasa' })
+  })
+})
+
+describe('useCoffeeShelves', () => {
+  it('fetches the shelves of the viewer with their bags of the coffee', async () => {
+    const { data, suspense } = await runOn('/', () =>
+      useCoffeeShelves(ayele.id),
+    )
+
+    await suspense()
+
+    expect(data.value).toMatchObject([
+      { id: sarah.shelf.id, bags: 1, inStock: 1 },
+    ])
   })
 })
 

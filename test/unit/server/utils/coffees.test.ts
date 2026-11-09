@@ -10,7 +10,6 @@ import {
 import {
   addCoffee,
   editCoffee,
-  findCoffee,
   findEditableCoffee,
   findCoffeeCore,
   listStock,
@@ -735,41 +734,5 @@ describe('finding a coffee to edit', () => {
     expect(
       await findEditableCoffee(db, { coffeeId: 'nope', editor: sarah }),
     ).toEqual({ outcome: 'notFound' })
-  })
-})
-
-describe('findCoffee', () => {
-  it('shows the coffee without any shelf’s bags, with the shelves of the viewer', async () => {
-    const { db, sarah, tom, home, work } = await setup()
-    const { coffee: added } = await addCoffee(db, {
-      shelfId: work.id,
-      userId: tom.id,
-      coffee: newCoffee(),
-      origin: testOrigin,
-    })
-
-    const found = await findCoffee(db, { coffeeId: added.id, viewer: sarah })
-
-    expect(found).toMatchObject({
-      name: 'Ayele Fulasa',
-      roaster: 'Square Mile',
-      canEdit: false,
-      rating: null,
-      roasterDetails: { name: 'Square Mile' },
-      shelves: [{ id: home.id, name: 'Home', bags: 0, inStock: 0 }],
-    })
-    expect(found).not.toHaveProperty('purchases')
-    expect(found).toMatchObject({
-      communityRating: { average: null, raters: 0, wouldBuyAgain: 0 },
-      reviews: [],
-    })
-  })
-
-  it('is not found when it does not exist', async () => {
-    const { db, sarah } = await setup()
-
-    expect(
-      await findCoffee(db, { coffeeId: 'unknown', viewer: sarah }),
-    ).toBeUndefined()
   })
 })

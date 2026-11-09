@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { and, eq } from 'drizzle-orm'
 import { coffeeVerdict, shelfMember } from '#server/db/schemas'
-import {
-  addCoffee,
-  findCoffee,
-  findCoffeeReviews,
-  listStock,
-} from '#server/utils/coffees'
+import { addCoffee, findCoffeeReviews, listStock } from '#server/utils/coffees'
 import { createShelf } from '#server/utils/shelves'
 import {
   communityRatingOf,
@@ -274,7 +269,9 @@ describe('the reviews', () => {
       communityRating: { average: 2, raters: 1, wouldBuyAgain: 0 },
       reviews: [{ name: 'Tom', rating: 2, mine: true }],
     })
-    expect(await findCoffee(db, { coffeeId, viewer: ana })).toMatchObject({
+    expect(
+      await findCoffeeReviews(db, { coffeeId, viewer: ana }),
+    ).toMatchObject({
       communityRating: { average: 2, raters: 1 },
       reviews: [{ name: 'Tom', rating: 2, mine: false }],
     })

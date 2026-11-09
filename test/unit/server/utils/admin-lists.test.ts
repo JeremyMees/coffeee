@@ -19,10 +19,10 @@ import {
   updateAdminEntry,
 } from '#server/utils/admin-lists'
 import { listBrewMethods } from '#server/utils/brew-methods'
-import { addCoffee, findCoffee } from '#server/utils/coffees'
+import { addCoffee, findCoffeeCore } from '#server/utils/coffees'
 import { setGrindSetting } from '#server/utils/grind-settings'
 import { ownGrinder } from '#server/utils/grinders'
-import { createShelf } from '#server/utils/shelves'
+import { createShelf, shelvesHolding } from '#server/utils/shelves'
 import { judgeCoffee } from '#server/utils/verdicts'
 import type { AdminList } from '#shared/types/admin'
 import type { NewCoffee } from '#shared/types/coffee'
@@ -252,7 +252,7 @@ describe('merging entries', () => {
         .where(eq(grindSetting.coffeeId, keptId)),
     ).toEqual([{ setting: '4.2' }])
     expect(
-      (await findCoffee(db, { coffeeId: keptId, viewer: sarah }))?.name,
+      (await findCoffeeCore(db, { coffeeId: keptId, viewer: sarah }))?.name,
     ).toBe('Ayele Fulasa')
   })
 
@@ -703,12 +703,11 @@ describe('adding entries', () => {
     })
 
     expect(added).toMatchObject({ outcome: 'added' })
-    const found = await findCoffee(db, {
-      coffeeId: (added as { entry: { id: string } }).entry.id,
-      viewer: sarah,
-    })
+    const coffeeId = (added as { entry: { id: string } }).entry.id
+    const found = await findCoffeeCore(db, { coffeeId, viewer: sarah })
+    const shelves = await shelvesHolding(db, { coffeeId, userId: sarah.id })
     expect(found?.flavorNotes.map(note => note.name)).toEqual(['Lime'])
-    expect(found?.shelves.every(shelf => shelf.bags === 0)).toBe(true)
+    expect(shelves.every(shelf => shelf.bags === 0)).toBe(true)
     expect(again).toMatchObject({
       outcome: 'taken',
       message: 'Square Mile Ayele Fulasa is already on the list',
