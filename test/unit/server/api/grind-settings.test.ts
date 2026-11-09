@@ -233,6 +233,17 @@ describe('PUT /api/shelves/:shelfId/coffees/:coffeeId/grind-settings', () => {
     expect(response.status).toBe(401)
   })
 
+  it('shows them to nobody off the shelf', async () => {
+    const { path } = await sharedShelf()
+    const outsider = await createTestUser(db, { name: 'Lena' })
+
+    const response = await request(`${path}/grind-settings`, {
+      headers: await signedIn(outsider.id),
+    })
+
+    expect(response.status).toBe(404)
+  })
+
   it('asks to sign in first', async () => {
     const { path, setting } = await sharedShelf()
 

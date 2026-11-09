@@ -8,7 +8,7 @@ import { coffee, purchase, roaster } from '#server/db/schemas'
 import { canEditCatalogEntry } from '#server/utils/catalog'
 import { changeCatalog, findTakenName } from '#server/utils/catalog-entries'
 
-const roasterColumns = {
+export const roasterColumns = {
   id: roaster.id,
   name: roaster.name,
   website: roaster.website,

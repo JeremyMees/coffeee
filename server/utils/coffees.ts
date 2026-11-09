@@ -19,7 +19,7 @@ import {
 } from '#server/utils/descriptions'
 import { changeShelf } from '#server/utils/notifications'
 import { addPurchase } from '#server/utils/purchases'
-import { findRoaster } from '#server/utils/roasters'
+import { findRoaster, roasterColumns } from '#server/utils/roasters'
 import { shelvesHolding } from '#server/utils/shelves'
 import {
   communityRatingOf,
@@ -141,26 +141,26 @@ export async function findCoffeeCore(
   db: Database,
   input: { coffeeId: string; viewer: Viewer },
 ) {
-  const [found] = await db
-    .select({
-      ...detailColumns,
-      roasterId: coffee.roasterId,
-      createdBy: coffee.createdBy,
-    })
-    .from(coffee)
-    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
-    .where(eq(coffee.id, input.coffeeId))
-
-  if (!found) return undefined
-
-  const { createdBy, ...details } = found
-  const [description, deletable] = await Promise.all([
+  const [[found], description, deletable] = await Promise.all([
+    db
+      .select({
+        ...detailColumns,
+        roasterId: coffee.roasterId,
+        createdBy: coffee.createdBy,
+      })
+      .from(coffee)
+      .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+      .where(eq(coffee.id, input.coffeeId)),
     descriptionOf(db, input.coffeeId),
     findDeletableCoffee(db, {
       coffeeId: input.coffeeId,
       deleter: input.viewer,
     }),
   ])
+
+  if (!found) return undefined
+
+  const { createdBy, ...details } = found
 
   return {
     ...details,
@@ -175,13 +175,16 @@ export async function findCoffeeRoaster(
   input: { coffeeId: string; viewer: Viewer },
 ) {
   const [found] = await db
-    .select({ roasterId: coffee.roasterId })
+    .select({ ...roasterColumns, createdBy: roaster.createdBy })
     .from(coffee)
+    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
     .where(eq(coffee.id, input.coffeeId))
 
   if (!found) return undefined
 
-  return findRoaster(db, { roasterId: found.roasterId, viewer: input.viewer })
+  const { createdBy, ...details } = found
+
+  return { ...details, canEdit: canEditCatalogEntry(input.viewer, createdBy) }
 }
 
 export async function findCoffeeReviews(

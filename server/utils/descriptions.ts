@@ -201,17 +201,35 @@ function originsOf(db: Database, coffeeIds: string[]) {
 }
 
 export async function descriptionOf(db: Database, coffeeId: string) {
-  const origins = await originsOf(db, [coffeeId])
+  const [
+    origins,
+    regions,
+    farms,
+    washingStations,
+    producers,
+    processes,
+    varietals,
+    flavorNotes,
+  ] = await Promise.all([
+    originsOf(db, [coffeeId]),
+    originEntriesOf(db, 'regions', coffeeId),
+    originEntriesOf(db, 'farms', coffeeId),
+    originEntriesOf(db, 'washingStations', coffeeId),
+    entriesOf(db, 'producers', coffeeId),
+    entriesOf(db, 'processes', coffeeId),
+    entriesOf(db, 'varietals', coffeeId),
+    entriesOf(db, 'flavorNotes', coffeeId),
+  ])
 
   return {
     origins: origins.map(({ code, name }) => ({ code, name })),
-    regions: await originEntriesOf(db, 'regions', coffeeId),
-    farms: await originEntriesOf(db, 'farms', coffeeId),
-    washingStations: await originEntriesOf(db, 'washingStations', coffeeId),
-    producers: await entriesOf(db, 'producers', coffeeId),
-    processes: await entriesOf(db, 'processes', coffeeId),
-    varietals: await entriesOf(db, 'varietals', coffeeId),
-    flavorNotes: await entriesOf(db, 'flavorNotes', coffeeId),
+    regions,
+    farms,
+    washingStations,
+    producers,
+    processes,
+    varietals,
+    flavorNotes,
   }
 }
 
