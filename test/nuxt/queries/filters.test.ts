@@ -92,7 +92,7 @@ describe('useFilterLabels', () => {
       }),
     )
 
-    await labels.suspense()
+    await vi.waitFor(() => expect(labels.data.value).toBeDefined())
 
     expect(labels.data.value).toEqual({
       roasterId: { [squareMile]: 'Square Mile', [laCabra]: 'La Cabra' },
@@ -106,10 +106,9 @@ describe('useFilterLabels', () => {
       client: useQueryClient(),
     }))
 
-    await labels.suspense()
     await flushPromises()
 
-    expect(labels.data.value).toBeUndefined()
+    expect(labels.data.value).toEqual({})
     expect(
       client.getQueryState(queryKeys.filterLabels(sarah.shelf.id, {}))
         ?.fetchStatus,

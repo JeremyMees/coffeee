@@ -15,7 +15,7 @@ export type BrowsingQuery = Record<string, string | string[]>
 export type BrowsingPicker = (typeof browsingPickers)[number]
 
 export interface BrowsingAddress<State> {
-  fromRoute: (query: Record<string, unknown>, labels: FilterLabels) => State
+  fromRoute: (query: Record<string, unknown>, labels?: FilterLabels) => State
   toRoute: (state: State) => BrowsingQuery
   labelsOf: (state: State) => FilterLabels
 }

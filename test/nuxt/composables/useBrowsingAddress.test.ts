@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBrowsingAddress, useRouter } from '#imports'
 import type { Member } from '#test/support/types'
 import { runOn } from '../fixtures'
-import { failRequest, scenario, signIn } from '../server'
+import { failRequest, holdRequest, scenario, signIn } from '../server'
 
 let sarah: Member
 
@@ -12,21 +12,32 @@ beforeEach(async () => {
 })
 
 describe('useBrowsingAddress', () => {
-  it('starts from the address, naming its filters', async () => {
+  it('starts from the address straight away and names its filters once known', async () => {
     const laCabra = await scenario.roaster(sarah, 'La Cabra')
     const address = await runOn(
       `/shelves/${sarah.shelf.id}/discover?q=lime&roasterId=${laCabra}`,
       () => useBrowsingAddress(sarah.shelf.id, catalogAddress),
     )
+    const named = vi.fn()
 
-    expect(await address.start()).toEqual({
+    expect(address.initial).toEqual({
       search: 'lime',
       filter: {
         ...emptyBrowsingFilter(),
-        roaster: [{ value: laCabra, label: 'La Cabra' }],
+        roaster: [{ value: laCabra, label: '' }],
       },
       sort: 'newest',
     })
+
+    address.whenNamed(named)
+
+    await vi.waitFor(() =>
+      expect(named).toHaveBeenCalledWith({
+        ...emptyBrowsingFilter(),
+        roaster: [{ value: laCabra, label: 'La Cabra' }],
+      }),
+    )
+    expect(named).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the state in the address and remembers the names it picked', async () => {
@@ -63,6 +74,34 @@ describe('useBrowsingAddress', () => {
       () => useBrowsingAddress(sarah.shelf.id, catalogAddress),
     )
 
-    expect(await back.start()).toEqual(state)
+    const named = vi.fn()
+    back.whenNamed(named)
+
+    expect(back.initial).toEqual(state)
+    expect(named).not.toHaveBeenCalled()
+  })
+
+  it('remembers no names before it knows them', async () => {
+    const laCabra = await scenario.roaster(sarah, 'La Cabra')
+    const route = `/shelves/${sarah.shelf.id}/discover?roasterId=${laCabra}`
+    const hold = holdRequest(
+      'GET',
+      `/api/shelves/${sarah.shelf.id}/filter-labels`,
+    )
+    const address = await runOn(route, () =>
+      useBrowsingAddress(sarah.shelf.id, catalogAddress),
+    )
+
+    await address.keep({ ...address.initial, search: 'lime' })
+    hold.release()
+    const named = vi.fn()
+    address.whenNamed(named)
+
+    await vi.waitFor(() =>
+      expect(named).toHaveBeenCalledWith({
+        ...emptyBrowsingFilter(),
+        roaster: [{ value: laCabra, label: 'La Cabra' }],
+      }),
+    )
   })
 })

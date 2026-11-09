@@ -49,8 +49,11 @@ export function pickedOptions(
   value: unknown,
   labels: Record<string, string> | undefined,
 ): LibraryOption[] {
+  if (!labels)
+    return queryValues(value).map(picked => ({ value: picked, label: '' }))
+
   return queryValues(value).flatMap(picked =>
-    labels && Object.hasOwn(labels, picked)
+    Object.hasOwn(labels, picked)
       ? [{ value: picked, label: labels[picked]! }]
       : [],
   )

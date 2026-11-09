@@ -74,14 +74,15 @@ export function browsingRoute(search: string, filter: BrowsingFilter) {
 
 export function browsingFromRoute(
   query: Record<string, unknown>,
-  labels: FilterLabels,
+  labels?: FilterLabels,
 ) {
   const filter = emptyBrowsingFilter()
 
   for (const picker of browsingPickers) {
     filter[picker.key] = pickedOptions(
       query[picker.param],
-      fixedLabels[picker.param] ?? labels[picker.param as keyof FilterLabels],
+      fixedLabels[picker.param] ??
+        (labels && (labels[picker.param as keyof FilterLabels] ?? {})),
     )
   }
 

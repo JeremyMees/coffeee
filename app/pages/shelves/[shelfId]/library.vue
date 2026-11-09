@@ -12,7 +12,7 @@ const shelf = useCurrentShelf()
 const desktop = useMediaQuery('(min-width: 1024px)')
 
 const address = useBrowsingAddress(shelfId, libraryAddress)
-const initial = await address.start()
+const { initial } = address
 
 const search = ref(initial.search)
 const searched = refDebounced(search, 200)
@@ -45,7 +45,15 @@ const sort = computed<LibrarySort | null>(() => {
     : null
 })
 
-watch([searched, filter, sorting], () => {
+address.whenNamed(named => {
+  filter.value = named
+})
+
+const listed = computed(() =>
+  JSON.stringify(libraryQuery(searched.value, filter.value)),
+)
+
+watch([listed, sorting], () => {
   pagination.value = { ...pagination.value, pageIndex: 0 }
 })
 
@@ -70,7 +78,7 @@ const page = useLibraryPage(
   () => pagination.value.pageIndex,
   table,
 )
-await (table.value ? page.suspense() : grid.suspense())
+const list = computed<QueryState<unknown>>(() => (table.value ? page : grid))
 
 const cards = computed(
   () => grid.data.value?.pages.flatMap(loaded => loaded.coffees) ?? [],
@@ -83,7 +91,10 @@ const total = computed(() =>
 const narrowed = computed(
   () => Boolean(searched.value.trim()) || isLibraryFiltered(filter.value),
 )
-const empty = computed(() => !narrowed.value && total.value === 0)
+const empty = computed(
+  () =>
+    list.value.data.value !== undefined && !narrowed.value && total.value === 0,
+)
 
 function clear() {
   search.value = ''
@@ -112,12 +123,16 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
         placeholder="Coffee, roaster, flavor note, origin…"
       />
       <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <BrowsingFilters
-          v-model="filter"
-          :shelf-id="shelfId"
-          area="library"
-          :toggle="favourites"
-        />
+        <QuerySection :query="address.labels" testid="library-filters">
+          <BrowsingFilters
+            v-model="filter"
+            :shelf-id="shelfId"
+            area="library"
+            :toggle="favourites"
+          />
+
+          <template #skeleton><BrowsingFiltersSkeleton /></template>
+        </QuerySection>
         <div
           v-if="desktop"
           class="flex rounded-full bg-accent p-1"
@@ -148,68 +163,75 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
           </button>
         </div>
       </div>
-      <div
-        v-if="!total"
-        class="mt-8 flex flex-col items-start gap-4"
-        data-testid="library-no-match"
-      >
-        <p class="text-xs">
-          {{
-            searched.trim()
-              ? `No coffee in your library matches “${searched.trim()}”.`
-              : 'No coffee in your library matches these filters.'
-          }}
-        </p>
-        <div class="flex flex-wrap gap-3">
-          <NuxtLink
-            :to="discoverLink(shelf!, searched, filter)"
-            data-testid="library-no-match-discover"
-            class="rounded-full bg-primary px-6 py-2.5 text-sm text-primary-foreground uppercase"
-          >
+      <QuerySection :query="list" testid="library">
+        <div
+          v-if="!total"
+          class="mt-8 flex flex-col items-start gap-4"
+          data-testid="library-no-match"
+        >
+          <p class="text-xs">
             {{
               searched.trim()
-                ? `Search Discover for “${searched.trim()}”`
-                : 'Look in Discover'
+                ? `No coffee in your library matches “${searched.trim()}”.`
+                : 'No coffee in your library matches these filters.'
             }}
-          </NuxtLink>
-          <button
-            type="button"
-            data-testid="library-no-match-clear"
-            class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
-            @click="clear"
-          >
-            {{ searched.trim() ? 'Clear search' : 'Clear filters' }}
-          </button>
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <NuxtLink
+              :to="discoverLink(shelf!, searched, filter)"
+              data-testid="library-no-match-discover"
+              class="rounded-full bg-primary px-6 py-2.5 text-sm text-primary-foreground uppercase"
+            >
+              {{
+                searched.trim()
+                  ? `Search Discover for “${searched.trim()}”`
+                  : 'Look in Discover'
+              }}
+            </NuxtLink>
+            <button
+              type="button"
+              data-testid="library-no-match-clear"
+              class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
+              @click="clear"
+            >
+              {{ searched.trim() ? 'Clear search' : 'Clear filters' }}
+            </button>
+          </div>
         </div>
-      </div>
-      <LibraryTable
-        v-else-if="table"
-        v-model:sorting="sorting"
-        v-model:pagination="pagination"
-        class="mt-8"
-        :coffees="page.data.value?.coffees ?? []"
-        :total="total"
-        :shelf="shelf!"
-      />
-      <template v-else>
-        <ul
-          aria-label="Library"
-          data-testid="library"
-          class="mt-8 flex flex-col lg:grid lg:grid-cols-2 lg:gap-5 2xl:grid-cols-3"
-        >
-          <li
-            v-for="coffee in cards"
-            :key="coffee.id"
-            class="not-first:-mt-[216px] lg:not-first:mt-0"
+        <LibraryTable
+          v-else-if="table"
+          v-model:sorting="sorting"
+          v-model:pagination="pagination"
+          class="mt-8"
+          :coffees="page.data.value?.coffees ?? []"
+          :total="total"
+          :shelf="shelf!"
+        />
+        <template v-else>
+          <ul
+            aria-label="Library"
+            data-testid="library"
+            class="mt-8 flex flex-col lg:grid lg:grid-cols-2 lg:gap-5 2xl:grid-cols-3"
           >
-            <CoffeeCard
-              :coffee="coffee"
-              :to="shelfCoffeePath(shelf!, coffee)"
-            />
-          </li>
-        </ul>
-        <LoadMore :pages="grid" data-testid="library-more" />
-      </template>
+            <li
+              v-for="coffee in cards"
+              :key="coffee.id"
+              class="not-first:-mt-[216px] lg:not-first:mt-0"
+            >
+              <CoffeeCard
+                :coffee="coffee"
+                :to="shelfCoffeePath(shelf!, coffee)"
+              />
+            </li>
+          </ul>
+          <LoadMore :pages="grid" data-testid="library-more" />
+        </template>
+
+        <template #skeleton>
+          <LibraryTableSkeleton v-if="table" />
+          <LibrarySkeleton v-else />
+        </template>
+      </QuerySection>
     </template>
   </main>
 </template>

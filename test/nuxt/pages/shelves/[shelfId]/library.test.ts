@@ -11,7 +11,7 @@ import {
   tid,
   type,
 } from '../../../fixtures'
-import { scenario, signIn } from '../../../server'
+import { failRequest, holdRequest, scenario, signIn } from '../../../server'
 
 let sarah: Member
 
@@ -62,8 +62,28 @@ async function thirtyCoffees() {
   }
 }
 
+const skeletons = [
+  'library-skeleton',
+  'library-table-skeleton',
+  'browsing-filters-skeleton',
+]
+  .map(id => tid(id))
+  .join(', ')
+
 function libraryPath(query = '') {
   return `${shelfPath(sarah.shelf)}/library${query}`
+}
+
+function listPath() {
+  return `/api/shelves/${sarah.shelf.id}/library`
+}
+
+function labelsPath() {
+  return `/api/shelves/${sarah.shelf.id}/filter-labels`
+}
+
+function mount(route = libraryPath()) {
+  return mountSuspended(App, { route, attachTo: document.body })
 }
 
 async function library(route = libraryPath()) {
@@ -75,6 +95,7 @@ async function library(route = libraryPath()) {
     page.findAll(tid('library', 'coffee-card-name')).map(name => name.text())
   const rows = () =>
     page.findAll(tid('library-row-name')).map(name => name.text())
+  await vi.waitFor(() => expect(page.find(skeletons).exists()).toBe(false))
 
   return { page, cards, rows }
 }
@@ -371,5 +392,125 @@ describe('the Library page', () => {
     expect(page.get(tid('library-applied-filter')).text()).toBe(
       'Origin: Ethiopia',
     )
+  })
+  it('shows the page, the filters and a card skeleton while the coffees load', async () => {
+    await threeCoffees()
+    const hold = holdRequest('GET', listPath())
+
+    const page = await mount()
+
+    expect(page.get(tid('page-title')).text()).toBe('Library')
+    expect(page.find(tid('library-filters')).exists()).toBe(true)
+    expect(page.find(tid('library-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('library')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(page.findAll(tid('library', 'coffee-card'))).toHaveLength(3),
+    )
+    expect(page.find(tid('library-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows a row skeleton while the table loads', async () => {
+    setViewport(1280, 800)
+    await threeCoffees()
+    const hold = holdRequest('GET', listPath())
+
+    const page = await mount(libraryPath('?view=table'))
+
+    expect(page.find(tid('library-table-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('library-table')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('library-table')).exists()).toBe(true),
+    )
+    expect(page.find(tid('library-table-skeleton')).exists()).toBe(false)
+  })
+
+  it('loads the coffees without waiting for the names of the filters in the address', async () => {
+    await threeCoffees()
+    const hold = holdRequest('GET', labelsPath())
+
+    const page = await mount(libraryPath('?originCode=CO'))
+
+    expect(page.find(tid('browsing-filters-skeleton')).exists()).toBe(true)
+    await vi.waitFor(() =>
+      expect(
+        page
+          .findAll(tid('library', 'coffee-card-name'))
+          .map(name => name.text()),
+      ).toEqual(['El Paraiso']),
+    )
+    expect(page.find(tid('library-filters')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('library-applied-filter')).exists()).toBe(true),
+    )
+    expect(page.get(tid('library-applied-filter')).text()).toBe(
+      'Origin: Colombia',
+    )
+    expect(page.find(tid('browsing-filters-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error with a retry when the coffees fail, and the filters still work', async () => {
+    await threeCoffees()
+    const lift = failRequest('GET', listPath(), {
+      status: 500,
+      message: 'Nope',
+    })
+
+    const page = await mount()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('library-error')).exists()).toBe(true),
+    )
+    expect(page.find(tid('library-skeleton')).exists()).toBe(false)
+
+    await pickFilter('origins', 'Colombia')
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('library-applied-filter')).exists()).toBe(true),
+    )
+    expect(page.get(tid('library-applied-filter')).text()).toBe(
+      'Origin: Colombia',
+    )
+    await vi.waitFor(() =>
+      expect(page.find(tid('library-error')).exists()).toBe(true),
+    )
+
+    lift()
+    await page.get(tid('library-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(
+        page
+          .findAll(tid('library', 'coffee-card-name'))
+          .map(name => name.text()),
+      ).toEqual(['El Paraiso']),
+    )
+    expect(page.find(tid('library-error')).exists()).toBe(false)
+  })
+
+  it('keeps the coffees on screen with no skeleton while a new filter loads', async () => {
+    await threeCoffees()
+    const { page, cards } = await library()
+    const hold = holdRequest('GET', listPath())
+
+    await pickFilter('origins', 'Colombia')
+    await vi.waitFor(() =>
+      expect(page.find(tid('library-applied-filter')).exists()).toBe(true),
+    )
+
+    expect(page.find(tid('library-skeleton')).exists()).toBe(false)
+    expect(cards()).toEqual(['Ayele Fulasa', 'El Paraiso', 'Red Brick'])
+
+    hold.release()
+
+    await vi.waitFor(() => expect(cards()).toEqual(['El Paraiso']))
   })
 })

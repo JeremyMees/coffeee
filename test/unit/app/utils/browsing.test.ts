@@ -106,6 +106,19 @@ describe('browsingFromRoute', () => {
       browsingFromRoute({ roasterId: 'gone', roastLevel: 'burnt' }, {}),
     ).toEqual({ search: '', filter: emptyBrowsingFilter() })
   })
+
+  it('keeps the filters it cannot name yet while the names load', () => {
+    expect(browsingFromRoute({ roasterId: 'r1', roastLevel: 'light' })).toEqual(
+      {
+        search: '',
+        filter: {
+          ...emptyBrowsingFilter(),
+          roaster: [{ value: 'r1', label: '' }],
+          roastLevel: [{ value: 'light', label: 'Light' }],
+        },
+      },
+    )
+  })
 })
 
 describe('browsingLabels', () => {

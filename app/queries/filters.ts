@@ -60,9 +60,11 @@ export function useFilterLabels(
     )
   }
 
-  async function suspense() {
-    if (wanted) await labels.suspense()
+  return {
+    data: computed(() => (wanted ? labels.data.value : {})),
+    isError: labels.isError,
+    fetchStatus: labels.fetchStatus,
+    refetch: labels.refetch,
+    remember,
   }
-
-  return { data: labels.data, suspense, remember }
 }

@@ -59,8 +59,14 @@ describe('pickedOptions', () => {
     expect(pickedOptions('n1', labels)).toEqual([
       { value: 'n1', label: 'Lime' },
     ])
-    expect(pickedOptions('n1', undefined)).toEqual([])
     expect(pickedOptions('toString', labels)).toEqual([])
+  })
+
+  it('keeps every value with no name while the names are unknown', () => {
+    expect(pickedOptions(['n1', 'n2'], undefined)).toEqual([
+      { value: 'n1', label: '' },
+      { value: 'n2', label: '' },
+    ])
   })
 })
 

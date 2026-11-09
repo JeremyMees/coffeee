@@ -17,7 +17,7 @@ import {
   tid,
   type,
 } from '../../../fixtures'
-import { failRequest, scenario, signIn } from '../../../server'
+import { failRequest, holdRequest, scenario, signIn } from '../../../server'
 
 let sarah: Member
 let tom: Member
@@ -53,10 +53,48 @@ function discoverPath(query = '') {
   return `${shelfPath(sarah.shelf)}/discover${query}`
 }
 
+function catalogPath() {
+  return `/api/shelves/${sarah.shelf.id}/catalog`
+}
+
+function labelsPath() {
+  return `/api/shelves/${sarah.shelf.id}/filter-labels`
+}
+
+function mount(route = discoverPath()) {
+  return mountSuspended(App, { route, attachTo: document.body })
+}
+
+async function pickRoaster(label: string) {
+  await click('catalog-filter-roasters')
+  const option = await vi.waitFor(() => {
+    const found = allByTestId('catalog-filter-option').find(
+      element => element.textContent?.trim() === label,
+    )
+    if (!found) throw new Error(`No option “${label}”`)
+
+    return found
+  })
+  option.click()
+}
+
+function shown(page: Awaited<ReturnType<typeof mount>>) {
+  return page.findAll(tid('catalog-result-name')).map(name => name.text())
+}
+
 async function discover(route = discoverPath()) {
   const page = await mountSuspended(App, { route, attachTo: document.body })
   const names = () =>
     page.findAll(tid('catalog-result-name')).map(name => name.text())
+  await vi.waitFor(() =>
+    expect(
+      page
+        .find(
+          `${tid('discover-skeleton')}, ${tid('browsing-filters-skeleton')}`,
+        )
+        .exists(),
+    ).toBe(false),
+  )
 
   return { page, names }
 }
@@ -364,5 +402,118 @@ describe('the Discover page', () => {
     expect(page.get(tid('catalog-applied-filter')).text()).toBe(
       'Roaster: La Cabra',
     )
+  })
+  it('shows the page, the filters and a skeleton while the coffees load', async () => {
+    await threeCoffees()
+    const hold = holdRequest('GET', catalogPath())
+
+    const page = await mount()
+
+    expect(page.get(tid('page-title')).text()).toBe('Discover')
+    expect(page.find(tid('catalog-filters')).exists()).toBe(true)
+    expect(page.find(tid('discover-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('discover-results')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() => expect(shown(page)).toHaveLength(3))
+    expect(page.find(tid('discover-skeleton')).exists()).toBe(false)
+  })
+
+  it('loads the coffees without waiting for the names of the filters in the address', async () => {
+    await threeCoffees()
+    const laCabra = await scenario.roaster(sarah, 'La Cabra')
+    const hold = holdRequest('GET', labelsPath())
+
+    const page = await mount(discoverPath(`?roasterId=${laCabra}`))
+
+    expect(page.find(tid('browsing-filters-skeleton')).exists()).toBe(true)
+    await vi.waitFor(() => expect(shown(page)).toEqual(['El Paraiso']))
+    expect(page.find(tid('catalog-filters')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('catalog-applied-filter')).exists()).toBe(true),
+    )
+    expect(page.get(tid('catalog-applied-filter')).text()).toBe(
+      'Roaster: La Cabra',
+    )
+    expect(page.find(tid('browsing-filters-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error with a retry when the filter names fail, and still lists the coffees', async () => {
+    await threeCoffees()
+    const laCabra = await scenario.roaster(sarah, 'La Cabra')
+    const lift = failRequest('GET', labelsPath(), {
+      status: 500,
+      message: 'Nope',
+    })
+
+    const page = await mount(discoverPath(`?roasterId=${laCabra}`))
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('discover-filters-error')).exists()).toBe(true),
+    )
+    await vi.waitFor(() => expect(shown(page)).toEqual(['El Paraiso']))
+
+    lift()
+    await page.get(tid('discover-filters-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('catalog-applied-filter')).text()).toBe(
+        'Roaster: La Cabra',
+      ),
+    )
+  })
+
+  it('shows an error with a retry when the coffees fail, and the filters still work', async () => {
+    await threeCoffees()
+    const lift = failRequest('GET', catalogPath(), {
+      status: 500,
+      message: 'Nope',
+    })
+
+    const page = await mount()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('discover-error')).exists()).toBe(true),
+    )
+    expect(page.find(tid('discover-skeleton')).exists()).toBe(false)
+
+    await pickRoaster('La Cabra')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('catalog-applied-filter')).text()).toBe(
+        'Roaster: La Cabra',
+      ),
+    )
+    await vi.waitFor(() =>
+      expect(page.find(tid('discover-error')).exists()).toBe(true),
+    )
+
+    lift()
+    await page.get(tid('discover-retry')).trigger('click')
+
+    await vi.waitFor(() => expect(shown(page)).toEqual(['El Paraiso']))
+    expect(page.find(tid('discover-error')).exists()).toBe(false)
+  })
+
+  it('keeps the coffees on screen with no skeleton while a new filter loads', async () => {
+    await threeCoffees()
+    const { page, names } = await discover()
+    const hold = holdRequest('GET', catalogPath())
+
+    await pickRoaster('La Cabra')
+    await vi.waitFor(() =>
+      expect(page.find(tid('catalog-applied-filter')).exists()).toBe(true),
+    )
+
+    expect(page.find(tid('discover-skeleton')).exists()).toBe(false)
+    expect(names()).toHaveLength(3)
+
+    hold.release()
+
+    await vi.waitFor(() => expect(names()).toEqual(['El Paraiso']))
   })
 })
