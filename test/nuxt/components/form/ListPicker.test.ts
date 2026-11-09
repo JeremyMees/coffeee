@@ -50,7 +50,7 @@ describe('ListPicker', () => {
     await type('roaster', 'squar')
 
     await vi.waitFor(() =>
-      expect(pickerOptions()).toEqual(['Square Mile', 'Add “squar”']),
+      expect(pickerOptions()).toEqual(['Add “squar”', 'Square Mile']),
     )
   })
 
@@ -64,7 +64,7 @@ describe('ListPicker', () => {
 
     await type('roaster', 'od')
 
-    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Ode', 'Add “od”']))
+    await vi.waitFor(() => expect(pickerOptions()).toEqual(['Add “od”', 'Ode']))
   })
 
   it('waits for typing to pause before asking the list', async () => {
@@ -76,7 +76,7 @@ describe('ListPicker', () => {
     await type('roaster', 'la')
     await type('roaster', 'la cabra')
 
-    expect(pickerOptions()).toEqual(['Square Mile', 'Add “la cabra”'])
+    expect(pickerOptions()).toEqual(['Add “la cabra”', 'Square Mile'])
     await vi.waitFor(() => expect(pickerOptions()).toEqual(['La Cabra']))
   })
 
@@ -85,7 +85,7 @@ describe('ListPicker', () => {
 
     await type('roaster', 'square')
     await vi.waitFor(() =>
-      expect(pickerOptions()).toEqual(['Square Mile', 'Add “square”']),
+      expect(pickerOptions()).toEqual(['Add “square”', 'Square Mile']),
     )
     await scenario.roaster(sarah, 'Square One')
     await type('roaster', 'la cabra')
@@ -93,7 +93,7 @@ describe('ListPicker', () => {
     await type('roaster', 'Square')
     await new Promise(resolve => setTimeout(resolve, 300))
 
-    expect(pickerOptions()).toEqual(['Square Mile', 'Add “Square”'])
+    expect(pickerOptions()).toEqual(['Add “Square”', 'Square Mile'])
     await type('roaster', 'squa')
     await vi.waitFor(() => expect(pickerOptions()).toContain('Square One'))
   })

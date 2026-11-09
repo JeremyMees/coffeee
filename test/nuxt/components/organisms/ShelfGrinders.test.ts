@@ -90,7 +90,7 @@ describe('ShelfGrinders', () => {
     await pickOption('Fellow')
     await type('grinder-model', 'Ode')
     await vi.waitFor(() =>
-      expect(pickerOptions()).toEqual(['Ode Gen 2', 'Add “Ode”']),
+      expect(pickerOptions()).toEqual(['Add “Ode”', 'Ode Gen 2']),
     )
     await type('grinder-model', 'Ode Gen 3')
     await pickOption('Add “Ode Gen 3”')

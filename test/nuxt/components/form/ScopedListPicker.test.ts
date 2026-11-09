@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ScopedListPicker from '~/components/form/ScopedListPicker.vue'
 import {
-  allByTestId,
+  tid,
   byTestId,
   chipLabels,
   click,
@@ -42,9 +42,11 @@ function mountPicker(props: Record<string, unknown> = {}) {
 }
 
 function optionTexts() {
-  return allByTestId('scoped-option')
-    .concat(allByTestId('scoped-option-new'))
-    .map(element => element.textContent?.replace(/\s+/g, ' ').trim())
+  return [
+    ...document.body.querySelectorAll<HTMLElement>(
+      `${tid('scoped-option')}, ${tid('scoped-option-new')}`,
+    ),
+  ].map(element => element.textContent?.replace(/\s+/g, ' ').trim())
 }
 
 describe('ScopedListPicker', () => {
@@ -84,8 +86,8 @@ describe('ScopedListPicker', () => {
 
     await vi.waitFor(() =>
       expect(optionTexts()).toEqual([
-        'El Paraiso · Colombia',
         'Add “El Paraiso” in Ethiopia',
+        'El Paraiso · Colombia',
       ]),
     )
   })

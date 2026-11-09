@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import MultiListPicker from '~/components/form/MultiListPicker.vue'
 import {
-  allByTestId,
+  tid,
   byTestId,
   chipLabels,
   click,
@@ -35,9 +35,11 @@ function mountPicker(props: Record<string, unknown> = {}) {
 }
 
 function optionTexts() {
-  return allByTestId('multi-option')
-    .concat(allByTestId('multi-option-new'))
-    .map(element => element.textContent?.trim())
+  return [
+    ...document.body.querySelectorAll<HTMLElement>(
+      `${tid('multi-option')}, ${tid('multi-option-new')}`,
+    ),
+  ].map(element => element.textContent?.trim())
 }
 
 describe('MultiListPicker', () => {
@@ -55,6 +57,16 @@ describe('MultiListPicker', () => {
     await type('coffee-producers', 'Finca Team')
 
     await vi.waitFor(() => expect(optionTexts()).toEqual(['Add “Finca Team”']))
+  })
+
+  it('puts the option to add above the matches', async () => {
+    await mountPicker()
+
+    await type('coffee-producers', 'Nestor')
+
+    await vi.waitFor(() =>
+      expect(optionTexts()).toEqual(['Add “Nestor”', 'Nestor Lasso']),
+    )
   })
 
   it('adds a picked entry and clears the search', async () => {

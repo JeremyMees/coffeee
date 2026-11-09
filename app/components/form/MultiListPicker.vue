@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PlusIcon } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { useListSearch } from '~/queries/lists'
 
@@ -64,6 +65,17 @@ function remove(removed: string) {
       <ComboboxList class="rounded-[18px] p-1.5 font-mono ring-primary">
         <ComboboxViewport class="max-h-64 overflow-y-auto">
           <ComboboxItem
+            v-if="canCreate"
+            value="new"
+            data-testid="multi-option-new"
+            class="rounded-full px-3 py-2 text-primary"
+            @select="pick($event, search.trim())"
+          >
+            <PlusIcon aria-hidden="true" />
+            Add “{{ search.trim() }}”
+          </ComboboxItem>
+          <ComboboxSeparator v-if="canCreate && entries.length" />
+          <ComboboxItem
             v-for="entry in entries"
             :key="entry.id"
             :value="entry.id"
@@ -72,15 +84,6 @@ function remove(removed: string) {
             @select="pick($event, entry.name)"
           >
             {{ entry.name }}
-          </ComboboxItem>
-          <ComboboxItem
-            v-if="canCreate"
-            value="new"
-            data-testid="multi-option-new"
-            class="rounded-full px-3 py-2"
-            @select="pick($event, search.trim())"
-          >
-            Add “{{ search.trim() }}”
           </ComboboxItem>
           <p
             v-if="!entries.length && !canCreate"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PlusIcon } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { useListSearch } from '~/queries/lists'
 
@@ -51,6 +52,16 @@ const canCreate = computed(
     <ComboboxList class="rounded-[18px] p-1.5 font-mono ring-primary">
       <ComboboxViewport>
         <ComboboxItem
+          v-if="canCreate"
+          :value="search.trim()"
+          data-testid="list-option-new"
+          class="rounded-full px-3 py-2 text-primary"
+        >
+          <PlusIcon aria-hidden="true" />
+          Add “{{ search.trim() }}”
+        </ComboboxItem>
+        <ComboboxSeparator v-if="canCreate && entries.length" />
+        <ComboboxItem
           v-for="entry in entries"
           :key="entry.id"
           :value="entry.name"
@@ -58,14 +69,6 @@ const canCreate = computed(
           class="rounded-full px-3 py-2"
         >
           {{ entry.name }}
-        </ComboboxItem>
-        <ComboboxItem
-          v-if="canCreate"
-          :value="search.trim()"
-          data-testid="list-option-new"
-          class="rounded-full px-3 py-2"
-        >
-          Add “{{ search.trim() }}”
         </ComboboxItem>
         <p
           v-if="!entries.length && !canCreate"

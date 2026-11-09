@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PlusIcon } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { useListSearch } from '~/queries/lists'
 
@@ -87,6 +88,20 @@ function remove(removed: string) {
       <ComboboxList class="rounded-[18px] p-1.5 font-mono ring-primary">
         <ComboboxViewport class="max-h-64 overflow-y-auto">
           <ComboboxItem
+            v-for="origin in creatable"
+            :key="`new:${origin}`"
+            :value="`new:${origin}`"
+            data-testid="scoped-option-new"
+            class="rounded-full px-3 py-2 text-primary"
+            @select="pick($event, { origin, name: search.trim() })"
+          >
+            <PlusIcon aria-hidden="true" />
+            Add “{{ search.trim() }}”{{
+              severalOrigins ? ` in ${originName(origin)}` : ''
+            }}
+          </ComboboxItem>
+          <ComboboxSeparator v-if="creatable.length && entries.length" />
+          <ComboboxItem
             v-for="entry in entries"
             :key="entry.id"
             :value="entry.id"
@@ -98,18 +113,6 @@ function remove(removed: string) {
             <span v-if="severalOrigins" class="text-muted-foreground">
               · {{ originName(entry.origin) }}
             </span>
-          </ComboboxItem>
-          <ComboboxItem
-            v-for="origin in creatable"
-            :key="`new:${origin}`"
-            :value="`new:${origin}`"
-            data-testid="scoped-option-new"
-            class="rounded-full px-3 py-2"
-            @select="pick($event, { origin, name: search.trim() })"
-          >
-            Add “{{ search.trim() }}”{{
-              severalOrigins ? ` in ${originName(origin)}` : ''
-            }}
           </ComboboxItem>
           <p
             v-if="!entries.length && !creatable.length"
