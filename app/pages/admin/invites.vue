@@ -6,9 +6,7 @@ definePageMeta({ middleware: 'admin' })
 
 useHead({ title: 'Invites · Admin · Coffeee' })
 
-const { data, suspense } = useInvites()
-await suspense()
-const invites = computed(() => data.value ?? [])
+const invites = useInvites()
 const { mutateAsync: revokeInvite } = useInviteRevoke()
 const adding = ref(false)
 
@@ -41,40 +39,49 @@ function formatDate(date: string) {
     </p>
     <section class="mt-8 max-w-xl">
       <h2 class="text-xs uppercase">Pending</h2>
-      <p
-        v-if="!invites.length"
-        class="mt-3 text-xs"
-        data-testid="invites-empty"
-      >
-        No pending invites.
-      </p>
-      <ul
-        v-else
-        class="mt-3 flex flex-col divide-y rounded-[18px] border"
-        data-testid="invites-pending"
-      >
-        <li
-          v-for="invite in invites"
-          :key="invite.id"
-          data-testid="invite"
-          class="flex items-center justify-between gap-4 px-4 py-3"
-        >
-          <span class="min-w-0 truncate font-sans font-semibold">
-            {{ invite.email ?? 'Invite link' }}
-            <span v-if="invite.expiresAt" class="font-mono text-xs font-normal">
-              · expires {{ formatDate(invite.expiresAt) }}
-            </span>
-          </span>
-          <button
-            type="button"
-            data-testid="invite-revoke"
-            class="rounded-full px-3 py-1.5 text-xs uppercase transition-colors hover:bg-accent"
-            @click="revoke(invite.id)"
+      <QuerySection :query="invites" testid="invites">
+        <template #default="{ data }">
+          <p
+            v-if="!data.length"
+            class="mt-3 text-xs"
+            data-testid="invites-empty"
           >
-            Revoke
-          </button>
-        </li>
-      </ul>
+            No pending invites.
+          </p>
+          <ul
+            v-else
+            class="mt-3 flex flex-col divide-y rounded-[18px] border"
+            data-testid="invites-pending"
+          >
+            <li
+              v-for="invite in data"
+              :key="invite.id"
+              data-testid="invite"
+              class="flex items-center justify-between gap-4 px-4 py-3"
+            >
+              <span class="min-w-0 truncate font-sans font-semibold">
+                {{ invite.email ?? 'Invite link' }}
+                <span
+                  v-if="invite.expiresAt"
+                  class="font-mono text-xs font-normal"
+                >
+                  · expires {{ formatDate(invite.expiresAt) }}
+                </span>
+              </span>
+              <button
+                type="button"
+                data-testid="invite-revoke"
+                class="rounded-full px-3 py-1.5 text-xs uppercase transition-colors hover:bg-accent"
+                @click="revoke(invite.id)"
+              >
+                Revoke
+              </button>
+            </li>
+          </ul>
+        </template>
+
+        <template #skeleton><InvitesSkeleton /></template>
+      </QuerySection>
     </section>
     <AddInviteSheet v-model:open="adding" />
   </main>

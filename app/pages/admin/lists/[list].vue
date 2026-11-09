@@ -44,10 +44,6 @@ const listed = useAdminEntries(list, () => ({
   search: searched.value,
   page: String(pagination.value.pageIndex),
 }))
-await listed.suspense()
-
-const entries = computed(() => listed.data.value?.entries ?? [])
-const total = computed(() => listed.data.value?.total ?? 0)
 
 const acting = ref<{
   action: 'update' | 'merge' | 'delete'
@@ -154,17 +150,23 @@ function capitalised(text: string) {
       :aria-label="`Search ${nouns.many.toLowerCase()}`"
       :placeholder="`Search ${nouns.many.toLowerCase()}`"
     />
-    <DataTable
-      v-model:sorting="sorting"
-      v-model:pagination="pagination"
-      class="mt-4"
-      :columns="columns"
-      :data="entries"
-      :row-count="total"
-      :row-id="entry => entry.id"
-      :empty="`No ${nouns.one} matches.`"
-      data-testid="admin-entries"
-    />
+    <QuerySection :query="listed" testid="admin-entries">
+      <template #default="{ data }">
+        <DataTable
+          v-model:sorting="sorting"
+          v-model:pagination="pagination"
+          class="mt-4"
+          :columns="columns"
+          :data="data.entries"
+          :row-count="data.total"
+          :row-id="entry => entry.id"
+          :empty="`No ${nouns.one} matches.`"
+          data-testid="admin-entries"
+        />
+      </template>
+
+      <template #skeleton><AdminEntriesSkeleton /></template>
+    </QuerySection>
     <AdminAddCoffeeSheet v-if="list === 'coffees'" v-model:open="adding" />
     <AdminAddRoasterSheet
       v-else-if="list === 'roasters'"

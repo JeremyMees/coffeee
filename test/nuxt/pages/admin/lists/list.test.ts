@@ -12,7 +12,7 @@ import {
   tid,
   type,
 } from '../../../fixtures'
-import { scenario, signIn } from '../../../server'
+import { failRequest, holdRequest, scenario, signIn } from '../../../server'
 
 let jeremy: Member
 
@@ -32,8 +32,23 @@ function names(page: VueWrapper) {
   return page.findAll(tid('admin-entry-name')).map(name => name.text())
 }
 
-async function openFlavorNotes() {
-  return mountSuspended(App, { route: '/admin/lists/flavorNotes' })
+const entriesPath = '/api/admin/lists/flavorNotes'
+
+function openList(route: string) {
+  return mountSuspended(App, { route: `/admin/lists/${route}` })
+}
+
+async function list(route: string) {
+  const page = await openList(route)
+  await vi.waitFor(() =>
+    expect(page.find(tid('admin-entries-skeleton')).exists()).toBe(false),
+  )
+
+  return page
+}
+
+function openFlavorNotes() {
+  return list('flavorNotes')
 }
 
 async function act(page: VueWrapper, action: string, row: number) {
@@ -70,9 +85,7 @@ describe('a shared list on the admin page', () => {
       })
     }
 
-    const page = await mountSuspended(App, {
-      route: '/admin/lists/flavorNotes?search=lim&page=2',
-    })
+    const page = await list('flavorNotes?search=lim&page=2')
 
     expect(page.get<HTMLInputElement>(tid('admin-search')).element.value).toBe(
       'lim',
@@ -94,7 +107,7 @@ describe('a shared list on the admin page', () => {
   })
 
   it('adds a coffee with the full coffee form', async () => {
-    const page = await mountSuspended(App, { route: '/admin/lists/coffees' })
+    const page = await list('coffees')
 
     expect(page.get(tid('page-add')).text()).toBe('Add coffee')
     await page.get(tid('page-add')).trigger('click')
@@ -105,7 +118,7 @@ describe('a shared list on the admin page', () => {
   })
 
   it('adds a roaster with the full roaster form', async () => {
-    const page = await mountSuspended(App, { route: '/admin/lists/roasters' })
+    const page = await list('roasters')
 
     expect(page.get(tid('page-add')).text()).toBe('Add roaster')
     await page.get(tid('page-add')).trigger('click')
@@ -128,7 +141,7 @@ describe('a shared list on the admin page', () => {
   })
 
   it('updates a coffee with the full coffee form', async () => {
-    const page = await mountSuspended(App, { route: '/admin/lists/coffees' })
+    const page = await list('coffees')
 
     await act(page, 'update', 0)
 
@@ -136,7 +149,7 @@ describe('a shared list on the admin page', () => {
   })
 
   it('updates a roaster with the full roaster form and its logo', async () => {
-    const page = await mountSuspended(App, { route: '/admin/lists/roasters' })
+    const page = await list('roasters')
 
     await act(page, 'update', 0)
 
@@ -174,7 +187,7 @@ describe('a shared list on the admin page', () => {
   })
 
   it('explains why an entry could not be deleted', async () => {
-    const page = await mountSuspended(App, { route: '/admin/lists/roasters' })
+    const page = await list('roasters')
 
     await act(page, 'delete', 0)
     await click('confirm-dialog-confirm')
@@ -203,5 +216,44 @@ describe('a shared list on the admin page', () => {
     await vi.waitFor(() =>
       expect(useRouter().currentRoute.value.path).toBe(shelfPath(sarah.shelf)),
     )
+  })
+
+  it('shows the page and a skeleton while the entries load', async () => {
+    const hold = holdRequest('GET', entriesPath)
+
+    const page = await openList('flavorNotes')
+
+    expect(page.get(tid('page-title')).text()).toBe('Flavor notes')
+    expect(page.find(tid('admin-search')).exists()).toBe(true)
+    expect(page.find(tid('admin-entries-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('admin-entries')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(names(page)).toEqual(['Jasmine', 'Lime', 'Limes']),
+    )
+    expect(page.find(tid('admin-entries-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error with a retry when the entries fail to load', async () => {
+    const lift = failRequest('GET', entriesPath, {
+      status: 403,
+      message: 'Nope',
+    })
+
+    const page = await openList('flavorNotes')
+    await vi.waitFor(() =>
+      expect(page.find(tid('admin-entries-error')).exists()).toBe(true),
+    )
+    expect(page.get(tid('page-title')).text()).toBe('Flavor notes')
+
+    lift()
+    await page.get(tid('admin-entries-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(names(page)).toEqual(['Jasmine', 'Lime', 'Limes']),
+    )
+    expect(page.find(tid('admin-entries-error')).exists()).toBe(false)
   })
 })

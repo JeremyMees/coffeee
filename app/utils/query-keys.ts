@@ -74,6 +74,7 @@ export const queryKeys = {
   ownedShelves: () => ['me', 'owned-shelves'],
   profileStats: () => ['me', 'stats'],
   invites: () => ['invites'],
+  inviteLink: (token: string) => ['invites', 'link', token],
   shelfInvites: (shelfId: string) => ['shelves', shelfId, 'invites'],
   shelfMembers: (shelfId: string) => ['shelves', shelfId, 'members'],
   notifications: () => ['me', 'notifications'],

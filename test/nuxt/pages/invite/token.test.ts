@@ -6,7 +6,13 @@ import { listShelfInvites } from '#server/utils/invites'
 import { listShelves } from '#server/utils/shelves'
 import type { Member } from '#test/support/types'
 import { byTestId, click, currentPath, submit, tid, type } from '../../fixtures'
-import { database, scenario, signIn } from '../../server'
+import {
+  database,
+  failRequest,
+  holdRequest,
+  scenario,
+  signIn,
+} from '../../server'
 
 const { social, signUpEmail } = vi.hoisted(() => ({
   social: vi.fn(),
@@ -30,11 +36,24 @@ beforeEach(async () => {
   useCurrentUser().value = null
 })
 
-function visit(link = token) {
+function linkPath(link = token) {
+  return `/api/invites/link/${link}`
+}
+
+function open(link = token) {
   return mountSuspended(App, {
     route: `/invite/${link}`,
     attachTo: document.body,
   })
+}
+
+async function visit(link = token) {
+  const page = await open(link)
+  await vi.waitFor(() =>
+    expect(page.find(tid('invite-skeleton')).exists()).toBe(false),
+  )
+
+  return page
 }
 
 describe('invite page', () => {
@@ -140,5 +159,51 @@ describe('invite page', () => {
       'This invite has expired or was already used.',
     )
     expect(page.find(tid('invite-google')).exists()).toBe(false)
+  })
+
+  it('shows straight away while the invite and who is signed in load', async () => {
+    const invite = holdRequest('GET', linkPath())
+    const me = holdRequest('GET', '/api/me')
+
+    const page = await open()
+
+    expect(page.get(tid('invite-title')).text()).toBe("You're invited")
+    expect(page.find(tid('invite-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('invite-description')).exists()).toBe(false)
+    expect(page.find(tid('invite-google')).exists()).toBe(false)
+
+    invite.release()
+    await vi.waitFor(() => expect(byTestId('invite-skeleton')).not.toBeNull())
+    me.release()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('invite-google')).exists()).toBe(true),
+    )
+    expect(page.get(tid('invite-description')).text()).toContain(
+      'Sarah invited you to their shelf Home',
+    )
+    expect(page.find(tid('invite-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error with a retry when the invite fails to load', async () => {
+    const lift = failRequest('GET', linkPath(), {
+      status: 403,
+      message: 'Nope',
+    })
+
+    const page = await open()
+    await vi.waitFor(() =>
+      expect(page.find(tid('invite-error')).exists()).toBe(true),
+    )
+    expect(page.get(tid('invite-title')).text()).toBe("You're invited")
+    expect(page.find(tid('invite-google')).exists()).toBe(false)
+
+    lift()
+    await page.get(tid('invite-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('invite-google')).exists()).toBe(true),
+    )
+    expect(page.find(tid('invite-error')).exists()).toBe(false)
   })
 })

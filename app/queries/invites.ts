@@ -10,6 +10,31 @@ export function useInvites() {
   })
 }
 
+function orNullWhen(status: number) {
+  return (error: unknown) => {
+    if ((error as { statusCode?: number }).statusCode === status) return null
+
+    throw error
+  }
+}
+
+export function useInviteLink(token: string) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: queryKeys.inviteLink(token),
+    queryFn: async () => {
+      const [invite, user] = await Promise.all([
+        request(`/api/invites/link/${token}`).catch(orNullWhen(404)),
+        request('/api/me').catch(orNullWhen(401)),
+      ])
+
+      return { invite, user }
+    },
+    gcTime: 0,
+  })
+}
+
 function useInvitesChanged() {
   const changed = useChanged()
 

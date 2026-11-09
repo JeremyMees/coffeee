@@ -6,7 +6,13 @@ import { shelfPath, useRouter } from '#imports'
 import { invite } from '#server/db/schemas'
 import type { Member } from '#test/support/types'
 import { byTestId, submit, tid, type } from '../../fixtures'
-import { database, scenario, signIn } from '../../server'
+import {
+  database,
+  failRequest,
+  holdRequest,
+  scenario,
+  signIn,
+} from '../../server'
 
 let jeremy: Member
 
@@ -15,8 +21,19 @@ beforeEach(async () => {
   await signIn(jeremy)
 })
 
-function openInvites() {
+const invitesPath = '/api/invites'
+
+function visitInvites() {
   return mountSuspended(App, { route: '/admin/invites' })
+}
+
+async function openInvites() {
+  const page = await visitInvites()
+  await vi.waitFor(() =>
+    expect(page.find(tid('invites-skeleton')).exists()).toBe(false),
+  )
+
+  return page
 }
 
 async function pendingEmails() {
@@ -35,7 +52,7 @@ describe('admin invites page', () => {
     const sarah = await scenario.member('Sarah')
     await signIn(sarah)
 
-    await openInvites()
+    await visitInvites()
 
     expect(useRouter().currentRoute.value.path).toBe(shelfPath(sarah.shelf))
   })
@@ -96,5 +113,45 @@ describe('admin invites page', () => {
       ),
     )
     expect(await pendingEmails()).toEqual(['tom@example.com'])
+  })
+
+  it('shows the page and a skeleton while the invites load', async () => {
+    await scenario.adminInvite(jeremy, 'sarah@example.com')
+    const hold = holdRequest('GET', invitesPath)
+
+    const page = await visitInvites()
+
+    expect(page.get(tid('page-title')).text()).toBe('Invites')
+    expect(page.find(tid('invites-skeleton')).exists()).toBe(true)
+    expect(page.find(tid('invites-pending')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('invites-pending')).exists()).toBe(true),
+    )
+    expect(page.find(tid('invites-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error with a retry when the invites fail to load', async () => {
+    await scenario.adminInvite(jeremy, 'sarah@example.com')
+    const lift = failRequest('GET', invitesPath, {
+      status: 403,
+      message: 'Nope',
+    })
+
+    const page = await visitInvites()
+    await vi.waitFor(() =>
+      expect(page.find(tid('invites-error')).exists()).toBe(true),
+    )
+    expect(page.get(tid('page-title')).text()).toBe('Invites')
+
+    lift()
+    await page.get(tid('invites-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('invites-pending')).exists()).toBe(true),
+    )
+    expect(page.find(tid('invites-error')).exists()).toBe(false)
   })
 })
