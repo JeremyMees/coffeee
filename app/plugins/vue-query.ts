@@ -1,10 +1,5 @@
-import type {
-  DehydratedState,
-  VueQueryPluginOptions,
-} from '@tanstack/vue-query'
+import type { VueQueryPluginOptions } from '@tanstack/vue-query'
 import {
-  dehydrate,
-  hydrate,
   QueryClient,
   timeoutManager,
   VueQueryPlugin,
@@ -35,8 +30,6 @@ export default defineNuxtPlugin({
   name: 'vue-query',
   parallel: true,
   setup(nuxt) {
-    const vueQueryState = useState<DehydratedState | null>('vue-query')
-
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: {
@@ -52,12 +45,7 @@ export default defineNuxtPlugin({
     nuxt.vueApp.use(VueQueryPlugin, options)
 
     nuxt.hooks.hook('app:rendered', () => {
-      vueQueryState.value = dehydrate(queryClient)
       queryClient.clear()
-    })
-
-    nuxt.hooks.hook('app:created', () => {
-      if (vueQueryState.value) hydrate(queryClient, vueQueryState.value)
     })
   },
 })
