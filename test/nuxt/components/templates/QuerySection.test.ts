@@ -51,6 +51,25 @@ describe('QuerySection', () => {
     expect(wrapper.find(tid('items-skeleton')).exists()).toBe(false)
   })
 
+  it('keeps the skeleton until the page finished hydrating', async () => {
+    const nuxtApp = useNuxtApp()
+    nuxtApp.isHydrating = true
+    const { query, mount } = section({})
+    const wrapper = await mount()
+
+    query.data.value = ['Ayele']
+    await nextTick()
+
+    expect(wrapper.find(tid('items-skeleton')).exists()).toBe(true)
+    expect(wrapper.find(tid('items-content')).exists()).toBe(false)
+
+    nuxtApp.isHydrating = false
+    await nuxtApp.callHook('app:suspense:resolve')
+    await nextTick()
+
+    expect(wrapper.get(tid('items-content')).text()).toBe('Ayele')
+  })
+
   it('keeps the content while it refreshes or a refresh fails', async () => {
     const wrapper = await section({
       data: ['Ayele'],

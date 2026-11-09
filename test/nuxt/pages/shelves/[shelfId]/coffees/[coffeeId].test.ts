@@ -181,7 +181,7 @@ describe('a coffee page', () => {
   it('shows the new details once they are saved', async () => {
     const page = await coffeePage(await ayele())
     await page.get(tid('coffee-edit')).trigger('click')
-    await vi.waitFor(() => expect(byTestId('edit-coffee-form')).not.toBeNull())
+    await vi.waitFor(() => expect(byTestId('edit-coffee-steps')).not.toBeNull())
 
     await type('coffee-name', 'Ayele Fulasa Natural')
     await submit('edit-coffee-form')

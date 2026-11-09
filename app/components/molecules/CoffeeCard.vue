@@ -61,7 +61,7 @@ const roast = computed(
       >
         {{ coffee.name }}
       </h2>
-      <MatchedBy
+      <LazyMatchedBy
         v-if="coffee.matches"
         class="mt-2"
         :matches="coffee.matches"

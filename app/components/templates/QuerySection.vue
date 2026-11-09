@@ -1,9 +1,14 @@
 <script setup lang="ts" generic="Data">
 defineProps<{ query: QueryState<Data>; testid: string }>()
+
+const hydrated = useHydrated()
 </script>
 
 <template>
-  <slot v-if="query.data.value !== undefined" :data="query.data.value" />
+  <slot
+    v-if="hydrated && query.data.value !== undefined"
+    :data="query.data.value"
+  />
   <Alert
     v-else-if="query.isError.value"
     variant="destructive"

@@ -96,7 +96,7 @@ async function openSheet(route = shelfPath(sarah.shelf)) {
 
   useAddCoffee().value = true
   await vi.waitFor(
-    () => expect(byTestId('add-coffee-form')).not.toBeNull(),
+    () => expect(byTestId('add-coffee-steps')).not.toBeNull(),
     3000,
   )
 

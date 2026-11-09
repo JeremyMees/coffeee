@@ -112,9 +112,9 @@ const save = handleSubmit(
       :data-testid="`${prefix}-form`"
       @submit="save"
     >
-      <CoffeeFormSteps v-model="step" :steps="steps" :prefix="prefix">
+      <LazyCoffeeFormSteps v-model="step" :steps="steps" :prefix="prefix">
         <template #photo>
-          <CoffeePhotoField
+          <LazyCoffeePhotoField
             v-model="photo"
             :prefix="prefix"
             :current-url="photoUrl"
@@ -139,7 +139,7 @@ const save = handleSubmit(
             {{ submitLabel }}
           </button>
         </template>
-      </CoffeeFormSteps>
+      </LazyCoffeeFormSteps>
     </form>
   </FormSheet>
 </template>
