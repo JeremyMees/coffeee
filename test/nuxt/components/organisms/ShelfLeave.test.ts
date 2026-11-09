@@ -7,7 +7,13 @@ import { shelf } from '#server/db/schemas'
 import { listShelves } from '#server/utils/shelves'
 import type { Member, ScenarioShelf } from '#test/support/types'
 import { byTestId, click, currentPath, forgetLastShelf } from '../../fixtures'
-import { database, failRequest, scenario, signIn } from '../../server'
+import {
+  database,
+  failRequest,
+  holdRequest,
+  scenario,
+  signIn,
+} from '../../server'
 
 let sarah: Member
 let tom: Member
@@ -18,12 +24,19 @@ beforeEach(async () => {
   tom = await scenario.member('Tom')
 })
 
-function mountLeave(on: { id: string; name: string }) {
+function openLeave(on: { id: string; name: string }) {
   return mountSuspended(ShelfLeave, {
     props: { shelfId: on.id },
     route: `${shelfPath(on)}/settings`,
     attachTo: document.body,
   })
+}
+
+async function mountLeave(on: { id: string; name: string }) {
+  const wrapper = await openLeave(on)
+  await vi.waitFor(() => expect(byTestId('shelf-leave-button')).not.toBeNull())
+
+  return wrapper
 }
 
 function isDisabled(testId: string) {
@@ -154,5 +167,44 @@ describe('ShelfLeave', () => {
     )
     expect(useCurrentUser().value?.shelves).toHaveLength(2)
     expect(await storedShelves(sarah)).toEqual([sarah.shelf.id, tom.shelf.id])
+  })
+
+  it('shows a skeleton until it knows who else is on the shelf', async () => {
+    const home = await scenario.shelf(sarah, 'Home')
+    await scenario.joinShelf(tom, home)
+    await signIn(sarah)
+    const hold = holdRequest('GET', `/api/shelves/${home.id}/members`)
+
+    await openLeave(home)
+
+    expect(byTestId('shelf-leave-skeleton')).not.toBeNull()
+    expect(byTestId('shelf-leave-button')).toBeNull()
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(byTestId('shelf-leave-hand-over')).not.toBeNull(),
+    )
+    expect(isDisabled('shelf-leave-button')).toBe(true)
+    expect(byTestId('shelf-leave-skeleton')).toBeNull()
+  })
+
+  it('shows an error that can be retried', async () => {
+    await sarahJoinsTomsShelf()
+    const lift = failRequest('GET', `/api/shelves/${tom.shelf.id}/members`, {
+      status: 500,
+      message: 'Nope',
+    })
+
+    await openLeave(tom.shelf)
+    await vi.waitFor(() => expect(byTestId('shelf-leave-error')).not.toBeNull())
+
+    lift()
+    await click('shelf-leave-retry')
+
+    await vi.waitFor(() =>
+      expect(byTestId('shelf-leave-button')).not.toBeNull(),
+    )
+    expect(byTestId('shelf-leave-error')).toBeNull()
   })
 })

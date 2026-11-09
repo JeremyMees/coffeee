@@ -14,7 +14,13 @@ import {
   submit,
   type,
 } from '../../fixtures'
-import { database, failRequest, scenario, signIn } from '../../server'
+import {
+  database,
+  failRequest,
+  holdRequest,
+  scenario,
+  signIn,
+} from '../../server'
 
 let sarah: Member
 let opus: { id: string }
@@ -30,11 +36,22 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-function mountGrinders() {
+function grindersPath() {
+  return `/api/shelves/${sarah.shelf.id}/grinders`
+}
+
+function openGrinders(shelfId = sarah.shelf.id) {
   return mountSuspended(ShelfGrinders, {
-    props: { shelfId: sarah.shelf.id },
+    props: { shelfId },
     attachTo: document.body,
   })
+}
+
+async function mountGrinders(shelfId?: string) {
+  const wrapper = await openGrinders(shelfId)
+  await vi.waitFor(() => expect(byTestId('shelf-grinders-skeleton')).toBeNull())
+
+  return wrapper
 }
 
 function grinderNames() {
@@ -59,10 +76,7 @@ describe('ShelfGrinders', () => {
     const lisa = await scenario.member('Lisa')
     await signIn(lisa)
 
-    await mountSuspended(ShelfGrinders, {
-      props: { shelfId: lisa.shelf.id },
-      attachTo: document.body,
-    })
+    await mountGrinders(lisa.shelf.id)
 
     expect(byTestId('shelf-grinders-empty')!.textContent?.trim()).toBe(
       'No grinders on this shelf yet.',
@@ -163,5 +177,42 @@ describe('ShelfGrinders', () => {
       ),
     )
     expect(await storedGrinders()).toEqual(['Fellow Opus Gen 2'])
+  })
+
+  it('shows a skeleton while the grinders load, with the form ready', async () => {
+    const hold = holdRequest('GET', grindersPath())
+
+    await openGrinders()
+
+    expect(byTestId('shelf-grinders-skeleton')).not.toBeNull()
+    expect(byTestId('grinder-form')).not.toBeNull()
+    expect(byTestId('shelf-grinder')).toBeNull()
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(grinderNames()).toEqual(['Fellow Opus Gen 2']),
+    )
+    expect(byTestId('shelf-grinders-skeleton')).toBeNull()
+  })
+
+  it('shows an error that can be retried', async () => {
+    const lift = failRequest('GET', grindersPath(), {
+      status: 500,
+      message: 'Nope',
+    })
+
+    await openGrinders()
+    await vi.waitFor(() =>
+      expect(byTestId('shelf-grinders-error')).not.toBeNull(),
+    )
+
+    lift()
+    await click('shelf-grinders-retry')
+
+    await vi.waitFor(() =>
+      expect(grinderNames()).toEqual(['Fellow Opus Gen 2']),
+    )
+    expect(byTestId('shelf-grinders-error')).toBeNull()
   })
 })

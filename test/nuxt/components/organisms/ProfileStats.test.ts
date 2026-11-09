@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ProfileStats from '~/components/organisms/ProfileStats.vue'
 import type { Member } from '#test/support/types'
 import { tid } from '../../fixtures'
-import { scenario, signIn } from '../../server'
+import { failRequest, holdRequest, scenario, signIn } from '../../server'
 
 let sarah: Member
 
@@ -12,8 +12,17 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
+const statsPath = '/api/me/stats'
+
+function mount() {
+  return mountSuspended(ProfileStats)
+}
+
 async function stats() {
-  const wrapper = await mountSuspended(ProfileStats)
+  const wrapper = await mount()
+  await vi.waitFor(() =>
+    expect(wrapper.find(tid('stats-bags')).exists()).toBe(true),
+  )
 
   return (key: string) => wrapper.get(tid(`stats-${key}`)).text()
 }
@@ -55,5 +64,39 @@ describe('ProfileStats', () => {
     expect(value('weight')).toBe('0 g')
     expect(value('average-rating')).toBe('None yet')
     expect(value('top-roaster')).toBe('None yet')
+  })
+
+  it('shows its heading and a skeleton while the stats load', async () => {
+    const hold = holdRequest('GET', statsPath)
+
+    const wrapper = await mount()
+
+    expect(wrapper.get('h2').text()).toBe('Your coffee')
+    expect(wrapper.find(tid('profile-stats-skeleton')).exists()).toBe(true)
+    expect(wrapper.find(tid('stats-bags')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(wrapper.find(tid('stats-bags')).exists()).toBe(true),
+    )
+    expect(wrapper.find(tid('profile-stats-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error that can be retried', async () => {
+    const lift = failRequest('GET', statsPath, { status: 500, message: 'Nope' })
+
+    const wrapper = await mount()
+    await vi.waitFor(() =>
+      expect(wrapper.find(tid('profile-stats-error')).exists()).toBe(true),
+    )
+
+    lift()
+    await wrapper.get(tid('profile-stats-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(wrapper.find(tid('stats-bags')).exists()).toBe(true),
+    )
+    expect(wrapper.find(tid('profile-stats-error')).exists()).toBe(false)
   })
 })

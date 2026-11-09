@@ -8,8 +8,8 @@ import {
 const props = defineProps<{ shelfId: string }>()
 
 const user = useCurrentUser()
-const { data, suspense } = useShelfMembers(() => props.shelfId)
-await suspense()
+const members = useShelfMembers(() => props.shelfId)
+const { data } = members
 
 const { mutateAsync: leave, isPending: leaving } = useShelfLeave()
 const { mutateAsync: remove, isPending: deleting } = useShelfDelete()
@@ -91,27 +91,30 @@ async function confirm() {
         leave it.
       </p>
     </div>
-    <div class="flex flex-wrap gap-3">
-      <Button
-        variant="outline"
-        class="rounded-full uppercase"
-        data-testid="shelf-leave-button"
-        :disabled="onlyShelf || mustHandOver"
-        @click="ask('leave')"
-      >
-        Leave shelf
-      </Button>
-      <Button
-        v-if="isOwner"
-        variant="destructive"
-        class="rounded-full uppercase"
-        data-testid="shelf-delete-button"
-        :disabled="onlyShelf"
-        @click="ask('delete')"
-      >
-        Delete shelf
-      </Button>
-    </div>
+    <QuerySection :query="members" testid="shelf-leave">
+      <div class="flex flex-wrap gap-3">
+        <Button
+          variant="outline"
+          class="rounded-full uppercase"
+          data-testid="shelf-leave-button"
+          :disabled="onlyShelf || mustHandOver"
+          @click="ask('leave')"
+        >
+          Leave shelf
+        </Button>
+        <Button
+          v-if="isOwner"
+          variant="destructive"
+          class="rounded-full uppercase"
+          data-testid="shelf-delete-button"
+          :disabled="onlyShelf"
+          @click="ask('delete')"
+        >
+          Delete shelf
+        </Button>
+      </div>
+      <template #skeleton><ShelfLeaveSkeleton /></template>
+    </QuerySection>
     <ConfirmDialog
       v-model:open="open"
       data-testid="shelf-leave-dialog"

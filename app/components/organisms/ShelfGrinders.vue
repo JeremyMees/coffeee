@@ -9,8 +9,7 @@ import {
 
 const props = defineProps<{ shelfId: string }>()
 
-const { data, suspense } = useShelfGrinders(() => props.shelfId)
-await suspense()
+const owned = useShelfGrinders(() => props.shelfId)
 
 const { mutateAsync: ownGrinder } = useGrinderOwn()
 const { mutateAsync: disownGrinder, isPending: removing } = useGrinderDisown()
@@ -18,8 +17,6 @@ const { mutateAsync: disownGrinder, isPending: removing } = useGrinderDisown()
 const formError = ref('')
 const removeError = ref('')
 const added = ref(0)
-
-const grinders = computed(() => data.value ?? [])
 
 const { handleSubmit, resetForm, setErrors, isSubmitting, values } = useForm({
   validationSchema: zodSchema(newGrinderSchema),
@@ -62,33 +59,40 @@ async function remove(grinderId: string) {
         grinder and brew method.
       </p>
     </div>
-    <p
-      v-if="!grinders.length"
-      class="text-xs"
-      data-testid="shelf-grinders-empty"
-    >
-      No grinders on this shelf yet.
-    </p>
-    <ul v-else class="divide-y rounded-[18px] border text-xs">
-      <li
-        v-for="grinder in grinders"
-        :key="grinder.id"
-        data-testid="shelf-grinder"
-        class="flex items-center justify-between gap-4 px-4 py-3"
-      >
-        <span data-testid="shelf-grinder-name">{{ grinderName(grinder) }}</span>
-        <button
-          type="button"
-          data-testid="shelf-grinder-remove"
-          :aria-label="`Remove ${grinderName(grinder)}`"
-          :disabled="removing"
-          class="rounded-full p-1.5 hover:bg-accent disabled:opacity-60"
-          @click="remove(grinder.id)"
+    <QuerySection :query="owned" testid="shelf-grinders">
+      <template #default="{ data: grinders }">
+        <p
+          v-if="!grinders.length"
+          class="text-xs"
+          data-testid="shelf-grinders-empty"
         >
-          <XIcon class="size-4" aria-hidden="true" />
-        </button>
-      </li>
-    </ul>
+          No grinders on this shelf yet.
+        </p>
+        <ul v-else class="divide-y rounded-[18px] border text-xs">
+          <li
+            v-for="grinder in grinders"
+            :key="grinder.id"
+            data-testid="shelf-grinder"
+            class="flex items-center justify-between gap-4 px-4 py-3"
+          >
+            <span data-testid="shelf-grinder-name">{{
+              grinderName(grinder)
+            }}</span>
+            <button
+              type="button"
+              data-testid="shelf-grinder-remove"
+              :aria-label="`Remove ${grinderName(grinder)}`"
+              :disabled="removing"
+              class="rounded-full p-1.5 hover:bg-accent disabled:opacity-60"
+              @click="remove(grinder.id)"
+            >
+              <XIcon class="size-4" aria-hidden="true" />
+            </button>
+          </li>
+        </ul>
+      </template>
+      <template #skeleton><ShelfGrindersSkeleton /></template>
+    </QuerySection>
     <Alert
       v-if="removeError"
       variant="destructive"

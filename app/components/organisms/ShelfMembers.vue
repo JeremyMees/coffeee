@@ -9,20 +9,18 @@ import {
 const props = defineProps<{ shelfId: string }>()
 
 const user = useCurrentUser()
-const { data, suspense } = useShelfMembers(() => props.shelfId)
-await suspense()
+const listed = useShelfMembers(() => props.shelfId)
 
 const { mutateAsync: handOver, isPending: handingOver } = useShelfHandOver()
 const { mutateAsync: removeMember, isPending: removing } =
   useShelfMemberRemove()
 
-const members = computed(() => data.value ?? [])
 const ownerId = computed(
   () => user.value?.shelves.find(found => found.id === props.shelfId)?.ownerId,
 )
 const isOwner = computed(() => ownerId.value === user.value?.id)
 
-type Member = (typeof members.value)[number]
+type Member = NonNullable<typeof listed.data.value>[number]
 
 const asking = ref<{ action: 'handOver' | 'remove'; member: Member }>()
 const open = ref(false)
@@ -79,53 +77,60 @@ async function confirm() {
         can remove members or hand the shelf over.
       </p>
     </div>
-    <ul class="divide-y rounded-[18px] border text-xs">
-      <li
-        v-for="member in members"
-        :key="member.id"
-        data-testid="shelf-member"
-        class="flex items-center justify-between gap-4 px-4 py-3"
-      >
-        <span class="min-w-0">
-          <span
-            class="block truncate font-sans font-semibold"
-            data-testid="shelf-member-name"
+    <QuerySection :query="listed" testid="shelf-members">
+      <template #default="{ data: members }">
+        <ul class="divide-y rounded-[18px] border text-xs">
+          <li
+            v-for="member in members"
+            :key="member.id"
+            data-testid="shelf-member"
+            class="flex items-center justify-between gap-4 px-4 py-3"
           >
-            {{ member.id === user?.id ? `${member.name} (you)` : member.name }}
-          </span>
-          <span class="block truncate">{{ member.email }}</span>
-        </span>
-        <span class="flex shrink-0 items-center gap-1">
-          <span
-            v-if="member.id === ownerId"
-            data-testid="shelf-member-owner"
-            class="rounded-full border px-3 py-1 text-[10px] uppercase"
-          >
-            Owner
-          </span>
-          <template v-else-if="isOwner">
-            <button
-              type="button"
-              data-testid="shelf-member-hand-over"
-              class="rounded-full p-2 transition-colors hover:bg-accent"
-              :aria-label="`Hand the shelf to ${member.name}`"
-              @click="ask('handOver', member)"
-            >
-              <CrownIcon class="size-4" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              data-testid="shelf-member-remove"
-              class="rounded-full p-2 transition-colors hover:bg-accent"
-              :aria-label="`Remove ${member.name}`"
-              @click="ask('remove', member)"
-            >
-              <XIcon class="size-4" aria-hidden="true" />
-            </button>
-          </template>
-        </span>
-      </li>
-    </ul>
+            <span class="min-w-0">
+              <span
+                class="block truncate font-sans font-semibold"
+                data-testid="shelf-member-name"
+              >
+                {{
+                  member.id === user?.id ? `${member.name} (you)` : member.name
+                }}
+              </span>
+              <span class="block truncate">{{ member.email }}</span>
+            </span>
+            <span class="flex shrink-0 items-center gap-1">
+              <span
+                v-if="member.id === ownerId"
+                data-testid="shelf-member-owner"
+                class="rounded-full border px-3 py-1 text-[10px] uppercase"
+              >
+                Owner
+              </span>
+              <template v-else-if="isOwner">
+                <button
+                  type="button"
+                  data-testid="shelf-member-hand-over"
+                  class="rounded-full p-2 transition-colors hover:bg-accent"
+                  :aria-label="`Hand the shelf to ${member.name}`"
+                  @click="ask('handOver', member)"
+                >
+                  <CrownIcon class="size-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  data-testid="shelf-member-remove"
+                  class="rounded-full p-2 transition-colors hover:bg-accent"
+                  :aria-label="`Remove ${member.name}`"
+                  @click="ask('remove', member)"
+                >
+                  <XIcon class="size-4" aria-hidden="true" />
+                </button>
+              </template>
+            </span>
+          </li>
+        </ul>
+      </template>
+      <template #skeleton><ShelfMembersSkeleton /></template>
+    </QuerySection>
     <ConfirmDialog
       v-model:open="open"
       data-testid="shelf-member-dialog"

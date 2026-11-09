@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { useProfileStats } from '~/queries/account'
 
-const { data, suspense } = useProfileStats()
-await suspense()
+const stats = useProfileStats()
 
-const rows = computed(() => {
-  const stats = data.value
-
-  if (!stats) return []
-
+function rowsOf(stats: ProfileStats) {
   return [
     {
       key: 'bags',
@@ -49,7 +44,7 @@ const rows = computed(() => {
       value: stats.topRoaster ?? 'None yet',
     },
   ]
-})
+}
 </script>
 
 <template>
@@ -60,19 +55,24 @@ const rows = computed(() => {
         The bags you added and the coffees you rated, on every shelf.
       </p>
     </div>
-    <dl
-      class="grid grid-cols-2 gap-px overflow-hidden rounded-[18px] border bg-border text-xs"
-    >
-      <div
-        v-for="row in rows"
-        :key="row.key"
-        class="flex min-w-0 flex-col gap-1 bg-background p-4 last:col-span-2"
-      >
-        <dt class="text-[11px] uppercase">{{ row.label }}</dt>
-        <dd class="truncate text-sm" :data-testid="`stats-${row.key}`">
-          {{ row.value }}
-        </dd>
-      </div>
-    </dl>
+    <QuerySection :query="stats" testid="profile-stats">
+      <template #default="{ data }">
+        <dl
+          class="grid grid-cols-2 gap-px overflow-hidden rounded-[18px] border bg-border text-xs"
+        >
+          <div
+            v-for="row in rowsOf(data)"
+            :key="row.key"
+            class="flex min-w-0 flex-col gap-1 bg-background p-4 last:col-span-2"
+          >
+            <dt class="text-[11px] uppercase">{{ row.label }}</dt>
+            <dd class="truncate text-sm" :data-testid="`stats-${row.key}`">
+              {{ row.value }}
+            </dd>
+          </div>
+        </dl>
+      </template>
+      <template #skeleton><ProfileStatsSkeleton /></template>
+    </QuerySection>
   </section>
 </template>

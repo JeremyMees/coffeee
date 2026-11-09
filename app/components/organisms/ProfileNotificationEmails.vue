@@ -13,8 +13,8 @@ const kinds: { kind: NotificationKind; label: string }[] = [
   { kind: 'memberLeft', label: 'Members leaving' },
 ]
 
-const { data, suspense } = useNotificationEmails()
-await suspense()
+const emails = useNotificationEmails()
+const { data } = emails
 
 const { mutateAsync: update, isPending } = useNotificationEmailsUpdate()
 const saveError = ref('')
@@ -50,27 +50,30 @@ async function toggle(kind: NotificationKind, on: boolean) {
         email. Invites are always emailed.
       </p>
     </div>
-    <ul class="divide-y rounded-[18px] border">
-      <li
-        v-for="{ kind, label } in kinds"
-        :key="kind"
-        class="flex items-center justify-between gap-4 px-4 py-3"
-      >
-        <label
-          :for="`notification-email-${kind}`"
-          class="font-sans font-semibold"
+    <QuerySection :query="emails" testid="profile-notification-emails">
+      <ul class="divide-y rounded-[18px] border">
+        <li
+          v-for="{ kind, label } in kinds"
+          :key="kind"
+          class="flex items-center justify-between gap-4 px-4 py-3"
         >
-          {{ label }}
-        </label>
-        <Switch
-          :id="`notification-email-${kind}`"
-          :data-testid="`notification-email-${kind}`"
-          :model-value="isEmailed(kind)"
-          :disabled="!isOptional(kind) || isPending"
-          @update:model-value="toggle(kind, $event)"
-        />
-      </li>
-    </ul>
+          <label
+            :for="`notification-email-${kind}`"
+            class="font-sans font-semibold"
+          >
+            {{ label }}
+          </label>
+          <Switch
+            :id="`notification-email-${kind}`"
+            :data-testid="`notification-email-${kind}`"
+            :model-value="isEmailed(kind)"
+            :disabled="!isOptional(kind) || isPending"
+            @update:model-value="toggle(kind, $event)"
+          />
+        </li>
+      </ul>
+      <template #skeleton><ProfileNotificationEmailsSkeleton /></template>
+    </QuerySection>
     <Alert
       v-if="saveError"
       variant="destructive"

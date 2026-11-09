@@ -9,15 +9,13 @@ import {
 
 const props = defineProps<{ shelfId: string }>()
 
-const { data, suspense } = useShelfInvites(() => props.shelfId)
-await suspense()
+const invited = useShelfInvites(() => props.shelfId)
 
 const { mutateAsync: createInvite } = useShelfInviteCreate()
 const { mutateAsync: cancelInvite } = useShelfInviteCancel()
 
 const formError = ref('')
 const sentTo = ref('')
-const invites = computed(() => data.value ?? [])
 
 const { handleSubmit, resetForm, setErrors, isSubmitting } = useForm({
   validationSchema: zodSchema(inviteEmailSchema),
@@ -102,37 +100,46 @@ function formatDate(date: string) {
         Send invite
       </button>
     </form>
-    <p v-if="!invites.length" class="text-xs" data-testid="shelf-invites-empty">
-      No pending invites.
-    </p>
-    <ul v-else class="divide-y rounded-[18px] border text-xs">
-      <li
-        v-for="pending in invites"
-        :key="pending.id"
-        data-testid="shelf-invite"
-        class="flex items-center justify-between gap-4 px-4 py-3"
-      >
-        <span class="min-w-0">
-          <span class="block truncate font-sans font-semibold">
-            {{ pending.email }}
-          </span>
-          <span class="block">
-            From {{ pending.invitedBy }}
-            <template v-if="pending.expiresAt">
-              · expires {{ formatDate(pending.expiresAt) }}
-            </template>
-          </span>
-        </span>
-        <button
-          type="button"
-          data-testid="shelf-invite-cancel"
-          class="rounded-full p-2 transition-colors hover:bg-accent"
-          :aria-label="`Cancel the invite to ${pending.email}`"
-          @click="cancel(pending.id)"
+    <QuerySection :query="invited" testid="shelf-invites">
+      <template #default="{ data: invites }">
+        <p
+          v-if="!invites.length"
+          class="text-xs"
+          data-testid="shelf-invites-empty"
         >
-          <XIcon class="size-4" aria-hidden="true" />
-        </button>
-      </li>
-    </ul>
+          No pending invites.
+        </p>
+        <ul v-else class="divide-y rounded-[18px] border text-xs">
+          <li
+            v-for="pending in invites"
+            :key="pending.id"
+            data-testid="shelf-invite"
+            class="flex items-center justify-between gap-4 px-4 py-3"
+          >
+            <span class="min-w-0">
+              <span class="block truncate font-sans font-semibold">
+                {{ pending.email }}
+              </span>
+              <span class="block">
+                From {{ pending.invitedBy }}
+                <template v-if="pending.expiresAt">
+                  · expires {{ formatDate(pending.expiresAt) }}
+                </template>
+              </span>
+            </span>
+            <button
+              type="button"
+              data-testid="shelf-invite-cancel"
+              class="rounded-full p-2 transition-colors hover:bg-accent"
+              :aria-label="`Cancel the invite to ${pending.email}`"
+              @click="cancel(pending.id)"
+            >
+              <XIcon class="size-4" aria-hidden="true" />
+            </button>
+          </li>
+        </ul>
+      </template>
+      <template #skeleton><ShelfInvitesSkeleton /></template>
+    </QuerySection>
   </section>
 </template>

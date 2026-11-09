@@ -11,7 +11,13 @@ import {
   submit,
   type,
 } from '../../fixtures'
-import { database, scenario, signIn } from '../../server'
+import {
+  database,
+  failRequest,
+  holdRequest,
+  scenario,
+  signIn,
+} from '../../server'
 import { server } from '../../server-state'
 
 let sarah: Member
@@ -21,11 +27,22 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-function mountInvites() {
+function invitesPath() {
+  return `/api/shelves/${sarah.shelf.id}/invites`
+}
+
+function openInvites() {
   return mountSuspended(ShelfInvites, {
     props: { shelfId: sarah.shelf.id },
     attachTo: document.body,
   })
+}
+
+async function mountInvites() {
+  const wrapper = await openInvites()
+  await vi.waitFor(() => expect(byTestId('shelf-invites-skeleton')).toBeNull())
+
+  return wrapper
 }
 
 function pendingEmails() {
@@ -118,5 +135,44 @@ describe('ShelfInvites', () => {
 
     await vi.waitFor(() => expect(pendingEmails()).toEqual([]))
     expect(await storedEmails()).toEqual([])
+  })
+
+  it('shows a skeleton while the invites load, with the form ready', async () => {
+    await scenario.shelfInvite(sarah.shelf, 'anna@example.com')
+    const hold = holdRequest('GET', invitesPath())
+
+    await openInvites()
+
+    expect(byTestId('shelf-invites-skeleton')).not.toBeNull()
+    expect(byTestId('shelf-invite-form')).not.toBeNull()
+    expect(byTestId('shelf-invite')).toBeNull()
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(pendingEmails()).toEqual(['anna@example.com']),
+    )
+    expect(byTestId('shelf-invites-skeleton')).toBeNull()
+  })
+
+  it('shows an error that can be retried', async () => {
+    await scenario.shelfInvite(sarah.shelf, 'anna@example.com')
+    const lift = failRequest('GET', invitesPath(), {
+      status: 500,
+      message: 'Nope',
+    })
+
+    await openInvites()
+    await vi.waitFor(() =>
+      expect(byTestId('shelf-invites-error')).not.toBeNull(),
+    )
+
+    lift()
+    await click('shelf-invites-retry')
+
+    await vi.waitFor(() =>
+      expect(pendingEmails()).toEqual(['anna@example.com']),
+    )
+    expect(byTestId('shelf-invites-error')).toBeNull()
   })
 })

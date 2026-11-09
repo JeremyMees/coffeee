@@ -3,7 +3,7 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useRouter } from '#imports'
 import { byTestId, tid } from '../fixtures'
-import { scenario, signIn } from '../server'
+import { failRequest, holdRequest, scenario, signIn } from '../server'
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }))
 
@@ -74,6 +74,9 @@ describe('profile page', () => {
     const page = await mountSuspended(App, {
       route: '/profile?tab=notifications',
     })
+    await vi.waitFor(() =>
+      expect(page.find(tid('notification-email-invited')).exists()).toBe(true),
+    )
 
     expect(page.get(tid('notification-email-invited')).isVisible()).toBe(true)
     expect(page.get(tid('sign-out')).isVisible()).toBe(false)
@@ -93,5 +96,39 @@ describe('profile page', () => {
       ),
     )
     page.unmount()
+  })
+
+  it('opens straight away while the stats and email settings load', async () => {
+    const holds = [
+      holdRequest('GET', '/api/me/stats'),
+      holdRequest('GET', '/api/me/notifications/emails'),
+    ]
+
+    const page = await mountSuspended(App, { route: '/profile' })
+
+    expect(page.get(tid('profile-name')).text()).toBe('Sarah')
+    expect(page.find(tid('profile-stats-skeleton')).exists()).toBe(true)
+    expect(
+      page.find(tid('profile-notification-emails-skeleton')).exists(),
+    ).toBe(true)
+
+    for (const hold of holds) hold.release()
+
+    await vi.waitFor(() => {
+      expect(page.find(tid('stats-bags')).exists()).toBe(true)
+      expect(page.find(tid('notification-email-invited')).exists()).toBe(true)
+    })
+  })
+
+  it('keeps the email settings working when the stats fail to load', async () => {
+    failRequest('GET', '/api/me/stats', { status: 500, message: 'Nope' })
+
+    const page = await mountSuspended(App, { route: '/profile' })
+
+    await vi.waitFor(() => {
+      expect(page.find(tid('profile-stats-error')).exists()).toBe(true)
+      expect(page.find(tid('notification-email-invited')).exists()).toBe(true)
+    })
+    expect(page.find(tid('sign-out')).exists()).toBe(true)
   })
 })

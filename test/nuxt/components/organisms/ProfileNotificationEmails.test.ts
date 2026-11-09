@@ -4,7 +4,13 @@ import ProfileNotificationEmails from '~/components/organisms/ProfileNotificatio
 import { listEmailedKinds } from '#server/utils/notifications'
 import type { Member } from '#test/support/types'
 import { tid } from '../../fixtures'
-import { database, failRequest, scenario, signIn } from '../../server'
+import {
+  database,
+  failRequest,
+  holdRequest,
+  scenario,
+  signIn,
+} from '../../server'
 
 let sarah: Member
 
@@ -13,8 +19,19 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-function mount() {
+const emailsPath = '/api/me/notifications/emails'
+
+function open() {
   return mountSuspended(ProfileNotificationEmails)
+}
+
+async function mount() {
+  const wrapper = await open()
+  await vi.waitFor(() =>
+    expect(wrapper.find(tid('notification-email-invited')).exists()).toBe(true),
+  )
+
+  return wrapper
 }
 
 function checked(wrapper: Awaited<ReturnType<typeof mount>>, kind: string) {
@@ -101,5 +118,51 @@ describe('ProfileNotificationEmails', () => {
     )
     expect(checked(wrapper, 'bagFinished')).toBe(false)
     expect(await stored()).toEqual([])
+  })
+
+  it('shows its heading and a skeleton while the settings load', async () => {
+    const hold = holdRequest('GET', emailsPath)
+
+    const wrapper = await open()
+
+    expect(wrapper.get('h2').text()).toBe('Email')
+    expect(
+      wrapper.find(tid('profile-notification-emails-skeleton')).exists(),
+    ).toBe(true)
+    expect(wrapper.find(tid('notification-email-invited')).exists()).toBe(false)
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(wrapper.find(tid('notification-email-invited')).exists()).toBe(
+        true,
+      ),
+    )
+    expect(
+      wrapper.find(tid('profile-notification-emails-skeleton')).exists(),
+    ).toBe(false)
+  })
+
+  it('shows an error that can be retried', async () => {
+    const lift = failRequest('GET', emailsPath, {
+      status: 500,
+      message: 'Nope',
+    })
+
+    const wrapper = await open()
+    await vi.waitFor(() =>
+      expect(
+        wrapper.find(tid('profile-notification-emails-error')).exists(),
+      ).toBe(true),
+    )
+
+    lift()
+    await wrapper.get(tid('profile-notification-emails-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(wrapper.find(tid('notification-email-invited')).exists()).toBe(
+        true,
+      ),
+    )
   })
 })

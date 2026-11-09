@@ -7,7 +7,13 @@ import { shelf } from '#server/db/schemas'
 import { listShelfMembers } from '#server/utils/shelves'
 import type { Member } from '#test/support/types'
 import { allByTestId, byTestId, click } from '../../fixtures'
-import { database, failRequest, scenario, signIn } from '../../server'
+import {
+  database,
+  failRequest,
+  holdRequest,
+  scenario,
+  signIn,
+} from '../../server'
 
 let sarah: Member
 let tom: Member
@@ -19,11 +25,22 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-function mountMembers() {
+function membersPath() {
+  return `/api/shelves/${sarah.shelf.id}/members`
+}
+
+function openMembers() {
   return mountSuspended(ShelfMembers, {
     props: { shelfId: sarah.shelf.id },
     attachTo: document.body,
   })
+}
+
+async function mountMembers() {
+  const wrapper = await openMembers()
+  await vi.waitFor(() => expect(byTestId('shelf-members-skeleton')).toBeNull())
+
+  return wrapper
 }
 
 function memberNames() {
@@ -115,5 +132,41 @@ describe('ShelfMembers', () => {
     expect(byTestId('shelf-member-remove')).toBeNull()
     expect(byTestId('shelf-member-hand-over')).toBeNull()
     expect(allByTestId('shelf-member')[0]?.textContent).toContain('Owner')
+  })
+
+  it('shows a skeleton while the members load', async () => {
+    const hold = holdRequest('GET', membersPath())
+
+    await openMembers()
+
+    expect(byTestId('shelf-members-skeleton')).not.toBeNull()
+    expect(byTestId('shelf-member')).toBeNull()
+
+    hold.release()
+
+    await vi.waitFor(() =>
+      expect(memberNames()).toEqual(['Sarah (you)', 'Tom']),
+    )
+    expect(byTestId('shelf-members-skeleton')).toBeNull()
+  })
+
+  it('shows an error that can be retried', async () => {
+    const lift = failRequest('GET', membersPath(), {
+      status: 500,
+      message: 'Nope',
+    })
+
+    await openMembers()
+    await vi.waitFor(() =>
+      expect(byTestId('shelf-members-error')).not.toBeNull(),
+    )
+
+    lift()
+    await click('shelf-members-retry')
+
+    await vi.waitFor(() =>
+      expect(memberNames()).toEqual(['Sarah (you)', 'Tom']),
+    )
+    expect(byTestId('shelf-members-error')).toBeNull()
   })
 })
