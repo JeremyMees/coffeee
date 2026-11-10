@@ -39,6 +39,18 @@ describe('LabelledField', () => {
     expect(wrapper.get<HTMLInputElement>('input').element.value).toBe('Halo')
   })
 
+  it('keeps focus where it is when its label is pressed', async () => {
+    const { wrapper } = await mountField()
+    const press = new MouseEvent('mousedown', {
+      bubbles: true,
+      cancelable: true,
+    })
+
+    wrapper.get('label').element.dispatchEvent(press)
+
+    expect(press.defaultPrevented).toBe(true)
+  })
+
   it('marks a required field', async () => {
     const plain = await mountField()
     const required = await mountField({ required: true })

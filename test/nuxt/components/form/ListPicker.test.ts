@@ -143,4 +143,18 @@ describe('ListPicker', () => {
 
     expect(byTestId('roaster')!.getAttribute('aria-invalid')).toBe('true')
   })
+
+  it('closes when its label is pressed', async () => {
+    const label = document.createElement('label')
+    label.htmlFor = 'coffee-roaster'
+    document.body.append(label)
+    await mountPicker()
+
+    await type('roaster', 'squar')
+    await vi.waitFor(() => expect(pickerOptions()).toContain('Square Mile'))
+    label.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+
+    await vi.waitFor(() => expect(pickerOptions()).toEqual([]))
+    label.remove()
+  })
 })

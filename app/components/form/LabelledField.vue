@@ -13,7 +13,11 @@ defineProps<{
 <template>
   <VeeField v-slot="field" :name="name">
     <Field :data-invalid="field.errors.length ? true : undefined">
-      <FieldLabel :for="inputId" :class="small ? 'text-xs' : undefined">
+      <FieldLabel
+        :for="inputId"
+        :class="small ? 'text-xs' : undefined"
+        @mousedown.prevent
+      >
         {{ label }}
         <LazyRequiredMark v-if="required" />
       </FieldLabel>

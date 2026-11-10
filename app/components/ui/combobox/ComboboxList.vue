@@ -3,7 +3,12 @@ import type { ComboboxContentEmits, ComboboxContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { cn } from 'cn'
-import { ComboboxContent, ComboboxPortal, useForwardPropsEmits } from 'reka-ui'
+import {
+  ComboboxContent,
+  ComboboxPortal,
+  injectComboboxRootContext,
+  useForwardPropsEmits,
+} from 'reka-ui'
 
 defineOptions({
   inheritAttrs: false,
@@ -21,6 +26,16 @@ const emits = defineEmits<ComboboxContentEmits>()
 
 const delegatedProps = reactiveOmit(props, 'class')
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
+
+const rootContext = injectComboboxRootContext()
+
+function closeOnLabel(event: CustomEvent<{ originalEvent: PointerEvent }>) {
+  const target = event.detail.originalEvent.target
+
+  if (target instanceof Element && target.closest('label')) {
+    rootContext.onOpenChange(false)
+  }
+}
 </script>
 
 <template>
@@ -34,6 +49,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           props.class,
         )
       "
+      @pointer-down-outside="closeOnLabel"
     >
       <slot />
     </ComboboxContent>
