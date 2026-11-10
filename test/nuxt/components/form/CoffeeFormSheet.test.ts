@@ -118,6 +118,11 @@ describe('CoffeeFormSheet', () => {
     expect(inputValue('coffee-name')).toBe('')
     expect(isChecked('coffee-roast-level', 'option-light')).toBe(false)
     expect(byTestId('coffee-form-step-4')).toBeNull()
+    expect(byTestId('coffee-form-submit')).toBeNull()
+
+    await click('coffee-form-next')
+    await click('coffee-form-next')
+
     expect(byTestId('coffee-form-submit')!.textContent).toContain('Send it')
   })
 
@@ -143,7 +148,7 @@ describe('CoffeeFormSheet', () => {
     expect(chipLabels('coffee-varietals-chips')).toEqual(['Geisha'])
   })
 
-  it('goes back to the first step with a problem and sends nothing', async () => {
+  it('goes back to the first step with a problem, focusing it, and sends nothing', async () => {
     const send = vi.fn(async () => 'coffee-id')
     await openSheet({ send })
     await type('coffee-name', 'Ayele Fulasa')
@@ -154,6 +159,9 @@ describe('CoffeeFormSheet', () => {
     await submit('coffee-form-form')
 
     await vi.waitFor(() => expect(currentPane()).toBe(2))
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(byTestId('coffee-origins')),
+    )
     expect(sheetText()).toContain('Pick where it was grown')
     expect(sheetText()).toContain('Pick a roast level')
     expect(failingSteps()).toEqual([2, 3])
@@ -251,6 +259,8 @@ describe('CoffeeFormSheet', () => {
     )
     await openSheet({ send })
     await fillRequired()
+    await click('coffee-form-next')
+    await click('coffee-form-next')
 
     await submit('coffee-form-form')
 

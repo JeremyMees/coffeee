@@ -43,19 +43,22 @@ describe('CoffeeFormSteps', () => {
     expect(byTestId('coffee-pane-4')).toBeNull()
   })
 
-  it('keeps back, next and submit in place, disabling the step buttons at the ends', async () => {
+  it('names the next step until the last, which submits', async () => {
     const { wrapper, step } = await mountSteps(false)
 
-    expect(byTestId<HTMLButtonElement>('coffee-back')!.disabled).toBe(true)
-    expect(byTestId<HTMLButtonElement>('coffee-next')!.disabled).toBe(false)
-    expect(wrapper.text()).toContain('Done')
+    expect(byTestId('coffee-back')).toBeNull()
+    expect(byTestId('coffee-next')!.textContent).toContain('Next: Origin')
+    expect(wrapper.text()).not.toContain('Done')
 
     await click('coffee-next')
+
+    expect(byTestId('coffee-back')!.textContent).toContain('Back')
+    expect(byTestId('coffee-next')!.textContent).toContain('Next: Taste')
+
     await click('coffee-next')
 
     expect(step.value).toBe(3)
-    expect(byTestId<HTMLButtonElement>('coffee-next')!.disabled).toBe(true)
-    expect(byTestId<HTMLButtonElement>('coffee-back')!.disabled).toBe(false)
+    expect(byTestId('coffee-next')).toBeNull()
     expect(wrapper.text()).toContain('Done')
 
     await click('coffee-back')

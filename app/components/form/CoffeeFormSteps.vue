@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from '@lucide/vue'
+import { CheckIcon } from '@lucide/vue'
 import { useFormErrors } from 'vee-validate'
 
 const props = defineProps<{ steps: FormStep[]; prefix: string }>()
@@ -17,6 +17,7 @@ const failing = computed(() =>
 )
 const first = computed(() => step.value === 1)
 const last = computed(() => step.value === props.steps.length)
+const nextTitle = computed(() => props.steps[step.value]?.title)
 </script>
 
 <template>
@@ -68,15 +69,27 @@ const last = computed(() => step.value === props.steps.length)
       </StepperItem>
     </Stepper>
 
-    <FieldGroup v-show="step === 1" :data-testid="`${prefix}-pane-1`">
+    <FieldGroup
+      v-show="step === 1"
+      data-pane="1"
+      :data-testid="`${prefix}-pane-1`"
+    >
       <slot name="photo" />
       <CoffeeIdentityFields />
     </FieldGroup>
-    <FieldGroup v-show="step === 2" :data-testid="`${prefix}-pane-2`">
+    <FieldGroup
+      v-show="step === 2"
+      data-pane="2"
+      :data-testid="`${prefix}-pane-2`"
+    >
       <CoffeeOriginFields />
       <DescriptionListFields :fields="['producers']" />
     </FieldGroup>
-    <FieldGroup v-show="step === 3" :data-testid="`${prefix}-pane-3`">
+    <FieldGroup
+      v-show="step === 3"
+      data-pane="3"
+      :data-testid="`${prefix}-pane-3`"
+    >
       <DescriptionListFields
         :fields="['processes', 'varietals', 'flavorNotes']"
       />
@@ -85,6 +98,7 @@ const last = computed(() => step.value === props.steps.length)
     <FieldGroup
       v-if="steps.length > 3"
       v-show="step === 4"
+      data-pane="4"
       :data-testid="`${prefix}-pane-4`"
     >
       <PurchaseFields />
@@ -94,29 +108,25 @@ const last = computed(() => step.value === props.steps.length)
 
     <div class="flex items-center gap-3">
       <Button
+        v-if="!first"
         type="button"
-        aria-label="Previous step"
         :data-testid="`${prefix}-back`"
         variant="line"
-        size="icon-pill"
-        class="disabled:opacity-30"
-        :disabled="first"
+        size="pill"
         @click="step -= 1"
       >
-        <ChevronLeftIcon class="size-5" aria-hidden="true" />
+        Back
       </Button>
-      <slot name="submit" />
+      <slot v-if="last" name="submit" />
       <Button
+        v-else
         type="button"
-        aria-label="Next step"
         :data-testid="`${prefix}-next`"
-        variant="line"
-        size="icon-pill"
-        class="disabled:opacity-30"
-        :disabled="last"
+        size="pill"
+        class="flex-1"
         @click="step += 1"
       >
-        <ChevronRightIcon class="size-5" aria-hidden="true" />
+        Next: {{ nextTitle }}
       </Button>
     </div>
   </div>

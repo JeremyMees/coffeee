@@ -111,13 +111,19 @@ async function addCoffee(
   await pickDate(page, 'coffee-roasted-on', daysAgo(10))
   await sheet.getByTestId('coffee-size').fill('250')
   await sheet.getByTestId('coffee-price').fill('16.50')
-  await sheet.getByTestId('add-coffee-submit').click()
+  await saveCoffee(sheet, 'add-coffee')
 
   await expect(sheet).toBeHidden()
 }
 
 async function toStep(sheet: Locator, prefix: string, step: number) {
   await sheet.getByTestId(`${prefix}-step-${step}`).getByRole('button').click()
+}
+
+async function saveCoffee(sheet: Locator, prefix: string) {
+  const steps = await sheet.locator(`[data-testid^="${prefix}-step-"]`).count()
+  await toStep(sheet, prefix, steps)
+  await sheet.getByTestId(`${prefix}-submit`).click()
 }
 
 async function addDescribedCoffee(
@@ -148,7 +154,8 @@ async function addDescribedCoffee(
   )
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-filter')
-  await sheet.getByTestId('add-coffee-submit').click()
+  await sheet.getByTestId('add-coffee-next').click()
+  await saveCoffee(sheet, 'add-coffee')
   await expect(sheet).toBeHidden()
 }
 
@@ -227,7 +234,7 @@ test('explains missing details and clears them once fixed', async ({
   for (let step = 0; step < 3; step++) {
     await sheet.getByTestId('add-coffee-next').click()
   }
-  await sheet.getByTestId('add-coffee-submit').click()
+  await saveCoffee(sheet, 'add-coffee')
 
   await expect(sheet.getByText('Give the coffee a name')).toBeVisible()
   await expect(sheet.getByTestId('add-coffee-step-3')).toHaveAttribute(
@@ -262,7 +269,7 @@ test('lets the person who added a coffee fix its details', async ({
   await sheet.getByTestId('edit-coffee-next').click()
   await sheet.getByTestId('edit-coffee-next').click()
   await choose(sheet, 'coffee-roast-level', 'option-medium')
-  await sheet.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(sheet, 'edit-coffee')
 
   await expect(sheet).toBeHidden()
   await expect(page.getByTestId('coffee-title')).toHaveText(
@@ -288,7 +295,7 @@ test('refuses a name the roaster already has', async ({ page, member }) => {
 
   const sheet = await editCoffee(page, 'Ayele Fulasa')
   await sheet.getByTestId('coffee-name').fill('red brick')
-  await sheet.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(sheet, 'edit-coffee')
 
   await expect(
     sheet.getByText(`${roaster} already has a coffee called Red Brick`),
@@ -336,7 +343,7 @@ test('says where a blend was grown and keeps it up to date', async ({
   await pickProcess(page, 'Washed')
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-filter')
-  await sheet.getByTestId('add-coffee-submit').click()
+  await saveCoffee(sheet, 'add-coffee')
   await expect(sheet).toBeHidden()
 
   await stockCard(page, 'Huila Blend').click()
@@ -358,7 +365,7 @@ test('says where a blend was grown and keeps it up to date', async ({
     .click()
   await expect(edit.getByTestId('coffee-regions-chips')).toBeHidden()
   await edit.getByTestId('coffee-altitude-to').fill('')
-  await edit.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(edit, 'edit-coffee')
 
   await expect(page.getByTestId('detail-origins')).toHaveText('Ethiopia')
   await expect(page.getByTestId('detail-regions')).toBeHidden()
@@ -378,7 +385,7 @@ test('suggests a region another coffee already used', async ({
   await page.getByTestId('coffee-edit').click()
   await toStep(page.getByTestId('edit-coffee-sheet'), 'edit-coffee', 2)
   await pickRegion(page, region, `Add “${region}”`)
-  await page.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(page.getByTestId('edit-coffee-sheet'), 'edit-coffee')
   await expect(page.getByTestId('detail-regions')).toHaveText(region)
 
   await page.getByTestId('coffee-back').click()
@@ -435,7 +442,7 @@ test('says who grew a coffee and where it was processed', async ({
   await pickProcess(page, 'Washed')
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-filter')
-  await sheet.getByTestId('add-coffee-submit').click()
+  await saveCoffee(sheet, 'add-coffee')
   await expect(sheet).toBeHidden()
 
   await stockCard(page, 'Pink Bourbon').click()
@@ -460,7 +467,7 @@ test('says who grew a coffee and where it was processed', async ({
     .getByTestId('coffee-producers-chips')
     .getByRole('button', { name: `Remove ${producer}` })
     .click()
-  await edit.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(edit, 'edit-coffee')
 
   await expect(page.getByTestId('detail-washing-stations')).toHaveText(station)
   await expect(page.getByTestId('detail-farms')).toBeHidden()
@@ -501,7 +508,7 @@ test('says how a coffee was made and links to the roaster', async ({
   )
   await choose(sheet, 'coffee-roast-level', 'option-light')
   await choose(sheet, 'coffee-roasted-for', 'option-filter')
-  await sheet.getByTestId('add-coffee-submit').click()
+  await saveCoffee(sheet, 'add-coffee')
   await expect(sheet).toBeHidden()
 
   await expect(
@@ -532,7 +539,7 @@ test('says how a coffee was made and links to the roaster', async ({
     .click()
   await toStep(edit, 'edit-coffee', 1)
   await edit.getByTestId('coffee-link').fill('')
-  await edit.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(edit, 'edit-coffee')
 
   await expect(page.getByTestId('detail-processes')).toHaveText('Anaerobic')
   await expect(page.getByTestId('coffee-link-out')).toBeHidden()
@@ -559,7 +566,7 @@ test('keeps a roast date optional', async ({ page, member }) => {
   await expect(
     sheet.getByTestId('coffee-roasted-on').getByTestId('date-picker-trigger'),
   ).toHaveText('Pick a date')
-  await sheet.getByTestId('add-coffee-submit').click()
+  await saveCoffee(sheet, 'add-coffee')
 
   const card = stockCard(page, 'Halo')
   await expect(card.getByTestId('coffee-card-days')).toHaveText('No roast date')
@@ -606,7 +613,7 @@ test('lets an admin fix a coffee someone else added', async ({
   await page.getByTestId('coffee-edit').click()
   const sheet = page.getByTestId('edit-coffee-sheet')
   await sheet.getByTestId('coffee-name').fill('Ayele Fulasa Washed')
-  await sheet.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(sheet, 'edit-coffee')
 
   await expect(page.getByTestId('coffee-title')).toHaveText(
     'Ayele Fulasa Washed',
@@ -648,7 +655,7 @@ test('gives a coffee a shrunk photo of its bag while editing and lets it be repl
   await sheet
     .getByTestId('edit-coffee-photo-input')
     .setInputFiles(await bagPhoto(page, '#e4572e'))
-  await sheet.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(sheet, 'edit-coffee')
   await expect(sheet).toBeHidden()
 
   const photo = page.getByTestId('coffee-photo-image')
@@ -663,7 +670,7 @@ test('gives a coffee a shrunk photo of its bag while editing and lets it be repl
   await sheet
     .getByTestId('edit-coffee-photo-input')
     .setInputFiles(await bagPhoto(page, '#3d5a80'))
-  await sheet.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(sheet, 'edit-coffee')
   await expect(sheet).toBeHidden()
 
   await expect(photo).not.toHaveAttribute('src', firstUrl!)
@@ -699,7 +706,7 @@ test('adds a coffee with a photo of its bag and removes it while editing', async
     photoUrl!,
   )
   await sheet.getByTestId('edit-coffee-photo-remove').click()
-  await sheet.getByTestId('edit-coffee-submit').click()
+  await saveCoffee(sheet, 'edit-coffee')
 
   await expect(sheet).toBeHidden()
   await expect(page.getByTestId('coffee-photo-placeholder')).toBeVisible()

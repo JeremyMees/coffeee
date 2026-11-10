@@ -184,7 +184,7 @@ describe('EditCoffeeSheet', () => {
     })
   })
 
-  it('has the steps of a coffee without a first bag, saving from any of them', async () => {
+  it('has the steps of a coffee without a first bag, saving from the last', async () => {
     await openSheet()
 
     expect(byTestId('edit-coffee-steps')!.textContent).not.toContain(
@@ -193,7 +193,12 @@ describe('EditCoffeeSheet', () => {
     await click('edit-coffee-next')
 
     expect(byTestId('edit-coffee-pane-2')!.style.display).toBe('')
-    expect(byTestId('edit-coffee-submit')).not.toBeNull()
+    expect(byTestId('edit-coffee-submit')).toBeNull()
+
+    await click('edit-coffee-next')
+
+    expect(byTestId('edit-coffee-next')).toBeNull()
+    expect(byTestId('edit-coffee-submit')!.textContent).toContain('Save')
   })
 
   it('shows a name that is taken next to the field', async () => {

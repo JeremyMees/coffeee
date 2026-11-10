@@ -18,6 +18,7 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 const formError = ref('')
 const step = ref(1)
+const form = useTemplateRef('form')
 const photo = ref<File | null>()
 const savedId = ref<string>()
 const steps = coffeeFormSteps(props.firstBag)
@@ -51,6 +52,16 @@ watch(open, isOpen => {
 
 function showErrors(fields: string[]) {
   step.value = firstStepWithError(steps, fields) ?? step.value
+}
+
+async function focusFirstError(fields: string[]) {
+  showErrors(fields)
+  await nextTick()
+  form.value
+    ?.querySelector<HTMLElement>(
+      `[data-pane="${step.value}"] [aria-invalid="true"]`,
+    )
+    ?.focus()
 }
 
 function savePhoto(coffeeId: string) {
@@ -95,7 +106,7 @@ const save = handleSubmit(
 
     if (destination) await navigateTo(destination)
   },
-  ({ errors }) => showErrors(Object.keys(errors)),
+  ({ errors }) => focusFirstError(Object.keys(errors)),
 )
 </script>
 
@@ -107,6 +118,7 @@ const save = handleSubmit(
     :description="description"
   >
     <form
+      ref="form"
       class="px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:px-8"
       novalidate
       :data-testid="`${prefix}-form`"
