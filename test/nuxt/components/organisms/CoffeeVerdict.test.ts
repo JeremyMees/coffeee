@@ -108,18 +108,24 @@ describe('CoffeeVerdict', () => {
     )
   })
 
-  it('shows a cross when it would not be bought again', async () => {
+  it('shows no icon when it would not be bought again', async () => {
     const verdict = await mountVerdict({ rating: null, wouldBuyAgain: false })
 
-    expect(verdict.find(tid('verdict-buy-again-no')).exists()).toBe(true)
-    expect(verdict.find(tid('verdict-buy-again-yes')).exists()).toBe(false)
+    expect(verdict.get(tid('verdict-buy-again')).find('svg').exists()).toBe(
+      false,
+    )
+    expect(
+      verdict.get(tid('verdict-buy-again')).attributes('aria-pressed'),
+    ).toBe('false')
   })
 
   it('shows a check when it would be bought again', async () => {
     const verdict = await mountVerdict({ rating: null, wouldBuyAgain: true })
 
     expect(verdict.find(tid('verdict-buy-again-yes')).exists()).toBe(true)
-    expect(verdict.find(tid('verdict-buy-again-no')).exists()).toBe(false)
+    expect(
+      verdict.get(tid('verdict-buy-again')).attributes('aria-pressed'),
+    ).toBe('true')
   })
 
   it('marks a favourite', async () => {
