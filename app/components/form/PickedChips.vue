@@ -22,15 +22,16 @@ defineEmits<{ remove: [key: string] }>()
       >
         · {{ chip.detail }}
       </span>
-      <button
+      <Button
         type="button"
         data-testid="chip-remove"
-        class="rounded-full p-1 transition-colors hover:bg-primary hover:text-primary-foreground"
+        variant="invert"
+        size="icon-chip"
         :aria-label="`Remove ${chip.label}`"
         @click="$emit('remove', chip.key)"
       >
         <XIcon class="size-3" aria-hidden="true" />
-      </button>
+      </Button>
     </li>
   </ul>
 </template>

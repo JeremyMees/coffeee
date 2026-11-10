@@ -99,14 +99,15 @@ function clear() {
               : 'No coffee matches these filters.'
           }}
         </p>
-        <button
+        <Button
           type="button"
           data-testid="discover-no-match-clear"
-          class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
+          variant="line"
+          size="pill-lg"
           @click="clear"
         >
           Clear search
-        </button>
+        </Button>
       </div>
       <template v-else>
         <div class="mt-8 flex flex-wrap items-center justify-between gap-3">

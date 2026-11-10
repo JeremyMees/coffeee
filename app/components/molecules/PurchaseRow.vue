@@ -42,9 +42,6 @@ function remove() {
 
   return attempt(() => removePurchase(target.value))
 }
-
-const action =
-  'rounded-full border border-current px-3 py-1.5 text-[11px] uppercase disabled:opacity-60'
 </script>
 
 <template>
@@ -75,51 +72,57 @@ const action =
     </div>
     <div v-if="confirming" class="flex flex-wrap items-center gap-2">
       <span data-testid="purchase-delete-question">Delete this purchase?</span>
-      <button
+      <Button
         type="button"
         data-testid="purchase-delete-confirm"
-        :class="[action, 'text-destructive']"
+        variant="quiet"
+        size="pill-xs"
+        class="text-destructive"
         @click="remove"
       >
         Delete
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         data-testid="purchase-delete-cancel"
-        :class="action"
+        variant="quiet"
+        size="pill-xs"
         @click="confirming = false"
       >
         Keep
-      </button>
+      </Button>
     </div>
     <div v-else class="flex flex-wrap gap-2">
-      <button
+      <Button
         type="button"
         data-testid="purchase-edit"
-        :class="action"
+        variant="quiet"
+        size="pill-xs"
         @click="emit('edit')"
       >
         Edit
-      </button>
-      <button
+      </Button>
+      <Button
         v-if="!purchase.finishedAt"
         type="button"
         data-testid="purchase-finish"
-        :class="action"
+        variant="quiet"
+        size="pill-xs"
         :disabled="finishing"
         @click="finish"
       >
         Finished
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         data-testid="purchase-delete"
-        :class="action"
+        variant="quiet"
+        size="pill-xs"
         :disabled="removing"
         @click="confirming = true"
       >
         Delete
-      </button>
+      </Button>
     </div>
     <p
       v-if="failure"

@@ -75,14 +75,15 @@ const save = handleSubmit(async ({ name }) => {
       >
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
-      <button
+      <Button
         type="submit"
         data-testid="shelf-name-submit"
-        class="flex items-center justify-center gap-2 self-start rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+        size="pill"
+        class="self-start"
         :disabled="isSubmitting"
       >
         Rename
-      </button>
+      </Button>
     </form>
   </section>
 </template>

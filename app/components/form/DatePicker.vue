@@ -33,7 +33,7 @@ const date = computed({
           :class="[
             'w-full justify-start rounded-lg px-2.5 text-left font-normal',
             !date && 'text-muted-foreground',
-            clearable && date && 'pr-8',
+            clearable && date && 'pr-11 lg:pr-8',
           ]"
           :aria-invalid="invalid ? true : undefined"
         >
@@ -57,15 +57,17 @@ const date = computed({
         />
       </PopoverContent>
     </Popover>
-    <button
+    <Button
       v-if="clearable && date"
       type="button"
       data-testid="date-picker-clear"
-      class="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-full hover:bg-muted"
+      variant="ghost"
+      size="icon-xs"
+      class="absolute top-1/2 right-0 -translate-y-1/2 rounded-full lg:right-1.5"
       :aria-label="`Clear ${props.label.toLowerCase()}`"
       @click="model = ''"
     >
       <XIcon class="size-3.5" aria-hidden="true" />
-    </button>
+    </Button>
   </div>
 </template>

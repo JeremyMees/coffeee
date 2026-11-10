@@ -93,27 +93,31 @@ const last = computed(() => step.value === props.steps.length)
     <slot name="error" />
 
     <div class="flex items-center gap-3">
-      <button
+      <Button
         type="button"
         aria-label="Previous step"
         :data-testid="`${prefix}-back`"
-        class="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary disabled:opacity-30"
+        variant="line"
+        size="icon-pill"
+        class="disabled:opacity-30"
         :disabled="first"
         @click="step -= 1"
       >
         <ChevronLeftIcon class="size-5" aria-hidden="true" />
-      </button>
+      </Button>
       <slot name="submit" />
-      <button
+      <Button
         type="button"
         aria-label="Next step"
         :data-testid="`${prefix}-next`"
-        class="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary disabled:opacity-30"
+        variant="line"
+        size="icon-pill"
+        class="disabled:opacity-30"
         :disabled="last"
         @click="step += 1"
       >
         <ChevronRightIcon class="size-5" aria-hidden="true" />
-      </button>
+      </Button>
     </div>
   </div>
 </template>

@@ -88,24 +88,25 @@ function formatWhen(date: string) {
         class="flex gap-2"
         data-testid="notification-actions"
       >
-        <button
+        <Button
           type="button"
           data-testid="notification-decline"
-          class="rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-accent disabled:opacity-60"
+          variant="line"
+          size="pill-sm"
           :disabled="accepting || declining"
           @click="answer('decline')"
         >
           Decline
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           data-testid="notification-accept"
-          class="rounded-full bg-primary px-4 py-2 text-xs text-primary-foreground uppercase disabled:opacity-60"
+          size="pill-sm"
           :disabled="accepting || declining"
           @click="answer('accept')"
         >
           Join {{ notification.shelf }}
-        </button>
+        </Button>
       </div>
       <p
         v-else-if="answered"

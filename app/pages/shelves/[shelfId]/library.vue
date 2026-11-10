@@ -177,25 +177,27 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
             }}
           </p>
           <div class="flex flex-wrap gap-3">
-            <NuxtLink
-              :to="discoverLink(shelf!, searched, filter)"
-              data-testid="library-no-match-discover"
-              class="rounded-full bg-primary px-6 py-2.5 text-sm text-primary-foreground uppercase"
-            >
-              {{
-                searched.trim()
-                  ? `Search Discover for “${searched.trim()}”`
-                  : 'Look in Discover'
-              }}
-            </NuxtLink>
-            <button
+            <Button as-child size="pill">
+              <NuxtLink
+                :to="discoverLink(shelf!, searched, filter)"
+                data-testid="library-no-match-discover"
+              >
+                {{
+                  searched.trim()
+                    ? `Search Discover for “${searched.trim()}”`
+                    : 'Look in Discover'
+                }}
+              </NuxtLink>
+            </Button>
+            <Button
               type="button"
               data-testid="library-no-match-clear"
-              class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
+              variant="line"
+              size="pill-lg"
               @click="clear"
             >
               {{ searched.trim() ? 'Clear search' : 'Clear filters' }}
-            </button>
+            </Button>
           </div>
         </div>
         <LazyLibraryTable

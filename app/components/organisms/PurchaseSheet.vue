@@ -95,14 +95,14 @@ const save = handleSubmit(async purchase => {
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
 
-      <button
+      <Button
         type="submit"
         data-testid="purchase-submit"
-        class="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+        size="pill"
         :disabled="isSubmitting"
       >
         {{ copy.submit }}
-      </button>
+      </Button>
     </form>
   </FormSheet>
 </template>

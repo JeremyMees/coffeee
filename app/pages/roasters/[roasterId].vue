@@ -64,7 +64,7 @@ watch(error, showMissing)
     <NuxtLink
       :to="back.to"
       data-testid="roaster-back"
-      class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+      class="hit-area mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
       @click="goBack"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -98,7 +98,7 @@ watch(error, showMissing)
             target="_blank"
             rel="noopener noreferrer"
             data-testid="roaster-website"
-            class="mt-1 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
+            class="hit-area mt-1 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
           >
             {{ websiteHost(roaster.website) }}
             <ArrowUpRightIcon class="size-4" aria-hidden="true" />
@@ -111,16 +111,18 @@ watch(error, showMissing)
           <template #skeleton><LazyRoasterHeaderSkeleton /></template>
         </QuerySection>
       </template>
-      <button
+      <Button
         v-if="roaster?.canEdit"
         type="button"
         data-testid="roaster-edit"
-        class="mb-2 flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground"
+        variant="line"
+        size="pill-sm"
+        class="mb-2"
         @click="editing = true"
       >
         <PencilIcon class="size-4" aria-hidden="true" />
         Edit
-      </button>
+      </Button>
     </header>
     <section class="mt-10">
       <div class="flex flex-wrap items-end justify-between gap-4">
@@ -130,7 +132,7 @@ watch(error, showMissing)
           data-testid="roaster-filter-mine"
           :aria-pressed="mine"
           :class="[
-            'flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+            'flex items-center gap-1.5 rounded-full border px-4 py-3 lg:py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
             mine
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-transparent bg-accent hover:border-primary',

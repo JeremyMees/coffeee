@@ -111,9 +111,6 @@ function clear(saved: OwnGrindSetting) {
     setting: null,
   })
 }
-
-const action =
-  'rounded-full border border-current px-3 py-1.5 text-[11px] uppercase disabled:opacity-60'
 </script>
 
 <template>
@@ -130,7 +127,7 @@ const action =
           <NuxtLink
             :to="settingsLink"
             data-testid="grind-add-grinder"
-            class="underline underline-offset-4"
+            class="hit-area underline underline-offset-4"
           >
             Add a grinder
           </NuxtLink>
@@ -164,23 +161,25 @@ const action =
                 >
                   {{ saved.setting }}
                 </strong>
-                <button
+                <Button
                   type="button"
                   data-testid="grind-setting-edit"
-                  :class="action"
+                  variant="quiet"
+                  size="pill-xs"
                   @click="edit(saved)"
                 >
                   Edit
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   data-testid="grind-setting-clear"
-                  :class="action"
+                  variant="quiet"
+                  size="pill-xs"
                   :disabled="saving"
                   @click="clear(saved)"
                 >
                   Clear
-                </button>
+                </Button>
               </span>
             </li>
           </ul>
@@ -241,14 +240,16 @@ const action =
                 placeholder="12"
               />
             </Field>
-            <button
+            <Button
               type="submit"
               data-testid="grind-setting-save"
-              :class="[action, 'h-8 border-primary']"
+              variant="quiet"
+              size="pill-xs"
+              class="border-primary lg:h-8"
               :disabled="saving"
             >
               Save
-            </button>
+            </Button>
           </form>
           <Alert
             v-if="error"

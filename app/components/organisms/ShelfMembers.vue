@@ -106,24 +106,26 @@ async function confirm() {
                 Owner
               </span>
               <template v-else-if="isOwner">
-                <button
+                <Button
                   type="button"
                   data-testid="shelf-member-hand-over"
-                  class="rounded-full p-2 transition-colors hover:bg-accent"
+                  variant="ghost"
+                  size="icon-pill-sm"
                   :aria-label="`Hand the shelf to ${member.name}`"
                   @click="ask('handOver', member)"
                 >
                   <CrownIcon class="size-4" aria-hidden="true" />
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   data-testid="shelf-member-remove"
-                  class="rounded-full p-2 transition-colors hover:bg-accent"
+                  variant="ghost"
+                  size="icon-pill-sm"
                   :aria-label="`Remove ${member.name}`"
                   @click="ask('remove', member)"
                 >
                   <XIcon class="size-4" aria-hidden="true" />
-                </button>
+                </Button>
               </template>
             </span>
           </li>

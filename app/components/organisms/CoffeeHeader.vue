@@ -27,7 +27,7 @@ const morph = useMorph('coffee', () => props.coffee.id)
       <component
         :is="roasterId ? NuxtLink : 'span'"
         :to="roasterId && roasterPath({ id: roasterId, name: coffee.roaster })"
-        class="block w-fit text-xs uppercase underline-offset-4 hover:underline"
+        class="hit-area block w-fit text-xs uppercase underline-offset-4 hover:underline"
         data-testid="coffee-roaster-name"
       >
         {{ coffee.roaster }}
@@ -45,34 +45,36 @@ const morph = useMorph('coffee', () => props.coffee.id)
         target="_blank"
         rel="noopener noreferrer"
         data-testid="coffee-link-out"
-        class="mt-2 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
+        class="hit-area mt-2 inline-flex items-center gap-1 text-xs uppercase underline-offset-4 hover:underline"
       >
         At the roaster
         <ArrowUpRightIcon class="size-4" aria-hidden="true" />
       </a>
     </div>
     <div v-if="editable || deletable" class="mb-2 flex shrink-0 gap-2">
-      <button
+      <Button
         v-if="editable"
         type="button"
         data-testid="coffee-edit"
-        class="flex items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
+        variant="line"
+        size="pill-sm"
         @click="$emit('edit')"
       >
         <PencilIcon class="size-4" aria-hidden="true" />
         Edit
-      </button>
+      </Button>
       <DropdownMenu v-if="deletable">
         <DropdownMenuTrigger as-child>
-          <button
+          <Button
             type="button"
             data-testid="coffee-more"
             aria-label="More actions"
             title="More actions"
-            class="flex items-center rounded-full border border-primary p-2 transition-colors hover:bg-primary hover:text-primary-foreground data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+            variant="line"
+            size="icon-pill-sm"
           >
             <EllipsisIcon class="size-4" aria-hidden="true" />
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"

@@ -51,7 +51,7 @@ watch(error, showMissing)
     <NuxtLink
       :to="back.to"
       data-testid="coffee-back"
-      class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+      class="hit-area mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
       @click="goBack"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />

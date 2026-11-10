@@ -80,7 +80,7 @@ watch(open, isOpen => {
               : label
           "
           :class="[
-            'flex max-w-56 items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+            'flex max-w-56 items-center gap-1.5 rounded-full border px-4 py-3 text-[12px] uppercase lg:py-2 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
             picked.length
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-transparent bg-accent hover:border-primary',
@@ -162,17 +162,19 @@ watch(open, isOpen => {
               : 'Nothing to pick yet.'
           }}
         </p>
-        <button
+        <Button
           v-if="hasNextPage"
           ref="more"
           type="button"
-          class="w-full rounded-full px-3 py-2 text-left text-xs uppercase hover:bg-accent"
+          variant="ghost"
+          size="pill-sm"
+          class="w-full justify-start px-3"
           :disabled="isFetchingNextPage"
           :data-testid="`${prefix}-more`"
           @click="loadMore"
         >
           {{ isFetchingNextPage ? 'Loading…' : 'Show more' }}
-        </button>
+        </Button>
       </ComboboxViewport>
     </ComboboxList>
   </Combobox>

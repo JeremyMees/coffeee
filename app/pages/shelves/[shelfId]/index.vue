@@ -24,14 +24,16 @@ const stock = useStock(shelfId)
           <p class="text-xs">
             Nothing in stock yet. Add the coffee you're drinking now.
           </p>
-          <button
+          <Button
             type="button"
             data-testid="stock-empty-add-coffee"
-            class="rounded-full border border-primary px-6 py-2.5 text-sm uppercase lg:hidden"
+            variant="line"
+            size="pill-lg"
+            class="lg:hidden"
             @click="addCoffee = true"
           >
             + Add coffee
-          </button>
+          </Button>
         </div>
         <ul
           v-else

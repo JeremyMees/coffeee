@@ -22,7 +22,7 @@ const label = computed(() =>
       data-testid="notifications-link"
       class="relative flex items-center gap-3 rounded-full uppercase"
       :class="[
-        labelled ? 'px-4 py-2.5 text-[13px]' : 'p-2',
+        labelled ? 'px-4 py-3.5 text-[13px] lg:py-2.5' : 'p-3 lg:p-2',
         isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent',
       ]"
       @click="navigate"

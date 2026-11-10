@@ -95,7 +95,7 @@ async function confirm() {
       <div class="flex flex-wrap gap-3">
         <Button
           variant="outline"
-          class="rounded-full uppercase"
+          size="pill"
           data-testid="shelf-leave-button"
           :disabled="onlyShelf || mustHandOver"
           @click="ask('leave')"
@@ -105,7 +105,7 @@ async function confirm() {
         <Button
           v-if="isOwner"
           variant="destructive"
-          class="rounded-full uppercase"
+          size="pill"
           data-testid="shelf-delete-button"
           :disabled="onlyShelf"
           @click="ask('delete')"

@@ -2,6 +2,7 @@
 import { CameraIcon, Trash2Icon } from '@lucide/vue'
 import { useForm } from 'vee-validate'
 import { useRoasterCreate, useRoasterLogoUpdate } from '~/queries/roasters'
+import { buttonVariants } from '@/components/ui/button'
 
 const open = defineModel<boolean>('open', { default: false })
 const formError = ref('')
@@ -108,7 +109,14 @@ const add = handleSubmit(async details => {
           </span>
         </div>
         <label
-          class="flex cursor-pointer items-center gap-2 rounded-full border border-primary px-4 py-2 transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-primary hover:text-primary-foreground"
+          :class="
+            buttonVariants({
+              variant: 'line',
+              size: 'pill-sm',
+              class:
+                'cursor-pointer focus-within:ring-2 focus-within:ring-ring',
+            })
+          "
         >
           <CameraIcon class="size-4" aria-hidden="true" />
           {{ logo ? 'Replace logo' : 'Add logo' }}
@@ -120,16 +128,17 @@ const add = handleSubmit(async details => {
             @change="picked"
           />
         </label>
-        <button
+        <Button
           v-if="logo"
           type="button"
           data-testid="add-roaster-logo-remove"
-          class="flex items-center gap-2 rounded-full px-4 py-2 uppercase transition-colors hover:bg-destructive/10"
+          variant="ghost-destructive"
+          size="pill-sm"
           @click="pickLogo()"
         >
           <Trash2Icon class="size-4" aria-hidden="true" />
           Remove logo
-        </button>
+        </Button>
       </div>
 
       <LazyRoasterFields />
@@ -138,14 +147,14 @@ const add = handleSubmit(async details => {
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
 
-      <button
+      <Button
         type="submit"
         data-testid="add-roaster-submit"
-        class="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+        size="pill"
         :disabled="isSubmitting"
       >
         Add roaster
-      </button>
+      </Button>
     </form>
   </FormSheet>
 </template>

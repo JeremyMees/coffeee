@@ -68,14 +68,14 @@ const save = handleSubmit(async details => {
           <AlertDescription>{{ formError }}</AlertDescription>
         </Alert>
 
-        <button
+        <Button
           type="submit"
           data-testid="edit-roaster-submit"
-          class="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+          size="pill"
           :disabled="isSubmitting"
         >
           Save changes
-        </button>
+        </Button>
       </form>
     </div>
   </FormSheet>

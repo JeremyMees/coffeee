@@ -39,7 +39,7 @@ const total = computed(() => listed.data.value?.pages[0]?.total ?? 0)
         data-testid="roasters-filter-bought-from"
         :aria-pressed="boughtFrom"
         :class="[
-          'flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+          'flex items-center gap-1.5 rounded-full border px-4 py-3 lg:py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
           boughtFrom
             ? 'border-primary bg-primary text-primary-foreground'
             : 'border-transparent bg-accent hover:border-primary',

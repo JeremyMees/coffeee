@@ -90,7 +90,7 @@ const signIn = handleSubmit(async body => {
     </Button>
     <NuxtLink
       to="/forgot-password"
-      class="text-center text-xs underline underline-offset-4"
+      class="hit-area text-center text-xs underline underline-offset-4"
       data-testid="sign-in-forgot"
     >
       Forgot your password?

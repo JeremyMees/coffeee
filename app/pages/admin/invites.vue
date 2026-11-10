@@ -27,7 +27,7 @@ function formatDate(date: string) {
     <NuxtLink
       to="/admin"
       data-testid="admin-back"
-      class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+      class="hit-area mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
       Admin
@@ -68,14 +68,16 @@ function formatDate(date: string) {
                   · expires {{ formatDate(invite.expiresAt) }}
                 </span>
               </span>
-              <button
+              <Button
                 type="button"
                 data-testid="invite-revoke"
-                class="rounded-full px-3 py-1.5 text-xs uppercase transition-colors hover:bg-accent"
+                variant="ghost"
+                size="pill-xs"
+                class="text-xs"
                 @click="revoke(invite.id)"
               >
                 Revoke
-              </button>
+              </Button>
             </li>
           </ul>
         </template>

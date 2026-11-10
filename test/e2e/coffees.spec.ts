@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Locator, Page } from '@playwright/test'
 import { expect, test, uniqueName } from './support/fixtures'
+import { desktop, expectTouchable, hitArea, onPhone } from './support/touch'
 
 function daysAgo(days: number) {
   const date = new Date()
@@ -1182,4 +1183,82 @@ test('shows two columns of coffees and roasters on a tablet', async ({
       path,
     ).toBe(true)
   }
+})
+
+test('gives every control on a coffee a touch-sized target on a phone and keeps desktop compact', async ({
+  page,
+  member,
+}) => {
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, {
+    name: 'Ayele Fulasa',
+    roaster: uniqueName('Roaster'),
+    newRoaster: true,
+  })
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page).toHaveURL(/\/coffees\//)
+  await onPhone(page)
+
+  for (const testId of [
+    'coffee-back',
+    'coffee-roaster-name',
+    'verdict-star-1',
+    'verdict-star-5',
+    'verdict-buy-again',
+    'coffee-edit',
+    'coffee-more',
+  ]) {
+    await expectTouchable(page.getByTestId(testId))
+  }
+  await expectTouchable(
+    page.locator('[data-testid="notifications-link"]:visible'),
+  )
+
+  await page.getByTestId('coffee-edit').click()
+  const sheet = page.getByTestId('edit-coffee-sheet')
+  await expectTouchable(sheet.getByTestId('coffee-name'))
+  await expectTouchable(sheet.getByTestId('form-sheet-close'))
+  await toStep(sheet, 'edit-coffee', 3)
+  await expectTouchable(
+    sheet
+      .getByTestId('coffee-roast-level')
+      .getByTestId('option-light')
+      .locator('xpath=..'),
+  )
+  await sheet.getByTestId('form-sheet-close').click()
+
+  await page.goto(`/shelves/${member.shelfId}/library`)
+  await expectTouchable(page.getByTestId('library-filter-favourites'))
+  await page.getByTestId('library-filter-roasters').click()
+  await page.getByTestId('library-filter-option').first().click()
+  await page.keyboard.press('Escape')
+  await expectTouchable(page.getByTestId('library-applied-filter').first())
+
+  await page.goto('/roasters')
+  await expectTouchable(page.getByTestId('roasters-filter-bought-from'))
+
+  await page.goto(`/shelves/${member.shelfId}/discover`)
+  await expectTouchable(
+    page.getByTestId('catalog-sort').getByRole('button').first(),
+  )
+  await expectTouchable(
+    page.locator('[data-testid^="catalog-filter-"]:visible').first(),
+  )
+
+  await page.setViewportSize(desktop)
+  await page.goto(`/shelves/${member.shelfId}`)
+  await stockCard(page, 'Ayele Fulasa').click()
+  await expect(page.getByTestId('verdict-star-1')).toBeVisible()
+  expect(await hitArea(page.getByTestId('verdict-star-1'))).toEqual({
+    width: 32,
+    height: 32,
+  })
+  await page.getByTestId('coffee-edit').click()
+  expect(
+    (
+      await hitArea(
+        page.getByTestId('edit-coffee-sheet').getByTestId('coffee-name'),
+      )
+    ).height,
+  ).toBe(32)
 })

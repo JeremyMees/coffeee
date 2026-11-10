@@ -1,4 +1,5 @@
 import { expect, test, uniqueName } from './support/fixtures'
+import { expectTouchable, onPhone } from './support/touch'
 
 test.beforeEach(async ({ people }) => {
   await people.signIn('Ada', 'admin')
@@ -25,6 +26,9 @@ test('allows an email and revokes it again', async ({ page }) => {
   await expect(invite).toBeVisible()
   await expect(page.getByTestId('add-invite-sheet')).toBeHidden()
 
+  await onPhone(page)
+  await expectTouchable(page.getByTestId('admin-back'))
+  await expectTouchable(invite.getByTestId('invite-revoke'))
   await invite.getByTestId('invite-revoke').click()
 
   await expect(invite).toBeHidden()

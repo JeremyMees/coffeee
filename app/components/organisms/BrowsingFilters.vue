@@ -61,7 +61,7 @@ function clear() {
         :data-testid="`${area}-filter-${toggle.key}`"
         :aria-pressed="toggled"
         :class="[
-          'flex items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+          'flex items-center gap-1.5 rounded-full border px-4 py-3 lg:py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
           toggled
             ? 'border-primary bg-primary text-primary-foreground'
             : 'border-transparent bg-accent hover:border-primary',
@@ -102,7 +102,7 @@ function clear() {
           type="button"
           :data-testid="`${area}-applied-filter`"
           :aria-label="`Remove ${item.label}`"
-          class="flex max-w-64 items-center gap-1.5 rounded-full border border-primary px-3 py-1.5 text-[11px] uppercase transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          class="flex max-w-64 items-center gap-1.5 rounded-full border border-primary px-3 py-[13px] text-[11px] uppercase transition-colors hover:bg-accent lg:py-1.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           @click="remove(item.picker, item.option.value)"
         >
           <span class="truncate">{{ item.label }}</span>
@@ -113,7 +113,7 @@ function clear() {
         <button
           type="button"
           :data-testid="`${area}-filter-clear`"
-          class="rounded-full px-3 py-1.5 text-[11px] uppercase underline-offset-4 hover:underline"
+          class="hit-area rounded-full px-3 py-1.5 text-[11px] uppercase underline-offset-4 hover:underline"
           @click="clear"
         >
           Clear all

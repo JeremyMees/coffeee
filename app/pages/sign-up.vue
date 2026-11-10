@@ -24,7 +24,7 @@ useHead({ title: 'Create an account · Coffeee' })
           Already have an account?
           <NuxtLink
             to="/sign-in"
-            class="underline underline-offset-4"
+            class="hit-area underline underline-offset-4"
             data-testid="sign-up-sign-in"
           >
             Sign in

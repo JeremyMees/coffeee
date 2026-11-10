@@ -104,7 +104,7 @@ useHead({ title: 'Your invite · Coffeee' })
         <CardContent v-if="!invite" class="flex flex-col gap-4">
           <NuxtLink
             to="/"
-            class="text-center text-xs underline underline-offset-4"
+            class="hit-area text-center text-xs underline underline-offset-4"
             data-testid="invite-home"
           >
             Go to Coffeee
@@ -162,7 +162,7 @@ useHead({ title: 'Your invite · Coffeee' })
             Already have an account?
             <NuxtLink
               :to="signInPath"
-              class="underline underline-offset-4"
+              class="hit-area underline underline-offset-4"
               data-testid="invite-sign-in"
             >
               Sign in to answer

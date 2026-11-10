@@ -22,16 +22,18 @@ function add() {
     <h1 class="text-[64px] lg:text-[88px]" data-testid="page-title">
       {{ title }}
     </h1>
-    <button
+    <Button
       v-if="!hideAdd"
       type="button"
       :data-testid="addLabel ? 'page-add' : 'page-add-coffee'"
       :aria-keyshortcuts="addLabel ? undefined : 'N'"
-      class="hidden items-center gap-2 rounded-full border border-primary px-6 py-2.5 text-sm uppercase transition-colors hover:bg-primary hover:text-primary-foreground lg:flex"
+      variant="line"
+      size="pill-lg"
+      class="hidden lg:inline-flex"
       @click="add"
     >
       <PlusIcon class="size-4" aria-hidden="true" />
       {{ addLabel ?? 'Add coffee' }}
-    </button>
+    </Button>
   </header>
 </template>

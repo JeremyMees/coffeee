@@ -91,14 +91,15 @@ function formatDate(date: string) {
       >
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
-      <button
+      <Button
         type="submit"
         data-testid="shelf-invite-submit"
-        class="flex items-center justify-center gap-2 self-start rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+        size="pill"
+        class="self-start"
         :disabled="isSubmitting"
       >
         Send invite
-      </button>
+      </Button>
     </form>
     <QuerySection :query="invited" testid="shelf-invites">
       <template #default="{ data: invites }">
@@ -127,15 +128,16 @@ function formatDate(date: string) {
                 </template>
               </span>
             </span>
-            <button
+            <Button
               type="button"
               data-testid="shelf-invite-cancel"
-              class="rounded-full p-2 transition-colors hover:bg-accent"
+              variant="ghost"
+              size="icon-pill-sm"
               :aria-label="`Cancel the invite to ${pending.email}`"
               @click="cancel(pending.id)"
             >
               <XIcon class="size-4" aria-hidden="true" />
-            </button>
+            </Button>
           </li>
         </ul>
       </template>

@@ -103,14 +103,14 @@ async function merge() {
       <Alert v-if="formError" variant="destructive" data-testid="form-error">
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
-      <button
+      <Button
         type="submit"
         data-testid="admin-merge-submit"
-        class="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+        size="pill"
         :disabled="isPending"
       >
         {{ into ? `Merge into ${into.name}` : 'Merge' }}
-      </button>
+      </Button>
     </form>
   </FormSheet>
 </template>

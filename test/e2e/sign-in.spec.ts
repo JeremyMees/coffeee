@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { test as withPeople } from './support/fixtures'
+import { expectTouchable, phone } from './support/touch'
 
 test('sends anonymous visitors to sign in with Google', async ({ page }) => {
   await page.goto('/')
@@ -39,4 +40,22 @@ test('says when an invite link no longer works', async ({ page }) => {
   )
   await expect(page.getByTestId('invite-google')).toBeHidden()
   await expect(page.getByTestId('invite-home')).toBeVisible()
+})
+
+test('gives sign-in controls and links a touch-sized target on a phone', async ({
+  page,
+}) => {
+  await page.setViewportSize(phone)
+  await page.goto('/sign-in')
+
+  for (const testId of [
+    'sign-in-google',
+    'sign-in-email',
+    'sign-in-password',
+    'sign-in-submit',
+    'sign-in-forgot',
+    'sign-in-sign-up',
+  ]) {
+    await expectTouchable(page.getByTestId(testId))
+  }
 })

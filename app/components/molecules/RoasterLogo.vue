@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CameraIcon, Trash2Icon } from '@lucide/vue'
 import { useRoasterLogoRemoval, useRoasterLogoUpdate } from '~/queries/roasters'
+import { buttonVariants } from '@/components/ui/button'
 
 const props = defineProps<{
   roaster: Pick<ShelfRoaster, 'id' | 'name' | 'logoUrl'>
@@ -45,7 +46,14 @@ function remove() {
       <RoasterLogoImage :roaster="roaster" class="size-14" />
       <label
         data-testid="roaster-logo-pick"
-        class="flex cursor-pointer items-center gap-2 rounded-full border border-primary px-4 py-2 transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-primary hover:text-primary-foreground has-disabled:cursor-default has-disabled:opacity-60"
+        :class="
+          buttonVariants({
+            variant: 'line',
+            size: 'pill-sm',
+            class:
+              'cursor-pointer focus-within:ring-2 focus-within:ring-ring has-disabled:cursor-default has-disabled:opacity-60',
+          })
+        "
       >
         <CameraIcon class="size-4" aria-hidden="true" />
         {{ roaster.logoUrl ? 'Replace logo' : 'Add logo' }}
@@ -58,17 +66,18 @@ function remove() {
           @change="pick"
         />
       </label>
-      <button
+      <Button
         v-if="roaster.logoUrl"
         type="button"
         data-testid="roaster-logo-remove"
-        class="flex items-center gap-2 rounded-full px-4 py-2 uppercase transition-colors hover:bg-destructive/10 disabled:opacity-60"
+        variant="ghost-destructive"
+        size="pill-sm"
         :disabled="busy"
         @click="remove"
       >
         <Trash2Icon class="size-4" aria-hidden="true" />
         Remove logo
-      </button>
+      </Button>
       <p v-if="busy" role="status" data-testid="roaster-logo-status">
         {{ uploading ? 'Uploading the logo…' : 'Removing the logo…' }}
       </p>

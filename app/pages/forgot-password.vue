@@ -89,7 +89,7 @@ useHead({ title: 'Forgot your password · Coffeee' })
         </form>
         <NuxtLink
           to="/sign-in"
-          class="text-center text-xs underline underline-offset-4"
+          class="hit-area text-center text-xs underline underline-offset-4"
           data-testid="forgot-sign-in"
         >
           Back to sign in

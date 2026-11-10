@@ -15,28 +15,32 @@ const actions: { action: AdminEntryAction; label: string }[] = [
 <template>
   <div class="flex justify-end">
     <div class="hidden gap-1 sm:flex">
-      <button
+      <Button
         v-for="item in actions"
         :key="item.action"
         type="button"
         :data-testid="`admin-entry-${item.action}`"
         :aria-label="`${item.label} ${entry.name}`"
-        class="rounded-full px-3 py-1.5 uppercase transition-colors hover:bg-accent"
+        variant="ghost"
+        size="pill-xs"
+        class="text-xs"
         @click="emit('act', item.action)"
       >
         {{ item.label }}
-      </button>
+      </Button>
     </div>
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
-        <button
+        <Button
           type="button"
           data-testid="admin-entry-menu"
           :aria-label="`Actions for ${entry.name}`"
-          class="grid size-11 place-items-center rounded-full transition-colors hover:bg-accent data-[state=open]:bg-accent sm:hidden"
+          variant="ghost"
+          size="icon-pill-sm"
+          class="size-11 sm:hidden"
         >
           <EllipsisIcon class="size-4" aria-hidden="true" />
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"

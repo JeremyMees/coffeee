@@ -18,14 +18,16 @@ const ready = computed(() => hydrated.value || rendersWithData)
   >
     <AlertDescription class="flex flex-col items-start gap-3">
       Something went wrong while loading this.
-      <button
+      <Button
         type="button"
         :data-testid="`${testid}-retry`"
-        class="rounded-full border border-current px-5 py-2 text-xs uppercase"
+        variant="quiet"
+        size="pill-sm"
+        class="px-5"
         @click="query.refetch()"
       >
         Try again
-      </button>
+      </Button>
     </AlertDescription>
   </Alert>
   <Alert
@@ -34,14 +36,16 @@ const ready = computed(() => hydrated.value || rendersWithData)
   >
     <AlertDescription class="flex flex-col items-start gap-3">
       You're offline. This loads once you're back online.
-      <button
+      <Button
         type="button"
         :data-testid="`${testid}-retry`"
-        class="rounded-full border border-current px-5 py-2 text-xs uppercase"
+        variant="quiet"
+        size="pill-sm"
+        class="px-5"
         @click="query.refetch()"
       >
         Try again
-      </button>
+      </Button>
     </AlertDescription>
   </Alert>
   <slot v-else name="skeleton" />

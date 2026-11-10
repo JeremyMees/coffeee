@@ -70,7 +70,7 @@ useHead({ title: 'Sign in · Coffeee' })
           Invited by email?
           <NuxtLink
             to="/sign-up"
-            class="underline underline-offset-4"
+            class="hit-area underline underline-offset-4"
             data-testid="sign-in-sign-up"
           >
             Create an account

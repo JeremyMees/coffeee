@@ -13,7 +13,7 @@ defineProps<{
     <label
       v-for="option in options"
       :key="option.value"
-      class="cursor-pointer rounded-full border border-transparent bg-accent px-4 py-2 text-[12px] uppercase has-checked:border-primary has-checked:bg-transparent has-focus-visible:ring-2 has-focus-visible:ring-ring"
+      class="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-transparent bg-accent px-4 py-2 text-[12px] uppercase lg:min-h-0 has-checked:border-primary has-checked:bg-transparent has-focus-visible:ring-2 has-focus-visible:ring-ring"
     >
       <input
         v-model="model"

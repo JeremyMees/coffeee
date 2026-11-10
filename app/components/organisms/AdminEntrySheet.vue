@@ -176,14 +176,14 @@ const save = handleSubmit(async body => {
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
 
-      <button
+      <Button
         type="submit"
         :data-testid="entry ? 'admin-update-submit' : 'admin-add-submit'"
-        class="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+        size="pill"
         :disabled="isSubmitting"
       >
         {{ entry ? 'Save changes' : `Add ${nouns.one}` }}
-      </button>
+      </Button>
     </form>
   </FormSheet>
 </template>

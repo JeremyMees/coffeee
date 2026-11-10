@@ -30,9 +30,6 @@ async function finish() {
     finishError.value = serverErrors(error).message
   }
 }
-
-const outlined =
-  'flex shrink-0 items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60'
 </script>
 
 <template>
@@ -40,26 +37,28 @@ const outlined =
     <div class="flex flex-wrap items-end justify-between gap-4">
       <h2 class="text-[28px]">Bags on this shelf</h2>
       <div v-if="loaded" class="flex gap-2">
-        <button
+        <Button
           v-if="loaded.some(purchase => !purchase.finishedAt)"
           type="button"
           data-testid="coffee-finish"
-          :class="outlined"
+          variant="line"
+          size="pill-sm"
           :disabled="finishing"
           @click="finish"
         >
           <CheckIcon class="size-4" aria-hidden="true" />
           Finished
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           data-testid="coffee-buy-again"
-          :class="outlined"
+          variant="line"
+          size="pill-sm"
           @click="buying = true"
         >
           <PlusIcon class="size-4" aria-hidden="true" />
           {{ loaded.length ? 'Buy again' : 'Add to shelf' }}
-        </button>
+        </Button>
       </div>
     </div>
     <QuerySection :query="purchases" testid="coffee-purchases">

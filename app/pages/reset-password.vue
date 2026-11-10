@@ -47,7 +47,7 @@ useHead({ title: 'Pick a new password · Coffeee' })
             It expired or was already used.
             <NuxtLink
               to="/forgot-password"
-              class="underline underline-offset-4"
+              class="hit-area underline underline-offset-4"
             >
               Ask for a new one
             </NuxtLink>

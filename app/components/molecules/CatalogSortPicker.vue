@@ -16,7 +16,7 @@ const sort = defineModel<CatalogSort>({ required: true })
       :data-testid="`catalog-sort-${option}`"
       :aria-pressed="sort === option"
       :class="[
-        'rounded-full px-3 py-1.5 text-[12px] uppercase transition-colors',
+        'rounded-full px-3 py-[13px] text-[12px] uppercase transition-colors lg:py-1.5',
         sort === option
           ? 'bg-primary text-primary-foreground'
           : 'hover:bg-background',

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CameraIcon, ImageIcon, Trash2Icon } from '@lucide/vue'
+import { buttonVariants } from '@/components/ui/button'
 
 const props = defineProps<{ prefix: string; currentUrl?: string | null }>()
 
@@ -52,7 +53,13 @@ function remove() {
       <ImageIcon v-else class="size-6" aria-hidden="true" />
     </div>
     <label
-      class="flex cursor-pointer items-center gap-2 rounded-full border border-primary px-4 py-2 transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-primary hover:text-primary-foreground"
+      :class="
+        buttonVariants({
+          variant: 'line',
+          size: 'pill-sm',
+          class: 'cursor-pointer focus-within:ring-2 focus-within:ring-ring',
+        })
+      "
       :data-testid="`${prefix}-photo-pick`"
     >
       <CameraIcon class="size-4" aria-hidden="true" />
@@ -65,15 +72,16 @@ function remove() {
         @change="picked"
       />
     </label>
-    <button
+    <Button
       v-if="shown"
       type="button"
       :data-testid="`${prefix}-photo-remove`"
-      class="flex items-center gap-2 rounded-full px-4 py-2 uppercase transition-colors hover:bg-destructive/10"
+      variant="ghost-destructive"
+      size="pill-sm"
       @click="remove"
     >
       <Trash2Icon class="size-4" aria-hidden="true" />
       Remove photo
-    </button>
+    </Button>
   </div>
 </template>

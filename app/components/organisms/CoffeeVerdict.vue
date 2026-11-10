@@ -40,7 +40,7 @@ function starLabel(star: Rating) {
   <section class="mt-8 flex flex-col gap-4" data-testid="coffee-verdict">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="flex" role="group" aria-label="Rating">
+        <div class="-ml-1.5 flex lg:ml-0" role="group" aria-label="Rating">
           <button
             v-for="star in ratings"
             :key="star"
@@ -49,7 +49,7 @@ function starLabel(star: Rating) {
             :aria-label="starLabel(star)"
             :aria-pressed="star === verdict.rating"
             :disabled="saving"
-            class="p-1 text-primary disabled:opacity-60"
+            class="p-2.5 text-primary disabled:opacity-60 lg:p-1"
             @click="rate(star)"
           >
             <StarIcon
@@ -82,7 +82,7 @@ function starLabel(star: Rating) {
       :aria-pressed="verdict.wouldBuyAgain"
       :disabled="saving"
       :class="[
-        'flex w-fit items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors disabled:opacity-60',
+        'flex w-fit items-center gap-2 rounded-full border border-primary px-4 py-3.5 text-xs uppercase transition-colors disabled:opacity-60 lg:py-2',
         verdict.wouldBuyAgain
           ? 'bg-primary text-primary-foreground'
           : 'hover:bg-primary hover:text-primary-foreground',

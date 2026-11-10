@@ -78,16 +78,17 @@ async function remove(grinderId: string) {
             <span data-testid="shelf-grinder-name">{{
               grinderName(grinder)
             }}</span>
-            <button
+            <Button
               type="button"
               data-testid="shelf-grinder-remove"
               :aria-label="`Remove ${grinderName(grinder)}`"
               :disabled="removing"
-              class="rounded-full p-1.5 hover:bg-accent disabled:opacity-60"
+              variant="ghost"
+              size="icon-pill-sm"
               @click="remove(grinder.id)"
             >
               <XIcon class="size-4" aria-hidden="true" />
-            </button>
+            </Button>
           </li>
         </ul>
       </template>
@@ -149,15 +150,17 @@ async function remove(grinderId: string) {
       <Alert v-if="formError" variant="destructive" data-testid="form-error">
         <AlertDescription>{{ formError }}</AlertDescription>
       </Alert>
-      <button
+      <Button
         type="submit"
         data-testid="grinder-submit"
-        class="flex w-fit items-center gap-2 rounded-full border border-primary px-4 py-2 text-xs uppercase transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
+        variant="line"
+        size="pill-sm"
+        class="w-fit"
         :disabled="isSubmitting"
       >
         <PlusIcon class="size-4" aria-hidden="true" />
         Add grinder
-      </button>
+      </Button>
     </form>
   </section>
 </template>

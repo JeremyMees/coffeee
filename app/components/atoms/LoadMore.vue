@@ -24,14 +24,16 @@ useIntersectionObserver(button, ([entry]) => {
 </script>
 
 <template>
-  <button
+  <Button
     v-if="pages.hasNextPage.value"
     ref="button"
     type="button"
-    class="mx-auto mt-8 flex rounded-full border border-primary px-6 py-2.5 text-sm uppercase"
+    variant="line"
+    size="pill-lg"
+    class="mx-auto mt-8 flex"
     :disabled="pages.isFetchingNextPage.value"
     @click="loadMore"
   >
     {{ pages.isFetchingNextPage.value ? 'Loading…' : 'Show more' }}
-  </button>
+  </Button>
 </template>

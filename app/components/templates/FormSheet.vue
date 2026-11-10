@@ -126,9 +126,13 @@ const dragStyle = computed(() =>
             >
               <div v-for="field in 3" :key="field" class="flex flex-col gap-2">
                 <div class="h-4 w-24 animate-pulse rounded-md bg-muted" />
-                <div class="h-8 w-full animate-pulse rounded-lg bg-muted" />
+                <div
+                  class="h-11 w-full animate-pulse lg:h-8 rounded-lg bg-muted"
+                />
               </div>
-              <div class="h-11 w-full animate-pulse rounded-full bg-muted" />
+              <div
+                class="h-11 w-full animate-pulse rounded-full bg-muted lg:h-9"
+              />
             </div>
           </template>
         </Suspense>
@@ -136,7 +140,7 @@ const dragStyle = computed(() =>
 
       <DialogClose
         data-testid="form-sheet-close"
-        class="absolute top-4 right-4 rounded-full p-2 text-primary transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        class="absolute top-2.5 right-2.5 rounded-full p-3.5 text-primary transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <XIcon class="size-4" aria-hidden="true" />
         <span class="sr-only">Close</span>

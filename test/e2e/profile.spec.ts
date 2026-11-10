@@ -1,4 +1,5 @@
 import { expect, test } from './support/fixtures'
+import { expectTouchable, phone } from './support/touch'
 
 test('shows who is signed in', async ({ page, member }) => {
   await page.goto('/profile')
@@ -67,4 +68,16 @@ test('deletes the account after handing a shared shelf to a member', async ({
   await page.goto(`/shelves/${sam.shelfId}`)
 
   await expect(page).toHaveURL(/\/sign-in\?redirect=/)
+})
+
+test('gives the profile tabs a touch-sized target on a phone', async ({
+  page,
+}) => {
+  await page.setViewportSize(phone)
+  await page.goto('/profile')
+
+  for (const tab of ['account', 'danger']) {
+    await expectTouchable(page.getByTestId(`profile-tab-${tab}`))
+  }
+  await expectTouchable(page.getByTestId('profile-name-input'))
 })

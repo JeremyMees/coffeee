@@ -95,14 +95,14 @@ async function copyLink() {
         <Alert v-if="formError" variant="destructive" data-testid="form-error">
           <AlertDescription>{{ formError }}</AlertDescription>
         </Alert>
-        <button
+        <Button
           type="submit"
           data-testid="invite-email-submit"
-          class="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground uppercase disabled:opacity-60"
+          size="pill"
           :disabled="isSubmitting"
         >
           Allow email
-        </button>
+        </Button>
       </form>
 
       <section class="flex flex-col gap-4 border-t pt-6">
@@ -131,14 +131,15 @@ async function copyLink() {
             <CopyIcon v-else />
           </Button>
         </div>
-        <button
+        <Button
           type="button"
           data-testid="invite-link-create"
-          class="flex items-center justify-center gap-2 rounded-full border border-primary px-6 py-3 text-sm uppercase transition-colors hover:bg-primary hover:text-primary-foreground"
+          variant="line"
+          size="pill"
           @click="createLink"
         >
           Create a link
-        </button>
+        </Button>
       </section>
     </div>
   </FormSheet>

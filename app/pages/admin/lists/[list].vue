@@ -105,7 +105,7 @@ function capitalised(text: string) {
     <NuxtLink
       to="/admin"
       data-testid="admin-back"
-      class="mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
+      class="hit-area mt-6 inline-flex items-center gap-2 text-xs uppercase lg:mt-10"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
       Admin
