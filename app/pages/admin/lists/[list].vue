@@ -167,36 +167,41 @@ function capitalised(text: string) {
 
       <template #skeleton><AdminEntriesSkeleton /></template>
     </QuerySection>
-    <AdminAddCoffeeSheet v-if="list === 'coffees'" v-model:open="adding" />
-    <AdminAddRoasterSheet
+    <LazyAdminAddCoffeeSheet v-if="list === 'coffees'" v-model:open="adding" />
+    <LazyAdminAddRoasterSheet
       v-else-if="list === 'roasters'"
       v-model:open="adding"
     />
-    <AdminEntrySheet v-else :key="list" v-model:open="adding" :list="list" />
+    <LazyAdminEntrySheet
+      v-else
+      :key="list"
+      v-model:open="adding"
+      :list="list"
+    />
     <template v-if="acting">
-      <AdminEditCoffeeSheet
+      <LazyAdminEditCoffeeSheet
         v-if="list === 'coffees'"
         v-model:open="updating"
         :coffee-id="acting.entry.id"
       />
-      <AdminEditRoasterSheet
+      <LazyAdminEditRoasterSheet
         v-else-if="list === 'roasters'"
         v-model:open="updating"
         :roaster-id="acting.entry.id"
       />
-      <AdminEntrySheet
+      <LazyAdminEntrySheet
         v-else
         :key="acting.entry.id"
         v-model:open="updating"
         :list="list"
         :entry="acting.entry"
       />
-      <AdminMergeDialog
+      <LazyAdminMergeDialog
         v-model:open="merging"
         :list="list"
         :entry="acting.entry"
       />
-      <AdminDeleteDialog
+      <LazyAdminDeleteDialog
         v-model:open="deleting"
         :list="list"
         :entry="acting.entry"

@@ -22,10 +22,10 @@ describe('AdminEditRoasterSheet', () => {
       attachTo: document.body,
     })
 
-    await vi.waitFor(() =>
-      expect(byTestId('edit-roaster-sheet')).not.toBeNull(),
-    )
-    expect(inputValue('roaster-name')).toBe('Square Mile')
-    expect(byTestId('roaster-logo-field')).not.toBeNull()
+    await vi.waitFor(() => {
+      expect(inputValue('roaster-name')).toBe('Square Mile')
+      expect(byTestId('roaster-logo-field')).not.toBeNull()
+    })
+    expect(byTestId('edit-roaster-sheet')).not.toBeNull()
   })
 })

@@ -65,7 +65,11 @@ export async function click(...ids: string[]) {
 }
 
 export async function type(testId: string, value: string) {
-  const input = byTestId<HTMLInputElement>(testId)!
+  const input = await vi.waitFor(() => {
+    const found = byTestId<HTMLInputElement>(testId)
+    if (!found) throw new Error(`No ${testId} to type in`)
+    return found
+  })
   input.value = value
   input.dispatchEvent(new Event('input', { bubbles: true }))
   await flushPromises()

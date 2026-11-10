@@ -22,7 +22,9 @@ describe('AdminEditCoffeeSheet', () => {
       attachTo: document.body,
     })
 
-    await vi.waitFor(() => expect(byTestId('edit-coffee-sheet')).not.toBeNull())
-    expect(inputValue('coffee-name')).toBe('Ayele Fulasa')
+    await vi.waitFor(() =>
+      expect(inputValue('coffee-name')).toBe('Ayele Fulasa'),
+    )
+    expect(byTestId('edit-coffee-sheet')).not.toBeNull()
   })
 })

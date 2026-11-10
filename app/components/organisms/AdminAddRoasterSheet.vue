@@ -133,7 +133,7 @@ const add = handleSubmit(async details => {
         </button>
       </div>
 
-      <RoasterFields />
+      <LazyRoasterFields />
 
       <Alert v-if="formError" variant="destructive" data-testid="form-error">
         <AlertDescription>{{ formError }}</AlertDescription>

@@ -94,13 +94,13 @@ const save = handleSubmit(async body => {
     >
       <FieldGroup>
         <template v-if="form === 'grinder'">
-          <LabelledField
+          <LazyLabelledField
             v-slot="{ value, handleChange, handleBlur, invalid }"
             name="brand"
             label="Brand"
             input-id="admin-entry-brand"
           >
-            <ListPicker
+            <LazyListPicker
               id="admin-entry-brand"
               :model-value="value"
               endpoint="/api/grinder-brands"
@@ -111,8 +111,8 @@ const save = handleSubmit(async body => {
               @update:model-value="handleChange"
               @blur="handleBlur"
             />
-          </LabelledField>
-          <LabelledField
+          </LazyLabelledField>
+          <LazyLabelledField
             v-slot="{ componentField, invalid }"
             name="model"
             label="Model"
@@ -125,10 +125,10 @@ const save = handleSubmit(async body => {
               autocomplete="off"
               :aria-invalid="invalid || undefined"
             />
-          </LabelledField>
+          </LazyLabelledField>
         </template>
         <template v-else>
-          <LabelledField
+          <LazyLabelledField
             v-if="form === 'origin'"
             v-slot="{ value, handleChange, handleBlur, invalid }"
             name="originCode"
@@ -154,8 +154,8 @@ const save = handleSubmit(async body => {
                 {{ origins[code] }}
               </NativeSelectOption>
             </NativeSelect>
-          </LabelledField>
-          <LabelledField
+          </LazyLabelledField>
+          <LazyLabelledField
             v-slot="{ componentField, invalid }"
             name="name"
             label="Name"
@@ -168,7 +168,7 @@ const save = handleSubmit(async body => {
               autocomplete="off"
               :aria-invalid="invalid || undefined"
             />
-          </LabelledField>
+          </LazyLabelledField>
         </template>
       </FieldGroup>
 
