@@ -28,9 +28,14 @@ function mount() {
 
 async function notifications() {
   const page = await mount()
-  await vi.waitFor(() =>
-    expect(page.find(tid('notifications-skeleton')).exists()).toBe(false),
-  )
+  await vi.waitFor(() => {
+    expect(page.find(tid('notifications-skeleton')).exists()).toBe(false)
+    expect(
+      page
+        .find(`${tid('notification')}, ${tid('notifications-empty')}`)
+        .exists(),
+    ).toBe(true)
+  })
 
   return page
 }

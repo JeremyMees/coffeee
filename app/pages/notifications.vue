@@ -35,7 +35,7 @@ watch(
           data-testid="notifications"
         >
           <li v-for="notification in data" :key="notification.id">
-            <NotificationItem :notification="notification" />
+            <LazyNotificationItem :notification="notification" />
           </li>
         </ul>
       </template>
