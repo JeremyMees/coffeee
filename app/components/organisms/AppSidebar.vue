@@ -2,13 +2,14 @@
 import { CookieIcon, ShieldIcon } from '@lucide/vue'
 
 const destinations = useDestinations()
+const activeSection = useActiveSection()
 const user = useCurrentUser()
 
 const links = computed(() =>
   user.value?.role === 'admin'
     ? [
         ...destinations.value,
-        { label: 'Admin', to: '/admin', icon: ShieldIcon },
+        { label: 'Admin', to: adminPath, icon: ShieldIcon },
       ]
     : destinations.value,
 )
@@ -35,7 +36,7 @@ const links = computed(() =>
       <NuxtLink
         v-for="item in links"
         :key="item.to"
-        v-slot="{ href, navigate, isActive, isExactActive }"
+        v-slot="{ href, navigate, isExactActive }"
         :to="item.to"
         custom
       >
@@ -45,7 +46,9 @@ const links = computed(() =>
           data-testid="sidebar-link"
           class="flex items-center gap-3 rounded-full px-4 py-2.5 uppercase"
           :class="
-            isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
+            item.to === activeSection
+              ? 'bg-primary text-primary-foreground'
+              : 'hover:bg-accent'
           "
           @click="navigate"
         >

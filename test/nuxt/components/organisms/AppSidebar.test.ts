@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AppSidebar from '~/components/organisms/AppSidebar.vue'
-import { useCurrentUser } from '#imports'
+import { useCurrentUser, useState } from '#imports'
 import { forgetLastShelf, tid } from '../../fixtures'
 import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()
   useCurrentUser().value = testUser()
+  useState('last-section').value = null
 })
 
 function mountSidebar(route = '/shelves/work-work/discover') {
@@ -62,6 +63,28 @@ describe('AppSidebar', () => {
         .get(`${tid('sidebar-link')}[href="/shelves/work-work/discover"]`)
         .attributes('aria-current'),
     ).toBe('page')
+  })
+
+  it('keeps Stock active on a coffee of the shelf', async () => {
+    const sidebar = await mountSidebar(
+      '/shelves/work-work/coffees/ayele-fulasa-c1',
+    )
+    const stock = sidebar.get(
+      `${tid('sidebar-link')}[href="/shelves/work-work"]`,
+    )
+
+    expect(stock.classes()).toContain('bg-primary')
+    expect(stock.attributes('aria-current')).toBeUndefined()
+  })
+
+  it('keeps Admin active on every admin page', async () => {
+    useCurrentUser().value = testUser({ role: 'admin' })
+
+    const sidebar = await mountSidebar('/admin/invites')
+    const admin = sidebar.findAll(tid('sidebar-link')).at(-1)!
+
+    expect(admin.classes()).toContain('bg-primary')
+    expect(admin.attributes('aria-current')).toBeUndefined()
   })
 
   it('has the shelf switcher', async () => {

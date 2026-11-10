@@ -26,7 +26,7 @@ export function useBackLink(fallback: MaybeRefOrGetter<BackLink>) {
     if (path?.startsWith('/roasters/')) {
       return { label: 'Roaster', to: previous.value }
     }
-    if (path && /^(\/shelves\/[^/]+)?\/coffees\/[^/]+$/.test(path)) {
+    if (path && isCoffeePath(path)) {
       return { label: 'Coffee', to: previous.value }
     }
 

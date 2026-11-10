@@ -2,6 +2,7 @@
 import { CoffeeIcon, PlusIcon, StoreIcon } from '@lucide/vue'
 
 const destinations = useDestinations()
+const activeSection = useActiveSection()
 const addCoffee = useAddCoffee()
 const addRoaster = useAddRoaster()
 </script>
@@ -19,7 +20,7 @@ const addRoaster = useAddRoaster()
     >
       <DockIcon v-for="item in destinations" :key="item.to">
         <NuxtLink
-          v-slot="{ href, navigate, isActive, isExactActive }"
+          v-slot="{ href, navigate, isExactActive }"
           :to="item.to"
           custom
         >
@@ -30,7 +31,9 @@ const addRoaster = useAddRoaster()
             :title="item.label"
             :aria-current="isExactActive ? 'page' : undefined"
             class="grid size-full place-items-center rounded-full"
-            :class="{ 'bg-primary text-primary-foreground': isActive }"
+            :class="{
+              'bg-primary text-primary-foreground': item.to === activeSection,
+            }"
             @click="navigate"
           >
             <component :is="item.icon" class="size-5" aria-hidden="true" />

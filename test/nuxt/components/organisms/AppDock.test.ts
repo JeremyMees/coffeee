@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AppDock from '~/components/organisms/AppDock.vue'
-import { useAddCoffee, useAddRoaster, useCurrentUser } from '#imports'
+import { useAddCoffee, useAddRoaster, useCurrentUser, useState } from '#imports'
 import { byTestId, click, forgetLastShelf, tid } from '../../fixtures'
 import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()
   useCurrentUser().value = testUser()
+  useState('last-section').value = null
   useAddCoffee().value = false
   useAddRoaster().value = false
 })
@@ -56,6 +57,25 @@ describe('AppDock', () => {
         .get(`${tid('dock-link')}[href="/shelves/work-work"]`)
         .attributes('aria-current'),
     ).toBeUndefined()
+  })
+
+  it('keeps Stock active on a coffee of the shelf', async () => {
+    const dock = await mountDock('/shelves/work-work/coffees/ayele-fulasa-c1')
+    const stock = dock.get(`${tid('dock-link')}[href="/shelves/work-work"]`)
+
+    expect(stock.classes()).toContain('bg-primary')
+    expect(stock.attributes('aria-current')).toBeUndefined()
+  })
+
+  it('keeps Roasters active on a roaster page', async () => {
+    const dock = await mountDock('/roasters/r1')
+    const active = dock
+      .findAll(tid('dock-link'))
+      .filter(link => link.classes().includes('bg-primary'))
+
+    expect(active.map(link => link.attributes('aria-label'))).toEqual([
+      'Roasters',
+    ])
   })
 
   it('names the add button for screen readers', async () => {
