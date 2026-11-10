@@ -57,7 +57,6 @@ useHead({ title: 'Sign in · Coffeee' })
           <AlertDescription>Sign in with your new password.</AlertDescription>
         </Alert>
         <Button
-          size="lg"
           data-testid="sign-in-google"
           :disabled="signingIn"
           @click="continueWithGoogle"

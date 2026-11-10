@@ -111,8 +111,7 @@ const nextTitle = computed(() => props.steps[step.value]?.title)
         v-if="!first"
         type="button"
         :data-testid="`${prefix}-back`"
-        variant="line"
-        size="pill"
+        variant="outline"
         @click="step -= 1"
       >
         Back
@@ -122,7 +121,6 @@ const nextTitle = computed(() => props.steps[step.value]?.title)
         v-else
         type="button"
         :data-testid="`${prefix}-next`"
-        size="pill"
         class="flex-1"
         @click="step += 1"
       >

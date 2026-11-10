@@ -111,8 +111,8 @@ const add = handleSubmit(async details => {
         <label
           :class="
             buttonVariants({
-              variant: 'line',
-              size: 'pill-sm',
+              variant: 'outline',
+              size: 'sm',
               class:
                 'cursor-pointer focus-within:ring-2 focus-within:ring-ring',
             })
@@ -133,7 +133,7 @@ const add = handleSubmit(async details => {
           type="button"
           data-testid="add-roaster-logo-remove"
           variant="ghost-destructive"
-          size="pill-sm"
+          size="sm"
           @click="pickLogo()"
         >
           <Trash2Icon class="size-4" aria-hidden="true" />
@@ -150,7 +150,6 @@ const add = handleSubmit(async details => {
       <Button
         type="submit"
         data-testid="add-roaster-submit"
-        size="pill"
         :disabled="isSubmitting"
       >
         Add roaster

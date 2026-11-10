@@ -22,7 +22,7 @@ const ready = computed(() => hydrated.value || rendersWithData)
         type="button"
         :data-testid="`${testid}-retry`"
         variant="quiet"
-        size="pill-sm"
+        size="sm"
         class="px-5"
         @click="query.refetch()"
       >
@@ -40,7 +40,7 @@ const ready = computed(() => hydrated.value || rendersWithData)
         type="button"
         :data-testid="`${testid}-retry`"
         variant="quiet"
-        size="pill-sm"
+        size="sm"
         class="px-5"
         @click="query.refetch()"
       >

@@ -179,7 +179,6 @@ const save = handleSubmit(async body => {
       <Button
         type="submit"
         :data-testid="entry ? 'admin-update-submit' : 'admin-add-submit'"
-        size="pill"
         :disabled="isSubmitting"
       >
         {{ entry ? 'Save changes' : `Add ${nouns.one}` }}

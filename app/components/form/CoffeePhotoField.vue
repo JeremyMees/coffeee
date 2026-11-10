@@ -55,8 +55,8 @@ function remove() {
     <label
       :class="
         buttonVariants({
-          variant: 'line',
-          size: 'pill-sm',
+          variant: 'outline',
+          size: 'sm',
           class: 'cursor-pointer focus-within:ring-2 focus-within:ring-ring',
         })
       "
@@ -77,7 +77,7 @@ function remove() {
       type="button"
       :data-testid="`${prefix}-photo-remove`"
       variant="ghost-destructive"
-      size="pill-sm"
+      size="sm"
       @click="remove"
     >
       <Trash2Icon class="size-4" aria-hidden="true" />

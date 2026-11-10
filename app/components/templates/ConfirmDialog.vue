@@ -56,12 +56,11 @@ const open = defineModel<boolean>('open', { default: false })
       <AlertDialogFooter
         class="mx-0 mt-6 mb-0 rounded-none border-0 bg-transparent p-0"
       >
-        <AlertDialogCancel size="pill" data-testid="confirm-dialog-cancel">
+        <AlertDialogCancel data-testid="confirm-dialog-cancel">
           Cancel
         </AlertDialogCancel>
         <Button
           variant="destructive"
-          size="pill"
           data-testid="confirm-dialog-confirm"
           :disabled="pending"
           @click="$emit('confirm')"

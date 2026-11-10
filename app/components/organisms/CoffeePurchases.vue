@@ -41,8 +41,8 @@ async function finish() {
           v-if="loaded.some(purchase => !purchase.finishedAt)"
           type="button"
           data-testid="coffee-finish"
-          variant="line"
-          size="pill-sm"
+          variant="outline"
+          size="sm"
           :disabled="finishing"
           @click="finish"
         >
@@ -52,8 +52,8 @@ async function finish() {
         <Button
           type="button"
           data-testid="coffee-buy-again"
-          variant="line"
-          size="pill-sm"
+          variant="outline"
+          size="sm"
           @click="buying = true"
         >
           <PlusIcon class="size-4" aria-hidden="true" />

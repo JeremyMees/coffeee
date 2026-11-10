@@ -76,27 +76,26 @@ function starLabel(star: Rating) {
         Favourite
       </span>
     </div>
-    <button
+    <Button
       type="button"
       data-testid="verdict-buy-again"
+      variant="outline"
+      size="sm"
       :aria-pressed="verdict.wouldBuyAgain"
       :disabled="saving"
       :class="[
-        'flex w-fit items-center gap-2 rounded-full border border-primary px-4 py-3.5 text-xs uppercase transition-colors disabled:opacity-60 lg:py-2',
-        verdict.wouldBuyAgain
-          ? 'bg-primary text-primary-foreground'
-          : 'hover:bg-primary hover:text-primary-foreground',
+        'w-fit',
+        verdict.wouldBuyAgain && 'bg-primary text-primary-foreground',
       ]"
       @click="judge({ wouldBuyAgain: !verdict.wouldBuyAgain })"
     >
       <CheckIcon
         v-if="verdict.wouldBuyAgain"
         data-testid="verdict-buy-again-yes"
-        class="size-4"
         aria-hidden="true"
       />
       Would buy again
-    </button>
+    </Button>
     <Alert v-if="error" variant="destructive" data-testid="verdict-error">
       <AlertDescription>{{ error }}</AlertDescription>
     </Alert>

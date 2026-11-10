@@ -78,7 +78,6 @@ const save = handleSubmit(async ({ name }) => {
       <Button
         type="submit"
         data-testid="shelf-name-submit"
-        size="pill"
         class="self-start"
         :disabled="isSubmitting"
       >

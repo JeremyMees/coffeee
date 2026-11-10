@@ -98,7 +98,6 @@ async function copyLink() {
         <Button
           type="submit"
           data-testid="invite-email-submit"
-          size="pill"
           :disabled="isSubmitting"
         >
           Allow email
@@ -122,7 +121,7 @@ async function copyLink() {
           />
           <Button
             variant="outline"
-            size="icon"
+            size="icon-sm"
             data-testid="invite-link-copy"
             :aria-label="copied ? 'Copied' : 'Copy link'"
             @click="copyLink"
@@ -134,8 +133,7 @@ async function copyLink() {
         <Button
           type="button"
           data-testid="invite-link-create"
-          variant="line"
-          size="pill"
+          variant="outline"
           @click="createLink"
         >
           Create a link

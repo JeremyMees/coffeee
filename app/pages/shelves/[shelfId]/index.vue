@@ -27,8 +27,8 @@ const stock = useStock(shelfId)
           <Button
             type="button"
             data-testid="stock-empty-add-coffee"
-            variant="line"
-            size="pill-lg"
+            variant="outline"
+            size="lg"
             class="lg:hidden"
             @click="addCoffee = true"
           >

@@ -98,7 +98,6 @@ const save = handleSubmit(async purchase => {
       <Button
         type="submit"
         data-testid="purchase-submit"
-        size="pill"
         :disabled="isSubmitting"
       >
         {{ copy.submit }}

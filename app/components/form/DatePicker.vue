@@ -29,9 +29,9 @@ const date = computed({
         <Button
           :id="id"
           data-testid="date-picker-trigger"
-          variant="outline"
+          variant="ghost"
           :class="[
-            'w-full justify-start rounded-lg px-2.5 text-left font-normal',
+            'w-full justify-start rounded-lg border-input px-2.5 text-left text-base normal-case hover:bg-transparent md:text-sm',
             !date && 'text-muted-foreground',
             clearable && date && 'pr-11 lg:pr-8',
           ]"

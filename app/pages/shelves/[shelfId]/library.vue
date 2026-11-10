@@ -177,7 +177,7 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
             }}
           </p>
           <div class="flex flex-wrap gap-3">
-            <Button as-child size="pill">
+            <Button as-child>
               <NuxtLink
                 :to="discoverLink(shelf!, searched, filter)"
                 data-testid="library-no-match-discover"
@@ -192,8 +192,8 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
             <Button
               type="button"
               data-testid="library-no-match-clear"
-              variant="line"
-              size="pill-lg"
+              variant="outline"
+              size="lg"
               @click="clear"
             >
               {{ searched.trim() ? 'Clear search' : 'Clear filters' }}

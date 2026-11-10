@@ -110,7 +110,7 @@ async function confirm() {
                   type="button"
                   data-testid="shelf-member-hand-over"
                   variant="ghost"
-                  size="icon-pill-sm"
+                  size="icon-sm"
                   :aria-label="`Hand the shelf to ${member.name}`"
                   @click="ask('handOver', member)"
                 >
@@ -120,7 +120,7 @@ async function confirm() {
                   type="button"
                   data-testid="shelf-member-remove"
                   variant="ghost"
-                  size="icon-pill-sm"
+                  size="icon-sm"
                   :aria-label="`Remove ${member.name}`"
                   @click="ask('remove', member)"
                 >

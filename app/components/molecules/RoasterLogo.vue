@@ -48,8 +48,8 @@ function remove() {
         data-testid="roaster-logo-pick"
         :class="
           buttonVariants({
-            variant: 'line',
-            size: 'pill-sm',
+            variant: 'outline',
+            size: 'sm',
             class:
               'cursor-pointer focus-within:ring-2 focus-within:ring-ring has-disabled:cursor-default has-disabled:opacity-60',
           })
@@ -71,7 +71,7 @@ function remove() {
         type="button"
         data-testid="roaster-logo-remove"
         variant="ghost-destructive"
-        size="pill-sm"
+        size="sm"
         :disabled="busy"
         @click="remove"
       >

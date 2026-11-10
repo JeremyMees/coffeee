@@ -145,7 +145,6 @@ const save = handleSubmit(
           <Button
             type="submit"
             :data-testid="`${prefix}-submit`"
-            size="pill"
             class="flex-1"
             :disabled="isSubmitting"
           >

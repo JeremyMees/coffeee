@@ -4,47 +4,31 @@ import { cva } from 'class-variance-authority'
 export { default as Button } from './Button.vue'
 
 export const buttonVariants = cva(
-  'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive rounded-lg border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*=size-])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive rounded-full border border-transparent bg-clip-padding text-sm font-normal uppercase focus-visible:ring-3 aria-invalid:ring-3 active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*=size-])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
+        default: 'bg-primary text-primary-foreground hover:bg-primary/80',
         outline:
-          'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground',
-        secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
-        ghost:
-          'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground',
+          'border-primary bg-transparent hover:bg-primary hover:text-primary-foreground aria-expanded:bg-primary aria-expanded:text-primary-foreground',
         destructive:
           'bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 text-destructive focus-visible:border-destructive/40',
-        link: 'text-primary underline-offset-4 hover:underline',
-        line: 'border-primary bg-transparent hover:bg-primary hover:text-primary-foreground aria-expanded:bg-primary aria-expanded:text-primary-foreground',
+        ghost:
+          'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground',
+        'ghost-destructive': 'hover:bg-destructive/10',
         quiet: 'border-current bg-transparent',
         invert:
           'hover:bg-primary hover:text-primary-foreground aria-expanded:bg-primary aria-expanded:text-primary-foreground',
-        'ghost-destructive': 'hover:bg-destructive/10',
       },
       size: {
-        default:
-          'h-11 lg:h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-        xs: 'h-11 lg:h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*=size-])]:size-3',
-        sm: 'h-11 lg:h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*=size-])]:size-3.5',
-        lg: 'h-11 lg:h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-        icon: 'size-11 lg:size-8',
-        'icon-xs':
-          'size-11 lg:size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*=size-])]:size-3',
-        'icon-sm':
-          'size-11 lg:size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg',
-        'icon-lg': 'size-11 lg:size-9',
-        pill: 'h-11 lg:h-9 gap-2 rounded-full px-6 font-normal uppercase',
-        'pill-sm':
-          'h-11 lg:h-8 gap-1.5 rounded-full px-4 text-xs font-normal uppercase',
-        'pill-xs':
-          'h-11 lg:h-7 gap-1 rounded-full px-3 text-[11px] font-normal uppercase',
-        'pill-lg': 'h-11 gap-2 rounded-full px-6 font-normal uppercase',
-        'icon-pill': 'size-11 lg:size-9 rounded-full',
-        'icon-pill-sm': 'size-11 lg:size-8 rounded-full',
-        'icon-chip': 'hit-area size-5 rounded-full',
+        default: 'h-11 lg:h-9 gap-2 px-6',
+        xs: 'h-11 lg:h-7 gap-1 px-3 text-[11px]',
+        sm: 'h-11 lg:h-8 gap-1.5 px-4 text-xs',
+        lg: 'h-11 gap-2 px-6',
+        icon: 'size-11 lg:size-9',
+        'icon-sm': 'size-11 lg:size-8',
+        'icon-xs': 'size-11 lg:size-6 [&_svg:not([class*=size-])]:size-3',
+        'icon-chip': 'hit-area size-5',
       },
     },
     defaultVariants: {

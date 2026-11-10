@@ -81,7 +81,6 @@ const signIn = handleSubmit(async body => {
     </Alert>
     <Button
       type="submit"
-      size="lg"
       variant="outline"
       data-testid="sign-in-submit"
       :disabled="isSubmitting"

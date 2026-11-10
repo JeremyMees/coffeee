@@ -131,7 +131,6 @@ function ariaSort(column: Column<Row>) {
       <Button
         variant="outline"
         size="sm"
-        class="rounded-full uppercase"
         data-testid="data-table-previous"
         :disabled="!table.getCanPreviousPage()"
         @click="table.previousPage()"
@@ -141,7 +140,6 @@ function ariaSort(column: Column<Row>) {
       <Button
         variant="outline"
         size="sm"
-        class="rounded-full uppercase"
         data-testid="data-table-next"
         :disabled="!table.getCanNextPage()"
         @click="table.nextPage()"

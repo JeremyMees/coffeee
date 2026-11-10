@@ -115,8 +115,8 @@ watch(error, showMissing)
         v-if="roaster?.canEdit"
         type="button"
         data-testid="roaster-edit"
-        variant="line"
-        size="pill-sm"
+        variant="outline"
+        size="sm"
         class="mb-2"
         @click="editing = true"
       >

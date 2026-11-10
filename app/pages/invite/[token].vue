@@ -113,7 +113,6 @@ useHead({ title: 'Your invite · Coffeee' })
         <CardContent v-else-if="user" class="flex flex-col gap-4">
           <template v-if="invite.shelf">
             <Button
-              size="lg"
               data-testid="invite-accept"
               :disabled="answering"
               @click="answer('accept')"
@@ -121,7 +120,6 @@ useHead({ title: 'Your invite · Coffeee' })
               Join {{ invite.shelf }}
             </Button>
             <Button
-              size="lg"
               variant="outline"
               data-testid="invite-decline"
               :disabled="answering"
@@ -141,14 +139,13 @@ useHead({ title: 'Your invite · Coffeee' })
             <p class="text-xs" data-testid="invite-signed-in">
               You already have an account.
             </p>
-            <Button size="lg" as-child>
+            <Button as-child>
               <NuxtLink to="/">Go to your shelf</NuxtLink>
             </Button>
           </template>
         </CardContent>
         <CardContent v-else class="flex flex-col gap-4">
           <Button
-            size="lg"
             class="w-full"
             data-testid="invite-google"
             :disabled="signingIn"

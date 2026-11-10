@@ -71,7 +71,6 @@ const save = handleSubmit(async details => {
         <Button
           type="submit"
           data-testid="edit-roaster-submit"
-          size="pill"
           :disabled="isSubmitting"
         >
           Save changes

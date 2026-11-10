@@ -56,8 +56,8 @@ const morph = useMorph('coffee', () => props.coffee.id)
         v-if="editable"
         type="button"
         data-testid="coffee-edit"
-        variant="line"
-        size="pill-sm"
+        variant="outline"
+        size="sm"
         @click="$emit('edit')"
       >
         <PencilIcon class="size-4" aria-hidden="true" />
@@ -70,8 +70,8 @@ const morph = useMorph('coffee', () => props.coffee.id)
             data-testid="coffee-more"
             aria-label="More actions"
             title="More actions"
-            variant="line"
-            size="icon-pill-sm"
+            variant="outline"
+            size="icon-sm"
           >
             <EllipsisIcon class="size-4" aria-hidden="true" />
           </Button>

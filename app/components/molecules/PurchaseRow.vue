@@ -76,7 +76,7 @@ function remove() {
         type="button"
         data-testid="purchase-delete-confirm"
         variant="quiet"
-        size="pill-xs"
+        size="xs"
         class="text-destructive"
         @click="remove"
       >
@@ -86,7 +86,7 @@ function remove() {
         type="button"
         data-testid="purchase-delete-cancel"
         variant="quiet"
-        size="pill-xs"
+        size="xs"
         @click="confirming = false"
       >
         Keep
@@ -97,7 +97,7 @@ function remove() {
         type="button"
         data-testid="purchase-edit"
         variant="quiet"
-        size="pill-xs"
+        size="xs"
         @click="emit('edit')"
       >
         Edit
@@ -107,7 +107,7 @@ function remove() {
         type="button"
         data-testid="purchase-finish"
         variant="quiet"
-        size="pill-xs"
+        size="xs"
         :disabled="finishing"
         @click="finish"
       >
@@ -117,7 +117,7 @@ function remove() {
         type="button"
         data-testid="purchase-delete"
         variant="quiet"
-        size="pill-xs"
+        size="xs"
         :disabled="removing"
         @click="confirming = true"
       >

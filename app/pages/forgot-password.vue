@@ -80,7 +80,6 @@ useHead({ title: 'Forgot your password · Coffeee' })
           </Alert>
           <Button
             type="submit"
-            size="lg"
             data-testid="forgot-submit"
             :disabled="isSubmitting"
           >

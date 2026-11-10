@@ -106,7 +106,6 @@ async function merge() {
       <Button
         type="submit"
         data-testid="admin-merge-submit"
-        size="pill"
         :disabled="isPending"
       >
         {{ into ? `Merge into ${into.name}` : 'Merge' }}

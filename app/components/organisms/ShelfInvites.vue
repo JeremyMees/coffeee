@@ -94,7 +94,6 @@ function formatDate(date: string) {
       <Button
         type="submit"
         data-testid="shelf-invite-submit"
-        size="pill"
         class="self-start"
         :disabled="isSubmitting"
       >
@@ -132,7 +131,7 @@ function formatDate(date: string) {
               type="button"
               data-testid="shelf-invite-cancel"
               variant="ghost"
-              size="icon-pill-sm"
+              size="icon-sm"
               :aria-label="`Cancel the invite to ${pending.email}`"
               @click="cancel(pending.id)"
             >

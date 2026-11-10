@@ -72,7 +72,7 @@ function formatDate(date: string) {
                 type="button"
                 data-testid="invite-revoke"
                 variant="ghost"
-                size="pill-xs"
+                size="xs"
                 class="text-xs"
                 @click="revoke(invite.id)"
               >

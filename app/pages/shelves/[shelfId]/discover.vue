@@ -102,8 +102,8 @@ function clear() {
         <Button
           type="button"
           data-testid="discover-no-match-clear"
-          variant="line"
-          size="pill-lg"
+          variant="outline"
+          size="lg"
           @click="clear"
         >
           Clear search

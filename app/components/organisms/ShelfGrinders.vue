@@ -84,7 +84,7 @@ async function remove(grinderId: string) {
               :aria-label="`Remove ${grinderName(grinder)}`"
               :disabled="removing"
               variant="ghost"
-              size="icon-pill-sm"
+              size="icon-sm"
               @click="remove(grinder.id)"
             >
               <XIcon class="size-4" aria-hidden="true" />
@@ -153,8 +153,8 @@ async function remove(grinderId: string) {
       <Button
         type="submit"
         data-testid="grinder-submit"
-        variant="line"
-        size="pill-sm"
+        variant="outline"
+        size="sm"
         class="w-fit"
         :disabled="isSubmitting"
       >

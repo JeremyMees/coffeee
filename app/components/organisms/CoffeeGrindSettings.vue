@@ -165,7 +165,7 @@ function clear(saved: OwnGrindSetting) {
                   type="button"
                   data-testid="grind-setting-edit"
                   variant="quiet"
-                  size="pill-xs"
+                  size="xs"
                   @click="edit(saved)"
                 >
                   Edit
@@ -174,7 +174,7 @@ function clear(saved: OwnGrindSetting) {
                   type="button"
                   data-testid="grind-setting-clear"
                   variant="quiet"
-                  size="pill-xs"
+                  size="xs"
                   :disabled="saving"
                   @click="clear(saved)"
                 >
@@ -244,7 +244,7 @@ function clear(saved: OwnGrindSetting) {
               type="submit"
               data-testid="grind-setting-save"
               variant="quiet"
-              size="pill-xs"
+              size="xs"
               class="border-primary lg:h-8"
               :disabled="saving"
             >

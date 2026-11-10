@@ -27,8 +27,8 @@ function add() {
       type="button"
       :data-testid="addLabel ? 'page-add' : 'page-add-coffee'"
       :aria-keyshortcuts="addLabel ? undefined : 'N'"
-      variant="line"
-      size="pill-lg"
+      variant="outline"
+      size="lg"
       class="hidden lg:inline-flex"
       @click="add"
     >

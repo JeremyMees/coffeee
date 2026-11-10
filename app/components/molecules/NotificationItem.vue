@@ -91,8 +91,8 @@ function formatWhen(date: string) {
         <Button
           type="button"
           data-testid="notification-decline"
-          variant="line"
-          size="pill-sm"
+          variant="outline"
+          size="sm"
           :disabled="accepting || declining"
           @click="answer('decline')"
         >
@@ -101,7 +101,7 @@ function formatWhen(date: string) {
         <Button
           type="button"
           data-testid="notification-accept"
-          size="pill-sm"
+          size="sm"
           :disabled="accepting || declining"
           @click="answer('accept')"
         >

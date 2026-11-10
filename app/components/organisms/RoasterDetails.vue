@@ -16,8 +16,8 @@ const editing = ref(false)
         v-if="roaster.canEdit"
         type="button"
         data-testid="roaster-edit"
-        variant="line"
-        size="pill-sm"
+        variant="outline"
+        size="sm"
         @click="editing = true"
       >
         <PencilIcon class="size-4" aria-hidden="true" />

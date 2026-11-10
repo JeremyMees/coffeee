@@ -86,7 +86,6 @@ useHead({ title: 'Pick a new password · Coffeee' })
           </Alert>
           <Button
             type="submit"
-            size="lg"
             data-testid="reset-submit"
             :disabled="isSubmitting"
           >

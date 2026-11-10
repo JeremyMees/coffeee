@@ -22,7 +22,7 @@ const actions: { action: AdminEntryAction; label: string }[] = [
         :data-testid="`admin-entry-${item.action}`"
         :aria-label="`${item.label} ${entry.name}`"
         variant="ghost"
-        size="pill-xs"
+        size="xs"
         class="text-xs"
         @click="emit('act', item.action)"
       >
@@ -36,7 +36,7 @@ const actions: { action: AdminEntryAction; label: string }[] = [
           data-testid="admin-entry-menu"
           :aria-label="`Actions for ${entry.name}`"
           variant="ghost"
-          size="icon-pill-sm"
+          size="icon-sm"
           class="size-11 sm:hidden"
         >
           <EllipsisIcon class="size-4" aria-hidden="true" />
