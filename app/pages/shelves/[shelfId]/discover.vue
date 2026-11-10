@@ -121,7 +121,7 @@ function clear() {
         <ul
           aria-label="Coffees"
           data-testid="discover-results"
-          class="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3"
+          class="mt-3 grid gap-3 md:grid-cols-2 2xl:grid-cols-3"
         >
           <li v-for="coffee in coffees" :key="coffee.id">
             <CatalogResult

@@ -69,7 +69,7 @@ const total = computed(() => listed.data.value?.pages[0]?.total ?? 0)
         <ul
           aria-label="Roasters"
           data-testid="roasters"
-          class="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3"
+          class="mt-3 grid gap-3 md:grid-cols-2 2xl:grid-cols-3"
         >
           <li v-for="roaster in roasters" :key="roaster.id">
             <RoasterResult :roaster="roaster" />

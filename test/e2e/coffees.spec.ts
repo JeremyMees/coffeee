@@ -1141,3 +1141,45 @@ test('picks several roasters in the Library, shows each as a chip and comes back
   await expect(names).toHaveText(['El Paraiso'])
   await expect(applied).toHaveText([`Roaster: ${second}`])
 })
+
+test('shows two columns of coffees and roasters on a tablet', async ({
+  page,
+  member,
+}) => {
+  await page.goto(`/shelves/${member.shelfId}`)
+  await addCoffee(page, {
+    name: uniqueName('Kochere'),
+    roaster: uniqueName('Roaster'),
+    newRoaster: true,
+  })
+  await addCoffee(page, {
+    name: uniqueName('Gesha'),
+    roaster: uniqueName('Roaster'),
+    newRoaster: true,
+  })
+  await page.setViewportSize({ width: 820, height: 1180 })
+
+  for (const [path, list] of [
+    [`/shelves/${member.shelfId}`, 'stock'],
+    [`/shelves/${member.shelfId}/library`, 'library'],
+    [`/shelves/${member.shelfId}/discover`, 'discover-results'],
+    ['/roasters', 'roasters'],
+  ]) {
+    await page.goto(path!)
+    const items = page.getByTestId(list!).locator(':scope > *')
+    await expect(items.nth(1)).toBeVisible()
+
+    const [first, second] = await Promise.all([
+      items.nth(0).boundingBox(),
+      items.nth(1).boundingBox(),
+    ])
+    expect(second!.y, path).toBe(first!.y)
+    expect(second!.x, path).toBeGreaterThan(first!.x)
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+      path,
+    ).toBe(true)
+  }
+})

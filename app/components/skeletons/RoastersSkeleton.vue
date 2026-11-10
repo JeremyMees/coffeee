@@ -1,7 +1,7 @@
 <template>
   <div aria-hidden="true" class="mt-8" data-testid="roasters-skeleton">
     <Skeleton class="h-3 w-20" />
-    <ul class="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+    <ul class="mt-3 grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
       <li
         v-for="row in 4"
         :key="row"
