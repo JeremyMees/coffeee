@@ -113,10 +113,24 @@
   animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+::view-transition-group(.coffee-photo) {
+  overflow: clip;
+  border-radius: 28px 0 0 0;
+}
+
 ::view-transition-old(.coffee-photo),
 ::view-transition-new(.coffee-photo) {
+  width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+::view-transition-old(.coffee-name) {
+  display: none;
+}
+
+::view-transition-new(.coffee-name) {
+  animation: none;
 }
 
 .page-enter-active,
