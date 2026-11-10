@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import BrowsingSearch from '~/components/molecules/BrowsingSearch.vue'
-import { tid } from '../../fixtures'
+import { setViewport, tid } from '../../fixtures'
 
-function searchBox(props: { shortcut?: boolean } = {}) {
+function searchBox(
+  props: { shortcut?: boolean; shortPlaceholder?: string } = {},
+) {
   const typed: string[] = []
   const mounted = mountSuspended(BrowsingSearch, {
     props: {
@@ -18,6 +20,10 @@ function searchBox(props: { shortcut?: boolean } = {}) {
 
   return { typed, mounted }
 }
+
+afterEach(() => {
+  setViewport(1024, 768)
+})
 
 describe('BrowsingSearch', () => {
   it('passes on what is typed, under its label', async () => {
@@ -39,6 +45,34 @@ describe('BrowsingSearch', () => {
     expect(wrapper.find('kbd').text()).toBe('⌘K')
     expect(document.activeElement).toBe(
       wrapper.get(tid('search-input')).element,
+    )
+  })
+
+  it('shows the full placeholder on wider screens', async () => {
+    const wrapper = await searchBox({ shortPlaceholder: 'Search coffees' })
+      .mounted
+
+    expect(wrapper.get(tid('search-input')).attributes('placeholder')).toBe(
+      'Coffee, roaster…',
+    )
+  })
+
+  it('shows the short placeholder on phones', async () => {
+    setViewport(390, 844)
+    const wrapper = await searchBox({ shortPlaceholder: 'Search coffees' })
+      .mounted
+
+    expect(wrapper.get(tid('search-input')).attributes('placeholder')).toBe(
+      'Search coffees',
+    )
+  })
+
+  it('keeps the full placeholder on phones without a short one', async () => {
+    setViewport(390, 844)
+    const wrapper = await searchBox().mounted
+
+    expect(wrapper.get(tid('search-input')).attributes('placeholder')).toBe(
+      'Coffee, roaster…',
     )
   })
 })

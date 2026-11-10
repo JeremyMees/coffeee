@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { HeartIcon } from '@lucide/vue'
 import BrowsingFilters from '~/components/organisms/BrowsingFilters.vue'
 import type { Member } from '#test/support/types'
-import { allByTestId, click, tid } from '../../fixtures'
+import { allByTestId, byTestId, click, setViewport, tid } from '../../fixtures'
 import { scenario, signIn } from '../../server'
 
 let sarah: Member
@@ -11,6 +11,10 @@ let sarah: Member
 beforeEach(async () => {
   sarah = await scenario.member('Sarah')
   await signIn(sarah)
+})
+
+afterEach(() => {
+  setViewport(1024, 768)
 })
 
 const laCabra = { value: 'r1', label: 'La Cabra' }
@@ -70,7 +74,7 @@ describe('BrowsingFilters', () => {
 
   it('starts with the pickers when it has no toggle', async () => {
     const { wrapper } = await catalogFilters()
-    const buttons = wrapper.findAll('button')
+    const buttons = wrapper.get(tid('catalog-filters')).findAll('button')
 
     expect(buttons[0]?.attributes('data-testid')).toBe(
       'catalog-filter-flavor-notes',
@@ -202,5 +206,29 @@ describe('BrowsingFilters', () => {
     await filtered.wrapper.get(tid('library-filter-clear')).trigger('click')
 
     expect(filtered.changes).toEqual([emptyLibraryFilter()])
+  })
+
+  it('counts every picked value and the toggle on the Filters button', async () => {
+    await libraryFilters({
+      favourites: true,
+      roaster: [laCabra],
+      origin: [{ value: 'CO', label: 'Colombia' }],
+    })
+
+    expect(byTestId('library-filters-count')!.textContent?.trim()).toBe('3')
+  })
+
+  it('picks and clears filters from the sheet on phones', async () => {
+    setViewport(390, 844)
+    const { changes } = await libraryFilters({ roaster: [laCabra] })
+
+    await click('library-filters-open')
+    await click('library-filters-sheet', 'library-filter-favourites')
+    await click('library-filters-sheet', 'library-filter-clear')
+
+    expect(changes).toEqual([
+      { ...emptyLibraryFilter(), roaster: [laCabra], favourites: true },
+      emptyLibraryFilter(),
+    ])
   })
 })

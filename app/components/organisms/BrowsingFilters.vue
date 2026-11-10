@@ -31,6 +31,8 @@ const applied = computed(() =>
   ),
 )
 
+const count = computed(() => applied.value.length + Number(toggled.value))
+
 function remove(picker: BrowsingPicker, value: string) {
   change({
     [picker.key]: filter.value[picker.key].filter(
@@ -48,77 +50,71 @@ function clear() {
 </script>
 
 <template>
-  <div>
-    <div
-      class="flex flex-wrap items-center gap-2"
-      role="group"
-      aria-label="Filters"
-      :data-testid="`${area}-filters`"
+  <FilterBar :count="count" :testid="area">
+    <button
+      v-if="toggle"
+      type="button"
+      :data-testid="`${area}-filter-${toggle.key}`"
+      :aria-pressed="toggled"
+      :class="[
+        'flex items-center gap-1.5 rounded-full border px-4 py-3 lg:py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+        toggled
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-transparent bg-accent hover:border-primary',
+      ]"
+      @click="change({ [toggle.key]: !toggled } as Partial<Filter>)"
     >
-      <button
-        v-if="toggle"
-        type="button"
-        :data-testid="`${area}-filter-${toggle.key}`"
-        :aria-pressed="toggled"
-        :class="[
-          'flex items-center gap-1.5 rounded-full border px-4 py-3 lg:py-2 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-          toggled
-            ? 'border-primary bg-primary text-primary-foreground'
-            : 'border-transparent bg-accent hover:border-primary',
-        ]"
-        @click="change({ [toggle.key]: !toggled } as Partial<Filter>)"
-      >
-        <component
-          :is="toggle.icon"
-          :class="['size-3.5', toggled && 'fill-current']"
-          aria-hidden="true"
-        />
-        {{ toggle.label }}
-      </button>
-      <FilterPicker
-        v-for="picker in browsingPickers"
-        :key="picker.key"
-        :model-value="filter[picker.key]"
-        :shelf-id="shelfId"
-        :area="area"
-        :kind="picker.kind"
-        :label="browsingFilterLabels[picker.kind]"
-        @update:model-value="
-          change({ [picker.key]: $event } as Partial<Filter>)
-        "
+      <component
+        :is="toggle.icon"
+        :class="['size-3.5', toggled && 'fill-current']"
+        aria-hidden="true"
       />
-    </div>
-    <ul
-      v-if="filtered"
-      class="mt-3 flex flex-wrap items-center gap-2"
-      aria-label="Picked filters"
-      :data-testid="`${area}-applied`"
-    >
-      <li
-        v-for="item in applied"
-        :key="`${item.picker.key}-${item.option.value}`"
+      {{ toggle.label }}
+    </button>
+    <FilterPicker
+      v-for="picker in browsingPickers"
+      :key="picker.key"
+      :model-value="filter[picker.key]"
+      :shelf-id="shelfId"
+      :area="area"
+      :kind="picker.kind"
+      :label="browsingFilterLabels[picker.kind]"
+      @update:model-value="change({ [picker.key]: $event } as Partial<Filter>)"
+    />
+
+    <template #applied>
+      <ul
+        v-if="filtered"
+        class="flex flex-wrap items-center gap-2"
+        aria-label="Picked filters"
+        :data-testid="`${area}-applied`"
       >
-        <button
-          type="button"
-          :data-testid="`${area}-applied-filter`"
-          :aria-label="`Remove ${item.label}`"
-          class="flex max-w-64 items-center gap-1.5 rounded-full border border-primary px-3 py-[13px] text-[11px] uppercase transition-colors hover:bg-accent lg:py-1.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          @click="remove(item.picker, item.option.value)"
+        <li
+          v-for="item in applied"
+          :key="`${item.picker.key}-${item.option.value}`"
         >
-          <span class="truncate">{{ item.label }}</span>
-          <XIcon class="size-3 shrink-0" aria-hidden="true" />
-        </button>
-      </li>
-      <li>
-        <button
-          type="button"
-          :data-testid="`${area}-filter-clear`"
-          class="hit-area rounded-full px-3 py-1.5 text-[11px] uppercase underline-offset-4 hover:underline"
-          @click="clear"
-        >
-          Clear all
-        </button>
-      </li>
-    </ul>
-  </div>
+          <button
+            type="button"
+            :data-testid="`${area}-applied-filter`"
+            :aria-label="`Remove ${item.label}`"
+            class="flex max-w-64 items-center gap-1.5 rounded-full border border-primary px-3 py-[13px] text-[11px] uppercase transition-colors hover:bg-accent lg:py-1.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            @click="remove(item.picker, item.option.value)"
+          >
+            <span class="truncate">{{ item.label }}</span>
+            <XIcon class="size-3 shrink-0" aria-hidden="true" />
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            :data-testid="`${area}-filter-clear`"
+            class="hit-area rounded-full px-3 py-1.5 text-[11px] uppercase underline-offset-4 hover:underline"
+            @click="clear"
+          >
+            Clear all
+          </button>
+        </li>
+      </ul>
+    </template>
+  </FilterBar>
 </template>

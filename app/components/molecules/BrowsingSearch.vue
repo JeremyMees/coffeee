@@ -1,9 +1,22 @@
 <script setup lang="ts">
 import { SearchIcon } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
 
 const search = defineModel<string>({ required: true })
 
-defineProps<{ label: string; placeholder: string; shortcut?: boolean }>()
+const props = defineProps<{
+  label: string
+  placeholder: string
+  shortPlaceholder?: string
+  shortcut?: boolean
+}>()
+
+const wide = useMediaQuery('(min-width: 768px)')
+const shown = computed(() =>
+  wide.value
+    ? props.placeholder
+    : (props.shortPlaceholder ?? props.placeholder),
+)
 
 const input = useTemplateRef<HTMLInputElement>('input')
 
@@ -21,7 +34,7 @@ defineExpose({ focus: () => input.value?.focus() })
       v-model="search"
       type="search"
       autocomplete="off"
-      :placeholder="placeholder"
+      :placeholder="shown"
       class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
       data-testid="search-input"
     />

@@ -121,6 +121,7 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
         class="mt-6"
         label="Search your library"
         placeholder="Coffee, roaster, flavor note, origin…"
+        short-placeholder="Search coffees"
       />
       <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
         <QuerySection :query="address.labels" testid="library-filters">

@@ -101,7 +101,8 @@ watch(open, isOpen => {
     </ComboboxAnchor>
     <ComboboxList
       align="start"
-      class="w-64 rounded-[18px] p-1.5 font-mono ring-primary *:data-[slot=input-group]:w-auto"
+      :collision-padding="16"
+      class="w-64 max-w-[calc(100vw-2rem)] rounded-[18px] p-1.5 font-mono ring-primary *:data-[slot=input-group]:w-auto"
       :data-testid="`${prefix}-${kind}-list`"
     >
       <ComboboxInput

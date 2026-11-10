@@ -70,6 +70,7 @@ function clear() {
       class="mt-6"
       label="Search the catalog"
       placeholder="Coffee, roaster, flavor note, origin…"
+      short-placeholder="Search coffees"
       shortcut
     />
     <div class="mt-4">
