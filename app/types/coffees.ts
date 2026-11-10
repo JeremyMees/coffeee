@@ -34,9 +34,7 @@ export type CardCoffee = Pick<
   | 'rating'
 > & { matches?: CatalogMatch[] }
 
-export type PhotoCoffee = Pick<ShelfCoffee, 'id' | 'name' | 'photoUrl'> & {
-  canEdit?: boolean
-}
+export type PhotoCoffee = Pick<ShelfCoffee, 'id' | 'name' | 'photoUrl'>
 
 type CoffeeReviews = InternalApi['/api/coffees/:coffeeId/reviews']['get']
 

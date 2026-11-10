@@ -1,5 +1,6 @@
 import { onlineManager } from '@tanstack/vue-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { and, eq } from 'drizzle-orm'
 import App from '~/app.vue'
@@ -155,7 +156,6 @@ describe('the page of a coffee', () => {
 
     expect(page.get(tid('coffee-title')).text()).toBe('Red Brick')
     expect(page.find(tid('coffee-edit')).exists()).toBe(false)
-    expect(page.find(tid('coffee-photo-pick')).exists()).toBe(false)
   })
 
   it('is not found when there is no such coffee', async () => {
@@ -175,7 +175,9 @@ describe('the page of a coffee', () => {
   it('deletes the coffee and goes back', async () => {
     const page = await coffeePage()
 
-    await page.get(tid('coffee-delete')).trigger('click')
+    await page.get(tid('coffee-more')).trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    await click('coffee-delete')
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
@@ -192,7 +194,9 @@ describe('the page of a coffee', () => {
     })
     const page = await coffeePage()
 
-    await page.get(tid('coffee-delete')).trigger('click')
+    await page.get(tid('coffee-more')).trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    await click('coffee-delete')
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
@@ -210,7 +214,7 @@ describe('the page of a coffee', () => {
     const page = await coffeePage()
 
     expect(page.find(tid('coffee-edit')).exists()).toBe(true)
-    expect(page.find(tid('coffee-delete')).exists()).toBe(false)
+    expect(page.find(tid('coffee-more')).exists()).toBe(false)
   })
 })
 

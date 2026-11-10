@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ArrowUpRightIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
+import {
+  ArrowUpRightIcon,
+  EllipsisIcon,
+  PencilIcon,
+  Trash2Icon,
+} from '@lucide/vue'
 import { NuxtLink } from '#components'
 
 const props = defineProps<{
@@ -48,17 +53,6 @@ const morph = useMorph('coffee', () => props.coffee.id)
     </div>
     <div v-if="editable || deletable" class="mb-2 flex shrink-0 gap-2">
       <button
-        v-if="deletable"
-        type="button"
-        data-testid="coffee-delete"
-        aria-label="Delete coffee"
-        title="Delete coffee"
-        class="flex items-center rounded-full border border-primary p-2 transition-colors hover:bg-primary hover:text-primary-foreground"
-        @click="$emit('delete')"
-      >
-        <Trash2Icon class="size-4" aria-hidden="true" />
-      </button>
-      <button
         v-if="editable"
         type="button"
         data-testid="coffee-edit"
@@ -68,6 +62,34 @@ const morph = useMorph('coffee', () => props.coffee.id)
         <PencilIcon class="size-4" aria-hidden="true" />
         Edit
       </button>
+      <DropdownMenu v-if="deletable">
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            data-testid="coffee-more"
+            aria-label="More actions"
+            title="More actions"
+            class="flex items-center rounded-full border border-primary p-2 transition-colors hover:bg-primary hover:text-primary-foreground data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+          >
+            <EllipsisIcon class="size-4" aria-hidden="true" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          data-testid="coffee-more-menu"
+          class="w-auto min-w-48 rounded-[22px] p-1.5 font-mono ring-primary"
+        >
+          <DropdownMenuItem
+            variant="destructive"
+            data-testid="coffee-delete"
+            class="min-h-11 rounded-full px-4 text-[13px] uppercase"
+            @select="$emit('delete')"
+          >
+            <Trash2Icon aria-hidden="true" />
+            Delete coffee
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   </header>
 </template>

@@ -631,7 +631,7 @@ async function bagPhoto(page: Page, colour: string) {
   }
 }
 
-test('gives a coffee a shrunk photo of its bag and lets it be replaced or removed', async ({
+test('gives a coffee a shrunk photo of its bag while editing and lets it be replaced', async ({
   page,
   member,
 }) => {
@@ -641,12 +641,14 @@ test('gives a coffee a shrunk photo of its bag and lets it be replaced or remove
   await expect(
     stockCard(page, 'Ayele Fulasa').getByTestId('coffee-card-placeholder'),
   ).toBeVisible()
-  await stockCard(page, 'Ayele Fulasa').click()
-  await expect(page.getByTestId('coffee-photo-placeholder')).toBeVisible()
 
-  await page
-    .getByTestId('coffee-photo-input')
+  let sheet = await editCoffee(page, 'Ayele Fulasa')
+  await expect(page.getByTestId('coffee-photo-placeholder')).toBeVisible()
+  await sheet
+    .getByTestId('edit-coffee-photo-input')
     .setInputFiles(await bagPhoto(page, '#e4572e'))
+  await sheet.getByTestId('edit-coffee-submit').click()
+  await expect(sheet).toBeHidden()
 
   const photo = page.getByTestId('coffee-photo-image')
   await expect(photo).toHaveAttribute('src', /\.webp$/)
@@ -655,9 +657,13 @@ test('gives a coffee a shrunk photo of its bag and lets it be replaced or remove
     .toBe(1600)
   const firstUrl = await photo.getAttribute('src')
 
-  await page
-    .getByTestId('coffee-photo-input')
+  await page.getByTestId('coffee-edit').click()
+  sheet = page.getByTestId('edit-coffee-sheet')
+  await sheet
+    .getByTestId('edit-coffee-photo-input')
     .setInputFiles(await bagPhoto(page, '#3d5a80'))
+  await sheet.getByTestId('edit-coffee-submit').click()
+  await expect(sheet).toBeHidden()
 
   await expect(photo).not.toHaveAttribute('src', firstUrl!)
   expect((await page.request.get(firstUrl!)).status()).toBe(404)
@@ -667,12 +673,6 @@ test('gives a coffee a shrunk photo of its bag and lets it be replaced or remove
   await expect(
     stockCard(page, 'Ayele Fulasa').getByTestId('coffee-card-photo'),
   ).toHaveAttribute('src', secondUrl!)
-
-  await stockCard(page, 'Ayele Fulasa').click()
-  await page.getByTestId('coffee-photo-remove').click()
-
-  await expect(page.getByTestId('coffee-photo-placeholder')).toBeVisible()
-  expect((await page.request.get(secondUrl!)).status()).toBe(404)
 })
 
 test('adds a coffee with a photo of its bag and removes it while editing', async ({

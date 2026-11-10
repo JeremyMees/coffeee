@@ -1,6 +1,7 @@
 import { onlineManager } from '@tanstack/vue-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { and, eq } from 'drizzle-orm'
 import App from '~/app.vue'
 import {
@@ -31,11 +32,6 @@ import {
   scenario,
   signIn,
 } from '../../../../server'
-
-mockNuxtImport(
-  'compressPhoto',
-  () => async () => new Blob(['small'], { type: 'image/webp' }),
-)
 
 type ShelfCoffee = Awaited<ReturnType<typeof scenario.coffee>>
 
@@ -445,22 +441,6 @@ describe('a coffee page', () => {
     expect(page.find(tid('coffee-card')).exists()).toBe(false)
   })
 
-  it('shows a new photo once it is uploaded', async () => {
-    const page = await coffeePage(await ayele())
-    const input = page.get(tid('coffee-photo-input'))
-    Object.defineProperty(input.element, 'files', {
-      value: [new File(['huge'], 'bag.jpg', { type: 'image/jpeg' })],
-    })
-
-    await input.trigger('change')
-
-    await vi.waitFor(() =>
-      expect(page.get(tid('coffee-photo-image')).attributes('src')).toMatch(
-        /^\/api\/photos\/coffees\/[\w-]+\.webp$/,
-      ),
-    )
-  })
-
   it('sums up what the shelf bought', async () => {
     const page = await coffeePage(await ayele())
 
@@ -553,7 +533,9 @@ describe('a coffee page', () => {
     const shown = await ayele()
     const page = await coffeePage(shown)
 
-    await page.get(tid('coffee-delete')).trigger('click')
+    await page.get(tid('coffee-more')).trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    await click('coffee-delete')
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() => expect(currentPath()).toBe(shelfPath(sarah.shelf)))
@@ -569,7 +551,9 @@ describe('a coffee page', () => {
     const tom = await scenario.member('Tom')
     await scenario.coffee(tom.shelf)
 
-    await page.get(tid('coffee-delete')).trigger('click')
+    await page.get(tid('coffee-more')).trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    await click('coffee-delete')
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
@@ -587,7 +571,7 @@ describe('a coffee page', () => {
 
     const page = await coffeePage(shown)
 
-    expect(page.find(tid('coffee-delete')).exists()).toBe(false)
+    expect(page.find(tid('coffee-more')).exists()).toBe(false)
   })
 })
 

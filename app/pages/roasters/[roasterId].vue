@@ -60,7 +60,7 @@ watch(error, showMissing)
 </script>
 
 <template>
-  <main v-if="shelf" class="max-w-2xl">
+  <main v-if="shelf" class="mx-auto max-w-2xl lg:max-w-7xl">
     <NuxtLink
       :to="back.to"
       data-testid="roaster-back"
@@ -161,7 +161,7 @@ watch(error, showMissing)
             <ul
               aria-label="Coffees"
               data-testid="roaster-coffees"
-              class="mt-4 flex flex-col gap-3"
+              class="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3"
             >
               <li v-for="coffee in coffeesIn(data)" :key="coffee.id">
                 <CatalogResult
