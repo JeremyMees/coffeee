@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { defineAsyncComponent, h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import FormSheet from '~/components/templates/FormSheet.vue'
@@ -49,6 +50,32 @@ describe('FormSheet', () => {
     await mountSheet(false)
 
     expect(byTestId('a-sheet')).toBeNull()
+  })
+
+  it('shows a skeleton until a form that loads later is there', async () => {
+    let load!: () => void
+    const LaterForm = defineAsyncComponent(
+      () =>
+        new Promise<() => ReturnType<typeof h>>(resolve => {
+          load = () => resolve(() => h('p', 'The form'))
+        }),
+    )
+    await mountSuspended(FormSheet, {
+      props: { title: 'Add coffee', description: 'A coffee.', open: true },
+      attrs: { 'data-testid': 'a-sheet' },
+      slots: { default: () => h(LaterForm) },
+      attachTo: document.body,
+    })
+
+    expect(byTestId('form-sheet-skeleton')).not.toBeNull()
+    expect(byTestId('a-sheet')!.textContent).not.toContain('The form')
+
+    load()
+
+    await vi.waitFor(() =>
+      expect(byTestId('a-sheet')!.textContent).toContain('The form'),
+    )
+    expect(byTestId('form-sheet-skeleton')).toBeNull()
   })
 
   it('asks to close from its close button', async () => {

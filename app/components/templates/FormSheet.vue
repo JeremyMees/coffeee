@@ -114,7 +114,24 @@ const dragStyle = computed(() =>
           </component>
         </div>
 
-        <slot />
+        <Suspense>
+          <div>
+            <slot />
+          </div>
+          <template #fallback>
+            <div
+              aria-hidden="true"
+              class="flex flex-col gap-6 px-5 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:px-8"
+              data-testid="form-sheet-skeleton"
+            >
+              <div v-for="field in 3" :key="field" class="flex flex-col gap-2">
+                <div class="h-4 w-24 animate-pulse rounded-md bg-muted" />
+                <div class="h-8 w-full animate-pulse rounded-lg bg-muted" />
+              </div>
+              <div class="h-11 w-full animate-pulse rounded-full bg-muted" />
+            </div>
+          </template>
+        </Suspense>
       </div>
 
       <DialogClose

@@ -66,8 +66,10 @@ describe('AdminEntrySheet', () => {
   it('adds an entry by its name and closes', async () => {
     const sheet = await mountForm('flavorNotes')
 
-    expect(byTestId('admin-add-submit')?.textContent).toContain(
-      'Add flavor note',
+    await vi.waitFor(() =>
+      expect(byTestId('admin-add-submit')?.textContent).toContain(
+        'Add flavor note',
+      ),
     )
     await type('admin-entry-name', 'Bergamot')
     await submit('admin-add-form')
