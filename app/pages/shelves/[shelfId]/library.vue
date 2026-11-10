@@ -211,13 +211,9 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
           <ul
             aria-label="Library"
             data-testid="library"
-            class="mt-8 flex flex-col lg:grid lg:grid-cols-2 lg:gap-5 2xl:grid-cols-3"
+            class="mt-8 grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
           >
-            <li
-              v-for="coffee in cards"
-              :key="coffee.id"
-              class="not-first:-mt-54 lg:not-first:mt-0"
-            >
+            <li v-for="coffee in cards" :key="coffee.id">
               <LazyCoffeeCard
                 :coffee="coffee"
                 :to="shelfCoffeePath(shelf!, coffee)"

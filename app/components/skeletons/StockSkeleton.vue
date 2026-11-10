@@ -2,28 +2,21 @@
   <ul
     aria-hidden="true"
     data-testid="stock-skeleton"
-    class="mt-8 flex flex-col lg:grid lg:grid-cols-2 lg:gap-5 2xl:grid-cols-3"
+    class="mt-8 grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
   >
-    <li
-      v-for="card in 3"
-      :key="card"
-      class="not-first:-mt-54 lg:not-first:mt-0"
-    >
+    <li v-for="card in 3" :key="card">
       <div
-        class="flex flex-col overflow-hidden rounded-[28px] border border-primary bg-background"
+        class="flex flex-col gap-2.5 rounded-[18px] border border-primary px-3.5 py-3"
       >
-        <Skeleton class="h-44 shrink-0 rounded-none" />
-        <div class="flex h-72 flex-col gap-3 border-t border-primary p-5">
-          <Skeleton class="h-3 w-24" />
-          <Skeleton class="h-8 w-3/4" />
-          <div class="mt-2 flex gap-1.5">
-            <Skeleton class="h-6 w-16 rounded-full" />
-            <Skeleton class="h-6 w-20 rounded-full" />
+        <div class="flex items-center gap-3">
+          <Skeleton class="size-13 shrink-0 rounded-[10px]" />
+          <div class="flex flex-1 flex-col gap-2">
+            <Skeleton class="h-3 w-20" />
+            <Skeleton class="h-5 w-3/4" />
           </div>
-          <div class="mt-auto flex items-end justify-between">
-            <Skeleton class="h-8 w-28" />
-            <Skeleton class="h-12 w-16" />
-          </div>
+        </div>
+        <div class="flex flex-col gap-2 border-t border-primary pt-2.5">
+          <Skeleton v-for="row in 4" :key="row" class="h-3 w-full" />
         </div>
       </div>
     </li>

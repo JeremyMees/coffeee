@@ -90,18 +90,14 @@ describe('CoffeeCard', () => {
   it('counts the days off roast and how fresh that is', async () => {
     const card = await mountCard()
 
-    expect(card.get(tid('coffee-card-days')).text()).toMatch(
-      /^3\s*days off roast$/,
-    )
+    expect(card.get(tid('coffee-card-days')).text()).toBe('3 days off roast')
     expect(card.get(tid('coffee-card-freshness')).text()).toBe('Resting')
   })
 
   it('says when there is no roast date', async () => {
     const card = await mountCard({ coffee: { ...coffee, roastedOn: null } })
 
-    expect(card.get(tid('coffee-card-days')).text()).toMatch(
-      /^–\s*no roast date$/,
-    )
+    expect(card.get(tid('coffee-card-days')).text()).toBe('No roast date')
     expect(card.get(tid('coffee-card-freshness')).text()).toBe('Unknown')
   })
 

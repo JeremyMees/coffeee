@@ -561,9 +561,7 @@ test('keeps a roast date optional', async ({ page, member }) => {
   await sheet.getByTestId('add-coffee-submit').click()
 
   const card = stockCard(page, 'Halo')
-  await expect(card.getByTestId('coffee-card-days')).toContainText(
-    'no roast date',
-  )
+  await expect(card.getByTestId('coffee-card-days')).toHaveText('No roast date')
   await expect(card.getByTestId('coffee-card-freshness')).toHaveText('Unknown')
 })
 

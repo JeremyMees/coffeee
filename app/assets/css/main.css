@@ -115,7 +115,7 @@
 
 ::view-transition-group(.coffee-photo) {
   overflow: clip;
-  border-radius: 28px 0 0 0;
+  border-radius: 10px;
 }
 
 ::view-transition-old(.coffee-photo),

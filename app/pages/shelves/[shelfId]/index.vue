@@ -37,13 +37,9 @@ const stock = useStock(shelfId)
           v-else
           aria-label="Current stock"
           data-testid="stock"
-          class="mt-8 flex flex-col lg:grid lg:grid-cols-2 lg:gap-5 2xl:grid-cols-3"
+          class="mt-8 grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
         >
-          <li
-            v-for="coffee in data"
-            :key="coffee.id"
-            class="not-first:-mt-54 lg:not-first:mt-0"
-          >
+          <li v-for="coffee in data" :key="coffee.id">
             <CoffeeCard
               :coffee="coffee"
               :to="shelfCoffeePath(shelf!, coffee)"
