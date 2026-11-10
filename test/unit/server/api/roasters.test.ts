@@ -7,6 +7,7 @@ import editRoasterHandler from '#server/api/roasters/[roasterId].patch'
 import showRoasterHandler from '#server/api/roasters/[roasterId].get'
 import addRoasterHandler from '#server/api/roasters.post'
 import roastersHandler from '#server/api/shelves/[shelfId]/roasters/index.get'
+import roasterFilterHandler from '#server/api/shelves/[shelfId]/roasters/[filter].get'
 import removeLogoHandler from '#server/api/roasters/[roasterId]/logo.delete'
 import replaceLogoHandler from '#server/api/roasters/[roasterId]/logo.put'
 import coffeeRoasterHandler from '#server/api/coffees/[coffeeId]/roaster.get'
@@ -47,6 +48,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .get('/api/coffees/:coffeeId/roaster', coffeeRoasterHandler)
     .get('/api/shelves/:shelfId/roasters', roastersHandler)
+    .get('/api/shelves/:shelfId/roasters/:filter', roasterFilterHandler)
     .post('/api/roasters', addRoasterHandler)
     .get('/api/roasters/:roasterId', showRoasterHandler)
     .patch('/api/roasters/:roasterId', editRoasterHandler)
@@ -213,6 +215,49 @@ describe('the roasters', () => {
       shelfCoffees: 1,
       lastBought: '2026-09-01',
     })
+  })
+
+  it('finds roasters by what was typed and the picked countries', async () => {
+    const { shelf, sarah, roasterPath } = await sharedShelf()
+    await edit(roasterPath, sarah, details)
+    const names = async (query: string) =>
+      (
+        await (
+          await request(`/api/shelves/${shelf.id}/roasters?${query}`, {
+            headers: sarah,
+          })
+        ).json()
+      ).roasters.map((found: { name: string }) => found.name)
+
+    expect(await names('search=london')).toEqual([details.name])
+    expect(await names('countryCode=GB&countryCode=DK')).toEqual([details.name])
+    expect(await names('countryCode=DK')).toEqual([])
+  })
+
+  it('offers the countries the roasters are in', async () => {
+    const { shelf, sarah, roasterPath } = await sharedShelf()
+    await edit(roasterPath, sarah, details)
+
+    const response = await request(
+      `/api/shelves/${shelf.id}/roasters/countries?search=united`,
+      { headers: sarah },
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      options: [{ value: 'GB', label: 'United Kingdom' }],
+      hasMore: false,
+    })
+  })
+
+  it('has no other roaster filter', async () => {
+    const { shelf, sarah } = await sharedShelf()
+
+    const response = await request(`/api/shelves/${shelf.id}/roasters/cities`, {
+      headers: sarah,
+    })
+
+    expect(response.status).toBe(404)
   })
 
   it('refuses a shelf the viewer is not on', async () => {

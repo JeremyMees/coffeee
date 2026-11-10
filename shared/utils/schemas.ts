@@ -168,8 +168,9 @@ export const filterLabelsSchema = z.object({
   varietalId: ids('varietal'),
 })
 
-export const roasterSearchSchema = z.object({
+export const roasterSearchSchema = listSearchSchema.extend({
   boughtFrom: yesOrNo('bought from'),
+  countryCode: ids('country'),
   page: pageNumber(),
   pageSize: pageSize('roaster', roastersPageSize),
 })

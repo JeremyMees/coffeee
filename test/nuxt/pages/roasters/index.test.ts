@@ -2,9 +2,10 @@ import { onlineManager } from '@tanstack/vue-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { roasterPath } from '#imports'
+import { roasterPath, useRouter } from '#imports'
 import type { Member } from '#test/support/types'
 import {
+  allByTestId,
   byTestId,
   click,
   forgetLastShelf,
@@ -28,8 +29,8 @@ function listPath() {
   return `/api/shelves/${sarah.shelf.id}/roasters`
 }
 
-function mount() {
-  return mountSuspended(App, { route: '/roasters', attachTo: document.body })
+function mount(route = '/roasters') {
+  return mountSuspended(App, { route, attachTo: document.body })
 }
 
 async function laCabra() {
@@ -52,8 +53,8 @@ async function twoRoasters() {
   return cabra
 }
 
-async function roasters() {
-  const page = await mount()
+async function roasters(route?: string) {
+  const page = await mount(route)
   await vi.waitFor(() =>
     expect(page.find(tid('roasters-skeleton')).exists()).toBe(false),
   )
@@ -194,5 +195,115 @@ describe('the roasters page', () => {
     hold.release()
 
     await vi.waitFor(() => expect(names()).toEqual(['Square Mile']))
+  })
+
+  it('searches roasters by name, city or country and keeps it in the address', async () => {
+    await twoRoasters()
+    const { page, names } = await roasters()
+
+    await type('search-input', 'aarhus')
+
+    await vi.waitFor(() => expect(names()).toEqual(['La Cabra']))
+    expect(page.get(tid('roasters-total')).text()).toBe('1 roaster')
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({ q: 'aarhus' }),
+    )
+
+    await type('search-input', 'denmark')
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({ q: 'denmark' }),
+    )
+    expect(names()).toEqual(['La Cabra'])
+  })
+
+  it('filters by a country a roaster is in and keeps it in the address', async () => {
+    await twoRoasters()
+    const { page, names } = await roasters()
+
+    await click('roasters-filter-countries')
+    const option = await vi.waitFor(() => {
+      const found = allByTestId('roasters-filter-option').find(
+        element => element.textContent?.trim() === 'Denmark',
+      )
+      if (!found) throw new Error('No Denmark')
+
+      return found
+    })
+    option.click()
+
+    await vi.waitFor(() => expect(names()).toEqual(['La Cabra']))
+    expect(page.get(tid('roasters-applied-filter')).text()).toBe(
+      'Country: Denmark',
+    )
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({
+        countryCode: 'DK',
+      }),
+    )
+  })
+
+  it('starts from the search and filters in the address, with their names', async () => {
+    await twoRoasters()
+
+    const { page, names } = await roasters(
+      '/roasters?q=cabra&countryCode=DK&countryCode=GB&boughtFrom=false',
+    )
+
+    expect(names()).toEqual(['La Cabra'])
+    expect(
+      (page.get(tid('search-input')).element as HTMLInputElement).value,
+    ).toBe('cabra')
+    expect(
+      page.findAll(tid('roasters-applied-filter')).map(chip => chip.text()),
+    ).toEqual(['Country: Denmark', 'Country: United Kingdom'])
+    expect(
+      page.get(tid('roasters-filter-bought-from')).attributes('aria-pressed'),
+    ).toBe('false')
+  })
+
+  it('says when nothing matches the search and clears it', async () => {
+    await twoRoasters()
+    const { page, names } = await roasters()
+
+    await type('search-input', 'nope')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('roasters-no-match')).text()).toContain(
+        'No roaster matches “nope”.',
+      ),
+    )
+    expect(page.get(tid('roasters-no-match-clear')).text()).toBe('Clear search')
+    await click('roasters-no-match-clear')
+
+    await vi.waitFor(() => expect(names()).toHaveLength(2))
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.query).toEqual({}),
+    )
+  })
+
+  it('says when no roaster matches the filters and clears them', async () => {
+    await twoRoasters()
+    const { page, names } = await roasters(
+      '/roasters?countryCode=DK&boughtFrom=true',
+    )
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('roasters-no-match')).text()).toContain(
+        'No roaster matches these filters.',
+      ),
+    )
+    expect(page.get(tid('roasters-no-match-clear')).text()).toBe(
+      'Clear filters',
+    )
+    await click('roasters-no-match-clear')
+
+    await vi.waitFor(() => expect(names()).toHaveLength(2))
+  })
+
+  it('counts the picked filters on the Filters button', async () => {
+    await twoRoasters()
+    const { page } = await roasters('/roasters?countryCode=DK&boughtFrom=true')
+
+    expect(page.get(tid('roasters-filters-count')).text()).toBe('2')
   })
 })

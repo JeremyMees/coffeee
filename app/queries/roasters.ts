@@ -8,7 +8,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 export function useRoasterPages(
   shelfId: MaybeRefOrGetter<string>,
-  query: MaybeRefOrGetter<Record<string, string>>,
+  query: MaybeRefOrGetter<RoasterQuery>,
 ) {
   const request = useRequestFetch()
 

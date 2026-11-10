@@ -1,8 +1,9 @@
-export const filterAreas = ['library', 'catalog'] as const
+export const filterAreas = ['library', 'catalog', 'roasters'] as const
 
 export const filterAreaNames: Record<FilterArea, string> = {
   library: 'your library',
   catalog: 'the catalog',
+  roasters: 'the roasters',
 }
 
 export const filterPlurals: Record<FilterKind, string> = {
@@ -13,6 +14,7 @@ export const filterPlurals: Record<FilterKind, string> = {
   varietals: 'varietals',
   'roast-levels': 'roast levels',
   'roasted-for': 'brew styles',
+  countries: 'countries',
 }
 
 export const labelledParams = [

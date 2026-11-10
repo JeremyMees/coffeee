@@ -1,17 +1,22 @@
 import { describe, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { roaster } from '#server/db/schemas'
 import { addCoffee } from '#server/utils/coffees'
 import {
   editRoaster,
   findEditableRoaster,
   findRoaster,
+  listRoasterCountries,
   listRoasters,
   replaceRoasterLogo,
 } from '#server/utils/roasters'
 import { createShelf } from '#server/utils/shelves'
 import type { NewCoffee } from '#shared/types/coffee'
 import type { RoasterDetails } from '#shared/types/roasters'
-import { roasterSearchSchema } from '#shared/utils/schemas'
+import {
+  libraryFilterSearchSchema,
+  roasterSearchSchema,
+} from '#shared/utils/schemas'
 import { storages } from '#test/support/nitro'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 import { testOrigin } from '#test/support/origin'
@@ -170,6 +175,122 @@ describe('listing the roasters', () => {
 
     expect(second.total).toBe(2)
     expect(second.roasters.map(found => found.name)).toEqual(['Square Mile'])
+  })
+
+  async function placed() {
+    const context = await twoShelves()
+    const { db, sarah } = context
+    const idOf = async (name: string) =>
+      (
+        (await db
+          .select({ id: roaster.id })
+          .from(roaster)
+          .where(eq(roaster.name, name))) as [{ id: string }]
+      )[0].id
+    await db.update(roaster).set({ createdBy: sarah.id })
+    await editRoaster(db, {
+      roasterId: await idOf('Square Mile'),
+      editor: sarah,
+      details,
+    })
+    await editRoaster(db, {
+      roasterId: await idOf('La Cabra'),
+      editor: sarah,
+      details: {
+        name: 'La Cabra',
+        website: null,
+        countryCode: 'DK',
+        city: 'Aarhus',
+      },
+    })
+
+    const names = async (query: Record<string, string | string[]>) =>
+      (
+        await listRoasters(db, {
+          shelfId: context.home.id,
+          search: roasterSearchSchema.parse(query),
+        })
+      ).roasters.map(found => found.name)
+
+    return { ...context, names }
+  }
+
+  it('finds roasters by name, city or country, in any spelling', async () => {
+    const { names } = await placed()
+
+    expect(await names({ search: 'cabra' })).toEqual(['La Cabra'])
+    expect(await names({ search: 'LONDON' })).toEqual(['Square Mile'])
+    expect(await names({ search: 'denmark' })).toEqual(['La Cabra'])
+    expect(await names({ search: 'nowhere' })).toEqual([])
+  })
+
+  it('keeps the roasters of any picked country', async () => {
+    const { names } = await placed()
+
+    expect(await names({ countryCode: 'DK' })).toEqual(['La Cabra'])
+    expect(await names({ countryCode: ['DK', 'GB'] })).toEqual([
+      'La Cabra',
+      'Square Mile',
+    ])
+  })
+
+  it('combines the search, the countries and what the shelf bought from', async () => {
+    const { names } = await placed()
+
+    expect(
+      await names({ countryCode: ['DK', 'GB'], boughtFrom: 'true' }),
+    ).toEqual(['Square Mile'])
+    expect(await names({ countryCode: 'GB', search: 'cabra' })).toEqual([])
+  })
+})
+
+describe('the countries of the roasters', () => {
+  async function catalog() {
+    const { db, sarah, roasterId } = await setup()
+    await editRoaster(db, { roasterId, editor: sarah, details })
+    await db.insert(roaster).values([
+      {
+        name: 'La Cabra',
+        nameKey: 'la cabra',
+        countryCode: 'DK',
+        createdBy: sarah.id,
+      },
+      {
+        name: 'Coffee Collective',
+        nameKey: 'coffee collective',
+        countryCode: 'DK',
+        createdBy: sarah.id,
+      },
+      { name: 'Nowhere', nameKey: 'nowhere', createdBy: sarah.id },
+    ])
+
+    return (search: Record<string, string> = {}) =>
+      listRoasterCountries(db, libraryFilterSearchSchema.parse(search))
+  }
+
+  it('offers each country a roaster is in once, by name', async () => {
+    const countries = await catalog()
+
+    expect(await countries()).toEqual({
+      options: [
+        { value: 'DK', label: 'Denmark' },
+        { value: 'GB', label: 'United Kingdom' },
+      ],
+      hasMore: false,
+    })
+  })
+
+  it('finds a country as you type and pages through them', async () => {
+    const countries = await catalog()
+
+    expect((await countries({ search: 'den' })).options).toEqual([
+      { value: 'DK', label: 'Denmark' },
+    ])
+    expect(await countries({ page: '1', pageSize: '1' })).toEqual({
+      options: [{ value: 'GB', label: 'United Kingdom' }],
+      hasMore: false,
+    })
+    expect((await countries({ pageSize: '1' })).hasMore).toBe(true)
   })
 })
 

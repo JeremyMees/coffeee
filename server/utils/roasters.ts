@@ -1,10 +1,11 @@
-import { asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, or, sql } from 'drizzle-orm'
+import type { LibraryFilterSearch, LibraryOption } from '#shared/types/library'
 import type { RoasterDetails, RoasterSearch } from '#shared/types/roasters'
 import { nameKey } from '#shared/utils/names'
 import type { Database } from '#server/types/database'
 import type { Viewer } from '#server/types/coffees'
 import type { EditableRoasterLogo } from '#server/types/photos'
-import { coffee, purchase, roaster } from '#server/db/schemas'
+import { coffee, origin, purchase, roaster } from '#server/db/schemas'
 import { canEditCatalogEntry } from '#server/utils/catalog'
 import { changeCatalog, findTakenName } from '#server/utils/catalog-entries'
 
@@ -24,6 +25,18 @@ function boughtFrom(shelfId: string) {
       and ${coffee.roasterId} = ${roaster.id}`
 }
 
+function roasterSearch(search: string) {
+  const key = nameKey(search)
+
+  if (!key) return undefined
+
+  return or(
+    sql`strpos(${roaster.nameKey}, ${key}) > 0`,
+    sql`strpos(lower(coalesce(${roaster.city}, '')), ${key}) > 0`,
+    sql`strpos(lower(coalesce(${origin.name}, '')), ${key}) > 0`,
+  )
+}
+
 export async function listRoasters(
   db: Database,
   input: { shelfId: string; search: RoasterSearch },
@@ -41,7 +54,16 @@ export async function listRoasters(
       total: sql<number>`cast(count(*) over () as integer)`,
     })
     .from(roaster)
-    .where(search.boughtFrom ? sql`exists (select 1 ${bought})` : undefined)
+    .leftJoin(origin, eq(origin.code, roaster.countryCode))
+    .where(
+      and(
+        search.boughtFrom ? sql`exists (select 1 ${bought})` : undefined,
+        search.countryCode.length
+          ? inArray(roaster.countryCode, search.countryCode)
+          : undefined,
+        roasterSearch(search.search),
+      ),
+    )
     .orderBy(asc(roaster.nameKey), asc(roaster.id))
     .limit(search.pageSize)
     .offset(search.page * search.pageSize)
@@ -49,6 +71,26 @@ export async function listRoasters(
   return {
     total: rows[0]?.total ?? 0,
     roasters: rows.map(({ total: _total, ...row }) => row),
+  }
+}
+
+export async function listRoasterCountries(
+  db: Database,
+  search: LibraryFilterSearch,
+) {
+  const key = nameKey(search.search)
+  const rows = await db
+    .selectDistinct({ value: origin.code, label: origin.name })
+    .from(roaster)
+    .innerJoin(origin, eq(origin.code, roaster.countryCode))
+    .where(key ? sql`strpos(lower(${origin.name}), ${key}) > 0` : undefined)
+    .orderBy(asc(origin.name), asc(origin.code))
+    .limit(search.pageSize + 1)
+    .offset(search.page * search.pageSize)
+
+  return {
+    options: rows.slice(0, search.pageSize) as LibraryOption[],
+    hasMore: rows.length > search.pageSize,
   }
 }
 
