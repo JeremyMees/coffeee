@@ -34,6 +34,20 @@ describe('profile page', () => {
     expect(page.find(tid('sign-out')).exists()).toBe(true)
   })
 
+  it('links admins to the admin pages for when the sidebar is hidden', async () => {
+    await signIn(await scenario.member('Jeremy', { role: 'admin' }))
+
+    const page = await mountSuspended(App, { route: '/profile' })
+
+    expect(page.get(tid('profile-admin')).attributes('href')).toBe('/admin')
+  })
+
+  it('keeps the admin link from everyone else', async () => {
+    const page = await mountSuspended(App, { route: '/profile' })
+
+    expect(page.find(tid('profile-admin')).exists()).toBe(false)
+  })
+
   it('forgets the pages cached for offline use when signing out', async () => {
     const caches = { delete: vi.fn() }
     vi.stubGlobal('caches', caches)

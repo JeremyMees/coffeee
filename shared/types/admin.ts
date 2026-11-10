@@ -17,6 +17,8 @@ export interface AdminEntry {
   uses: number
 }
 
+export type AdminEntryAction = 'update' | 'merge' | 'delete'
+
 export interface AdminEntryPage {
   total: number
   entries: AdminEntry[]

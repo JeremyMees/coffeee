@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ShieldIcon } from '@lucide/vue'
 import { buttonVariants } from '@/components/ui/button'
 
 const user = useCurrentUser()
@@ -53,6 +54,15 @@ useHead({ title: 'Profile · Coffeee' })
         <ProfileName class="mt-8" />
         <ProfileStats class="mt-12" />
         <div class="mt-12 flex flex-wrap gap-3">
+          <NuxtLink
+            v-if="user?.role === 'admin'"
+            :to="adminPath"
+            data-testid="profile-admin"
+            :class="buttonVariants({ variant: 'outline', class: 'lg:hidden' })"
+          >
+            <ShieldIcon aria-hidden="true" />
+            Admin
+          </NuxtLink>
           <Button variant="outline" data-testid="sign-out" @click="signOut">
             Sign out
           </Button>

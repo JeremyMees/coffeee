@@ -7,6 +7,7 @@ import type {
 } from '@tanstack/vue-table'
 import { refDebounced } from '@vueuse/core'
 import { useAdminEntries } from '~/queries/admin'
+import AdminEntryActions from '~/components/molecules/AdminEntryActions.vue'
 
 definePageMeta({
   middleware: 'admin',
@@ -45,37 +46,15 @@ const listed = useAdminEntries(list, () => ({
   page: String(pagination.value.pageIndex),
 }))
 
-const acting = ref<{
-  action: 'update' | 'merge' | 'delete'
-  entry: AdminEntry
-}>()
+const acting = ref<{ action: AdminEntryAction; entry: AdminEntry }>()
 const updating = ref(false)
 const merging = ref(false)
 const deleting = ref(false)
 const opened = { update: updating, merge: merging, delete: deleting }
 
-function act(action: 'update' | 'merge' | 'delete', entry: AdminEntry) {
+function act(action: AdminEntryAction, entry: AdminEntry) {
   acting.value = { action, entry }
   opened[action].value = true
-}
-
-function actionButton(
-  action: 'update' | 'merge' | 'delete',
-  label: string,
-  entry: AdminEntry,
-) {
-  return h(
-    'button',
-    {
-      type: 'button',
-      'data-testid': `admin-entry-${action}`,
-      'aria-label': `${label} ${entry.name}`,
-      class:
-        'rounded-full px-3 py-1.5 uppercase transition-colors hover:bg-accent',
-      onClick: () => act(action, entry),
-    },
-    label,
-  )
 }
 
 const columns = computed<ColumnDef<AdminEntry, unknown>[]>(() => [
@@ -83,7 +62,7 @@ const columns = computed<ColumnDef<AdminEntry, unknown>[]>(() => [
     id: 'name',
     header: capitalised(nouns.value.one),
     cell: ({ row }) =>
-      h('div', [
+      h('div', { class: 'whitespace-normal wrap-anywhere' }, [
         h(
           'span',
           {
@@ -109,11 +88,10 @@ const columns = computed<ColumnDef<AdminEntry, unknown>[]>(() => [
     id: 'actions',
     header: () => h('span', { class: 'sr-only' }, 'Actions'),
     cell: ({ row }) =>
-      h('div', { class: 'flex justify-end gap-1' }, [
-        actionButton('update', 'Update', row.original),
-        actionButton('merge', 'Merge', row.original),
-        actionButton('delete', 'Delete', row.original),
-      ]),
+      h(AdminEntryActions, {
+        entry: row.original,
+        onAct: (action: AdminEntryAction) => act(action, row.original),
+      }),
   },
 ])
 
