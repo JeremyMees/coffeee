@@ -1,18 +1,29 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AppDock from '~/components/organisms/AppDock.vue'
-import { useAddCoffee, useCurrentUser } from '#imports'
-import { forgetLastShelf, tid } from '../../fixtures'
+import { useAddCoffee, useAddRoaster, useCurrentUser } from '#imports'
+import { byTestId, click, forgetLastShelf, tid } from '../../fixtures'
 import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()
   useCurrentUser().value = testUser()
   useAddCoffee().value = false
+  useAddRoaster().value = false
 })
 
 function mountDock(route = '/shelves/work-work/library') {
-  return mountSuspended(AppDock, { route })
+  return mountSuspended(AppDock, { route, attachTo: document.body })
+}
+
+async function openAddMenu() {
+  const dock = await mountDock()
+
+  await dock.get(tid('dock-add')).trigger('keydown', { key: 'Enter' })
+  await flushPromises()
+
+  return dock
 }
 
 describe('AppDock', () => {
@@ -47,11 +58,52 @@ describe('AppDock', () => {
     ).toBeUndefined()
   })
 
-  it('opens the add coffee sheet', async () => {
+  it('names the add button for screen readers', async () => {
     const dock = await mountDock()
 
-    await dock.get(tid('dock-add-coffee')).trigger('click')
+    expect(dock.get(tid('dock-add')).attributes('aria-label')).toBe('Add')
+    expect(byTestId('dock-add-menu')).toBeNull()
+  })
+
+  it('offers to add a coffee or a roaster', async () => {
+    await openAddMenu()
+
+    expect(
+      [...byTestId('dock-add-menu')!.querySelectorAll('[role="menuitem"]')].map(
+        item => item.textContent?.trim(),
+      ),
+    ).toEqual(['Add coffee', 'Add roaster'])
+  })
+
+  it('opens the add coffee sheet from the menu', async () => {
+    await openAddMenu()
+
+    await click('dock-add-coffee')
 
     expect(useAddCoffee().value).toBe(true)
+    expect(useAddRoaster().value).toBe(false)
+    expect(byTestId('dock-add-menu')).toBeNull()
+  })
+
+  it('opens the add roaster sheet from the menu', async () => {
+    await openAddMenu()
+
+    await click('dock-add-roaster')
+
+    expect(useAddRoaster().value).toBe(true)
+    expect(useAddCoffee().value).toBe(false)
+  })
+
+  it('closes the menu on Escape without opening a sheet', async () => {
+    await openAddMenu()
+
+    byTestId('dock-add-menu')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    )
+    await flushPromises()
+
+    expect(byTestId('dock-add-menu')).toBeNull()
+    expect(useAddCoffee().value).toBe(false)
+    expect(useAddRoaster().value).toBe(false)
   })
 })

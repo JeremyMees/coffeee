@@ -1,6 +1,8 @@
 <script setup lang="ts">
 useSearchShortcut()
 useAddCoffeeShortcut()
+
+const addRoaster = useAddRoaster()
 </script>
 
 <template>
@@ -29,5 +31,6 @@ useAddCoffeeShortcut()
     </div>
     <AppDock />
     <AddCoffeeSheet />
+    <LazyAddRoasterSheet v-model:open="addRoaster" />
   </div>
 </template>

@@ -44,12 +44,12 @@ describe('the app shell', () => {
     expect(page.get(tid('sidebar-shelf-switcher')).text()).toBe('Shelf: Work')
   })
 
-  it('puts Add coffee in the dock and in the page header', async () => {
+  it('puts Add in the dock and Add coffee in the page header', async () => {
     const page = await mountSuspended(App, {
       route: '/shelves/sarahs-shelf-home',
     })
 
-    expect(page.find(tid('dock-add-coffee')).exists()).toBe(true)
+    expect(page.find(tid('dock-add')).exists()).toBe(true)
     expect(page.find(tid('page-add-coffee')).exists()).toBe(true)
   })
 

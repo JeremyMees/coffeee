@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { PlusIcon } from '@lucide/vue'
+import { CoffeeIcon, PlusIcon, StoreIcon } from '@lucide/vue'
 
 const destinations = useDestinations()
 const addCoffee = useAddCoffee()
+const addRoaster = useAddRoaster()
 </script>
 
 <template>
@@ -38,16 +39,43 @@ const addCoffee = useAddCoffee()
       </DockIcon>
       <DockSeparator class="mx-1 h-7 w-px bg-border" />
       <DockIcon>
-        <button
-          type="button"
-          aria-label="Add coffee"
-          data-testid="dock-add-coffee"
-          title="Add coffee"
-          class="grid size-full place-items-center rounded-full border border-primary"
-          @click="addCoffee = true"
-        >
-          <PlusIcon class="size-5" aria-hidden="true" />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <button
+              type="button"
+              aria-label="Add"
+              data-testid="dock-add"
+              title="Add"
+              class="grid size-full place-items-center rounded-full border border-primary data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+            >
+              <PlusIcon class="size-5" aria-hidden="true" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="end"
+            :side-offset="12"
+            data-testid="dock-add-menu"
+            class="w-auto min-w-48 rounded-[22px] p-1.5 font-mono ring-primary"
+          >
+            <DropdownMenuItem
+              data-testid="dock-add-coffee"
+              class="min-h-11 rounded-full px-4 text-[13px] uppercase"
+              @select="addCoffee = true"
+            >
+              <CoffeeIcon aria-hidden="true" />
+              Add coffee
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              data-testid="dock-add-roaster"
+              class="min-h-11 rounded-full px-4 text-[13px] uppercase"
+              @select="addRoaster = true"
+            >
+              <StoreIcon aria-hidden="true" />
+              Add roaster
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </DockIcon>
     </Dock>
   </nav>
