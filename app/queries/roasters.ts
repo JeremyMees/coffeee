@@ -46,6 +46,16 @@ function useRoasterSaved() {
     changed({ type: 'roaster', roasterId: input.roasterId })
 }
 
+export function useRoasterCreate() {
+  const saved = useRoasterSaved()
+
+  return useMutation({
+    mutationFn: (details: RoasterDetails) =>
+      $fetch('/api/roasters', { method: 'POST', body: details }),
+    onSuccess: roaster => saved({ roasterId: roaster.id }),
+  })
+}
+
 export function useRoasterUpdate() {
   const saved = useRoasterSaved()
 

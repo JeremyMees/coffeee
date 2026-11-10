@@ -4,7 +4,14 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { roasterPath } from '#imports'
 import type { Member } from '#test/support/types'
-import { click, forgetLastShelf, tid } from '../../fixtures'
+import {
+  byTestId,
+  click,
+  forgetLastShelf,
+  submit,
+  tid,
+  type,
+} from '../../fixtures'
 import { failRequest, holdRequest, scenario, signIn } from '../../server'
 
 let sarah: Member
@@ -82,6 +89,18 @@ describe('the roasters page', () => {
     expect(
       page.get(tid('roasters-filter-bought-from')).attributes('aria-pressed'),
     ).toBe('true')
+  })
+
+  it('adds a roaster from the button in the header and lists it', async () => {
+    const { page, names } = await roasters()
+
+    expect(page.get(tid('page-add')).text()).toBe('Add roaster')
+    await click('page-add')
+    await vi.waitFor(() => expect(byTestId('roaster-name')).not.toBeNull())
+    await type('roaster-name', 'La Cabra')
+    await submit('add-roaster-form')
+
+    await vi.waitFor(() => expect(names()).toEqual(['La Cabra']))
   })
 
   it('says when there are no roasters yet', async () => {

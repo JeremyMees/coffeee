@@ -168,7 +168,7 @@ function capitalised(text: string) {
       <template #skeleton><AdminEntriesSkeleton /></template>
     </QuerySection>
     <LazyAdminAddCoffeeSheet v-if="list === 'coffees'" v-model:open="adding" />
-    <LazyAdminAddRoasterSheet
+    <LazyAddRoasterSheet
       v-else-if="list === 'roasters'"
       v-model:open="adding"
     />

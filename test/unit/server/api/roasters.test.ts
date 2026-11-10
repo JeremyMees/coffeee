@@ -5,6 +5,7 @@ import { shelfMember } from '#server/db/schemas'
 import photoHandler from '#server/api/photos/[...pathname].get'
 import editRoasterHandler from '#server/api/roasters/[roasterId].patch'
 import showRoasterHandler from '#server/api/roasters/[roasterId].get'
+import addRoasterHandler from '#server/api/roasters.post'
 import roastersHandler from '#server/api/shelves/[shelfId]/roasters/index.get'
 import removeLogoHandler from '#server/api/roasters/[roasterId]/logo.delete'
 import replaceLogoHandler from '#server/api/roasters/[roasterId]/logo.put'
@@ -46,6 +47,7 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/coffees/:coffeeId', showCoffeeHandler)
     .get('/api/coffees/:coffeeId/roaster', coffeeRoasterHandler)
     .get('/api/shelves/:shelfId/roasters', roastersHandler)
+    .post('/api/roasters', addRoasterHandler)
     .get('/api/roasters/:roasterId', showRoasterHandler)
     .patch('/api/roasters/:roasterId', editRoasterHandler)
     .put('/api/roasters/:roasterId/logo', replaceLogoHandler)
@@ -239,6 +241,63 @@ describe('the roasters', () => {
       (await request('/api/roasters/nope', { headers: outsider })).status,
     ).toBe(404)
     expect((await request(roasterPath)).status).toBe(401)
+  })
+})
+
+function add(headers: HeadersInit, body: unknown) {
+  return request('/api/roasters', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+}
+
+describe('adding a roaster', () => {
+  it('lets anyone signed in add a roaster with its details', async () => {
+    const { sarah } = await sharedShelf()
+
+    const response = await add(sarah, { ...details, name: 'La Cabra' })
+
+    expect(response.status).toBe(201)
+    const added = await response.json()
+    expect(added).toEqual({ id: expect.any(String), name: 'La Cabra' })
+    const shown = await request(`/api/roasters/${added.id}`, { headers: sarah })
+    expect(await shown.json()).toMatchObject({
+      name: 'La Cabra',
+      website: details.website,
+      countryCode: 'GB',
+      city: 'London',
+      canEdit: true,
+    })
+  })
+
+  it('refuses a name another roaster already has', async () => {
+    const { tom } = await sharedShelf()
+
+    const response = await add(tom, { name: 'square mile' })
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).data.errors).toEqual({
+      name: 'There is already a roaster called Square Mile',
+    })
+  })
+
+  it('explains details that are not right', async () => {
+    const { sarah } = await sharedShelf()
+
+    const response = await add(sarah, { name: '', website: 'lacabra' })
+
+    expect(response.status).toBe(400)
+    expect((await response.json()).data.errors).toEqual({
+      name: 'Give the roaster a name',
+      website: 'Enter a website that starts with https://',
+    })
+  })
+
+  it('asks to sign in first', async () => {
+    const response = await add({ 'content-type': 'application/json' }, details)
+
+    expect(response.status).toBe(401)
   })
 })
 

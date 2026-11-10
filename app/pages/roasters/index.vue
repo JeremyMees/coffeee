@@ -7,6 +7,7 @@ useHead({ title: 'Roasters · Coffeee' })
 const shelf = useCurrentShelf()
 const shelfId = computed(() => shelf.value?.id ?? '')
 const boughtFrom = ref(false)
+const adding = ref(false)
 
 const listed = useRoasterPages(shelfId, (): Record<string, string> =>
   boughtFrom.value ? { boughtFrom: 'true' } : {},
@@ -20,7 +21,7 @@ const total = computed(() => listed.data.value?.pages[0]?.total ?? 0)
 
 <template>
   <main>
-    <PageHeader title="Roasters" />
+    <PageHeader title="Roasters" add-label="Add roaster" @add="adding = true" />
     <p class="mt-3 text-xs">
       Every roastery anyone has added, and the ones your shelf buys from.
     </p>
@@ -75,5 +76,6 @@ const total = computed(() => listed.data.value?.pages[0]?.total ?? 0)
 
       <template #skeleton><RoastersSkeleton /></template>
     </QuerySection>
+    <LazyAddRoasterSheet v-model:open="adding" />
   </main>
 </template>

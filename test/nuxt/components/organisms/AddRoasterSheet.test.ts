@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { eq } from 'drizzle-orm'
-import AdminAddRoasterSheet from '~/components/organisms/AdminAddRoasterSheet.vue'
+import AddRoasterSheet from '~/components/organisms/AddRoasterSheet.vue'
 import { photoMaxBytes } from '#imports'
 import { roaster } from '#server/db/schemas'
 import type { Member } from '#test/support/types'
@@ -20,13 +20,13 @@ beforeEach(async () => {
   compressPhoto.mockClear()
   URL.createObjectURL = vi.fn(() => 'blob:logo')
   URL.revokeObjectURL = vi.fn()
-  jeremy = await scenario.member('Jeremy', { role: 'admin' })
+  jeremy = await scenario.member('Jeremy')
   await signIn(jeremy)
 })
 
 function openSheet() {
-  return mountSuspended(AdminAddRoasterSheet, {
-    route: '/admin/lists/roasters',
+  return mountSuspended(AddRoasterSheet, {
+    route: '/roasters',
     props: { open: true },
     attachTo: document.body,
   })
@@ -39,7 +39,7 @@ function pickCountry(code: string) {
 }
 
 function pickLogo() {
-  const input = byTestId<HTMLInputElement>('admin-add-roaster-logo-input')!
+  const input = byTestId<HTMLInputElement>('add-roaster-logo-input')!
   Object.defineProperty(input, 'files', {
     value: [new File(['logo'], 'logo.png', { type: 'image/png' })],
     configurable: true,
@@ -69,12 +69,12 @@ async function stored() {
     .where(eq(roaster.name, 'La Cabra'))
 }
 
-describe('AdminAddRoasterSheet', () => {
+describe('AddRoasterSheet', () => {
   it('adds a roaster with all its details and closes', async () => {
     const sheet = await openSheet()
 
     await fill()
-    await submit('admin-add-roaster-form')
+    await submit('add-roaster-form')
 
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
@@ -96,11 +96,11 @@ describe('AdminAddRoasterSheet', () => {
     await fill()
     pickLogo()
     await vi.waitFor(() =>
-      expect(
-        byTestId('admin-add-roaster-logo-preview')?.getAttribute('src'),
-      ).toBe('blob:logo'),
+      expect(byTestId('add-roaster-logo-preview')?.getAttribute('src')).toBe(
+        'blob:logo',
+      ),
     )
-    await submit('admin-add-roaster-form')
+    await submit('add-roaster-form')
 
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
@@ -114,25 +114,25 @@ describe('AdminAddRoasterSheet', () => {
 
     pickLogo()
     await vi.waitFor(() =>
-      expect(byTestId('admin-add-roaster-logo-preview')).not.toBeNull(),
+      expect(byTestId('add-roaster-logo-preview')).not.toBeNull(),
     )
-    await click('admin-add-roaster-logo-remove')
+    await click('add-roaster-logo-remove')
 
-    expect(byTestId('admin-add-roaster-logo-preview')).toBeNull()
+    expect(byTestId('add-roaster-logo-preview')).toBeNull()
   })
 
   it('asks for a name and a website that makes sense', async () => {
     await openSheet()
 
     await type('roaster-website', 'lacabra')
-    await submit('admin-add-roaster-form')
+    await submit('add-roaster-form')
 
     await vi.waitFor(() =>
-      expect(byTestId('admin-add-roaster-form')?.textContent).toContain(
+      expect(byTestId('add-roaster-form')?.textContent).toContain(
         'Give the roaster a name',
       ),
     )
-    expect(byTestId('admin-add-roaster-form')?.textContent).toContain(
+    expect(byTestId('add-roaster-form')?.textContent).toContain(
       'Enter a website that starts with https://',
     )
     expect(await stored()).toEqual([])
@@ -143,11 +143,11 @@ describe('AdminAddRoasterSheet', () => {
     await openSheet()
 
     await type('roaster-name', 'La Cabra')
-    await submit('admin-add-roaster-form')
+    await submit('add-roaster-form')
 
     await vi.waitFor(() =>
-      expect(byTestId('admin-add-roaster-form')?.textContent).toContain(
-        'La Cabra is already on the list',
+      expect(byTestId('add-roaster-form')?.textContent).toContain(
+        'There is already a roaster called La Cabra',
       ),
     )
     expect(await stored()).toHaveLength(1)
@@ -161,7 +161,7 @@ describe('AdminAddRoasterSheet', () => {
 
     await fill()
     pickLogo()
-    await submit('admin-add-roaster-form')
+    await submit('add-roaster-form')
 
     await vi.waitFor(() =>
       expect(byTestId('form-error')?.textContent).toContain(

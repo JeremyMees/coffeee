@@ -123,9 +123,7 @@ describe('a shared list on the admin page', () => {
     expect(page.get(tid('page-add')).text()).toBe('Add roaster')
     await page.get(tid('page-add')).trigger('click')
 
-    await vi.waitFor(() =>
-      expect(byTestId('admin-add-roaster-sheet')).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(byTestId('add-roaster-sheet')).not.toBeNull())
   })
 
   it('updates an entry', async () => {
