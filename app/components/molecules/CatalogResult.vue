@@ -1,88 +1,42 @@
 <script setup lang="ts">
-import { ImageIcon } from '@lucide/vue'
-
 const props = defineProps<{
   coffee: CatalogCoffee
   to: string
   hideRoaster?: boolean
 }>()
 
-const morph = useMorph('coffee', () => props.coffee.id)
-
-const described = computed(() =>
-  [
-    roastLevelLabels[props.coffee.roastLevel],
-    roastedForLabels[props.coffee.roastedFor],
-    originNames(props.coffee),
-  ]
-    .filter(Boolean)
-    .join(' · '),
-)
+const origins = computed(() => originNames(props.coffee))
 </script>
 
 <template>
-  <NuxtLink
+  <CoffeeSpecCard
+    :coffee="coffee"
     :to="to"
-    data-testid="catalog-result"
-    class="flex gap-4 rounded-[18px] border p-3 transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-    @click="morph.open"
+    :hide-roaster="hideRoaster"
+    testid="catalog-result"
   >
-    <div
-      class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-[12px] bg-accent"
-      :style="morph.name('photo')"
-      data-testid="catalog-result-thumbnail"
-    >
-      <NuxtImg
-        v-if="coffee.photoUrl"
-        :src="coffee.photoUrl"
-        alt=""
-        sizes="64px"
-        loading="lazy"
-        class="size-full object-cover"
-        data-testid="catalog-result-photo"
-      />
-      <ImageIcon
-        v-else
-        class="size-5 opacity-60"
-        aria-hidden="true"
-        data-testid="catalog-result-placeholder"
-      />
-    </div>
-    <div class="min-w-0 flex-1">
-      <div class="flex items-start justify-between gap-2">
-        <p
-          v-if="!hideRoaster"
-          class="truncate text-[11px] uppercase"
-          data-testid="catalog-result-roaster"
-        >
-          {{ coffee.roaster }}
-        </p>
-        <span
-          v-if="coffee.onShelf"
-          class="ml-auto shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground uppercase"
-          data-testid="catalog-result-mine"
-        >
-          On your shelf
-        </span>
-      </div>
-      <h2
-        class="mt-0.5 max-w-full w-fit truncate font-sans text-lg leading-tight font-semibold tracking-[-0.02em]"
-        :style="morph.name('name')"
-        data-testid="catalog-result-name"
+    <template #badge>
+      <span
+        v-if="coffee.onShelf"
+        class="shrink-0 self-start rounded-full border border-primary px-2 py-px text-[10px] uppercase"
+        data-testid="catalog-result-mine"
       >
-        {{ coffee.name }}
-      </h2>
-      <p class="mt-1 truncate text-xs" data-testid="catalog-result-described">
-        {{ described }}
-      </p>
-      <p class="mt-1.5" data-testid="catalog-result-community-rating">
-        <CommunityRating :rating="coffee.communityRating" />
-      </p>
-      <MatchedBy
-        class="mt-2"
-        :matches="coffee.matches"
-        testid="catalog-result"
-      />
-    </div>
-  </NuxtLink>
+        On your shelf
+      </span>
+    </template>
+    <template #facts>
+      <SpecRow v-if="origins" label="Origin">
+        <dd class="max-w-[68%] text-right" data-testid="catalog-result-origins">
+          {{ origins }}
+        </dd>
+      </SpecRow>
+    </template>
+    <template #ratings>
+      <SpecRow label="Community" centered>
+        <dd data-testid="catalog-result-community-rating">
+          <CommunityRating :rating="coffee.communityRating" />
+        </dd>
+      </SpecRow>
+    </template>
+  </CoffeeSpecCard>
 </template>

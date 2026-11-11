@@ -19,13 +19,13 @@ describe('CatalogResult', () => {
     clearNuxtState('coffee-morph')
     const wrapper = await result()
     expect(
-      wrapper.get(tid('catalog-result-thumbnail')).attributes('style'),
+      wrapper.get(tid('catalog-result-photo-frame')).attributes('style'),
     ).toBeUndefined()
 
     await wrapper.get(tid('catalog-result')).trigger('click')
 
     expect(
-      wrapper.get(tid('catalog-result-thumbnail')).attributes('style'),
+      wrapper.get(tid('catalog-result-photo-frame')).attributes('style'),
     ).toContain('view-transition-name: coffee-photo-c1')
     expect(
       wrapper.get(tid('catalog-result-name')).attributes('style'),
@@ -42,8 +42,23 @@ describe('CatalogResult', () => {
     expect(wrapper.get(tid('catalog-result-roaster')).text()).toBe(
       'Square Mile',
     )
-    expect(wrapper.get(tid('catalog-result-described')).text()).toBe(
-      'Light · Filter · Ethiopia',
+    expect(wrapper.get(tid('catalog-result-roast')).text()).toBe(
+      'Light · Filter',
+    )
+    expect(wrapper.get(tid('catalog-result-origins')).text()).toBe('Ethiopia')
+    expect(
+      wrapper
+        .findAll(tid('catalog-result-flavor-note'))
+        .map(note => note.text()),
+    ).toEqual(['Lime'])
+  })
+
+  it('leaves out the origin and notes it does not know', async () => {
+    const wrapper = await result({ origins: [], flavorNotes: [] })
+
+    expect(wrapper.find(tid('catalog-result-origins')).exists()).toBe(false)
+    expect(wrapper.find(tid('catalog-result-flavor-notes')).exists()).toBe(
+      false,
     )
   })
 

@@ -34,6 +34,18 @@ export type CardCoffee = Pick<
   | 'rating'
 > & { matches?: CatalogMatch[] }
 
+export type SpecCardCoffee = Pick<
+  CardCoffee,
+  | 'id'
+  | 'name'
+  | 'roaster'
+  | 'roastLevel'
+  | 'roastedFor'
+  | 'flavorNotes'
+  | 'photoUrl'
+  | 'matches'
+>
+
 export type PhotoCoffee = Pick<ShelfCoffee, 'id' | 'name' | 'photoUrl'>
 
 type CoffeeReviews = InternalApi['/api/coffees/:coffeeId/reviews']['get']
