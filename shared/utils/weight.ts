@@ -1,5 +1,7 @@
-const kilos = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 })
+import { formatNumber } from './locale'
 
-export function formatWeight(grams: number) {
-  return grams < 1000 ? `${grams} g` : `${kilos.format(grams / 1000)} kg`
+export function formatWeight(grams: number, locale: string) {
+  return grams < 1000
+    ? `${formatNumber(grams, locale)} g`
+    : `${formatNumber(grams / 1000, locale, { maximumFractionDigits: 1 })} kg`
 }

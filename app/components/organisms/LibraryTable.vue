@@ -20,6 +20,8 @@ const props = defineProps<{
   shelf: { id: string; name: string }
 }>()
 
+const locale = useLocale()
+
 function sortIcon(column: Column<LibraryCoffee>) {
   const sorted = column.getIsSorted()
 
@@ -90,9 +92,9 @@ const columns: ColumnDef<LibraryCoffee, unknown>[] = [
   sortable('latestPrice', coffee =>
     coffee.latestPriceCents === null
       ? 'Unknown'
-      : formatPrice(coffee.latestPriceCents),
+      : formatPrice(coffee.latestPriceCents, locale.value),
   ),
-  sortable('lastBought', coffee => formatDate(coffee.lastBought)),
+  sortable('lastBought', coffee => formatDate(coffee.lastBought, locale.value)),
 ]
 </script>
 

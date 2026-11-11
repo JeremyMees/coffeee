@@ -16,7 +16,7 @@ const open = defineModel<boolean>('open', { default: false })
 
 const { mutateAsync: buyAgain } = useBuyAgain()
 const { mutateAsync: updatePurchase } = usePurchaseUpdate()
-
+const locale = useLocale()
 const formError = ref('')
 
 const copy = computed(() =>
@@ -35,8 +35,8 @@ const copy = computed(() =>
 
 function startValues() {
   return props.purchase
-    ? purchaseFormValues(props.purchase)
-    : buyAgainValues(props.purchases)
+    ? purchaseFormValues(props.purchase, locale.value)
+    : buyAgainValues(props.purchases, locale.value)
 }
 
 const { handleSubmit, resetForm, setErrors, isSubmitting } = useForm({

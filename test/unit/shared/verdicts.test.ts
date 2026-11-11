@@ -37,16 +37,22 @@ describe('ratingLabel', () => {
 
 describe('communityRatingLabel', () => {
   it('gives the average to one decimal and how many people rated it', () => {
-    expect(communityRatingLabel({ average: 4.25, raters: 4 })).toBe(
+    expect(communityRatingLabel({ average: 4.25, raters: 4 }, 'en')).toBe(
       '4.3 from 4 people',
     )
-    expect(communityRatingLabel({ average: 3, raters: 1 })).toBe(
+    expect(communityRatingLabel({ average: 3, raters: 1 }, 'en')).toBe(
       '3.0 from 1 person',
     )
   })
 
+  it('writes the average the way the locale does', () => {
+    expect(communityRatingLabel({ average: 4.25, raters: 4 }, 'nl-BE')).toBe(
+      '4,3 from 4 people',
+    )
+  })
+
   it('says when nobody rated the coffee yet', () => {
-    expect(communityRatingLabel({ average: null, raters: 0 })).toBe(
+    expect(communityRatingLabel({ average: null, raters: 0 }, 'en')).toBe(
       'No ratings yet',
     )
   })

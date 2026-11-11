@@ -44,7 +44,7 @@ describe('RoasterResult', () => {
     const wrapper = await result()
 
     expect(wrapper.get(tid('roaster-result-bought')).text()).toBe(
-      `2 coffees · last bought ${formatDate('2026-11-01')}`,
+      `2 coffees · last bought ${formatDate('2026-11-01', 'en-US')}`,
     )
     expect(
       (await result({ shelfCoffees: 1 }))

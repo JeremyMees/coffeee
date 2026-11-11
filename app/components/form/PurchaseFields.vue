@@ -57,10 +57,9 @@ import { Field as VeeField } from 'vee-validate'
           id="price"
           v-bind="componentField"
           data-testid="coffee-price"
-          type="number"
+          type="text"
           inputmode="decimal"
-          min="0"
-          step="0.01"
+          autocomplete="off"
           :aria-invalid="errors.length ? true : undefined"
         />
         <FieldError :errors="errors" />

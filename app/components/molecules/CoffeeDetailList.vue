@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const props = defineProps<{ coffee: EditableCoffee }>()
 
+const locale = useLocale()
+
 function names(entries: ListEntry[]) {
   return entries.map(entry => entry.name).join(', ')
 }
@@ -36,7 +38,9 @@ const rows = computed(() => {
     {
       key: 'altitude',
       label: 'Altitude',
-      value: formatAltitude(shown.altitudeFrom, shown.altitudeTo) ?? '',
+      value:
+        formatAltitude(shown.altitudeFrom, shown.altitudeTo, locale.value) ??
+        '',
     },
     { key: 'producers', label: 'Producer', value: names(shown.producers) },
     { key: 'farms', label: 'Farm', value: inOrigins(shown.farms) },

@@ -2,6 +2,7 @@
 import { useProfileStats } from '~/queries/account'
 
 const stats = useProfileStats()
+const locale = useLocale()
 
 function rowsOf(stats: ProfileStats) {
   return [
@@ -13,12 +14,12 @@ function rowsOf(stats: ProfileStats) {
     {
       key: 'weight',
       label: 'Coffee bought',
-      value: formatWeight(stats.grams),
+      value: formatWeight(stats.grams, locale.value),
     },
     {
       key: 'spent',
       label: 'Spent',
-      value: formatPrice(stats.spentCents),
+      value: formatPrice(stats.spentCents, locale.value),
     },
     {
       key: 'rated',
@@ -31,7 +32,7 @@ function rowsOf(stats: ProfileStats) {
       value:
         stats.averageRating === null
           ? 'None yet'
-          : `${stats.averageRating.toFixed(1)} stars`,
+          : `${formatRating(stats.averageRating, locale.value)} stars`,
     },
     {
       key: 'buy-again',

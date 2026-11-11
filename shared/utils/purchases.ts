@@ -1,5 +1,6 @@
 import type { PurchaseRecord } from '../types/purchases'
 import { localDate } from './dates'
+import { formatAmount } from './money'
 
 function newestFirst<Record extends PurchaseRecord>(purchases: Record[]) {
   return [...purchases].sort((a, b) =>
@@ -40,7 +41,10 @@ export function timesBought(purchases: PurchaseRecord[]) {
   return purchases.length
 }
 
-export function purchaseFormValues(purchase: PurchaseRecord | undefined) {
+export function purchaseFormValues(
+  purchase: PurchaseRecord | undefined,
+  locale: string,
+) {
   return {
     purchasedOn: purchase?.purchasedOn ?? localDate(),
     roastedOn: purchase?.roastedOn ?? '',
@@ -48,18 +52,19 @@ export function purchaseFormValues(purchase: PurchaseRecord | undefined) {
     price:
       purchase?.priceCents == null
         ? ''
-        : (purchase.priceCents / 100).toFixed(2),
+        : formatAmount(purchase.priceCents, locale),
   }
 }
 
 export function buyAgainValues(
   purchases: PurchaseRecord[],
+  locale: string,
   today = new Date(),
 ) {
   const last = newestFirst(purchases)[0]
 
   return {
-    ...purchaseFormValues(last),
+    ...purchaseFormValues(last, locale),
     purchasedOn: localDate(today),
     roastedOn: '',
   }

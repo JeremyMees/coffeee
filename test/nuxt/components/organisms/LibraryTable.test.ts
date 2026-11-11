@@ -39,7 +39,7 @@ describe('LibraryTable', () => {
     expect(cell('origin')).toBe('Ethiopia')
     expect(cell('roastLevel')).toBe('Light')
     expect(cell('latestPrice')).toMatch(/^€\s?16\.50$/)
-    expect(cell('lastBought')).toBe(formatDate('2026-11-01'))
+    expect(cell('lastBought')).toBe(formatDate('2026-11-01', 'en-US'))
   })
 
   it('says what nobody wrote down', async () => {

@@ -9,6 +9,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{ edit: [] }>()
 
+const locale = useLocale()
+
 const confirming = ref(false)
 const failure = ref('')
 
@@ -48,12 +50,12 @@ function remove() {
   <li data-testid="purchase" class="flex flex-col gap-3 p-4 text-xs">
     <div class="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
       <span data-testid="purchase-bought"
-        >Bought {{ formatDate(purchase.purchasedOn) }}</span
+        >Bought {{ formatDate(purchase.purchasedOn, locale) }}</span
       >
       <span data-testid="purchase-roasted">
         {{
           purchase.roastedOn
-            ? `Roasted ${formatDate(purchase.roastedOn)}`
+            ? `Roasted ${formatDate(purchase.roastedOn, locale)}`
             : 'No roast date'
         }}
       </span>
@@ -63,7 +65,7 @@ function remove() {
         {{
           purchase.priceCents === null
             ? 'Price unknown'
-            : formatPrice(purchase.priceCents)
+            : formatPrice(purchase.priceCents, locale)
         }}
       </span>
       <span class="uppercase sm:text-right" data-testid="purchase-status">

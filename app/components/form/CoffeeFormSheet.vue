@@ -22,11 +22,12 @@ const form = useTemplateRef('form')
 const photo = ref<File | null>()
 const savedId = ref<string>()
 const steps = coffeeFormSteps(props.firstBag)
+const locale = useLocale()
 
 function startValues() {
   return {
     ...coffeeFormValues(props.coffee),
-    ...(props.firstBag ? purchaseFormValues(undefined) : {}),
+    ...(props.firstBag ? purchaseFormValues(undefined, locale.value) : {}),
   }
 }
 

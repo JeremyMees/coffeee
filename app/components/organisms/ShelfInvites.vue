@@ -16,6 +16,7 @@ const { mutateAsync: cancelInvite } = useShelfInviteCancel()
 
 const formError = ref('')
 const sentTo = ref('')
+const locale = useLocale()
 
 const { handleSubmit, resetForm, setErrors, isSubmitting } = useForm({
   validationSchema: zodSchema(inviteEmailSchema),
@@ -41,13 +42,6 @@ const invite = handleSubmit(async ({ email }) => {
 
 async function cancel(inviteId: string) {
   await cancelInvite({ shelfId: props.shelfId, inviteId })
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-  })
 }
 </script>
 
@@ -123,7 +117,7 @@ function formatDate(date: string) {
               <span class="block">
                 From {{ pending.invitedBy }}
                 <template v-if="pending.expiresAt">
-                  · expires {{ formatDate(pending.expiresAt) }}
+                  · expires {{ formatDayMonth(pending.expiresAt, locale) }}
                 </template>
               </span>
             </span>

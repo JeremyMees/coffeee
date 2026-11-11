@@ -2,6 +2,8 @@
 import { CheckIcon } from '@lucide/vue'
 
 defineProps<{ communityRating: CoffeeCommunityRating; reviews: Review[] }>()
+
+const locale = useLocale()
 </script>
 
 <template>
@@ -22,7 +24,7 @@ defineProps<{ communityRating: CoffeeCommunityRating; reviews: Review[] }>()
       <span
         class="font-sans text-[40px] leading-none font-semibold tracking-[-0.045em]"
       >
-        {{ communityRating.average.toFixed(1) }}
+        {{ formatRating(communityRating.average, locale) }}
       </span>
       <span class="text-xs">
         from {{ communityRating.raters }}

@@ -103,7 +103,7 @@ describe('priceCents', () => {
 
 describe('purchaseFormValues', () => {
   it('fills the purchase form from a purchase', () => {
-    expect(purchaseFormValues(history[0])).toEqual({
+    expect(purchaseFormValues(history[0], 'en')).toEqual({
       purchasedOn: '2026-09-01',
       roastedOn: '2026-08-28',
       sizeGrams: '250',
@@ -111,8 +111,12 @@ describe('purchaseFormValues', () => {
     })
   })
 
+  it('writes the price with the decimal separator of the locale', () => {
+    expect(purchaseFormValues(history[0], 'nl-BE').price).toBe('15,00')
+  })
+
   it('starts an empty purchase on today', () => {
-    expect(purchaseFormValues(undefined)).toEqual({
+    expect(purchaseFormValues(undefined, 'en')).toEqual({
       purchasedOn: localDate(),
       roastedOn: '',
       sizeGrams: '',
@@ -131,6 +135,7 @@ describe('buyAgainValues', () => {
           ...history,
           bought('2026-11-02', { sizeGrams: 500, priceCents: 2950 }),
         ],
+        'en',
         today,
       ),
     ).toEqual({
@@ -142,7 +147,7 @@ describe('buyAgainValues', () => {
   })
 
   it('starts empty for a coffee the shelf never bought', () => {
-    expect(buyAgainValues([], new Date(2026, 10, 2))).toEqual({
+    expect(buyAgainValues([], 'en', new Date(2026, 10, 2))).toEqual({
       purchasedOn: '2026-11-02',
       roastedOn: '',
       sizeGrams: '',

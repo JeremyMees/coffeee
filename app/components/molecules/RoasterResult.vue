@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{ roaster: ListedRoaster }>()
 
+const locale = useLocale()
 const morph = useMorph('roaster', () => props.roaster.id)
 </script>
 
@@ -38,7 +39,7 @@ const morph = useMorph('roaster', () => props.roaster.id)
       >
         {{ roaster.shelfCoffees }}
         {{ roaster.shelfCoffees === 1 ? 'coffee' : 'coffees' }} · last bought
-        {{ formatDate(roaster.lastBought) }}
+        {{ formatDate(roaster.lastBought, locale) }}
       </p>
     </div>
   </NuxtLink>

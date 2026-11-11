@@ -132,7 +132,7 @@ describe('CoffeeFormSheet', () => {
     expect(byTestId('coffee-form-steps')!.textContent).toContain('First bag')
     expect(
       byTestId('coffee-purchased-on', 'date-picker-trigger')!.textContent,
-    ).toContain(formatDate(localDate()))
+    ).toContain(formatDate(localDate(), 'en-US'))
   })
 
   it('starts from the details of the coffee it was given', async () => {

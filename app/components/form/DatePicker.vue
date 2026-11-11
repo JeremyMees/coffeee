@@ -14,6 +14,8 @@ const props = defineProps<{
 
 const latest = today(getLocalTimeZone())
 
+const locale = useLocale()
+
 const date = computed({
   get: () => (model.value ? parseDate(model.value) : undefined),
   set: (value: DateValue | undefined) => {
@@ -38,7 +40,7 @@ const date = computed({
           :aria-invalid="invalid ? true : undefined"
         >
           <CalendarIcon aria-hidden="true" />
-          {{ model ? formatDate(model) : 'Pick a date' }}
+          {{ model ? formatDate(model, locale) : 'Pick a date' }}
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -50,6 +52,7 @@ const date = computed({
           v-model="date"
           :default-placeholder="date ?? latest"
           :max-value="latest"
+          :locale="locale"
           :week-starts-on="1"
           layout="month-and-year"
           initial-focus

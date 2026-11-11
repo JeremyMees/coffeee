@@ -28,8 +28,8 @@ describe('origins', () => {
 
 describe('formatAltitude', () => {
   it('shows a range, a single height or nothing', () => {
-    expect(formatAltitude(1700, 2100)).toBe('1,700–2,100 m')
-    expect(formatAltitude(1850, 1850)).toBe('1,850 m')
-    expect(formatAltitude(null, null)).toBeNull()
+    expect(formatAltitude(1700, 2100, 'en')).toBe('1,700–2,100 m')
+    expect(formatAltitude(1850, 1850, 'en')).toBe('1,850 m')
+    expect(formatAltitude(null, null, 'en')).toBeNull()
   })
 })

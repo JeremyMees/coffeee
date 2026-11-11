@@ -25,6 +25,14 @@ function numberFromForm(value: unknown) {
   return typeof filled === 'string' ? Number(filled) : filled
 }
 
+function decimalFromForm(value: unknown) {
+  const filled = blankToNull(value)
+
+  return typeof filled === 'string'
+    ? Number(filled.trim().replace(',', '.'))
+    : filled
+}
+
 function requiredText(missing: string, max: number, tooLong: string) {
   return z.string({ error: missing }).trim().min(1, missing).max(max, tooLong)
 }
@@ -373,7 +381,7 @@ const purchaseShape = {
       .nullable(),
   ),
   price: z.preprocess(
-    numberFromForm,
+    decimalFromForm,
     z
       .number({ error: 'Enter the price as a number' })
       .nonnegative("The price can't be negative")

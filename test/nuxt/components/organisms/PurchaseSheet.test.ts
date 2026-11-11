@@ -76,7 +76,9 @@ describe('PurchaseSheet', () => {
     await openSheet()
 
     expect(byTestId('form-sheet-title')!.textContent).toContain('Buy again')
-    expect(pickedDate('coffee-purchased-on')).toBe(formatDate(localDate()))
+    expect(pickedDate('coffee-purchased-on')).toBe(
+      formatDate(localDate(), 'en-US'),
+    )
     expect(pickedDate('coffee-roasted-on')).toBe('Pick a date')
     expect(inputValue('coffee-size')).toBe('250')
     expect(inputValue('coffee-price')).toBe('16.50')
@@ -105,8 +107,12 @@ describe('PurchaseSheet', () => {
     const sheet = await openSheet({ purchase: purchases[0] })
 
     expect(byTestId('form-sheet-title')!.textContent).toContain('Edit purchase')
-    expect(pickedDate('coffee-purchased-on')).toBe(formatDate('2026-11-01'))
-    expect(pickedDate('coffee-roasted-on')).toBe(formatDate('2026-10-28'))
+    expect(pickedDate('coffee-purchased-on')).toBe(
+      formatDate('2026-11-01', 'en-US'),
+    )
+    expect(pickedDate('coffee-roasted-on')).toBe(
+      formatDate('2026-10-28', 'en-US'),
+    )
 
     await type('coffee-price', '')
     await submit('purchase-form')

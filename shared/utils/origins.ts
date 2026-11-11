@@ -1,4 +1,5 @@
 import type { OriginCode } from '../types/origins'
+import { formatNumber } from './locale'
 
 export const origins = {
   AD: 'Andorra',
@@ -262,14 +263,16 @@ export function originName(code: string) {
   return isOriginCode(code) ? origins[code] : code
 }
 
-export function formatAltitude(from: number | null, to: number | null) {
+export function formatAltitude(
+  from: number | null,
+  to: number | null,
+  locale: string,
+) {
   if (from === null || to === null) return null
 
-  const metres = new Intl.NumberFormat('en')
-
   return from === to
-    ? `${metres.format(from)} m`
-    : `${metres.format(from)}–${metres.format(to)} m`
+    ? `${formatNumber(from, locale)} m`
+    : `${formatNumber(from, locale)}–${formatNumber(to, locale)} m`
 }
 
 export const originListFields = ['regions', 'farms', 'washingStations'] as const

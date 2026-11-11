@@ -134,6 +134,23 @@ describe('purchaseSchema', () => {
     })
   })
 
+  it('reads a price written with a decimal comma', () => {
+    expect(
+      purchaseSchema.parse({
+        purchasedOn: '2026-11-02',
+        roastedOn: '',
+        sizeGrams: '',
+        price: ' 16,50 ',
+      }).price,
+    ).toBe(16.5)
+  })
+
+  it('explains a price that is not a number', () => {
+    expect(
+      errorsOf(purchaseSchema, { purchasedOn: '2026-11-02', price: '16 euro' }),
+    ).toMatchObject({ price: 'Enter the price as a number' })
+  })
+
   it('explains a missing purchase date', () => {
     expect(errorsOf(purchaseSchema, { roastedOn: null })).toEqual({
       purchasedOn: 'Enter the date you bought it',

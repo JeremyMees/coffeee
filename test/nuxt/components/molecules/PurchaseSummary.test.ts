@@ -16,8 +16,8 @@ describe('PurchaseSummary', () => {
   it('sums up what the shelf bought', async () => {
     const value = await summary(ayele().purchases)
 
-    expect(value('last-bought')).toBe(formatDate('2026-11-01'))
-    expect(value('latest-roast')).toBe(formatDate('2026-10-28'))
+    expect(value('last-bought')).toBe(formatDate('2026-11-01', 'en-US'))
+    expect(value('latest-roast')).toBe(formatDate('2026-10-28', 'en-US'))
     expect(value('latest-price')).toMatch(/^€\s?16\.50$/)
     expect(value('price-per-gram')).toMatch(/^€\s?0\.066\/g$/)
     expect(value('times-bought')).toBe('2 times')

@@ -57,8 +57,12 @@ describe('PurchaseRow', () => {
     const text = (part: string) =>
       row.get(tid(part)).text().replace(/\s+/g, ' ')
 
-    expect(text('purchase-bought')).toBe(`Bought ${formatDate('2026-11-01')}`)
-    expect(text('purchase-roasted')).toBe(`Roasted ${formatDate('2026-10-28')}`)
+    expect(text('purchase-bought')).toBe(
+      `Bought ${formatDate('2026-11-01', 'en-US')}`,
+    )
+    expect(text('purchase-roasted')).toBe(
+      `Roasted ${formatDate('2026-10-28', 'en-US')}`,
+    )
     expect(text('purchase-size-price')).toMatch(/^250 g · €\s?16\.50$/)
     expect(text('purchase-status')).toBe('In stock')
   })

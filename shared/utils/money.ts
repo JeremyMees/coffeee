@@ -1,19 +1,25 @@
-const euros = new Intl.NumberFormat(undefined, {
-  style: 'currency',
-  currency: 'EUR',
-})
+import { formatNumber } from './locale'
 
-const eurosPerGram = new Intl.NumberFormat(undefined, {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 3,
-  maximumFractionDigits: 3,
-})
-
-export function formatPrice(cents: number) {
-  return euros.format(cents / 100)
+export function formatPrice(cents: number, locale: string) {
+  return formatNumber(cents / 100, locale, {
+    style: 'currency',
+    currency: 'EUR',
+  })
 }
 
-export function formatPricePerGram(centsPerGram: number) {
-  return `${eurosPerGram.format(centsPerGram / 100)}/g`
+export function formatPricePerGram(centsPerGram: number, locale: string) {
+  return `${formatNumber(centsPerGram / 100, locale, {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  })}/g`
+}
+
+export function formatAmount(cents: number, locale: string) {
+  return formatNumber(cents / 100, locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: false,
+  })
 }

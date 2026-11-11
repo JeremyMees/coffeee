@@ -24,6 +24,15 @@ describe('PurchaseFields', () => {
     await wrapper.get(tid('coffee-price')).setValue('16.50')
     await flushPromises()
 
-    expect(form.values).toMatchObject({ sizeGrams: 250, price: 16.5 })
+    expect(form.values).toMatchObject({ sizeGrams: 250, price: '16.50' })
+  })
+
+  it('keeps a price written with a decimal comma as typed', async () => {
+    const { wrapper, form } = await mountInForm(PurchaseFields)
+
+    await wrapper.get(tid('coffee-price')).setValue('16,50')
+    await flushPromises()
+
+    expect(form.values).toMatchObject({ price: '16,50' })
   })
 })

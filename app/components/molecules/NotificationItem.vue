@@ -8,6 +8,7 @@ const NuxtLink = resolveComponent('NuxtLink')
 const { mutateAsync: accept, isPending: accepting } = useMyInviteAccept()
 const { mutateAsync: decline, isPending: declining } = useMyInviteDecline()
 const answerError = ref('')
+const locale = useLocale()
 
 const link = computed(() => notificationLink(props.notification))
 const answerable = computed(
@@ -44,15 +45,6 @@ async function answer(choice: 'accept' | 'decline') {
     answerError.value = serverErrors(caught).message
   }
 }
-
-function formatWhen(date: string) {
-  return new Date(date).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
 </script>
 
 <template>
@@ -81,7 +73,9 @@ function formatWhen(date: string) {
           <span v-if="!notification.readAt" class="sr-only">New:</span>
           {{ notificationText(notification) }}
         </span>
-        <span class="block">{{ formatWhen(notification.createdAt) }}</span>
+        <span class="block">{{
+          formatDateTime(notification.createdAt, locale)
+        }}</span>
       </component>
       <div
         v-if="answerable"

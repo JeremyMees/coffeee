@@ -8,17 +8,12 @@ useHead({ title: 'Invites · Admin · Coffeee' })
 
 const invites = useInvites()
 const { mutateAsync: revokeInvite } = useInviteRevoke()
+const locale = useLocale()
+
 const adding = ref(false)
 
 async function revoke(id: string) {
   await revokeInvite(id)
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-  })
 }
 </script>
 
@@ -65,7 +60,7 @@ function formatDate(date: string) {
                   v-if="invite.expiresAt"
                   class="font-mono text-xs font-normal"
                 >
-                  · expires {{ formatDate(invite.expiresAt) }}
+                  · expires {{ formatDayMonth(invite.expiresAt, locale) }}
                 </span>
               </span>
               <Button

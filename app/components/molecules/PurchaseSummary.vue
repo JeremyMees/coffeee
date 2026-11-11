@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const props = defineProps<{ purchases: ShelfPurchase[] }>()
 
+const locale = useLocale()
+
 const rows = computed(() => {
   const bought = lastBought(props.purchases)
   const roasted = latestRoastDate(props.purchases)
@@ -12,22 +14,25 @@ const rows = computed(() => {
     {
       key: 'last-bought',
       label: 'Last bought',
-      value: bought ? formatDate(bought) : 'Never',
+      value: bought ? formatDate(bought, locale.value) : 'Never',
     },
     {
       key: 'latest-roast',
       label: 'Latest roast date',
-      value: roasted ? formatDate(roasted) : 'Unknown',
+      value: roasted ? formatDate(roasted, locale.value) : 'Unknown',
     },
     {
       key: 'latest-price',
       label: 'Latest price',
-      value: price === null ? 'Unknown' : formatPrice(price),
+      value: price === null ? 'Unknown' : formatPrice(price, locale.value),
     },
     {
       key: 'price-per-gram',
       label: 'Price per gram',
-      value: perGram === null ? 'Unknown' : formatPricePerGram(perGram),
+      value:
+        perGram === null
+          ? 'Unknown'
+          : formatPricePerGram(perGram, locale.value),
     },
     {
       key: 'times-bought',

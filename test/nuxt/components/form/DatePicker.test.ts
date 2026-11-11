@@ -28,7 +28,7 @@ describe('DatePicker', () => {
     const picker = await mountPicker({ modelValue: '2026-10-28' })
 
     expect(picker.get(tid('date-picker-trigger')).text()).toBe(
-      formatDate('2026-10-28'),
+      formatDate('2026-10-28', 'en-US'),
     )
   })
 

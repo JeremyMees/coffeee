@@ -126,10 +126,10 @@ describe('a coffee page', () => {
       shown!.get(tid(part)).text().replace(/\s+/g, ' ')
 
     expect(text(latest, 'purchase-bought')).toBe(
-      `Bought ${formatDate('2026-11-01')}`,
+      `Bought ${formatDate('2026-11-01', 'en-US')}`,
     )
     expect(text(latest, 'purchase-roasted')).toBe(
-      `Roasted ${formatDate('2026-10-28')}`,
+      `Roasted ${formatDate('2026-10-28', 'en-US')}`,
     )
     expect(text(latest, 'purchase-size-price')).toMatch(/^250 g · €\s?16\.50$/)
     expect(text(latest, 'purchase-status')).toBe('In stock')
@@ -445,7 +445,7 @@ describe('a coffee page', () => {
     const page = await coffeePage(await ayele())
 
     expect(page.get(tid('summary-last-bought')).text()).toBe(
-      formatDate('2026-11-01'),
+      formatDate('2026-11-01', 'en-US'),
     )
     expect(page.get(tid('summary-times-bought')).text()).toBe('2 times')
   })
