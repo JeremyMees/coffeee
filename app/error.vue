@@ -20,7 +20,7 @@ useHead({ title: () => `${notFound.value ? 'Not found' : 'Error'} · Coffeee` })
       "
     >
       <span v-if="!user" class="text-[30px]"><AppWordmark /></span>
-      <h1 class="text-[64px] lg:text-[88px]" data-testid="error-title">
+      <h1 class="text-title" data-testid="error-title">
         {{ notFound ? 'Not found' : 'Something broke' }}
       </h1>
       <p class="max-w-md text-xs" data-testid="error-message">

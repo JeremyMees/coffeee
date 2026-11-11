@@ -159,3 +159,11 @@
     inset-inline: min(0px, calc(50% - 22px));
   }
 }
+
+@utility text-title {
+  font-size: clamp(44px, 17.5vw - 6px, 64px);
+
+  @variant lg {
+    font-size: 88px;
+  }
+}

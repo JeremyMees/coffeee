@@ -19,7 +19,7 @@ function add() {
 
 <template>
   <header class="flex items-end justify-between gap-4 pt-6">
-    <h1 class="text-[64px] lg:text-[88px]" data-testid="page-title">
+    <h1 class="text-title" data-testid="page-title">
       {{ title }}
     </h1>
     <Button
