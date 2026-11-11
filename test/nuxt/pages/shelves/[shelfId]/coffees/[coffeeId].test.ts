@@ -466,31 +466,14 @@ describe('a coffee page', () => {
     expect(await storedPurchases(shown.id)).toHaveLength(3)
   })
 
-  it('finishes the oldest bag in stock and offers no finish once all are', async () => {
+  it('offers one way to finish each bag in stock', async () => {
     const page = await coffeePage(await ayele())
 
-    await page.get(tid('coffee-finish')).trigger('click')
-
     await vi.waitFor(() =>
-      expect(
-        page.findAll(tid('purchase-status')).map(status => status.text()),
-      ).toEqual(['Finished', 'Finished']),
+      expect(page.findAll(tid('purchase'))).toHaveLength(2),
     )
+    expect(page.findAll(tid('purchase-finish'))).toHaveLength(1)
     expect(page.find(tid('coffee-finish')).exists()).toBe(false)
-  })
-
-  it('says why the coffee could not be finished', async () => {
-    const shown = await ayele()
-    const page = await coffeePage(shown)
-    await scenario.finishBag(sarah.shelf, shown.id)
-
-    await page.get(tid('coffee-finish')).trigger('click')
-
-    await vi.waitFor(() =>
-      expect(page.get(tid('coffee-finish-error')).text()).toBe(
-        'Nothing of this coffee is in stock',
-      ),
-    )
   })
 
   it('edits a purchase in the history', async () => {
@@ -525,7 +508,6 @@ describe('a coffee page', () => {
       expect(page.find(tid('purchases-empty')).exists()).toBe(true),
     )
     expect(page.find(tid('purchase-summary')).exists()).toBe(false)
-    expect(page.find(tid('coffee-finish')).exists()).toBe(false)
     expect(page.find(tid('coffee-buy-again')).exists()).toBe(true)
   })
 

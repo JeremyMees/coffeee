@@ -4,7 +4,6 @@ import { useProfileStats } from '~/queries/account'
 import { useStock } from '~/queries/coffees'
 import {
   useBuyAgain,
-  useCoffeeFinish,
   usePurchaseFinish,
   usePurchaseRemoval,
   usePurchaseUpdate,
@@ -82,19 +81,6 @@ describe('useBuyAgain', () => {
     ])
     expect(purchases()).toHaveLength(2)
     expect(stats()).toMatchObject({ bags: 2, grams: 500, spentCents: 3150 })
-  })
-})
-
-describe('useCoffeeFinish', () => {
-  it('finishes the coffee and takes it out of the stock', async () => {
-    const { result, inStock } = await watching(useCoffeeFinish)
-
-    await result.mutateAsync(target)
-
-    expect(await bags()).toEqual([
-      expect.objectContaining({ finishedAt: expect.any(Date) }),
-    ])
-    expect(inStock()).toEqual([])
   })
 })
 

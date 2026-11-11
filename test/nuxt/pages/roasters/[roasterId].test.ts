@@ -104,6 +104,7 @@ describe('the page of a roaster', () => {
         .map(result => result.attributes('href')),
     ).toEqual([coffeePath(redBrick), shelfCoffeePath(sarah.shelf, ayele)])
     expect(page.findAll(tid('catalog-result-mine'))).toHaveLength(1)
+    expect(page.find(tid('catalog-result-roaster')).exists()).toBe(false)
   })
 
   it('keeps only the shelf’s own coffees with Mine', async () => {

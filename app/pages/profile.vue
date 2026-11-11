@@ -28,30 +28,16 @@ useHead({ title: 'Profile · Coffeee' })
         </TabsTrigger>
       </TabsList>
       <TabsContent value="account" class="mt-6">
-        <dl
-          v-if="user"
-          class="grid gap-x-4 gap-y-3 rounded-[18px] border p-4 sm:grid-cols-2"
-        >
-          <div>
-            <dt class="text-[10px] uppercase">Name</dt>
-            <dd
-              class="mt-0.5 font-sans font-semibold"
-              data-testid="profile-name"
-            >
-              {{ user.name }}
-            </dd>
-          </div>
-          <div class="min-w-0">
-            <dt class="text-[10px] uppercase">Email</dt>
-            <dd
-              class="mt-0.5 truncate font-sans font-semibold"
-              data-testid="profile-email"
-            >
-              {{ user.email }}
-            </dd>
-          </div>
+        <ProfileName />
+        <dl v-if="user" class="mt-6">
+          <dt class="text-[10px] uppercase">Email</dt>
+          <dd
+            class="mt-0.5 truncate font-sans font-semibold"
+            data-testid="profile-email"
+          >
+            {{ user.email }}
+          </dd>
         </dl>
-        <ProfileName class="mt-8" />
         <ProfileStats class="mt-12" />
         <div class="mt-12 flex flex-wrap gap-3">
           <NuxtLink

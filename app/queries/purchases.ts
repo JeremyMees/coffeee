@@ -59,16 +59,6 @@ export function useBuyAgain() {
   })
 }
 
-export function useCoffeeFinish() {
-  const saved = usePurchaseSaved()
-
-  return useMutation({
-    mutationFn: (input: { shelfId: string; coffeeId: string }) =>
-      $fetch(`${coffeePath(input)}/finish`, { method: 'POST' }),
-    onSuccess: (_data, input) => saved(input),
-  })
-}
-
 export function usePurchaseUpdate() {
   const saved = usePurchaseSaved()
 

@@ -739,7 +739,11 @@ test('buys a coffee again, finishes its bags and keeps its history tidy', async 
     '€0.052/g',
   )
 
-  await page.getByTestId('coffee-finish').click()
+  await page
+    .getByTestId('purchase')
+    .last()
+    .getByTestId('purchase-finish')
+    .click()
   await expect(page.getByTestId('purchase-status')).toHaveText([
     'In stock',
     'Finished',
@@ -756,7 +760,7 @@ test('buys a coffee again, finishes its bags and keeps its history tidy', async 
   )
 
   await latest.getByTestId('purchase-finish').click()
-  await expect(page.getByTestId('coffee-finish')).toBeHidden()
+  await expect(page.getByTestId('purchase-finish')).toBeHidden()
   await page.getByTestId('coffee-back').click()
   await expect(page.getByTestId('stock-empty')).toBeVisible()
 
@@ -928,8 +932,8 @@ test('keeps every coffee in the Library, finished or not, and finds the favourit
   await page.getByTestId('verdict-star-5').click()
   await page.getByTestId('verdict-buy-again').click()
   await expect(page.getByTestId('verdict-favourite')).toBeVisible()
-  await page.getByTestId('coffee-finish').click()
-  await expect(page.getByTestId('coffee-finish')).toBeHidden()
+  await page.getByTestId('purchase-finish').click()
+  await expect(page.getByTestId('purchase-finish')).toBeHidden()
 
   await page.goto(`/shelves/${member.shelfId}/library`)
   const names = page.getByTestId('library').getByTestId('coffee-card-name')

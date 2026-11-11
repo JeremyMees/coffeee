@@ -18,7 +18,10 @@ describe('profile page', () => {
     const page = await mountSuspended(App, { route: '/profile' })
 
     expect(page.get(tid('page-title')).text()).toBe('Profile')
-    expect(page.get(tid('profile-name')).text()).toBe('Sarah')
+    expect(
+      (page.get(tid('profile-name-input')).element as HTMLInputElement).value,
+    ).toBe('Sarah')
+    expect(page.find(tid('profile-name')).exists()).toBe(false)
     expect(page.get(tid('profile-email')).text()).toMatch(
       /^sarah-.+@example\.com$/,
     )
@@ -120,7 +123,9 @@ describe('profile page', () => {
 
     const page = await mountSuspended(App, { route: '/profile' })
 
-    expect(page.get(tid('profile-name')).text()).toBe('Sarah')
+    expect(
+      (page.get(tid('profile-name-input')).element as HTMLInputElement).value,
+    ).toBe('Sarah')
     expect(page.find(tid('profile-stats-skeleton')).exists()).toBe(true)
     expect(
       page.find(tid('profile-notification-emails-skeleton')).exists(),

@@ -169,6 +169,7 @@ watch(error, showMissing)
                 <CatalogResult
                   :coffee="coffee"
                   :to="catalogCoffeePath(shelf, coffee)"
+                  hide-roaster
                 />
               </li>
             </ul>

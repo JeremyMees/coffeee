@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ImageIcon } from '@lucide/vue'
 
-const props = defineProps<{ coffee: CatalogCoffee; to: string }>()
+const props = defineProps<{
+  coffee: CatalogCoffee
+  to: string
+  hideRoaster?: boolean
+}>()
 
 const morph = useMorph('coffee', () => props.coffee.id)
 
@@ -47,6 +51,7 @@ const described = computed(() =>
     <div class="min-w-0 flex-1">
       <div class="flex items-start justify-between gap-2">
         <p
+          v-if="!hideRoaster"
           class="truncate text-[11px] uppercase"
           data-testid="catalog-result-roaster"
         >
@@ -54,7 +59,7 @@ const described = computed(() =>
         </p>
         <span
           v-if="coffee.onShelf"
-          class="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground uppercase"
+          class="ml-auto shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground uppercase"
           data-testid="catalog-result-mine"
         >
           On your shelf

@@ -4,11 +4,12 @@ import CatalogResult from '~/components/molecules/CatalogResult.vue'
 import { catalogCoffee } from '#test/fixtures/coffees'
 import { tid } from '../../fixtures'
 
-function result(overrides: Partial<CatalogCoffee> = {}) {
+function result(overrides: Partial<CatalogCoffee> = {}, hideRoaster = false) {
   return mountSuspended(CatalogResult, {
     props: {
       coffee: catalogCoffee(overrides),
       to: '/shelves/sarahs-shelf-home/coffees/ayele-fulasa-c1',
+      hideRoaster,
     },
   })
 }
@@ -44,6 +45,13 @@ describe('CatalogResult', () => {
     expect(wrapper.get(tid('catalog-result-described')).text()).toBe(
       'Light · Filter · Ethiopia',
     )
+  })
+
+  it('leaves the roaster out when the list already names it', async () => {
+    const wrapper = await result({}, true)
+
+    expect(wrapper.find(tid('catalog-result-roaster')).exists()).toBe(false)
+    expect(wrapper.get(tid('catalog-result-name')).text()).toBe('Ayele Fulasa')
   })
 
   it('shows only the community rating', async () => {

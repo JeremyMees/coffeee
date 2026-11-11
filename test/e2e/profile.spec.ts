@@ -4,8 +4,8 @@ import { expectTouchable, phone } from './support/touch'
 test('shows who is signed in', async ({ page, member }) => {
   await page.goto('/profile')
 
-  await expect(page.getByTestId('profile-name')).toHaveText(member.name)
   await expect(page.getByTestId('profile-name-input')).toHaveValue(member.name)
+  await expect(page.getByText(member.name, { exact: true })).toHaveCount(0)
   await expect(page.getByTestId('profile-email')).toHaveText(member.email)
   await expect(page.getByTestId('profile-invites')).toBeHidden()
 })
@@ -17,11 +17,10 @@ test('changes the name and keeps it after a reload', async ({ page }) => {
   await page.getByTestId('profile-name-submit').click()
 
   await expect(page.getByTestId('profile-name-saved')).toBeVisible()
-  await expect(page.getByTestId('profile-name')).toHaveText('Tess Mees')
 
   await page.reload()
 
-  await expect(page.getByTestId('profile-name')).toHaveText('Tess Mees')
+  await expect(page.getByTestId('profile-name-input')).toHaveValue('Tess Mees')
 })
 
 test('signs out and keeps the shelf closed afterwards', async ({
