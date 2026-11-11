@@ -101,7 +101,7 @@ async function confirm() {
               <span
                 v-if="member.id === ownerId"
                 data-testid="shelf-member-owner"
-                class="rounded-full border px-3 py-1 text-[10px] uppercase"
+                class="rounded-full border px-3 py-1 text-xs uppercase"
               >
                 Owner
               </span>

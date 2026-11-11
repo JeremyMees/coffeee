@@ -104,7 +104,7 @@ async function answer(choice: 'accept' | 'decline') {
       </div>
       <p
         v-else-if="answered"
-        class="text-[10px] uppercase"
+        class="text-xs uppercase"
         data-testid="notification-answered"
       >
         {{ answered }}

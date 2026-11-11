@@ -46,7 +46,9 @@ describe('CoffeeReviews', () => {
     const ana = reviews.get(tid('review-ana'))
     const tom = reviews.get(tid('review-tom'))
 
-    expect(ana.text()).toContain('Not yet rated')
+    expect(ana.get(tid('rating-stars')).attributes('aria-label')).toBe(
+      'Not yet rated',
+    )
     expect(ana.find(tid('review-mine')).exists()).toBe(true)
     expect(ana.find(tid('review-buy-again')).exists()).toBe(false)
     expect(tom.get(tid('rating-stars')).attributes('aria-label')).toBe(

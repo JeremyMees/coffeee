@@ -89,7 +89,7 @@ watch(open, isOpen => {
           <span class="truncate">{{ label }}</span>
           <span
             v-if="picked.length"
-            class="grid min-w-4 place-items-center rounded-full bg-primary-foreground px-1 text-[10px] leading-4 text-primary tabular-nums"
+            class="grid min-w-4 place-items-center rounded-full bg-primary-foreground px-1 text-xs leading-4 text-primary tabular-nums"
             :data-testid="`${prefix}-${kind}-count`"
             aria-hidden="true"
           >

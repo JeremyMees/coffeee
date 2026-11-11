@@ -18,7 +18,7 @@ const origins = computed(() => originNames(props.coffee))
     <template #badge>
       <span
         v-if="coffee.onShelf"
-        class="shrink-0 self-start rounded-full border border-primary px-2 py-px text-[10px] uppercase"
+        class="shrink-0 self-start rounded-full border border-primary px-2 py-px text-xs uppercase"
         data-testid="catalog-result-mine"
       >
         On your shelf

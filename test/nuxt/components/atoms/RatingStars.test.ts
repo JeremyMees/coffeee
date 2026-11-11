@@ -13,10 +13,13 @@ describe('RatingStars', () => {
     expect(shown.findAll('svg')).toHaveLength(5)
   })
 
-  it('says when the coffee is not yet rated', async () => {
+  it('shows empty stars when the coffee is not yet rated', async () => {
     const stars = await mountSuspended(RatingStars, { props: { rating: null } })
+    const shown = stars.get(tid('rating-stars'))
 
-    expect(stars.get(tid('rating-stars')).text()).toBe('Not yet rated')
-    expect(stars.find('svg').exists()).toBe(false)
+    expect(shown.attributes('aria-label')).toBe('Not yet rated')
+    expect(shown.attributes('data-rating')).toBe('none')
+    expect(shown.findAll('svg.fill-current')).toHaveLength(0)
+    expect(shown.findAll('svg')).toHaveLength(5)
   })
 })

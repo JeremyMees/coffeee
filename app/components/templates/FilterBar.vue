@@ -30,7 +30,7 @@ const label = computed(() =>
       Filters
       <span
         v-if="count"
-        class="grid min-w-4 place-items-center rounded-full bg-primary-foreground px-1 text-[10px] leading-4 text-primary tabular-nums"
+        class="grid min-w-4 place-items-center rounded-full bg-primary-foreground px-1 text-xs leading-4 text-primary tabular-nums"
         :data-testid="`${testid}-filters-count`"
         aria-hidden="true"
       >

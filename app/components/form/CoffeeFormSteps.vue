@@ -59,7 +59,7 @@ const nextTitle = computed(() => props.steps[step.value]?.title)
           </StepperIndicator>
           <StepperTitle
             :class="[
-              'text-[11px] font-normal uppercase group-data-[state=inactive]:opacity-60',
+              'text-xs font-normal uppercase group-data-[state=inactive]:opacity-60',
               failing[index] ? 'text-destructive' : 'text-primary',
             ]"
           >

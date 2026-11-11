@@ -31,7 +31,7 @@ function remove(value: string) {
   <FilterBar :count="count" testid="roasters">
     <FilterToggle
       :model-value="filter.boughtFrom"
-      label="Bought from"
+      label="Only ones we buy from"
       :icon="StoreIcon"
       data-testid="roasters-filter-bought-from"
       @update:model-value="change({ boughtFrom: $event })"

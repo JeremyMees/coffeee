@@ -68,7 +68,11 @@ describe('CoffeeCard', () => {
         .get(tid('coffee-card-rating', 'rating-stars'))
         .attributes('aria-label'),
     ).toBe('4 stars')
-    expect(unrated.get(tid('coffee-card-rating')).text()).toBe('Not yet rated')
+    expect(
+      unrated
+        .get(tid('coffee-card-rating', 'rating-stars'))
+        .attributes('aria-label'),
+    ).toBe('Not yet rated')
   })
 
   it('leaves out flavor notes when it has none', async () => {

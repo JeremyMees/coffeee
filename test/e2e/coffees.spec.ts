@@ -792,8 +792,10 @@ test('rates a coffee, says it would be bought again and shows it in Stock', asyn
   await page.goto(`/shelves/${member.shelfId}`)
   await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
   await expect(
-    stockCard(page, 'Ayele Fulasa').getByTestId('coffee-card-rating'),
-  ).toHaveText('Not yet rated')
+    stockCard(page, 'Ayele Fulasa')
+      .getByTestId('coffee-card-rating')
+      .getByRole('img'),
+  ).toHaveAccessibleName('Not yet rated')
   await stockCard(page, 'Ayele Fulasa').click()
   await expect(page).toHaveURL(/\/coffees\//)
 

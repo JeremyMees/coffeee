@@ -33,7 +33,7 @@ const label = computed(() =>
         v-if="unread > 0"
         data-testid="notifications-unread"
         :aria-hidden="labelled ? undefined : 'true'"
-        class="grid min-w-5 place-items-center rounded-full bg-destructive px-1.5 text-[10px] leading-5 text-white"
+        class="grid min-w-5 place-items-center rounded-full bg-destructive px-1.5 text-xs leading-5 text-white"
         :class="labelled ? 'ml-auto' : 'absolute -top-0.5 -right-0.5'"
       >
         <span v-if="labelled" class="sr-only">Unread: </span>

@@ -34,7 +34,7 @@ const morph = useMorph('roaster', () => props.roaster.id)
       </p>
       <p
         v-if="roaster.shelfCoffees && roaster.lastBought"
-        class="mt-1.5 text-[11px] uppercase"
+        class="mt-1.5 text-xs uppercase"
         data-testid="roaster-result-bought"
       >
         {{ roaster.shelfCoffees }}

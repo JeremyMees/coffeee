@@ -50,9 +50,7 @@ function pathOn(shelf: { id: string; name: string }) {
       data-testid="shelf-menu"
       class="min-w-56 rounded-[18px] p-1.5 font-mono ring-primary"
     >
-      <DropdownMenuLabel class="text-[10px] uppercase"
-        >Shelves</DropdownMenuLabel
-      >
+      <DropdownMenuLabel class="text-xs uppercase">Shelves</DropdownMenuLabel>
       <DropdownMenuItem
         v-for="shelf in user?.shelves"
         :key="shelf.id"

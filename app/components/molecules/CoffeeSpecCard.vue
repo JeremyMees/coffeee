@@ -53,7 +53,7 @@ const roast = computed(
       <div class="min-w-0 flex-1">
         <p
           v-if="!hideRoaster"
-          class="truncate text-[11px] uppercase"
+          class="truncate text-xs uppercase"
           :data-testid="`${testid}-roaster`"
         >
           {{ coffee.roaster }}
@@ -77,7 +77,7 @@ const roast = computed(
       :testid="testid"
     />
     <dl
-      class="mt-auto flex flex-col gap-1.5 border-t border-primary pt-2.5 text-[11px] uppercase"
+      class="mt-auto flex flex-col gap-1.5 border-t border-primary pt-2.5 text-xs uppercase"
     >
       <SpecRow label="Roast">
         <dd class="max-w-[68%] text-right" :data-testid="`${testid}-roast`">

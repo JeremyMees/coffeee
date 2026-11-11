@@ -48,7 +48,17 @@ describe('LibraryTable', () => {
 
     expect(row.get(tid('data-table-cell-origin')).text()).toBe('Unknown')
     expect(row.get(tid('data-table-cell-latestPrice')).text()).toBe('Unknown')
-    expect(row.get(tid('data-table-cell-rating')).text()).toBe('Not yet rated')
+  })
+
+  it('shows empty stars for a coffee that is not yet rated', async () => {
+    const { wrapper } = await table()
+    const stars = wrapper
+      .findAll(tid('data-table-row'))[2]!
+      .get(tid('data-table-cell-rating', 'rating-stars'))
+
+    expect(stars.attributes('aria-label')).toBe('Not yet rated')
+    expect(stars.findAll('svg')).toHaveLength(5)
+    expect(stars.findAll('svg.fill-current')).toHaveLength(0)
   })
 
   it('has a sortable column for each fact', async () => {

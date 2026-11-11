@@ -14,7 +14,7 @@ const labels = computed(() => matchLabels(props))
     <li
       v-for="label in labels"
       :key="label"
-      class="rounded-full bg-accent px-2.5 py-1 text-[11px] uppercase"
+      class="rounded-full bg-accent px-2.5 py-1 text-xs uppercase"
       :data-testid="`${testid}-match`"
     >
       {{ label }}

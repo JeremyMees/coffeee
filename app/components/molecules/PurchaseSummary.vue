@@ -53,7 +53,7 @@ const rows = computed(() => {
       :key="row.key"
       class="flex flex-col gap-1 bg-background p-4 last:col-span-2 sm:last:col-span-1"
     >
-      <dt class="text-[11px] uppercase">{{ row.label }}</dt>
+      <dt class="text-xs uppercase">{{ row.label }}</dt>
       <dd class="text-sm" :data-testid="`summary-${row.key}`">
         {{ row.value }}
       </dd>

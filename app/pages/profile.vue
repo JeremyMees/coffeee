@@ -30,7 +30,7 @@ useHead({ title: 'Profile · Coffeee' })
       <TabsContent value="account" class="mt-6">
         <ProfileName />
         <dl v-if="user" class="mt-6">
-          <dt class="text-[10px] uppercase">Email</dt>
+          <dt class="text-xs uppercase">Email</dt>
           <dd
             class="mt-0.5 truncate font-sans font-semibold"
             data-testid="profile-email"

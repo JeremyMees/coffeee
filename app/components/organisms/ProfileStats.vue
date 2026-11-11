@@ -66,7 +66,7 @@ function rowsOf(stats: ProfileStats) {
             :key="row.key"
             class="flex min-w-0 flex-col gap-1 bg-background p-4 last:col-span-2"
           >
-            <dt class="text-[11px] uppercase">{{ row.label }}</dt>
+            <dt class="text-xs uppercase">{{ row.label }}</dt>
             <dd class="truncate text-sm" :data-testid="`stats-${row.key}`">
               {{ row.value }}
             </dd>

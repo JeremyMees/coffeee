@@ -34,7 +34,7 @@ const freshStyles: Record<string, string> = {
           </span>
           <span
             :class="[
-              'rounded-full border border-primary px-2 py-px text-[10px]',
+              'rounded-full border border-primary px-2 py-px text-xs',
               freshStyles[fresh],
             ]"
             data-testid="coffee-card-freshness"

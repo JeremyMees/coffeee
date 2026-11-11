@@ -45,7 +45,7 @@ async function placedRoaster(name: string, countryCode: OriginCode) {
 }
 
 describe('RoasterFilters', () => {
-  it('has Bought from and Country', async () => {
+  it('has Only ones we buy from and Country', async () => {
     const { wrapper } = await filters()
 
     expect(
@@ -53,7 +53,7 @@ describe('RoasterFilters', () => {
         .get(tid('roasters-filters'))
         .findAll('button')
         .map(button => button.text()),
-    ).toEqual(['Bought from', 'Country'])
+    ).toEqual(['Only ones we buy from', 'Country'])
     expect(wrapper.find(tid('roasters-applied')).exists()).toBe(false)
   })
 

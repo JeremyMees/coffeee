@@ -40,7 +40,7 @@ defineExpose({ focus: () => input.value?.focus() })
     />
     <kbd
       v-if="shortcut"
-      class="hidden shrink-0 rounded-md border px-1.5 py-0.5 text-[11px] lg:inline"
+      class="hidden shrink-0 rounded-md border px-1.5 py-0.5 text-xs lg:inline"
       aria-hidden="true"
     >
       ⌘K

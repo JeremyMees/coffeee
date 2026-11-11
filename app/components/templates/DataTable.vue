@@ -81,7 +81,7 @@ function ariaSort(column: Column<Row>) {
             v-for="header in headerGroup.headers"
             :key="header.id"
             :aria-sort="ariaSort(header.column)"
-            class="px-0 pr-4 text-[11px] font-normal uppercase"
+            class="px-0 pr-4 text-xs font-normal uppercase"
           >
             <FlexRender
               v-if="!header.isPlaceholder"
