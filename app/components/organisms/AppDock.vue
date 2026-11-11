@@ -14,7 +14,7 @@ const addRoaster = useAddRoaster()
     class="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] [view-transition-name:dock] lg:hidden"
   >
     <Dock
-      class="mt-0 h-auto gap-1 rounded-full border-primary bg-material p-1.5"
+      class="mt-0 h-auto gap-1 rounded-full max-[360px]:gap-0 border-primary bg-material p-1.5"
       :magnification="20"
       :distance="80"
     >
@@ -40,7 +40,7 @@ const addRoaster = useAddRoaster()
           </a>
         </NuxtLink>
       </DockIcon>
-      <DockSeparator class="mx-1 h-7 w-px bg-border" />
+      <DockSeparator class="mx-1 h-7 max-[360px]:mx-0.5 w-px bg-border" />
       <DockIcon>
         <DropdownMenu>
           <DropdownMenuTrigger as-child>

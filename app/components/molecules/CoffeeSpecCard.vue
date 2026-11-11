@@ -62,7 +62,7 @@ const roast = computed(
           :data-testid="`${testid}-name`"
           :style="morph.name('name')"
           :class="[
-            'mb-[-0.1em] w-fit py-[0.1em] font-sans text-[19px] leading-[1.05] font-semibold tracking-[-0.03em]',
+            'mb-[-0.1em] w-fit py-[0.1em] font-sans wrap-anywhere text-[19px] leading-[1.05] font-semibold tracking-[-0.03em]',
             !hideRoaster && 'mt-[calc(--spacing(0.75)-0.1em)]',
           ]"
         >

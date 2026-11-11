@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 export const phone = { width: 390, height: 844 }
+export const smallPhone = { width: 320, height: 640 }
 export const desktop = { width: 1440, height: 900 }
 
 export function hitArea(locator: Locator) {
