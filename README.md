@@ -6,8 +6,7 @@ Coffeee is a coffee log for people who love specialty coffee. It keeps track of
 the bags on your shelf right now and every coffee you ever bought, so the good
 ones are easy to find and buy again.
 
-**Live:** [coffeee.app](https://coffeee.app)
-(sign-up is invite-only)
+**Live:** [coffeee.app](https://coffeee.app) (sign-up is invite-only)
 
 ## What it does
 
