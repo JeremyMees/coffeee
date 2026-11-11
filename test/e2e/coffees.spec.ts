@@ -779,7 +779,9 @@ test('says when a shelf has no such coffee', async ({ page, member }) => {
   await page.goto(`/shelves/${member.shelfId}/coffees/${randomUUID()}`)
 
   await expect(page.getByTestId('error-title')).toHaveText('Not found')
-  await expect(page.getByTestId('error-message')).toHaveText('Coffee not found')
+  await expect(page.getByTestId('error-message')).toHaveText(
+    "That page doesn't exist or you don't have access to it.",
+  )
 })
 
 test('rates a coffee, says it would be bought again and shows it in Stock', async ({

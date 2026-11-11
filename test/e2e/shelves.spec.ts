@@ -74,3 +74,17 @@ test('keeps people out of shelves they are not a member of', async ({
 
   await expect(page.getByTestId('error-title')).toHaveText('Not found')
 })
+
+test('keeps the navigation on a page that does not exist', async ({
+  page,
+  member,
+}) => {
+  await page.goto(`/shelves/${member.shelfId}`)
+  await page.goto('/this-page-does-not-exist')
+
+  await expect(page.getByTestId('error-message')).toHaveText(
+    "That page doesn't exist or you don't have access to it.",
+  )
+  await expect(page.getByText('/this-page-does-not-exist')).toHaveCount(0)
+  await expect(page.getByTestId('sidebar')).toBeVisible()
+})
