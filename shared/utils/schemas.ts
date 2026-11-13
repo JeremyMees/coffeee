@@ -546,3 +546,14 @@ export const profileNameSchema = signUpSchema.pick({ name: true })
 export const notificationEmailsSchema = z.object({
   emailed: z.array(z.enum(optionalEmailKinds)),
 })
+
+export const pushEndpointSchema = z.object({
+  endpoint: z.url({ protocol: /^https$/ }),
+})
+
+export const pushSubscriptionSchema = pushEndpointSchema.extend({
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+})

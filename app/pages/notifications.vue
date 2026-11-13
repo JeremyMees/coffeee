@@ -19,6 +19,7 @@ watch(
   <main class="max-w-2xl">
     <PageHeader title="Notifications" hide-add />
     <p class="mt-3 text-xs">What happened on the shelves you share.</p>
+    <PushBanner />
     <QuerySection :query="notifications" testid="notifications">
       <template #default="{ data }">
         <p

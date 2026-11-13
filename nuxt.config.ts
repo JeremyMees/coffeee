@@ -65,7 +65,9 @@ export default defineNuxtConfig({
     googleClientSecret: '',
     plunkApiKey: '',
     emailFrom: '',
+    vapidPrivateKey: '',
     public: {
+      vapidPublicKey: '',
       sentry: {
         dsn: '',
         environment: process.env.VERCEL_ENV ?? 'development',
@@ -219,6 +221,7 @@ export default defineNuxtConfig({
     workbox: {
       globPatterns: ['**/*.{js,css,woff2,png,svg,ico}'],
       navigateFallback: null,
+      importScripts: ['/sw-push.js'],
       runtimeCaching: [
         {
           urlPattern: ({ request, url }) =>

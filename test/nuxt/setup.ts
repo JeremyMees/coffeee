@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeEach, vi } from 'vitest'
 import { config, enableAutoUnmount } from '@vue/test-utils'
 import { useQueryClient } from '@tanstack/vue-query'
 import type { Email } from '#server/types/email'
+import type { PushMessage, PushTarget } from '#server/types/push'
 import { useNuxtApp } from '#imports'
 
 vi.mock('nitropack/runtime', () => import('#test/support/nitro'))
@@ -36,6 +37,18 @@ vi.mock('#server/utils/email', async importOriginal => {
     ...(await importOriginal<object>()),
     sendEmail: async (email: Email) => {
       server.outbox.push(email)
+    },
+  }
+})
+
+vi.mock('#server/utils/push', async () => {
+  const { server } = await import('#test/nuxt/server-state')
+
+  return {
+    sendPush: async (target: PushTarget, message: PushMessage) => {
+      server.pushes.push({ target, message })
+
+      return 'sent'
     },
   }
 })

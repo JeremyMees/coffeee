@@ -17,6 +17,7 @@ import {
   user,
 } from '#server/db/schemas'
 import { sendEmail } from '#server/utils/email'
+import { pushToUsers } from '#server/utils/push-subscriptions'
 
 const notificationsShown = 50
 
@@ -36,57 +37,67 @@ export function notificationSettingsLink(origin: string) {
   return `${origin}/profile?tab=notifications`
 }
 
-async function emailShelfNews(db: Database, input: Told & { origin: string }) {
+type ShelfNewsAbout = { text: string; shelf: string; path: string }
+
+async function describeShelfNews(
+  db: Database,
+  news: ShelfNews,
+): Promise<ShelfNewsAbout> {
+  const [found] = await db
+    .select({ shelf: shelf.name, actor: user.name })
+    .from(shelf)
+    .leftJoin(user, eq(user.id, news.actorId))
+    .where(eq(shelf.id, news.shelfId))
+  const [about] = news.coffeeId
+    ? await db
+        .select({ name: coffee.name })
+        .from(coffee)
+        .where(eq(coffee.id, news.coffeeId))
+    : []
+
+  const onShelf = { id: news.shelfId, name: found!.shelf }
+
+  return {
+    text: notificationText({
+      kind: news.kind,
+      actor: found!.actor,
+      shelf: found!.shelf,
+      coffee: about?.name ?? null,
+    }),
+    shelf: found!.shelf,
+    path: about
+      ? shelfCoffeePath(onShelf, { id: news.coffeeId!, name: about.name })
+      : shelfPath(onShelf),
+  }
+}
+
+async function emailShelfNews(
+  db: Database,
+  news: Told,
+  about: ShelfNewsAbout,
+  origin: string,
+) {
   const recipients = await db
     .select({ email: user.email })
     .from(notificationEmail)
     .innerJoin(user, eq(user.id, notificationEmail.userId))
     .where(
       and(
-        inArray(notificationEmail.userId, input.userIds),
-        eq(notificationEmail.kind, input.kind),
+        inArray(notificationEmail.userId, news.userIds),
+        eq(notificationEmail.kind, news.kind),
       ),
     )
-
-  if (recipients.length === 0) return
-
-  const [found] = await db
-    .select({ shelf: shelf.name, actor: user.name })
-    .from(shelf)
-    .leftJoin(user, eq(user.id, input.actorId))
-    .where(eq(shelf.id, input.shelfId))
-  const [about] = input.coffeeId
-    ? await db
-        .select({ name: coffee.name })
-        .from(coffee)
-        .where(eq(coffee.id, input.coffeeId))
-    : []
-
-  const text = notificationText({
-    kind: input.kind,
-    actor: found!.actor,
-    shelf: found!.shelf,
-    coffee: about?.name ?? null,
-  })
-  const onShelf = { id: input.shelfId, name: found!.shelf }
 
   const sent = await Promise.allSettled(
     recipients.map(recipient =>
       sendEmail({
         to: recipient.email,
-        subject: text,
+        subject: about.text,
         template: 'ShelfNotification',
         values: {
-          text,
-          link:
-            input.origin +
-            (about
-              ? shelfCoffeePath(onShelf, {
-                  id: input.coffeeId!,
-                  name: about.name,
-                })
-              : shelfPath(onShelf)),
-          settings: notificationSettingsLink(input.origin),
+          text: about.text,
+          link: origin + about.path,
+          settings: notificationSettingsLink(origin),
         },
       }),
     ),
@@ -97,6 +108,20 @@ async function emailShelfNews(db: Database, input: Told & { origin: string }) {
       console.error('Could not send a notification email', result.reason)
     }
   }
+}
+
+async function tellShelfNews(db: Database, news: Told, origin: string) {
+  const about = await describeShelfNews(db, news)
+
+  await Promise.all([
+    emailShelfNews(db, news, about, origin).catch(caught =>
+      console.error('Could not send a notification email', caught),
+    ),
+    pushToUsers(db, {
+      userIds: news.userIds,
+      message: { title: about.shelf, body: about.text, path: about.path },
+    }).catch(caught => console.error('Could not send a push', caught)),
+  ])
 }
 
 async function recordShelfNews(db: Database, news: ShelfNews) {
@@ -141,8 +166,8 @@ export async function changeShelf<T>(
   )
 
   for (const news of told) {
-    await emailShelfNews(db, { ...news, origin }).catch(caught =>
-      console.error('Could not send a notification email', caught),
+    await tellShelfNews(db, news, origin).catch(caught =>
+      console.error('Could not tell about shelf news', caught),
     )
   }
 
@@ -166,6 +191,35 @@ export async function notifyInvited(
     actorId: input.actorId,
     shelfId: input.shelfId,
     inviteId: input.inviteId,
+  })
+
+  await pushInvite(db, { ...input, userId: invited.id }).catch(caught =>
+    console.error('Could not send a push', caught),
+  )
+}
+
+async function pushInvite(
+  db: Database,
+  input: { userId: string; actorId: string; shelfId: string },
+) {
+  const [found] = await db
+    .select({ shelf: shelf.name, actor: user.name })
+    .from(shelf)
+    .leftJoin(user, eq(user.id, input.actorId))
+    .where(eq(shelf.id, input.shelfId))
+
+  await pushToUsers(db, {
+    userIds: [input.userId],
+    message: {
+      title: found!.shelf,
+      body: notificationText({
+        kind: 'invited',
+        actor: found!.actor,
+        shelf: found!.shelf,
+        coffee: null,
+      }),
+      path: '/notifications',
+    },
   })
 }
 

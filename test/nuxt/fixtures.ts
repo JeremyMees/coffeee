@@ -11,6 +11,7 @@ import {
   localDate,
   useNuxtApp,
   useRouter,
+  useState,
   zodSchema,
 } from '#imports'
 
@@ -291,5 +292,79 @@ export function forgetInstall() {
   const pwa = useNuxtApp().$pwa!
   pwa.showInstallPrompt = false
   pwa.isPWAInstalled = false
+  localStorage.clear()
+}
+
+export const deviceEndpoint = 'https://push.example.com/this-device'
+
+export function fakePushDevice(
+  options: {
+    permission?: NotificationPermission
+    answer?: NotificationPermission
+    subscribed?: boolean
+  } = {},
+) {
+  let permission = options.permission ?? 'default'
+
+  function subscription() {
+    return {
+      endpoint: deviceEndpoint,
+      toJSON: () => ({
+        endpoint: deviceEndpoint,
+        expirationTime: null,
+        keys: { p256dh: 'device-p256dh', auth: 'device-auth' },
+      }),
+      unsubscribe: vi.fn(async () => {
+        device.subscription = null
+
+        return true
+      }),
+    }
+  }
+
+  const device = {
+    subscription: options.subscribed ? subscription() : null,
+    requestPermission: vi.fn(async () => {
+      permission = options.answer ?? 'granted'
+
+      return permission
+    }),
+    subscribe: vi.fn(async () => {
+      device.subscription = subscription()
+
+      return device.subscription
+    }),
+  }
+  const registration = {
+    pushManager: {
+      getSubscription: async () => device.subscription,
+      subscribe: device.subscribe,
+    },
+  }
+
+  vi.stubGlobal('PushManager', function PushManager() {})
+  vi.stubGlobal('Notification', {
+    get permission() {
+      return permission
+    },
+    requestPermission: device.requestPermission,
+  })
+  Object.defineProperty(navigator, 'serviceWorker', {
+    configurable: true,
+    value: {
+      getRegistration: async () => registration,
+      ready: Promise.resolve(registration),
+    },
+  })
+
+  return device
+}
+
+export function forgetPushDevice() {
+  vi.unstubAllGlobals()
+  Reflect.deleteProperty(navigator, 'serviceWorker')
+  useState('push-permission').value = null
+  useState('push-subscribed').value = null
+  useState('push-busy').value = false
   localStorage.clear()
 }

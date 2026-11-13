@@ -6,7 +6,7 @@ import { shelfCoffeePath, shelfPath } from '#imports'
 import { countUnreadNotifications } from '#server/utils/notifications'
 import { listShelfMembers } from '#server/utils/shelves'
 import type { Member } from '#test/support/types'
-import { currentPath, tid } from '../fixtures'
+import { currentPath, fakePushDevice, forgetPushDevice, tid } from '../fixtures'
 import { database, failRequest, holdRequest, scenario, signIn } from '../server'
 
 let sarah: Member
@@ -18,7 +18,10 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-afterEach(() => onlineManager.setOnline(true))
+afterEach(() => {
+  onlineManager.setOnline(true)
+  forgetPushDevice()
+})
 
 const listPath = '/api/me/notifications'
 
@@ -178,5 +181,26 @@ describe('the notifications page', () => {
     await vi.waitFor(() =>
       expect(page.find(tid('notifications-empty')).exists()).toBe(true),
     )
+  })
+})
+
+describe('turning on push from the notifications page', () => {
+  it('offers push to someone who has not decided', async () => {
+    forgetPushDevice()
+    fakePushDevice()
+
+    const page = await notifications()
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('push-banner')).exists()).toBe(true),
+    )
+  })
+
+  it('offers nothing where push is not available', async () => {
+    forgetPushDevice()
+
+    const page = await notifications()
+
+    expect(page.find(tid('push-banner')).exists()).toBe(false)
   })
 })

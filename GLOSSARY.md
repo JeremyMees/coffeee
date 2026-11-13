@@ -138,7 +138,8 @@ a shelf. _Avoid_: Invitation link, referral
 **Notification**: A message telling members that something happened on a shelf:
 an invite, a coffee or purchase added, a bag finished, or a member who joined or
 left. It always shows in the app; invites are also emailed, and a user can turn
-on email for the others. _Avoid_: Alert, activity, message
+on email for the others. It can also be pushed to the devices where a user
+turned on push. _Avoid_: Alert, activity, message
 
 **Admin**: A user who may rename, merge and delete entries in the shared lists,
 and edit any coffee. _Avoid_: Moderator, shelf owner

@@ -171,6 +171,7 @@ export async function resetServer() {
   await settleRequests()
   server.cookie = undefined
   server.outbox.length = 0
+  server.pushes.length = 0
   server.failures.splice(0).forEach(unregister => unregister())
   await resetTestDatabase()
 }

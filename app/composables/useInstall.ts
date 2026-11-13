@@ -1,14 +1,15 @@
 export function useInstall() {
   const hydrated = useHydrated()
+  const onClient = computed(() => import.meta.client && hydrated.value)
   const { $pwa } = useNuxtApp()
 
-  const userAgent = computed(() => (hydrated.value ? navigator.userAgent : ''))
+  const userAgent = computed(() => (onClient.value ? navigator.userAgent : ''))
   const installed = computed(
-    () => hydrated.value && Boolean($pwa?.isPWAInstalled),
+    () => onClient.value && Boolean($pwa?.isPWAInstalled),
   )
   const canPrompt = computed(
     () =>
-      hydrated.value && !installed.value && Boolean($pwa?.showInstallPrompt),
+      onClient.value && !installed.value && Boolean($pwa?.showInstallPrompt),
   )
   const needsSteps = computed(
     () => !installed.value && isIPhone(userAgent.value),

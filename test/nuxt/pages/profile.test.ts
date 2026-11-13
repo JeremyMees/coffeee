@@ -109,6 +109,7 @@ describe('profile page', () => {
     )
 
     expect(page.get(tid('notification-email-invited')).isVisible()).toBe(true)
+    expect(page.get(tid('push-switch')).isVisible()).toBe(true)
     expect(page.get(tid('sign-out')).isVisible()).toBe(false)
   })
 
