@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useRouter } from '#imports'
-import { byTestId, tid } from '../fixtures'
+import { byTestId, forgetInstall, onDevice, tid } from '../fixtures'
 import { failRequest, holdRequest, scenario, signIn } from '../server'
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }))
@@ -10,6 +10,7 @@ const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }))
 mockNuxtImport('authClient', () => ({ signOut }))
 
 beforeEach(async () => {
+  forgetInstall()
   await signIn(await scenario.member('Sarah'))
 })
 
@@ -25,6 +26,18 @@ describe('profile page', () => {
     expect(page.get(tid('profile-email')).text()).toMatch(
       /^sarah-.+@example\.com$/,
     )
+  })
+
+  it('offers to install Coffeee on an iPhone', async () => {
+    onDevice('iPhone')
+
+    const page = await mountSuspended(App, { route: '/profile' })
+
+    expect(page.find(tid('profile-install', 'install-steps')).exists()).toBe(
+      true,
+    )
+
+    vi.restoreAllMocks()
   })
 
   it('keeps the admin tools off the profile, even for admins', async () => {

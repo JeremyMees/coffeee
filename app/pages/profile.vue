@@ -39,6 +39,7 @@ useHead({ title: 'Profile · Coffeee' })
           </dd>
         </dl>
         <ProfileStats class="mt-12" />
+        <ProfileInstall class="mt-12" />
         <div class="mt-12 flex flex-wrap gap-3">
           <NuxtLink
             v-if="user?.role === 'admin'"

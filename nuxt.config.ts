@@ -190,6 +190,7 @@ export default defineNuxtConfig({
 
   pwa: {
     registerType: 'autoUpdate',
+    client: { registerPlugin: true, installPrompt: true },
     manifest: {
       name: 'Coffeee',
       short_name: 'Coffeee',

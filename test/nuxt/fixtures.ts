@@ -256,3 +256,40 @@ export function pickFile(
   Object.defineProperty(input, 'files', { value: [file], configurable: true })
   input.dispatchEvent(new Event('change', { bubbles: true }))
 }
+
+export const devices = {
+  android:
+    'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36',
+  iPhone:
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  desktop:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+}
+
+export function onDevice(device: keyof typeof devices) {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(devices[device])
+}
+
+export function offerInstall(outcome: 'accepted' | 'dismissed' = 'accepted') {
+  const event = Object.assign(
+    new Event('beforeinstallprompt', { cancelable: true }),
+    {
+      prompt: vi.fn(async () => {}),
+      userChoice: Promise.resolve({ outcome }),
+    },
+  )
+  window.dispatchEvent(event)
+
+  return event
+}
+
+export function runInstalled() {
+  useNuxtApp().$pwa!.isPWAInstalled = true
+}
+
+export function forgetInstall() {
+  const pwa = useNuxtApp().$pwa!
+  pwa.showInstallPrompt = false
+  pwa.isPWAInstalled = false
+  localStorage.clear()
+}

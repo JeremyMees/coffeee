@@ -26,6 +26,7 @@ const addRoaster = useAddRoaster()
         </span>
       </header>
       <div class="px-4 lg:px-10">
+        <InstallBanner />
         <slot />
       </div>
     </div>

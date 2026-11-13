@@ -1,13 +1,18 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
 import { useCurrentUser } from '#imports'
-import { forgetLastShelf, tid } from '../fixtures'
+import { forgetInstall, forgetLastShelf, onDevice, tid } from '../fixtures'
 import { testUser } from '#test/fixtures/users'
 
 beforeEach(() => {
   forgetLastShelf()
+  forgetInstall()
   useCurrentUser().value = testUser()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('the app shell', () => {
@@ -65,4 +70,20 @@ describe('the app shell', () => {
       expect(page.find(tid('top-bar')).exists()).toBe(false)
     },
   )
+
+  it('invites phone users to install Coffeee', async () => {
+    onDevice('iPhone')
+
+    const page = await mountSuspended(App, { route: '/shelves/work-work' })
+
+    expect(page.find(tid('install-banner')).exists()).toBe(true)
+  })
+
+  it('keeps the install banner off desktops', async () => {
+    onDevice('desktop')
+
+    const page = await mountSuspended(App, { route: '/shelves/work-work' })
+
+    expect(page.find(tid('install-banner')).exists()).toBe(false)
+  })
 })
