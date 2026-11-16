@@ -101,14 +101,14 @@ describe('the page of a coffee', () => {
     })
   })
 
-  it('leads back to Discover on the current shelf', async () => {
+  it('leads back to the Library on the current shelf', async () => {
     rememberShelf(tom.shelf.id)
 
     const page = await coffeePage()
     const back = page.get(tid('coffee-back'))
 
-    expect(back.text()).toBe('Discover')
-    expect(back.attributes('href')).toBe(`${shelfPath(tom.shelf)}/discover`)
+    expect(back.text()).toBe('Library')
+    expect(back.attributes('href')).toBe(`${shelfPath(tom.shelf)}/library`)
   })
 
   it('opens the coffee on each shelf of the viewer, with its bags there', async () => {
@@ -196,7 +196,7 @@ describe('the page of a coffee', () => {
     await click('confirm-dialog-confirm')
 
     await vi.waitFor(() =>
-      expect(currentPath()).toBe(`${shelfPath(sarah.shelf)}/discover`),
+      expect(currentPath()).toBe(`${shelfPath(sarah.shelf)}/library`),
     )
     expect(await storedCoffee()).toBeUndefined()
   })
@@ -328,8 +328,8 @@ describe('a coffee page that loads per section', () => {
 
   it.each([
     {
-      from: 'Discover',
-      route: () => `${shelfPath(sarah.shelf)}/discover`,
+      from: 'the Library',
+      route: () => `${shelfPath(sarah.shelf)}/library`,
     },
     {
       from: 'the roaster’s catalog',

@@ -17,32 +17,38 @@ const { initial } = address
 const search = ref(initial.search)
 const searched = refDebounced(search, 200)
 const filter = ref(initial.filter)
+const scope = ref<LibraryScope>(initial.scope)
 const view = ref<LibraryView>(initial.view)
-const sorting = ref<SortingState>(
-  initial.sort
-    ? [
-        {
-          id: initial.sort.column,
-          desc: initial.sort.direction === 'descending',
-        },
-      ]
-    : [],
-)
+const sort = ref<LibrarySort | null>(initial.sort)
 const pagination = ref<PaginationState>({
   pageIndex: initial.pageIndex,
   pageSize: libraryPageSize,
 })
 const table = computed(() => desktop.value && view.value === 'table')
+const bought = computed(() => scope.value === 'bought')
 
-const sort = computed<LibrarySort | null>(() => {
-  const [sorted] = sorting.value
+const sorting = computed<SortingState>({
+  get: () =>
+    sort.value
+      ? [
+          {
+            id: sort.value.column,
+            desc: sort.value.direction === 'descending',
+          },
+        ]
+      : [],
+  set: ([sorted]) => {
+    sort.value = sorted
+      ? {
+          column: sorted.id as LibrarySortBy,
+          direction: sorted.desc ? 'descending' : 'ascending',
+        }
+      : null
+  },
+})
 
-  return sorted
-    ? {
-        column: sorted.id as LibraryColumn,
-        direction: sorted.desc ? 'descending' : 'ascending',
-      }
-    : null
+watch(scope, picked => {
+  sort.value = sortIn(picked, sort.value)
 })
 
 address.whenNamed(named => {
@@ -50,31 +56,33 @@ address.whenNamed(named => {
 })
 
 const listed = computed(() =>
-  JSON.stringify(libraryQuery(searched.value, filter.value)),
+  JSON.stringify(libraryQuery(searched.value, filter.value, scope.value)),
 )
 
-watch([listed, sorting], () => {
+watch([listed, sort], () => {
   pagination.value = { ...pagination.value, pageIndex: 0 }
 })
 
-watch([searched, filter, view, sort, () => pagination.value.pageIndex], () =>
-  address.keep({
-    search: searched.value,
-    filter: filter.value,
-    view: view.value,
-    sort: sort.value,
-    pageIndex: pagination.value.pageIndex,
-  }),
+watch(
+  [searched, filter, scope, view, sort, () => pagination.value.pageIndex],
+  () =>
+    address.keep({
+      search: searched.value,
+      filter: filter.value,
+      scope: scope.value,
+      view: view.value,
+      sort: sort.value,
+      pageIndex: pagination.value.pageIndex,
+    }),
 )
 
-const grid = useLibraryPages(
-  shelfId,
-  () => libraryQuery(searched.value, filter.value),
-  () => !table.value,
-)
+const query = () =>
+  libraryQuery(searched.value, filter.value, scope.value, sort.value)
+
+const grid = useLibraryPages(shelfId, query, () => !table.value)
 const page = useLibraryPage(
   shelfId,
-  () => libraryQuery(searched.value, filter.value, sort.value),
+  query,
   () => pagination.value.pageIndex,
   table,
 )
@@ -91,10 +99,19 @@ const total = computed(() =>
 const narrowed = computed(
   () => Boolean(searched.value.trim()) || isLibraryFiltered(filter.value),
 )
-const empty = computed(
-  () =>
-    list.value.data.value !== undefined && !narrowed.value && total.value === 0,
-)
+
+const box = useTemplateRef('box')
+const focus = useSearchFocus()
+
+function focusIfAsked() {
+  if (!focus.value) return
+
+  box.value?.focus()
+  focus.value = false
+}
+
+onMounted(focusIfAsked)
+watch(focus, focusIfAsked, { flush: 'post' })
 
 function clear() {
   search.value = ''
@@ -112,28 +129,13 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
 <template>
   <main>
     <PageHeader title="Library" />
-    <p v-if="empty" class="mt-3 text-xs" data-testid="library-empty">
-      Every coffee you've bought will show up here, finished or not.
+    <p class="mt-3 text-xs">
+      Every coffee anyone has added. Switch to Bought to see only what your
+      shelf has had.
     </p>
-    <template v-else>
-      <BrowsingSearch
-        v-model="search"
-        class="mt-6"
-        label="Search your library"
-        placeholder="Coffee, roaster, flavor note, origin…"
-        short-placeholder="Search coffees"
-      />
-      <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <QuerySection :query="address.labels" testid="library-filters">
-          <BrowsingFilters
-            v-model="filter"
-            :shelf-id="shelfId"
-            area="library"
-            :toggle="favourites"
-          />
-
-          <template #skeleton><LazyBrowsingFiltersSkeleton /></template>
-        </QuerySection>
+    <div class="mt-6 flex flex-col gap-4 md:flex-row md:items-center">
+      <div class="flex flex-wrap items-center gap-3 md:order-last">
+        <LibraryScopeSwitch v-model="scope" />
         <div
           v-if="desktop"
           class="flex rounded-full bg-accent p-1"
@@ -164,73 +166,124 @@ const viewIcons = { grid: LayoutGridIcon, table: TableIcon }
           </button>
         </div>
       </div>
-      <QuerySection :query="list" testid="library">
-        <div
-          v-if="!total"
-          class="mt-8 flex flex-col items-start gap-4"
-          data-testid="library-no-match"
-        >
+      <BrowsingSearch
+        ref="box"
+        v-model="search"
+        class="md:flex-1"
+        label="Search the library"
+        placeholder="Coffee, roaster, flavor note, origin…"
+        short-placeholder="Search coffees"
+        shortcut
+      />
+    </div>
+    <div class="mt-4">
+      <QuerySection :query="address.labels" testid="library-filters">
+        <BrowsingFilters
+          v-model="filter"
+          :shelf-id="shelfId"
+          :area="bought ? 'library' : 'catalog'"
+          testid="library"
+          :toggle="favourites"
+        />
+
+        <template #skeleton><LazyBrowsingFiltersSkeleton /></template>
+      </QuerySection>
+    </div>
+    <QuerySection :query="list" testid="library">
+      <div
+        v-if="!total && !narrowed"
+        class="mt-8 flex flex-col items-start gap-4"
+        data-testid="library-empty"
+      >
+        <template v-if="bought">
           <p class="text-xs">
+            Every coffee you've bought will show up here, finished or not.
+          </p>
+          <Button
+            type="button"
+            data-testid="library-empty-all"
+            @click="scope = 'all'"
+          >
+            See all coffees
+          </Button>
+        </template>
+        <p v-else class="text-xs">Nobody has added a coffee yet.</p>
+      </div>
+      <div
+        v-else-if="!total"
+        class="mt-8 flex flex-col items-start gap-4"
+        data-testid="library-no-match"
+      >
+        <p class="text-xs">
+          {{
+            searched.trim()
+              ? `No ${bought ? 'coffee you bought' : 'coffee'} matches “${searched.trim()}”.`
+              : `No ${bought ? 'coffee you bought' : 'coffee'} matches these filters.`
+          }}
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <Button
+            v-if="bought"
+            type="button"
+            data-testid="library-no-match-all"
+            @click="scope = 'all'"
+          >
             {{
               searched.trim()
-                ? `No coffee in your library matches “${searched.trim()}”.`
-                : 'No coffee in your library matches these filters.'
+                ? `Search all coffees for “${searched.trim()}”`
+                : 'Look in all coffees'
             }}
+          </Button>
+          <Button
+            type="button"
+            data-testid="library-no-match-clear"
+            variant="outline"
+            size="lg"
+            @click="clear"
+          >
+            {{ searched.trim() ? 'Clear search' : 'Clear filters' }}
+          </Button>
+        </div>
+      </div>
+      <template v-else>
+        <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+          <p class="text-xs uppercase" data-testid="library-total">
+            {{ total }} {{ total === 1 ? 'coffee' : 'coffees' }}
           </p>
-          <div class="flex flex-wrap gap-3">
-            <Button as-child>
-              <NuxtLink
-                :to="discoverLink(shelf!, searched, filter)"
-                data-testid="library-no-match-discover"
-              >
-                {{
-                  searched.trim()
-                    ? `Search Discover for “${searched.trim()}”`
-                    : 'Look in Discover'
-                }}
-              </NuxtLink>
-            </Button>
-            <Button
-              type="button"
-              data-testid="library-no-match-clear"
-              variant="outline"
-              size="lg"
-              @click="clear"
-            >
-              {{ searched.trim() ? 'Clear search' : 'Clear filters' }}
-            </Button>
-          </div>
+          <LibrarySortPicker v-if="!table" v-model="sort" :scope="scope" />
         </div>
         <LazyLibraryTable
-          v-else-if="table"
+          v-if="table"
           v-model:sorting="sorting"
           v-model:pagination="pagination"
-          class="mt-8"
+          class="mt-3"
           :coffees="page.data.value?.coffees ?? []"
           :total="total"
           :shelf="shelf!"
+          :scope="scope"
         />
         <template v-else>
           <ul
             aria-label="Library"
             data-testid="library"
-            class="mt-8 grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
+            class="mt-3 grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
           >
             <li v-for="coffee in cards" :key="coffee.id">
-              <LazyCoffeeCard
+              <LazyCatalogResult
                 :coffee="coffee"
-                :to="shelfCoffeePath(shelf!, coffee)"
+                :to="catalogCoffeePath(shelf!, coffee)"
+                :hide-bought="bought"
               />
             </li>
           </ul>
           <LazyLoadMore :pages="grid" data-testid="library-more" />
         </template>
+      </template>
 
-        <template #skeleton>
-          <LazyLibraryTableSkeleton v-if="table" />
-          <LazyLibrarySkeleton v-else />
-        </template>
-      </QuerySection>
-    </template>
+      <template #skeleton>
+        <LazyLibraryTableSkeleton v-if="table" />
+        <LazyLibrarySkeleton v-else />
+      </template>
+    </QuerySection>
   </main>
 </template>

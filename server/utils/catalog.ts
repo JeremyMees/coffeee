@@ -4,7 +4,7 @@ import type { CatalogSearch } from '#shared/types/catalog'
 import type { LibraryFilterSearch } from '#shared/types/library'
 import type { Database } from '#server/types/database'
 import type { Viewer } from '#server/types/coffees'
-import { coffee, purchase, roaster } from '#server/db/schemas'
+import { coffee, coffeeVerdict, purchase, roaster } from '#server/db/schemas'
 import {
   boughtOn,
   browseCoffees,
@@ -15,6 +15,7 @@ import { coffeeColumns } from '#server/utils/coffees'
 import {
   byCommunityRating,
   communityRatingColumns,
+  verdictOn,
 } from '#server/utils/verdicts'
 
 export function canEditCatalogEntry(viewer: Viewer, createdBy: string | null) {
@@ -31,7 +32,7 @@ function latestRoastOn(shelfId: string) {
 
 export async function listCatalog(
   db: Database,
-  input: { shelfId: string; search: CatalogSearch },
+  input: { shelfId: string; userId: string; search: CatalogSearch },
 ) {
   const { search } = input
   const browsed = await browseCoffees(db, search)
@@ -41,12 +42,14 @@ export async function listCatalog(
       ...coffeeColumns,
       roasterId: coffee.roasterId,
       roastedOn: latestRoastOn(input.shelfId),
+      rating: coffeeVerdict.rating,
       communityRating: communityRatingColumns,
       onShelf: boughtOn(input.shelfId),
       total: browsedTotal,
     })
     .from(coffee)
     .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+    .leftJoin(coffeeVerdict, verdictOn(input.userId))
     .where(
       and(browsed.where, search.mine ? boughtOn(input.shelfId) : undefined),
     )
@@ -58,7 +61,7 @@ export async function listCatalog(
     .limit(search.pageSize)
     .offset(search.page * search.pageSize)
 
-  return browsed.page(rows)
+  return browsed.page(rows.map(row => ({ ...row, rating: row.rating ?? null })))
 }
 
 export function listCatalogFilterOptions(

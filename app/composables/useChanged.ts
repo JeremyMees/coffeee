@@ -94,6 +94,7 @@ const staleAfter: { [Kind in Change['type']]: StaleRule<Kind> } = {
     keyLike(...queryKeys.coffeeReviews(coffeeId)),
     onEveryShelf('stock'),
     onEveryShelf('library'),
+    onEveryShelf('catalog'),
     keyLike(...queryKeys.profileStats()),
   ],
   grindSetting: ({ coffeeId }) => [

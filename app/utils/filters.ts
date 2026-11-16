@@ -1,7 +1,7 @@
 export const filterAreas = ['library', 'catalog', 'roasters'] as const
 
 export const filterAreaNames: Record<FilterArea, string> = {
-  library: 'your library',
+  library: 'the coffees you bought',
   catalog: 'the catalog',
   roasters: 'the roasters',
 }

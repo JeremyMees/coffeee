@@ -15,25 +15,28 @@ describe('useBrowsingAddress', () => {
   it('starts from the address straight away and names its filters once known', async () => {
     const laCabra = await scenario.roaster(sarah, 'La Cabra')
     const address = await runOn(
-      `/shelves/${sarah.shelf.id}/discover?q=lime&roasterId=${laCabra}`,
-      () => useBrowsingAddress(sarah.shelf.id, catalogAddress),
+      `/shelves/${sarah.shelf.id}/library?q=lime&roasterId=${laCabra}`,
+      () => useBrowsingAddress(sarah.shelf.id, libraryAddress),
     )
     const named = vi.fn()
 
     expect(address.initial).toEqual({
       search: 'lime',
       filter: {
-        ...emptyBrowsingFilter(),
+        ...emptyLibraryFilter(),
         roaster: [{ value: laCabra, label: '' }],
       },
-      sort: 'newest',
+      scope: 'all',
+      view: 'grid',
+      sort: null,
+      pageIndex: 0,
     })
 
     address.whenNamed(named)
 
     await vi.waitFor(() =>
       expect(named).toHaveBeenCalledWith({
-        ...emptyBrowsingFilter(),
+        ...emptyLibraryFilter(),
         roaster: [{ value: laCabra, label: 'La Cabra' }],
       }),
     )
@@ -41,20 +44,23 @@ describe('useBrowsingAddress', () => {
   })
 
   it('keeps the state in the address and remembers the names it picked', async () => {
-    const address = await runOn(`/shelves/${sarah.shelf.id}/discover`, () =>
-      useBrowsingAddress(sarah.shelf.id, catalogAddress),
+    const address = await runOn(`/shelves/${sarah.shelf.id}/library`, () =>
+      useBrowsingAddress(sarah.shelf.id, libraryAddress),
     )
     const state = {
       search: 'lime',
       filter: {
-        ...emptyBrowsingFilter(),
+        ...emptyLibraryFilter(),
         roaster: [{ value: 'r1', label: 'La Cabra' }],
         flavorNote: [
           { value: 'n1', label: 'Lime' },
           { value: 'n2', label: 'Jasmine' },
         ],
       },
-      sort: 'newest' as const,
+      scope: 'all' as const,
+      view: 'grid' as const,
+      sort: null,
+      pageIndex: 0,
     }
 
     await address.keep(state)
@@ -70,8 +76,8 @@ describe('useBrowsingAddress', () => {
       message: 'The names are out of reach',
     })
     const back = await runOn(
-      `/shelves/${sarah.shelf.id}/discover?q=lime&flavorNoteId=n1&flavorNoteId=n2&roasterId=r1`,
-      () => useBrowsingAddress(sarah.shelf.id, catalogAddress),
+      `/shelves/${sarah.shelf.id}/library?q=lime&flavorNoteId=n1&flavorNoteId=n2&roasterId=r1`,
+      () => useBrowsingAddress(sarah.shelf.id, libraryAddress),
     )
 
     const named = vi.fn()
@@ -83,13 +89,13 @@ describe('useBrowsingAddress', () => {
 
   it('remembers no names before it knows them', async () => {
     const laCabra = await scenario.roaster(sarah, 'La Cabra')
-    const route = `/shelves/${sarah.shelf.id}/discover?roasterId=${laCabra}`
+    const route = `/shelves/${sarah.shelf.id}/library?roasterId=${laCabra}`
     const hold = holdRequest(
       'GET',
       `/api/shelves/${sarah.shelf.id}/filter-labels`,
     )
     const address = await runOn(route, () =>
-      useBrowsingAddress(sarah.shelf.id, catalogAddress),
+      useBrowsingAddress(sarah.shelf.id, libraryAddress),
     )
 
     await address.keep({ ...address.initial, search: 'lime' })
@@ -99,7 +105,7 @@ describe('useBrowsingAddress', () => {
 
     await vi.waitFor(() =>
       expect(named).toHaveBeenCalledWith({
-        ...emptyBrowsingFilter(),
+        ...emptyLibraryFilter(),
         roaster: [{ value: laCabra, label: 'La Cabra' }],
       }),
     )

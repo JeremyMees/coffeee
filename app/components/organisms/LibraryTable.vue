@@ -7,7 +7,7 @@ import type {
   SortingState,
 } from '@tanstack/vue-table'
 import type { VNodeChild } from 'vue'
-import { MatchedBy, NuxtLink, RatingStars } from '#components'
+import { CommunityRating, MatchedBy, NuxtLink, RatingStars } from '#components'
 
 const sorting = defineModel<SortingState>('sorting', { required: true })
 const pagination = defineModel<PaginationState>('pagination', {
@@ -18,6 +18,7 @@ const props = defineProps<{
   coffees: LibraryCoffee[]
   total: number
   shelf: { id: string; name: string }
+  scope: LibraryScope
 }>()
 
 const locale = useLocale()
@@ -32,7 +33,7 @@ function sortIcon(column: Column<LibraryCoffee>) {
 }
 
 function sortable(
-  id: LibraryColumn,
+  id: LibrarySortBy,
   cell: (coffee: LibraryCoffee) => VNodeChild,
 ): ColumnDef<LibraryCoffee, unknown> {
   return {
@@ -48,7 +49,7 @@ function sortable(
           onClick: column.getToggleSortingHandler(),
         },
         [
-          libraryColumnLabels[id],
+          librarySortLabels[id],
           h(sortIcon(column), {
             class: ['size-3.5', !column.getIsSorted() && 'opacity-40'],
             'aria-hidden': 'true',
@@ -59,21 +60,34 @@ function sortable(
   }
 }
 
-const columns: ColumnDef<LibraryCoffee, unknown>[] = [
+const columns = computed<ColumnDef<LibraryCoffee, unknown>[]>(() => [
   {
     id: 'name',
     enableSorting: false,
     header: 'Coffee',
     cell: ({ row }) => [
-      h(
-        NuxtLink,
-        {
-          to: shelfCoffeePath(props.shelf, row.original),
-          class: 'font-sans text-sm font-semibold hover:underline',
-          'data-testid': 'library-row-name',
-        },
-        () => row.original.name,
-      ),
+      h('span', { class: 'flex flex-wrap items-center gap-2' }, [
+        h(
+          NuxtLink,
+          {
+            to: catalogCoffeePath(props.shelf, row.original),
+            class: 'font-sans text-sm font-semibold hover:underline',
+            'data-testid': 'library-row-name',
+          },
+          () => row.original.name,
+        ),
+        props.scope === 'all' && row.original.onShelf
+          ? h(
+              'span',
+              {
+                class:
+                  'rounded-full border border-primary px-2 py-px text-xs uppercase',
+                'data-testid': 'library-row-bought',
+              },
+              'Bought',
+            )
+          : null,
+      ]),
       h(MatchedBy, {
         class: 'mt-1.5',
         matches: row.original.matches,
@@ -81,21 +95,33 @@ const columns: ColumnDef<LibraryCoffee, unknown>[] = [
       }),
     ],
   },
+  sortable('roaster', coffee => coffee.roaster),
+  sortable('origin', coffee => originNames(coffee) || 'Unknown'),
+  sortable('roastLevel', coffee => roastLevelLabels[coffee.roastLevel]),
+  sortable('roastedFor', coffee => roastedForLabels[coffee.roastedFor]),
   sortable('rating', coffee =>
     h('span', { class: 'text-primary' }, [
       h(RatingStars, { rating: coffee.rating }),
     ]),
   ),
-  sortable('roaster', coffee => coffee.roaster),
-  sortable('origin', coffee => originNames(coffee) || 'Unknown'),
-  sortable('roastLevel', coffee => roastLevelLabels[coffee.roastLevel]),
-  sortable('latestPrice', coffee =>
-    coffee.latestPriceCents === null
-      ? 'Unknown'
-      : formatPrice(coffee.latestPriceCents, locale.value),
+  sortable('communityRating', coffee =>
+    h(CommunityRating, { rating: coffee.communityRating }),
   ),
-  sortable('lastBought', coffee => formatDate(coffee.lastBought, locale.value)),
-]
+  ...(props.scope === 'bought'
+    ? [
+        sortable('latestPrice', coffee =>
+          coffee.latestPriceCents === null
+            ? 'Unknown'
+            : formatPrice(coffee.latestPriceCents, locale.value),
+        ),
+        sortable('lastBought', coffee =>
+          coffee.lastBought
+            ? formatDate(coffee.lastBought, locale.value)
+            : 'Unknown',
+        ),
+      ]
+    : []),
+])
 </script>
 
 <template>
@@ -106,7 +132,7 @@ const columns: ColumnDef<LibraryCoffee, unknown>[] = [
     :data="coffees"
     :row-count="total"
     :row-id="coffee => coffee.id"
-    empty="No coffee in your library matches these filters."
+    empty="No coffee in the library matches these filters."
     data-testid="library-table"
   />
 </template>

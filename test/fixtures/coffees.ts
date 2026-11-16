@@ -24,6 +24,8 @@ export function libraryCoffee(
     flavorNotes: [],
     origins: [{ code: 'ET', name: 'Ethiopia' }],
     latestPriceCents: 1650,
+    communityRating: { average: null, raters: 0 },
+    onShelf: true,
     matches: [],
     ...overrides,
   }
@@ -41,6 +43,7 @@ export function catalogCoffee(
     roastedFor: 'filter',
     photoUrl: null,
     roastedOn: '2026-10-28',
+    rating: null,
     onShelf: true,
     flavorNotes: [{ id: 'n1', name: 'Lime' }],
     origins: [{ code: 'ET', name: 'Ethiopia' }],

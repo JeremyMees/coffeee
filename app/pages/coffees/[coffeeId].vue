@@ -13,8 +13,8 @@ const route = useRoute('coffees-coffeeId')
 const coffeeId = computed(() => idFrom(route.params.coffeeId))
 const shelf = useCurrentShelf()
 const { link: back, back: goBack } = useBackLink(() => ({
-  label: 'Discover',
-  to: shelf.value ? `${shelfPath(shelf.value)}/discover` : '/',
+  label: 'Library',
+  to: shelf.value ? `${shelfPath(shelf.value)}/library` : '/',
 }))
 
 const editing = ref(false)

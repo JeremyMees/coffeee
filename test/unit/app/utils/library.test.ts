@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  defaultSortFor,
   emptyLibraryFilter,
   isLibraryFiltered,
   libraryAddress,
   libraryQuery,
   originNames,
+  sortIn,
+  sortsFor,
 } from '~/utils/library'
 import { libraryCoffee } from '#test/fixtures/coffees'
 
@@ -14,6 +17,7 @@ function state(overrides: Partial<LibraryState> = {}): LibraryState {
   return {
     search: '',
     filter: emptyLibraryFilter(),
+    scope: 'all',
     view: 'grid',
     sort: null,
     pageIndex: 0,
@@ -34,11 +38,11 @@ describe('isLibraryFiltered', () => {
 })
 
 describe('libraryQuery', () => {
-  it('asks for everything without a search, filters or a sort', () => {
-    expect(libraryQuery(' ', emptyLibraryFilter())).toEqual({})
+  it('asks for every coffee without a search, filters or a sort', () => {
+    expect(libraryQuery(' ', emptyLibraryFilter(), 'all')).toEqual({})
   })
 
-  it('asks for what was typed, Favourites, the filters and sort', () => {
+  it('asks for the bought coffees, what was typed, Favourites, the filters and sort', () => {
     expect(
       libraryQuery(
         ' lime ',
@@ -48,16 +52,44 @@ describe('libraryQuery', () => {
           roaster: [laCabra],
           varietal: [{ value: 'v1', label: 'Geisha' }],
         },
+        'bought',
         { column: 'latestPrice', direction: 'descending' },
       ),
     ).toEqual({
       search: 'lime',
+      bought: 'true',
       favourites: 'true',
       roasterId: 'r1',
       varietalId: 'v1',
       sort: 'latestPrice',
       direction: 'descending',
     })
+  })
+})
+
+describe('sortsFor', () => {
+  it('sorts by price and last bought only on the Bought side', () => {
+    expect(sortsFor('all')).not.toContain('latestPrice')
+    expect(sortsFor('all')).not.toContain('lastBought')
+    expect(sortsFor('bought')).toContain('latestPrice')
+    expect(sortsFor('bought')).toContain('lastBought')
+  })
+
+  it('starts all coffees at the newest and the bought ones at last bought', () => {
+    expect(defaultSortFor('all')).toBe('newest')
+    expect(defaultSortFor('bought')).toBe('lastBought')
+  })
+})
+
+describe('sortIn', () => {
+  it('keeps a sort the side has and drops one it does not', () => {
+    const rating = { column: 'rating', direction: 'descending' } as const
+    const price = { column: 'latestPrice', direction: 'ascending' } as const
+
+    expect(sortIn('all', rating)).toEqual(rating)
+    expect(sortIn('all', price)).toBeNull()
+    expect(sortIn('bought', price)).toEqual(price)
+    expect(sortIn('all', null)).toBeNull()
   })
 })
 
@@ -81,7 +113,7 @@ describe('libraryAddress', () => {
     expect(libraryAddress.toRoute(state())).toEqual({})
   })
 
-  it('keeps the search and filters, and the sort and page only for the table', () => {
+  it('keeps the side, search, filters and sort, and the page only for the table', () => {
     const filter = { ...emptyLibraryFilter(), roaster: [laCabra] }
     const sort = { column: 'rating', direction: 'descending' } as const
 
@@ -89,16 +121,22 @@ describe('libraryAddress', () => {
       libraryAddress.toRoute(
         state({ search: ' lime ', filter, sort, pageIndex: 2 }),
       ),
-    ).toEqual({ q: 'lime', roasterId: 'r1' })
-    expect(
-      libraryAddress.toRoute(
-        state({ filter, view: 'table', sort, pageIndex: 2 }),
-      ),
     ).toEqual({
+      q: 'lime',
       roasterId: 'r1',
-      view: 'table',
       sort: 'rating',
       direction: 'descending',
+    })
+    expect(
+      libraryAddress.toRoute(
+        state({ filter, scope: 'bought', view: 'table', sort, pageIndex: 2 }),
+      ),
+    ).toEqual({
+      scope: 'bought',
+      roasterId: 'r1',
+      sort: 'rating',
+      direction: 'descending',
+      view: 'table',
       page: '3',
     })
     expect(libraryAddress.toRoute(state({ filter, view: 'table' }))).toEqual({
@@ -115,6 +153,7 @@ describe('libraryAddress', () => {
     expect(
       libraryAddress.fromRoute(
         {
+          scope: 'bought',
           q: 'lime',
           favourites: 'true',
           roasterId: 'r1',
@@ -133,6 +172,7 @@ describe('libraryAddress', () => {
           favourites: true,
           roaster: [laCabra],
         },
+        scope: 'bought',
         view: 'table',
         sort: { column: 'rating', direction: 'descending' },
         pageIndex: 2,
@@ -143,10 +183,25 @@ describe('libraryAddress', () => {
   it('drops what it cannot name or does not know', () => {
     expect(
       libraryAddress.fromRoute(
-        { roasterId: 'gone', view: 'list', sort: 'colour', page: 'two' },
+        {
+          scope: 'mine',
+          roasterId: 'gone',
+          view: 'list',
+          sort: 'colour',
+          page: 'two',
+        },
         {},
       ),
     ).toEqual(state())
+  })
+
+  it('opens the Bought side for a sort only it has, in its natural direction', () => {
+    expect(libraryAddress.fromRoute({ sort: 'lastBought' }, {})).toEqual(
+      state({
+        scope: 'bought',
+        sort: { column: 'lastBought', direction: 'descending' },
+      }),
+    )
   })
 
   it('remembers the names of the picked filters', () => {

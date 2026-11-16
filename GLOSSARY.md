@@ -30,6 +30,9 @@ stock. _Avoid_: Inventory
 **Last bought**: The purchase date of a coffee's most recent purchase. _Avoid_:
 Last ordered
 
+**Bought**: A coffee the shelf has at least one purchase of, in stock or
+finished. _Avoid_: Owned, had
+
 **Roast date**: The date printed on a bag, saying when that purchase was
 roasted. _Avoid_: Production date, best-before
 
@@ -149,10 +152,7 @@ and edit any coffee. _Avoid_: Moderator, shelf owner
 origins, regions, processes, varietals and grinders. A coffee in the catalog can
 be edited by the user who added it and by admins. _Avoid_: Database, library
 
-**Library**: Every coffee a shelf ever bought, finished or not, with its
-purchases and prices. Only members of the shelf see it. _Avoid_: History,
-collection
-
-**Discover**: Where a user browses and searches the whole catalog, including
-coffees nobody on their shelf has bought. It never shows other shelves'
-purchases or prices. _Avoid_: Search, explore, catalog page
+**Library**: Where a user browses and searches the whole catalog, and can narrow
+it to the coffees their shelf bought. It shows the shelf's own purchases and
+prices, never other shelves'. _Avoid_: Discover, history, collection, search,
+explore

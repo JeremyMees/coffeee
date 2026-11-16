@@ -73,7 +73,10 @@ async function library(
   return listLibrary(db, {
     shelfId: home.id,
     userId: sarah.id,
-    search: librarySearchSchema.parse(query) as LibrarySearch,
+    search: librarySearchSchema.parse({
+      bought: 'true',
+      ...query,
+    }) as LibrarySearch,
   })
 }
 
@@ -151,6 +154,8 @@ describe('the library', () => {
           rating: null,
           wouldBuyAgain: false,
           latestPriceCents: 1650,
+          communityRating: { average: null, raters: 0 },
+          onShelf: true,
           matches: [],
           flavorNotes: [{ id: expect.any(String), name: 'Lime' }],
           origins: [
@@ -298,7 +303,7 @@ describe('the library', () => {
     ).toEqual(['Red Brick'])
   })
 
-  it('searches only the shelf’s coffees, by the same fields as Discover', async () => {
+  it('searches only the bought coffees, by the same fields as all of them', async () => {
     const context = await setup()
     await threeCoffees(context)
     await addCoffee(context.db, {
@@ -386,6 +391,125 @@ describe('the library', () => {
       'El Paraiso',
     ])
     expect(second.coffees.map(coffee => coffee.name)).toEqual(['Red Brick'])
+  })
+})
+
+describe('all coffees in the library', () => {
+  async function tomsCoffee(
+    context: Setup,
+    overrides: Partial<NewCoffee> = {},
+  ) {
+    const { coffee } = await addCoffee(context.db, {
+      shelfId: context.work.id,
+      userId: context.tom.id,
+      coffee: newCoffee({ name: 'Gesha Village', price: 30, ...overrides }),
+      origin: testOrigin,
+    })
+
+    return coffee.id
+  }
+
+  it('lists every coffee anyone added, newest first, marking the bought ones', async () => {
+    const context = await setup()
+    await threeCoffees(context)
+    await tomsCoffee(context)
+
+    const all = await library(context, { bought: 'false' })
+
+    expect(all.total).toBe(4)
+    expect(all.coffees.map(coffee => [coffee.name, coffee.onShelf])).toEqual([
+      ['Gesha Village', false],
+      ['Red Brick', true],
+      ['El Paraiso', true],
+      ['Ayele Fulasa', true],
+    ])
+  })
+
+  it('never shows the purchases or prices of other shelves', async () => {
+    const context = await setup()
+    await tomsCoffee(context)
+
+    const [gesha] = (await library(context, { bought: 'false' })).coffees
+
+    expect(gesha).toMatchObject({
+      roastedOn: null,
+      lastBought: null,
+      latestPriceCents: null,
+      onShelf: false,
+    })
+  })
+
+  it('shows the viewer’s own rating next to the community rating', async () => {
+    const context = await setup()
+    const gesha = await tomsCoffee(context)
+    await judgeCoffee(context.db, {
+      userId: context.tom.id,
+      coffeeId: gesha,
+      verdict: { rating: 2, wouldBuyAgain: false },
+    })
+    await judgeCoffee(context.db, {
+      userId: context.sarah.id,
+      coffeeId: gesha,
+      verdict: { rating: 4, wouldBuyAgain: true },
+    })
+
+    const [found] = (await library(context, { bought: 'false' })).coffees
+
+    expect(found).toMatchObject({
+      rating: 4,
+      wouldBuyAgain: true,
+      communityRating: { average: 3, raters: 2 },
+    })
+  })
+
+  it('keeps the viewer’s favourites, bought or not', async () => {
+    const context = await setup()
+    await threeCoffees(context)
+    const gesha = await tomsCoffee(context)
+    await judgeCoffee(context.db, {
+      userId: context.sarah.id,
+      coffeeId: gesha,
+      verdict: { rating: 5, wouldBuyAgain: true },
+    })
+
+    expect(
+      await names(context, { bought: 'false', favourites: 'true' }),
+    ).toEqual(['Gesha Village', 'Ayele Fulasa'])
+    expect(await names(context, { favourites: 'true' })).toEqual([
+      'Ayele Fulasa',
+    ])
+  })
+
+  it('sorts by community rating and puts what nobody bought last by price', async () => {
+    const context = await setup()
+    await threeCoffees(context)
+    const gesha = await tomsCoffee(context)
+    await judgeCoffee(context.db, {
+      userId: context.tom.id,
+      coffeeId: gesha,
+      verdict: { rating: 3, wouldBuyAgain: false },
+    })
+    const sorted = (sort: string, direction: string) =>
+      names(context, { bought: 'false', sort, direction })
+
+    expect(await sorted('communityRating', 'descending')).toEqual([
+      'Ayele Fulasa',
+      'El Paraiso',
+      'Gesha Village',
+      'Red Brick',
+    ])
+    expect(await sorted('latestPrice', 'descending')).toEqual([
+      'El Paraiso',
+      'Ayele Fulasa',
+      'Gesha Village',
+      'Red Brick',
+    ])
+    expect(await sorted('roastedFor', 'ascending')).toEqual([
+      'El Paraiso',
+      'Gesha Village',
+      'Red Brick',
+      'Ayele Fulasa',
+    ])
   })
 })
 

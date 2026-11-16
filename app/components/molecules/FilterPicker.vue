@@ -10,10 +10,11 @@ const props = defineProps<{
   area: FilterArea
   kind: FilterKind
   label: string
+  testid?: string
 }>()
 
 const anyOption: LibraryOption = { value: '', label: '' }
-const prefix = computed(() => `${props.area}-filter`)
+const prefix = computed(() => `${props.testid ?? props.area}-filter`)
 
 const open = ref(false)
 const search = ref('')

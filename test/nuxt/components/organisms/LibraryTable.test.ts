@@ -3,15 +3,19 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { SortingState } from '@tanstack/vue-table'
 import LibraryTable from '~/components/organisms/LibraryTable.vue'
 import { tid } from '../../fixtures'
-import { libraryCoffees } from '#test/fixtures/coffees'
+import { libraryCoffee, libraryCoffees } from '#test/fixtures/coffees'
 
-async function table(sorting: SortingState = []) {
+async function table(
+  sorting: SortingState = [],
+  scope: LibraryScope = 'bought',
+) {
   const sortings: SortingState[] = []
   const wrapper = await mountSuspended(LibraryTable, {
     props: {
       coffees: libraryCoffees(),
       total: 3,
       shelf: { id: 'home', name: "Sarah's shelf" },
+      scope,
       sorting,
       'onUpdate:sorting': (changed: SortingState) => sortings.push(changed),
       pagination: { pageIndex: 0, pageSize: libraryPageSize },
@@ -38,6 +42,9 @@ describe('LibraryTable', () => {
     expect(cell('roaster')).toBe('Square Mile')
     expect(cell('origin')).toBe('Ethiopia')
     expect(cell('roastLevel')).toBe('Light')
+    expect(cell('roastedFor')).toBe('Filter')
+    expect(row!.get(tid('data-table-cell-communityRating')).text()).toBeTruthy()
+    expect(row!.find(tid('library-row-bought')).exists()).toBe(false)
     expect(cell('latestPrice')).toMatch(/^€\s?16\.50$/)
     expect(cell('lastBought')).toBe(formatDate('2026-11-01', 'en-US'))
   })
@@ -69,13 +76,46 @@ describe('LibraryTable', () => {
         .findAll('[data-testid^="library-sort-"]')
         .map(header => header.text()),
     ).toEqual([
-      'Rating',
       'Roaster',
       'Origin',
       'Roast level',
+      'Roasted for',
+      'Your rating',
+      'Community rating',
       'Latest price',
       'Last bought',
     ])
+  })
+
+  it('leaves out the price and last bought for all coffees, and marks the bought ones', async () => {
+    const { wrapper } = await table([], 'all')
+
+    expect(
+      wrapper
+        .findAll('[data-testid^="library-sort-"]')
+        .map(header => header.text()),
+    ).not.toContain('Latest price')
+    expect(wrapper.find(tid('data-table-cell-lastBought')).exists()).toBe(false)
+    expect(wrapper.findAll(tid('library-row-bought'))).toHaveLength(3)
+    expect(wrapper.get(tid('library-row-bought')).text()).toBe('Bought')
+  })
+
+  it('opens a coffee nobody on the shelf bought in the catalog', async () => {
+    const wrapper = await mountSuspended(LibraryTable, {
+      props: {
+        coffees: [libraryCoffee({ onShelf: false, lastBought: null })],
+        total: 1,
+        shelf: { id: 'home', name: "Sarah's shelf" },
+        scope: 'all',
+        sorting: [],
+        pagination: { pageIndex: 0, pageSize: libraryPageSize },
+      },
+    })
+
+    expect(wrapper.get(tid('library-row-name')).attributes('href')).toBe(
+      '/coffees/ayele-fulasa-c1',
+    )
+    expect(wrapper.find(tid('library-row-bought')).exists()).toBe(false)
   })
 
   it('sorts by a column ascending, then descending, then not at all', async () => {

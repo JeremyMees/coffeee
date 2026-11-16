@@ -15,14 +15,13 @@ function links(destinations: ReturnType<typeof useDestinations>) {
 describe('useDestinations', () => {
   it('points at the pages of the current shelf', async () => {
     const destinations = await runOn(
-      '/shelves/work-work/discover',
+      '/shelves/work-work/library',
       useDestinations,
     )
 
     expect(links(destinations)).toEqual([
       ['Stock', '/shelves/work-work'],
       ['Library', '/shelves/work-work/library'],
-      ['Discover', '/shelves/work-work/discover'],
       ['Roasters', '/roasters'],
       ['Profile', '/profile'],
     ])

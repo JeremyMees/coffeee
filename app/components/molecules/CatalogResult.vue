@@ -1,8 +1,9 @@
 <script setup lang="ts">
 const props = defineProps<{
-  coffee: CatalogCoffee
+  coffee: CatalogCoffee | LibraryCoffee
   to: string
   hideRoaster?: boolean
+  hideBought?: boolean
 }>()
 
 const origins = computed(() => originNames(props.coffee))
@@ -17,11 +18,11 @@ const origins = computed(() => originNames(props.coffee))
   >
     <template #badge>
       <span
-        v-if="coffee.onShelf"
+        v-if="coffee.onShelf && !hideBought"
         class="shrink-0 self-start rounded-full border border-primary px-2 py-px text-xs uppercase"
-        data-testid="catalog-result-mine"
+        data-testid="catalog-result-bought"
       >
-        On your shelf
+        Bought
       </span>
     </template>
     <template #facts>
@@ -35,6 +36,12 @@ const origins = computed(() => originNames(props.coffee))
       <SpecRow label="Community" centered>
         <dd data-testid="catalog-result-community-rating">
           <CommunityRating :rating="coffee.communityRating" />
+        </dd>
+      </SpecRow>
+      <SpecRow label="Your rating" centered>
+        <dd data-testid="catalog-result-rating">
+          <RatingStars v-if="coffee.rating !== null" :rating="coffee.rating" />
+          <span v-else class="text-muted-foreground">Not rated</span>
         </dd>
       </SpecRow>
     </template>

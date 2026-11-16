@@ -939,8 +939,8 @@ test('keeps every coffee in the Library, finished or not, and finds the favourit
   await page.getByTestId('purchase-finish').click()
   await expect(page.getByTestId('purchase-finish')).toBeHidden()
 
-  await page.goto(`/shelves/${member.shelfId}/library`)
-  const names = page.getByTestId('library').getByTestId('coffee-card-name')
+  await page.goto(`/shelves/${member.shelfId}/library?scope=bought`)
+  const names = page.getByTestId('library').getByTestId('catalog-result-name')
   await expect(names).toHaveText(['Red Brick', 'Ayele Fulasa'])
 
   await page.getByTestId('library-filter-favourites').click()
@@ -974,7 +974,7 @@ test('keeps every coffee in the Library, finished or not, and finds the favourit
   ])
 })
 
-test('finds a coffee on Discover by its varietal or washing station and filters by varietal', async ({
+test('finds any coffee in the Library by its varietal or washing station and filters by varietal', async ({
   page,
   member,
 }) => {
@@ -989,7 +989,7 @@ test('finds a coffee on Discover by its varietal or washing station and filters 
     station,
   })
 
-  await page.goto(`/shelves/${member.shelfId}/discover`)
+  await page.goto(`/shelves/${member.shelfId}/library`)
   const results = page.getByTestId('catalog-result')
   await page.getByTestId('search-input').fill(varietal)
   await expect(results.getByTestId('catalog-result-name')).toHaveText([
@@ -1005,10 +1005,10 @@ test('finds a coffee on Discover by its varietal or washing station and filters 
   ])
 
   await page.getByTestId('search-input').fill('')
-  await page.getByTestId('catalog-filter-varietals').click()
-  await page.getByTestId('catalog-filter-varietals-search').fill(varietal)
+  await page.getByTestId('library-filter-varietals').click()
+  await page.getByTestId('library-filter-varietals-search').fill(varietal)
   await page
-    .getByTestId('catalog-filter-option')
+    .getByTestId('library-filter-option')
     .filter({ hasText: varietal })
     .click()
   await expect(results.getByTestId('catalog-result-name')).toHaveText([
@@ -1017,7 +1017,7 @@ test('finds a coffee on Discover by its varietal or washing station and filters 
   await expect(page).toHaveURL(/varietalId=/)
 
   await page.reload()
-  await expect(page.getByTestId('catalog-applied-filter')).toHaveText(
+  await expect(page.getByTestId('library-applied-filter')).toHaveText(
     `Varietal: ${varietal}`,
   )
   await expect(results.getByTestId('catalog-result-name')).toHaveText([
@@ -1025,7 +1025,7 @@ test('finds a coffee on Discover by its varietal or washing station and filters 
   ])
 })
 
-test('searches the Library by what a coffee is and filters it like Discover', async ({
+test('searches the bought coffees by what a coffee is and filters them', async ({
   page,
   member,
 }) => {
@@ -1041,15 +1041,15 @@ test('searches the Library by what a coffee is and filters it like Discover', as
     station,
   })
 
-  await page.goto(`/shelves/${member.shelfId}/library`)
+  await page.goto(`/shelves/${member.shelfId}/library?scope=bought`)
   const library = page.getByTestId('library')
-  const names = library.getByTestId('coffee-card-name')
+  const names = library.getByTestId('catalog-result-name')
   await expect(names).toHaveText(['Kochere Natural', 'Ayele Fulasa'])
-  await expect(library.getByTestId('coffee-card-matches')).toHaveCount(0)
+  await expect(library.getByTestId('catalog-result-matches')).toHaveCount(0)
 
   await page.getByTestId('search-input').fill(station)
   await expect(names).toHaveText(['Kochere Natural'])
-  await expect(library.getByTestId('coffee-card-match')).toHaveText([
+  await expect(library.getByTestId('catalog-result-match')).toHaveText([
     `Washing station: ${station}`,
   ])
   await expect(page).toHaveURL(/[?&]q=/)
@@ -1073,7 +1073,7 @@ test('searches the Library by what a coffee is and filters it like Discover', as
   await expect(names).toHaveText(['Ayele Fulasa'])
 })
 
-test('an empty Library search leads to Discover, which opens the shelf’s own coffee on the shelf', async ({
+test('an empty search of the bought coffees looks in all of them, which opens the shelf’s own coffee on the shelf', async ({
   page,
   member,
 }) => {
@@ -1082,20 +1082,20 @@ test('an empty Library search leads to Discover, which opens the shelf’s own c
   await page.goto(`/shelves/${member.shelfId}`)
   await addCoffee(page, { name, roaster, newRoaster: true })
 
-  await page.goto(`/shelves/${member.shelfId}/library?favourites=true`)
+  await page.goto(
+    `/shelves/${member.shelfId}/library?scope=bought&favourites=true`,
+  )
   await page.getByTestId('search-input').fill(name)
-  const discover = page.getByTestId('library-no-match-discover')
-  await expect(discover).toHaveText(`Search Discover for “${name}”`)
+  const all = page.getByTestId('library-no-match-all')
+  await expect(all).toHaveText(`Search all coffees for “${name}”`)
 
-  await discover.click()
-  await expect(page).toHaveURL(/\/discover\?q=/)
-  await expect(page).not.toHaveURL(/favourites/)
-  await expect(page.getByTestId('catalog-filter-mine')).toHaveCount(0)
+  await all.click()
+  await expect(page).not.toHaveURL(/scope=/)
+  await expect(page).toHaveURL(/[?&]q=/)
+  await page.getByTestId('library-filter-favourites').click()
   const result = page.getByTestId('catalog-result')
   await expect(result.getByTestId('catalog-result-name')).toHaveText([name])
-  await expect(result.getByTestId('catalog-result-mine')).toHaveText(
-    'On your shelf',
-  )
+  await expect(result.getByTestId('catalog-result-bought')).toHaveText('Bought')
 
   await result.click()
   await expect(page).toHaveURL(
@@ -1127,8 +1127,8 @@ test('picks several roasters in the Library, shows each as a chip and comes back
     newRoaster: true,
   })
 
-  await page.goto(`/shelves/${member.shelfId}/library`)
-  const names = page.getByTestId('library').getByTestId('coffee-card-name')
+  await page.goto(`/shelves/${member.shelfId}/library?scope=bought`)
+  const names = page.getByTestId('library').getByTestId('catalog-result-name')
   await expect(names).toHaveCount(3)
 
   await page.getByTestId('library-filter-roasters').click()
@@ -1178,7 +1178,6 @@ test('shows two columns of coffees and roasters on a tablet', async ({
   for (const [path, list] of [
     [`/shelves/${member.shelfId}`, 'stock'],
     [`/shelves/${member.shelfId}/library`, 'library'],
-    [`/shelves/${member.shelfId}/discover`, 'discover-results'],
     ['/roasters', 'roasters'],
   ]) {
     await page.goto(path!)
@@ -1253,13 +1252,9 @@ test('gives every control on a coffee a touch-sized target on a phone and keeps 
   await page.goto('/roasters')
   await expectTouchable(page.getByTestId('roasters-filter-bought-from'))
 
-  await page.goto(`/shelves/${member.shelfId}/discover`)
-  await expectTouchable(
-    page.getByTestId('catalog-sort').getByRole('button').first(),
-  )
-  await expectTouchable(
-    page.locator('[data-testid^="catalog-filter-"]:visible').first(),
-  )
+  await page.goto(`/shelves/${member.shelfId}/library`)
+  await expectTouchable(page.getByTestId('library-scope-bought'))
+  await expectTouchable(page.getByTestId('library-sort'))
 
   await page.setViewportSize(desktop)
   await page.goto(`/shelves/${member.shelfId}`)

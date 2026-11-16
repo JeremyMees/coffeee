@@ -69,7 +69,7 @@ describe('CatalogResult', () => {
     expect(wrapper.get(tid('catalog-result-name')).text()).toBe('Ayele Fulasa')
   })
 
-  it('shows only the community rating', async () => {
+  it('shows the community rating apart from the viewer’s own', async () => {
     const wrapper = await result({
       communityRating: { average: 3.5, raters: 2 },
     })
@@ -81,15 +81,34 @@ describe('CatalogResult', () => {
     expect(wrapper.find(tid('rating-stars')).exists()).toBe(false)
   })
 
-  it('marks a coffee on the shelf', async () => {
-    expect((await result()).get(tid('catalog-result-mine')).text()).toBe(
-      'On your shelf',
+  it('marks a bought coffee, unless asked not to', async () => {
+    expect((await result()).get(tid('catalog-result-bought')).text()).toBe(
+      'Bought',
     )
     expect(
       (await result({ onShelf: false }))
-        .find(tid('catalog-result-mine'))
+        .find(tid('catalog-result-bought'))
         .exists(),
     ).toBe(false)
+    const hidden = await mountSuspended(CatalogResult, {
+      props: {
+        coffee: catalogCoffee(),
+        to: '/coffees/ayele-fulasa-c1',
+        hideBought: true,
+      },
+    })
+    expect(hidden.find(tid('catalog-result-bought')).exists()).toBe(false)
+  })
+
+  it('shows the viewer’s own rating, or that they did not rate it', async () => {
+    expect(
+      (await result({ rating: 4 }))
+        .get(tid('catalog-result-rating', 'rating-stars'))
+        .attributes('data-rating'),
+    ).toBe('4')
+    expect((await result()).get(tid('catalog-result-rating')).text()).toBe(
+      'Not rated',
+    )
   })
 
   it('labels what matched the search', async () => {

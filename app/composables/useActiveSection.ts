@@ -32,6 +32,6 @@ export function useActiveSection() {
       return lastSection.value
     }
 
-    return destination(isShelfCoffeePath(path) ? 'Stock' : 'Discover')
+    return destination(isShelfCoffeePath(path) ? 'Stock' : 'Library')
   })
 }

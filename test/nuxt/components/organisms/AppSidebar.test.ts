@@ -11,7 +11,7 @@ beforeEach(() => {
   useState('last-section').value = null
 })
 
-function mountSidebar(route = '/shelves/work-work/discover') {
+function mountSidebar(route = '/shelves/work-work/library') {
   return mountSuspended(AppSidebar, { route })
 }
 
@@ -31,7 +31,6 @@ describe('AppSidebar', () => {
     ).toEqual([
       ['Stock', '/shelves/work-work'],
       ['Library', '/shelves/work-work/library'],
-      ['Discover', '/shelves/work-work/discover'],
       ['Roasters', '/roasters'],
       ['Profile', '/profile'],
     ])
@@ -60,7 +59,7 @@ describe('AppSidebar', () => {
 
     expect(
       sidebar
-        .get(`${tid('sidebar-link')}[href="/shelves/work-work/discover"]`)
+        .get(`${tid('sidebar-link')}[href="/shelves/work-work/library"]`)
         .attributes('aria-current'),
     ).toBe('page')
   })

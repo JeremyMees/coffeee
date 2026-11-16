@@ -46,9 +46,9 @@ describe('the open-add-coffee middleware', () => {
   })
 
   it('keeps the rest of the address', async () => {
-    const path = await visit('/shelves/work-work/discover?add=coffee&q=gesha')
+    const path = await visit('/shelves/work-work/library?add=coffee&q=gesha')
 
-    expect(path).toBe('/shelves/work-work/discover?q=gesha')
+    expect(path).toBe('/shelves/work-work/library?q=gesha')
   })
 
   it('leaves pages outside a shelf alone', async () => {

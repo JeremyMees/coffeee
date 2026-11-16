@@ -6,8 +6,11 @@ const filter = defineModel<Filter>({ required: true })
 const props = defineProps<{
   shelfId: string
   area: FilterArea
+  testid?: string
   toggle?: { key: keyof Filter & string; label: string; icon: Component }
 }>()
+
+const prefix = computed(() => props.testid ?? props.area)
 
 const toggled = computed(() =>
   Boolean(props.toggle && filter.value[props.toggle.key]),
@@ -50,14 +53,14 @@ function clear() {
 </script>
 
 <template>
-  <FilterBar :count="count" :testid="area">
+  <FilterBar :count="count" :testid="prefix">
     <LazyFilterToggle
       v-if="toggle"
       :model-value="toggled"
       :label="toggle.label"
       :icon="toggle.icon"
       solid
-      :data-testid="`${area}-filter-${toggle.key}`"
+      :data-testid="`${prefix}-filter-${toggle.key}`"
       @update:model-value="change({ [toggle.key]: $event } as Partial<Filter>)"
     />
     <FilterPicker
@@ -66,6 +69,7 @@ function clear() {
       :model-value="filter[picker.key]"
       :shelf-id="shelfId"
       :area="area"
+      :testid="prefix"
       :kind="picker.kind"
       :label="browsingFilterLabels[picker.kind]"
       @update:model-value="change({ [picker.key]: $event } as Partial<Filter>)"
@@ -75,7 +79,7 @@ function clear() {
       <LazyAppliedFilters
         v-if="filtered"
         :items="applied"
-        :testid="area"
+        :testid="prefix"
         @remove="remove($event.picker, $event.option.value)"
         @clear="clear"
       />

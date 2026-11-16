@@ -38,7 +38,6 @@ describe('AppDock', () => {
     ).toEqual([
       ['Stock', '/shelves/work-work'],
       ['Library', '/shelves/work-work/library'],
-      ['Discover', '/shelves/work-work/discover'],
       ['Roasters', '/roasters'],
       ['Profile', '/profile'],
     ])

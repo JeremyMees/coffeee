@@ -38,7 +38,7 @@ describe('useBackLink', () => {
 
   it.each([
     ['/shelves/work-work/library?favourites=true', 'Library'],
-    ['/shelves/work-work/discover?q=kenya&sort=communityRating', 'Discover'],
+    ['/shelves/work-work/library?q=kenya&scope=bought', 'Library'],
     ['/shelves/work-work', 'Stock'],
     ['/roasters', 'Roasters'],
     ['/roasters/r1', 'Roaster'],

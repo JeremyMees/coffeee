@@ -6,7 +6,7 @@ export interface LibraryFilter extends BrowsingFilter {
 }
 
 export interface LibrarySort {
-  column: LibraryColumn
+  column: LibrarySortBy
   direction: SortDirection
 }
 
@@ -15,6 +15,7 @@ export type LibraryView = (typeof libraryViews)[number]
 export interface LibraryState {
   search: string
   filter: LibraryFilter
+  scope: LibraryScope
   view: LibraryView
   sort: LibrarySort | null
   pageIndex: number

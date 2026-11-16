@@ -205,9 +205,9 @@ describe('useChanged', () => {
     expect(
       (
         reads.library.data.value as {
-          pages: { coffees: { rating: number | null }[] }[]
+          pages: { coffees: { id: string; rating: number | null }[] }[]
         }
-      ).pages[0]!.coffees[0],
+      ).pages[0]!.coffees.find(coffee => coffee.id === ayele.id),
     ).toMatchObject({ rating: 5 })
     expect(reads.stats.data.value).toMatchObject({ rated: 1 })
   })

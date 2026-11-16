@@ -6,8 +6,12 @@ import { requireShelf } from '#server/utils/session'
 import { readValidQuery } from '#server/utils/validation'
 
 export default defineEventHandler(async event => {
-  const { shelf } = await requireShelf(event)
+  const { user, shelf } = await requireShelf(event)
   const search = readValidQuery(event, catalogSearchSchema)
 
-  return listCatalog(useDb(), { shelfId: shelf.id, search })
+  return listCatalog(useDb(), {
+    shelfId: shelf.id,
+    userId: user.id,
+    search,
+  })
 })

@@ -3,7 +3,7 @@ import { adminListsPageSize } from './admin'
 import { catalogPageSize, catalogSorts } from './catalog'
 import { roastedForOptions, roastLevels } from './coffee'
 import {
-  libraryColumns,
+  librarySorts,
   libraryFilterPageSize,
   libraryPageSize,
   sortDirections,
@@ -150,9 +150,10 @@ export const browsingSearchSchema = listSearchSchema.extend({
 })
 
 export const librarySearchSchema = browsingSearchSchema.extend({
+  bought: yesOrNo('bought'),
   favourites: yesOrNo('favourites'),
   sort: z
-    .enum(libraryColumns, { error: 'Sort by one of the library columns' })
+    .enum(librarySorts, { error: 'Sort by one of the library columns' })
     .optional(),
   direction: z
     .enum(sortDirections, { error: 'Sort ascending or descending' })

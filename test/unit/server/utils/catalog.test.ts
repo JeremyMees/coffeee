@@ -92,11 +92,12 @@ async function addTo(
 }
 
 async function catalog(
-  { db, home }: Setup,
+  { db, home, sarah }: Setup,
   query: Record<string, string | string[]> = {},
 ) {
   return listCatalog(db, {
     shelfId: home.id,
+    userId: sarah.id,
     search: catalogSearchSchema.parse(query) as CatalogSearch,
   })
 }
@@ -170,6 +171,7 @@ describe('the catalog', () => {
       roastedFor: 'espresso',
       photoUrl: null,
       roastedOn: null,
+      rating: null,
       communityRating: { average: null, raters: 0 },
       onShelf: false,
       flavorNotes: [{ id: expect.any(String), name: 'Strawberry' }],
@@ -179,7 +181,7 @@ describe('the catalog', () => {
     expect(ayele.roastedOn).toBe('2026-10-28')
   })
 
-  it('shows the community rating, not the viewer’s own', async () => {
+  it('shows the community rating and the viewer’s own', async () => {
     const context = await setup()
     await twoShelvesOfCoffee(context)
     const [paraiso] = (await catalog(context, { search: 'paraiso' })).coffees
@@ -197,9 +199,9 @@ describe('the catalog', () => {
     const [rated] = (await catalog(context, { search: 'paraiso' })).coffees
 
     expect(rated).toMatchObject({
+      rating: 5,
       communityRating: { average: 3.5, raters: 2 },
     })
-    expect(rated).not.toHaveProperty('rating')
   })
 
   it('sorts by community rating, with unrated coffees last', async () => {

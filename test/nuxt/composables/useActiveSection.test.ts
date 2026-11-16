@@ -25,33 +25,31 @@ describe('useActiveSection', () => {
   it.each([
     ['/shelves/work-work', '/shelves/work-work'],
     ['/shelves/work-work/library', '/shelves/work-work/library'],
-    ['/shelves/work-work/discover', '/shelves/work-work/discover'],
     ['/roasters', '/roasters'],
     ['/profile', '/profile'],
   ])('marks %s as its own section', async (route, section) => {
     expect((await activeOn(route)).value).toBe(section)
   })
 
-  it.each([
-    ['/shelves/work-work'],
-    ['/shelves/work-work/library'],
-    ['/shelves/work-work/discover'],
-  ])('keeps %s active on a coffee opened from it', async list => {
-    const active = await openFrom(
-      list,
-      '/shelves/work-work/coffees/ayele-fulasa-c1',
-    )
+  it.each([['/shelves/work-work'], ['/shelves/work-work/library']])(
+    'keeps %s active on a coffee opened from it',
+    async list => {
+      const active = await openFrom(
+        list,
+        '/shelves/work-work/coffees/ayele-fulasa-c1',
+      )
 
-    expect(active.value).toBe(list)
-  })
+      expect(active.value).toBe(list)
+    },
+  )
 
-  it('keeps Discover active on a coffee outside the shelf', async () => {
+  it('keeps the Library active on a coffee outside the shelf', async () => {
     const active = await openFrom(
-      '/shelves/work-work/discover',
+      '/shelves/work-work/library',
       '/coffees/ayele-fulasa-c1',
     )
 
-    expect(active.value).toBe('/shelves/work-work/discover')
+    expect(active.value).toBe('/shelves/work-work/library')
   })
 
   it('falls back to Stock on a shelf coffee opened directly', async () => {
@@ -60,10 +58,10 @@ describe('useActiveSection', () => {
     expect(active.value).toBe('/shelves/work-work')
   })
 
-  it('falls back to Discover on a coffee outside the shelf opened directly', async () => {
+  it('falls back to the Library on a coffee outside the shelf opened directly', async () => {
     const active = await activeOn('/coffees/ayele-fulasa-c1')
 
-    expect(active.value).toBe('/shelves/sarahs-shelf-home/discover')
+    expect(active.value).toBe('/shelves/sarahs-shelf-home/library')
   })
 
   it('marks Roasters on a roaster page', async () => {

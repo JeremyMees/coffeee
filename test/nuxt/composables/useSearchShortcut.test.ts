@@ -28,14 +28,14 @@ function press(init: KeyboardEventInit) {
 
 describe('useSearchShortcut', () => {
   it.each([{ metaKey: true }, { ctrlKey: true }])(
-    'opens Discover of the current shelf and asks for focus on %o',
+    'opens the Library of the current shelf and asks for focus on %o',
     async modifier => {
-      await runOn('/shelves/work-work/library', useSearchShortcut)
+      await runOn('/shelves/work-work', useSearchShortcut)
 
       const event = press(modifier)
 
       await vi.waitFor(() =>
-        expect(currentPath()).toBe('/shelves/work-work/discover'),
+        expect(currentPath()).toBe('/shelves/work-work/library'),
       )
       expect(event.defaultPrevented).toBe(true)
       expect(useSearchFocus().value).toBe(true)
@@ -51,9 +51,9 @@ describe('useSearchShortcut', () => {
     expect(useSearchFocus().value).toBe(false)
   })
 
-  it('keeps the search in the address when Discover is already open', async () => {
+  it('keeps the search in the address when the Library is already open', async () => {
     await runOn(
-      '/shelves/work-work/discover?q=lime&mine=true',
+      '/shelves/work-work/library?q=lime&scope=bought',
       useSearchShortcut,
     )
 
@@ -61,7 +61,7 @@ describe('useSearchShortcut', () => {
     await flushPromises()
 
     expect(useRouter().currentRoute.value.fullPath).toBe(
-      '/shelves/work-work/discover?q=lime&mine=true',
+      '/shelves/work-work/library?q=lime&scope=bought',
     )
     expect(useSearchFocus().value).toBe(true)
   })

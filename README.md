@@ -12,10 +12,9 @@ ones are easy to find and buy again.
 
 - **Stock**: the bags you have open or waiting, how fresh they are and when they
   were roasted.
-- **Library**: every coffee you ever bought, with prices, purchase dates and
-  your rating, sortable and filterable.
-- **Discover**: the shared catalog of coffees everyone added, with community
-  ratings.
+- **Library**: the shared catalog of coffees everyone added, with community
+  ratings. Narrow it to the coffees you bought to see your prices, purchase
+  dates and rating, in a grid or a sortable table.
 - **Roasters**: every roaster, where they are and which ones you buy from.
 - **Shelves**: share one stock with the people you live or work with. Everyone
   adds, finishes and rates the same bags.

@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import App from '~/app.vue'
-import { shelfCoffeePath, shelfPath, useRouter } from '#imports'
+import {
+  coffeePath,
+  shelfCoffeePath,
+  shelfPath,
+  useRouter,
+  useSearchFocus,
+} from '#imports'
 import type { Member } from '#test/support/types'
 import {
   allByTestId,
   click,
+  currentPath,
   forgetLastShelf,
   setViewport,
   tid,
@@ -14,11 +21,14 @@ import {
 import { failRequest, holdRequest, scenario, signIn } from '../../../server'
 
 let sarah: Member
+let tom: Member
 
 beforeEach(async () => {
   forgetLastShelf()
+  useSearchFocus().value = false
   setViewport(375, 812)
   sarah = await scenario.member('Sarah')
+  tom = await scenario.member('Tom')
   await signIn(sarah)
 })
 
@@ -53,6 +63,15 @@ async function threeCoffees() {
   return { ayele, elParaiso, redBrick }
 }
 
+async function tomsCoffee() {
+  return scenario.coffee(tom.shelf, {
+    name: 'Gesha Village',
+    roaster: 'Tim Wendelboe',
+    roastedFor: 'espresso',
+    flavorNotes: ['Strawberry'],
+  })
+}
+
 async function thirtyCoffees() {
   for (let day = 1; day <= 30; day++) {
     await scenario.coffee(sarah.shelf, {
@@ -74,7 +93,7 @@ const content = [
   'library-empty',
   'library-no-match',
   'library-table',
-  'coffee-card',
+  'catalog-result',
 ]
   .map(id => tid(id))
   .join(', ')
@@ -91,17 +110,18 @@ function labelsPath() {
   return `/api/shelves/${sarah.shelf.id}/filter-labels`
 }
 
+function query() {
+  return useRouter().currentRoute.value.query
+}
+
 function mount(route = libraryPath()) {
   return mountSuspended(App, { route, attachTo: document.body })
 }
 
 async function library(route = libraryPath()) {
-  const page = await mountSuspended(App, {
-    route,
-    attachTo: document.body,
-  })
+  const page = await mount(route)
   const cards = () =>
-    page.findAll(tid('library', 'coffee-card-name')).map(name => name.text())
+    page.findAll(tid('library', 'catalog-result-name')).map(name => name.text())
   const rows = () =>
     page.findAll(tid('library-row-name')).map(name => name.text())
   await vi.waitFor(() => {
@@ -125,32 +145,92 @@ async function pickFilter(kind: string, label: string) {
   option.click()
 }
 
+async function pickSort(column: string) {
+  await click('library-sort')
+  const option = await vi.waitFor(() => {
+    const found = allByTestId(`library-sort-option-${column}`)[0]
+    if (!found) throw new Error(`No sort ${column}`)
+
+    return found
+  })
+  option.click()
+}
+
 describe('the Library page', () => {
-  it('has Library as its heading', async () => {
+  it('has Library as its heading and shows all coffees first', async () => {
     const { page } = await library()
 
     expect(page.get(tid('page-title')).text()).toBe('Library')
+    expect(page.get(tid('library-scope-all')).attributes('aria-pressed')).toBe(
+      'true',
+    )
   })
 
-  it('says the library fills up as coffee is bought', async () => {
+  it('says when nobody has added a coffee yet', async () => {
     const { page } = await library()
+
+    expect(page.get(tid('library-empty')).text()).toBe(
+      'Nobody has added a coffee yet.',
+    )
+  })
+
+  it('lists every coffee in the catalog, newest first, marking the bought ones', async () => {
+    const { ayele } = await threeCoffees()
+    const gesha = await tomsCoffee()
+
+    const { page, cards } = await library()
+
+    expect(cards()).toEqual([
+      'Gesha Village',
+      'Ayele Fulasa',
+      'El Paraiso',
+      'Red Brick',
+    ])
+    expect(page.get(tid('library-total')).text()).toBe('4 coffees')
+    expect(allByTestId('catalog-result-bought')).toHaveLength(3)
+    const links = page
+      .findAll(tid('catalog-result'))
+      .map(result => result.attributes('href'))
+    expect(links[0]).toBe(coffeePath(gesha))
+    expect(links[1]).toBe(shelfCoffeePath(sarah.shelf, ayele))
+  })
+
+  it('shows the viewer’s own rating on each card, or that they did not rate it', async () => {
+    await threeCoffees()
+
+    const { page } = await library()
+
+    expect(
+      page.findAll(tid('catalog-result-rating')).map(rating => rating.text()),
+    ).toEqual(['', '', 'Not rated'])
+  })
+
+  it('narrows to the coffees the shelf bought, last bought first, without the badge', async () => {
+    await threeCoffees()
+    await tomsCoffee()
+    const { page, cards } = await library()
+
+    await click('library-scope-bought')
+
+    await vi.waitFor(() =>
+      expect(cards()).toEqual(['Ayele Fulasa', 'El Paraiso', 'Red Brick']),
+    )
+    expect(allByTestId('catalog-result-bought')).toHaveLength(0)
+    expect(page.get(tid('library-sort')).text()).toContain('Last bought')
+    await vi.waitFor(() => expect(query()).toEqual({ scope: 'bought' }))
+  })
+
+  it('says the bought coffees fill up as coffee is bought, and shows all coffees', async () => {
+    await tomsCoffee()
+    const { page, cards } = await library(libraryPath('?scope=bought'))
 
     expect(page.get(tid('library-empty')).text()).toContain(
       "Every coffee you've bought",
     )
-    expect(page.find(tid('library-filters')).exists()).toBe(false)
-  })
 
-  it('shows every coffee as a card that opens it, last bought first', async () => {
-    const { ayele } = await threeCoffees()
+    await click('library-empty-all')
 
-    const { page, cards } = await library()
-
-    expect(cards()).toEqual(['Ayele Fulasa', 'El Paraiso', 'Red Brick'])
-    expect(page.get(tid('library', 'coffee-card')).attributes('href')).toBe(
-      shelfCoffeePath(sarah.shelf, ayele),
-    )
-    expect(page.find(tid('library-more')).exists()).toBe(false)
+    await vi.waitFor(() => expect(cards()).toEqual(['Gesha Village']))
   })
 
   it('loads more cards a page at a time', async () => {
@@ -165,7 +245,40 @@ describe('the Library page', () => {
     expect(page.find(tid('library-more')).exists()).toBe(false)
   })
 
-  it('shows only the coffees the filters pick', async () => {
+  it('shows only the coffees the filters and Favourites pick, on both sides', async () => {
+    await threeCoffees()
+    const gesha = await tomsCoffee()
+    await scenario.verdict(sarah, gesha.id, { rating: 5, wouldBuyAgain: true })
+    const { page, cards } = await library()
+
+    await page.get(tid('library-filter-favourites')).trigger('click')
+    await vi.waitFor(() =>
+      expect(cards()).toEqual(['Gesha Village', 'Ayele Fulasa']),
+    )
+
+    await click('library-scope-bought')
+
+    await vi.waitFor(() => expect(cards()).toEqual(['Ayele Fulasa']))
+    expect(query()).toEqual({ scope: 'bought', favourites: 'true' })
+  })
+
+  it('offers only the bought coffees’ options on the Bought side', async () => {
+    await threeCoffees()
+    await tomsCoffee()
+    await library(libraryPath('?scope=bought'))
+
+    await click('library-filter-roasters')
+
+    await vi.waitFor(() =>
+      expect(
+        allByTestId('library-filter-option').map(option =>
+          option.textContent?.trim(),
+        ),
+      ).toEqual(['La Cabra', 'Square Mile']),
+    )
+  })
+
+  it('filters by flavor note, varietal, roast level and roasted for', async () => {
     await threeCoffees()
     const { page, cards } = await library()
 
@@ -173,52 +286,7 @@ describe('the Library page', () => {
     await vi.waitFor(() =>
       expect(cards()).toEqual(['Ayele Fulasa', 'Red Brick']),
     )
-
-    await page.get(tid('library-filter-favourites')).trigger('click')
-
-    await vi.waitFor(() => expect(cards()).toEqual(['Ayele Fulasa']))
-  })
-
-  it('searches only the shelf’s coffees and says why each matched', async () => {
-    await threeCoffees()
-    const tom = await scenario.member('Tom')
-    await scenario.coffee(tom.shelf, { name: 'Geisha Lot' })
-    const { page, cards } = await library()
-
-    await type('search-input', 'geisha')
-
-    await vi.waitFor(() => expect(cards()).toEqual(['El Paraiso']))
-    expect(
-      page.findAll(tid('coffee-card-match')).map(match => match.text()),
-    ).toEqual(['Varietal: Geisha'])
-    await vi.waitFor(() =>
-      expect(useRouter().currentRoute.value.query).toEqual({ q: 'geisha' }),
-    )
-  })
-
-  it('shows no match line without a search', async () => {
-    await threeCoffees()
-
-    const { page } = await library()
-
-    expect(page.find(tid('coffee-card-matches')).exists()).toBe(false)
-  })
-
-  it('says why each table row matched the search', async () => {
-    setViewport(1280, 800)
-    await threeCoffees()
-    const { page, rows } = await library(libraryPath('?view=table&q=jasmine'))
-
-    await vi.waitFor(() => expect(rows()).toEqual(['El Paraiso']))
-    expect(
-      page.findAll(tid('library-row-match')).map(match => match.text()),
-    ).toEqual(['Flavor note: Jasmine'])
-  })
-
-  it('filters by varietal, roast level and roasted for like Discover', async () => {
-    await threeCoffees()
-    const { cards } = await library()
-
+    await click('library-filter-clear')
     await pickFilter('roasted-for', 'Espresso')
     await vi.waitFor(() => expect(cards()).toEqual(['El Paraiso']))
     await pickFilter('varietals', 'Geisha')
@@ -226,13 +294,50 @@ describe('the Library page', () => {
     await pickFilter('roast-levels', 'Dark')
 
     await vi.waitFor(() => {
-      expect(cards()).toEqual([])
-      expect(useRouter().currentRoute.value.query).toEqual({
+      expect(page.find(tid('library-no-match')).exists()).toBe(true)
+      expect(query()).toEqual({
         roastedFor: 'espresso',
         varietalId: expect.any(String),
         roastLevel: 'dark',
       })
     })
+  })
+
+  it('searches the whole catalog and says why each matched', async () => {
+    await threeCoffees()
+    await scenario.coffee(tom.shelf, {
+      name: 'Kochere Natural',
+      origins: ['ET'],
+      washingStations: [{ origin: 'ET', name: 'Kochere Station' }],
+      varietals: ['Geisha'],
+    })
+    const { page, cards } = await library()
+    const matches = () =>
+      page.findAll(tid('catalog-result-match')).map(match => match.text())
+
+    await type('search-input', 'geisha')
+
+    await vi.waitFor(() =>
+      expect(cards()).toEqual(['Kochere Natural', 'El Paraiso']),
+    )
+    expect(matches()).toEqual(['Varietal: Geisha', 'Varietal: Geisha'])
+    await vi.waitFor(() => expect(query()).toEqual({ q: 'geisha' }))
+
+    await type('search-input', 'station')
+    await vi.waitFor(() =>
+      expect(matches()).toEqual(['Washing station: Kochere Station']),
+    )
+  })
+
+  it('starts from the search in the address', async () => {
+    await threeCoffees()
+
+    const { page, cards } = await library(libraryPath('?q=jasmine'))
+
+    expect(cards()).toEqual(['El Paraiso'])
+    expect(
+      (page.get(tid('search-input')).element as HTMLInputElement).value,
+    ).toBe('jasmine')
   })
 
   it('says when nothing matches the search and clears it', async () => {
@@ -243,77 +348,123 @@ describe('the Library page', () => {
 
     await vi.waitFor(() =>
       expect(page.get(tid('library-no-match')).text()).toContain(
-        'No coffee in your library matches “nope”.',
+        'No coffee matches “nope”.',
       ),
     )
-    await page.get(tid('library-no-match-clear')).trigger('click')
+    expect(page.find(tid('library-no-match-all')).exists()).toBe(false)
+    await click('library-no-match-clear')
 
-    await vi.waitFor(() => expect(cards()).toHaveLength(3))
+    await vi.waitFor(() => {
+      expect(cards()).toHaveLength(3)
+      expect(currentPath()).toBe(libraryPath())
+    })
   })
 
-  it('says when nothing matches and clears the filters', async () => {
+  it('looks in all coffees when none the shelf bought match the search', async () => {
     await threeCoffees()
-    const { page, cards } = await library()
+    await tomsCoffee()
+    const { page, cards } = await library(
+      libraryPath('?scope=bought&q=strawberry'),
+    )
 
-    await pickFilter('roasters', 'La Cabra')
-    await vi.waitFor(() => expect(cards()).toEqual(['El Paraiso']))
-    await page.get(tid('library-filter-favourites')).trigger('click')
+    expect(page.get(tid('library-no-match')).text()).toContain(
+      'No coffee you bought matches “strawberry”.',
+    )
+    expect(page.get(tid('library-no-match-all')).text()).toBe(
+      'Search all coffees for “strawberry”',
+    )
+
+    await click('library-no-match-all')
+
+    await vi.waitFor(() => expect(cards()).toEqual(['Gesha Village']))
+    expect(query()).toEqual({ q: 'strawberry' })
+  })
+
+  it('looks in all coffees when none the shelf bought match the filters', async () => {
+    await threeCoffees()
+    const { page } = await library(libraryPath('?scope=bought&roastedFor=omni'))
+
+    expect(page.get(tid('library-no-match')).text()).toContain(
+      'No coffee you bought matches these filters.',
+    )
+    expect(page.get(tid('library-no-match-all')).text()).toBe(
+      'Look in all coffees',
+    )
+  })
+
+  it('sorts the grid by what was picked, and keeps it in the address', async () => {
+    const { elParaiso, ayele, redBrick } = await threeCoffees()
+    await scenario.verdict(tom, redBrick.id, { rating: 5 })
+    await scenario.verdict(tom, ayele.id, { rating: 2 })
+    await scenario.verdict(tom, elParaiso.id, { rating: 4 })
+    const { cards } = await library()
+
+    await pickSort('communityRating')
 
     await vi.waitFor(() =>
-      expect(page.get(tid('library-no-match')).text()).toContain(
-        'No coffee in your library matches',
+      expect(cards()).toEqual(['Red Brick', 'El Paraiso', 'Ayele Fulasa']),
+    )
+    expect(query()).toEqual({
+      sort: 'communityRating',
+      direction: 'descending',
+    })
+  })
+
+  it('offers price and last bought sorts only on the Bought side, and drops them when leaving it', async () => {
+    await threeCoffees()
+    await library(libraryPath('?scope=bought'))
+
+    await pickSort('latestPrice')
+    await vi.waitFor(() =>
+      expect(query()).toEqual({
+        scope: 'bought',
+        sort: 'latestPrice',
+        direction: 'ascending',
+      }),
+    )
+
+    await click('library-scope-all')
+
+    await vi.waitFor(() => expect(query()).toEqual({}))
+    await click('library-sort')
+    await vi.waitFor(() =>
+      expect(allByTestId('library-sort-option-newest')).toHaveLength(1),
+    )
+    expect(allByTestId('library-sort-option-latestPrice')).toHaveLength(0)
+    expect(allByTestId('library-sort-option-lastBought')).toHaveLength(0)
+  })
+
+  it('opens on the Bought side from a link sorted by last bought', async () => {
+    await threeCoffees()
+    await tomsCoffee()
+
+    const { page, cards } = await library(
+      libraryPath('?sort=lastBought&direction=ascending'),
+    )
+
+    expect(cards()).toEqual(['Red Brick', 'El Paraiso', 'Ayele Fulasa'])
+    expect(
+      page.get(tid('library-scope-bought')).attributes('aria-pressed'),
+    ).toBe('true')
+  })
+
+  it('focuses the search box when ⌘K asked for it', async () => {
+    useSearchFocus().value = true
+
+    const { page } = await library()
+
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(
+        page.get(tid('search-input')).element,
       ),
     )
-
-    await page.get(tid('library-no-match-clear')).trigger('click')
-
-    await vi.waitFor(() => expect(cards()).toHaveLength(3))
-  })
-
-  it('sends an empty search to Discover with the same search and filters', async () => {
-    await threeCoffees()
-    const laCabra = await scenario.roaster(sarah, 'La Cabra')
-    const { page } = await library(
-      libraryPath(`?q=nope&roasterId=${laCabra}&favourites=true`),
-    )
-
-    const link = page.get(tid('library-no-match-discover'))
-
-    expect(link.text()).toBe('Search Discover for “nope”')
-    expect(link.attributes('href')).toBe(
-      `${shelfPath(sarah.shelf)}/discover?q=nope&roasterId=${laCabra}`,
-    )
-  })
-
-  it('sends empty filters to Discover to look there', async () => {
-    await threeCoffees()
-    const { page } = await library(
-      libraryPath('?roastLevel=light&roastedFor=espresso'),
-    )
-
-    const link = page.get(tid('library-no-match-discover'))
-
-    expect(link.text()).toBe('Look in Discover')
-    expect(link.attributes('href')).toBe(
-      `${shelfPath(sarah.shelf)}/discover?roastLevel=light&roastedFor=espresso`,
-    )
-  })
-
-  it('points to Discover from an empty table too', async () => {
-    setViewport(1280, 800)
-    await threeCoffees()
-    const { page } = await library(libraryPath('?view=table&q=nope'))
-
-    expect(page.find(tid('library-table')).exists()).toBe(false)
-    expect(page.get(tid('library-no-match-discover')).text()).toBe(
-      'Search Discover for “nope”',
-    )
+    expect(useSearchFocus().value).toBe(false)
   })
 
   it('always shows the grid on a phone', async () => {
     await threeCoffees()
 
-    const { page } = await library()
+    const { page } = await library(libraryPath('?view=table'))
 
     expect(page.find(tid('library-view')).exists()).toBe(false)
     expect(page.find(tid('library-table')).exists()).toBe(false)
@@ -329,7 +480,7 @@ describe('the Library page', () => {
     await vi.waitFor(() =>
       expect(rows()).toEqual(['Ayele Fulasa', 'El Paraiso', 'Red Brick']),
     )
-    expect(page.find(tid('library')).exists()).toBe(false)
+    expect(page.find(tid('library-sort')).exists()).toBe(false)
     expect(page.get(tid('library-view-table')).attributes('aria-pressed')).toBe(
       'true',
     )
@@ -337,13 +488,43 @@ describe('the Library page', () => {
     await page.get(tid('library-view-grid')).trigger('click')
 
     expect(page.find(tid('library-table')).exists()).toBe(false)
-    expect(page.findAll(tid('library', 'coffee-card'))).toHaveLength(3)
+    expect(page.findAll(tid('library', 'catalog-result'))).toHaveLength(3)
+  })
+
+  it('shows the price and last bought columns only on the Bought side', async () => {
+    setViewport(1280, 800)
+    await threeCoffees()
+    await tomsCoffee()
+    const { page } = await library(libraryPath('?view=table'))
+
+    expect(page.find(tid('library-sort-latestPrice')).exists()).toBe(false)
+    expect(page.find(tid('library-sort-lastBought')).exists()).toBe(false)
+    expect(allByTestId('library-row-bought')).toHaveLength(3)
+
+    await click('library-scope-bought')
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('library-sort-lastBought')).exists()).toBe(true),
+    )
+    expect(page.find(tid('library-sort-latestPrice')).exists()).toBe(true)
+    expect(allByTestId('library-row-bought')).toHaveLength(0)
+  })
+
+  it('says why each table row matched the search', async () => {
+    setViewport(1280, 800)
+    await threeCoffees()
+    const { page, rows } = await library(libraryPath('?view=table&q=jasmine'))
+
+    await vi.waitFor(() => expect(rows()).toEqual(['El Paraiso']))
+    expect(
+      page.findAll(tid('library-row-match')).map(match => match.text()),
+    ).toEqual(['Flavor note: Jasmine'])
   })
 
   it('pages and sorts the table on the server, back to the first page on a new sort', async () => {
     setViewport(1280, 800)
     await thirtyCoffees()
-    const { page, rows } = await library()
+    const { page, rows } = await library(libraryPath('?scope=bought'))
     await page.get(tid('library-view-table')).trigger('click')
     await vi.waitFor(() => expect(rows()).toHaveLength(24))
     expect(rows()[0]).toBe('Coffee 30')
@@ -360,22 +541,24 @@ describe('the Library page', () => {
     expect(page.get(tid('data-table-page')).text()).toBe('Page 1 of 2')
   })
 
-  it('keeps the filters, view, sort and page in the address', async () => {
+  it('keeps the side, filters, view, sort and page in the address', async () => {
     setViewport(1280, 800)
     await thirtyCoffees()
     const { page, rows } = await library()
 
+    await click('library-scope-bought')
     await pickFilter('origins', 'Ethiopia')
     await page.get(tid('library-view-table')).trigger('click')
     await vi.waitFor(() => expect(rows()).toHaveLength(24))
     await page.get(tid('library-sort-lastBought')).trigger('click')
 
     await vi.waitFor(() =>
-      expect(useRouter().currentRoute.value.query).toEqual({
+      expect(query()).toEqual({
+        scope: 'bought',
         originCode: 'ET',
-        view: 'table',
         sort: 'lastBought',
         direction: 'ascending',
+        view: 'table',
       }),
     )
   })
@@ -386,7 +569,7 @@ describe('the Library page', () => {
 
     const { page, rows } = await library(
       libraryPath(
-        '?originCode=ET&view=table&sort=lastBought&direction=descending&page=2',
+        '?scope=bought&originCode=ET&view=table&sort=lastBought&direction=descending&page=2',
       ),
     )
 
@@ -405,6 +588,7 @@ describe('the Library page', () => {
       'Origin: Ethiopia',
     )
   })
+
   it('shows the page, the filters and a card skeleton while the coffees load', async () => {
     await threeCoffees()
     const hold = holdRequest('GET', listPath())
@@ -419,7 +603,7 @@ describe('the Library page', () => {
     hold.release()
 
     await vi.waitFor(() =>
-      expect(page.findAll(tid('library', 'coffee-card'))).toHaveLength(3),
+      expect(page.findAll(tid('library', 'catalog-result'))).toHaveLength(3),
     )
     expect(page.find(tid('library-skeleton')).exists()).toBe(false)
   })
@@ -452,7 +636,7 @@ describe('the Library page', () => {
     await vi.waitFor(() =>
       expect(
         page
-          .findAll(tid('library', 'coffee-card-name'))
+          .findAll(tid('library', 'catalog-result-name'))
           .map(name => name.text()),
       ).toEqual(['El Paraiso']),
     )
@@ -467,6 +651,36 @@ describe('the Library page', () => {
       'Origin: Colombia',
     )
     expect(page.find(tid('browsing-filters-skeleton')).exists()).toBe(false)
+  })
+
+  it('shows an error with a retry when the filter names fail, and still lists the coffees', async () => {
+    await threeCoffees()
+    const lift = failRequest('GET', labelsPath(), {
+      status: 500,
+      message: 'Nope',
+    })
+
+    const page = await mount(libraryPath('?originCode=CO'))
+
+    await vi.waitFor(() =>
+      expect(page.find(tid('library-filters-error')).exists()).toBe(true),
+    )
+    await vi.waitFor(() =>
+      expect(
+        page
+          .findAll(tid('library', 'catalog-result-name'))
+          .map(name => name.text()),
+      ).toEqual(['El Paraiso']),
+    )
+
+    lift()
+    await page.get(tid('library-filters-retry')).trigger('click')
+
+    await vi.waitFor(() =>
+      expect(page.get(tid('library-applied-filter')).text()).toBe(
+        'Origin: Colombia',
+      ),
+    )
   })
 
   it('shows an error with a retry when the coffees fail, and the filters still work', async () => {
@@ -486,10 +700,9 @@ describe('the Library page', () => {
     await pickFilter('origins', 'Colombia')
 
     await vi.waitFor(() =>
-      expect(page.find(tid('library-applied-filter')).exists()).toBe(true),
-    )
-    expect(page.get(tid('library-applied-filter')).text()).toBe(
-      'Origin: Colombia',
+      expect(page.get(tid('library-applied-filter')).text()).toBe(
+        'Origin: Colombia',
+      ),
     )
     await vi.waitFor(() =>
       expect(page.find(tid('library-error')).exists()).toBe(true),
@@ -501,7 +714,7 @@ describe('the Library page', () => {
     await vi.waitFor(() =>
       expect(
         page
-          .findAll(tid('library', 'coffee-card-name'))
+          .findAll(tid('library', 'catalog-result-name'))
           .map(name => name.text()),
       ).toEqual(['El Paraiso']),
     )

@@ -121,7 +121,7 @@ describe('the page of a roaster', () => {
         .findAll(tid('catalog-result'))
         .map(result => result.attributes('href')),
     ).toEqual([coffeePath(redBrick), shelfCoffeePath(sarah.shelf, ayele)])
-    expect(page.findAll(tid('catalog-result-mine'))).toHaveLength(1)
+    expect(page.findAll(tid('catalog-result-bought'))).toHaveLength(1)
     expect(page.find(tid('catalog-result-roaster')).exists()).toBe(false)
   })
 

@@ -1,11 +1,18 @@
-export const libraryColumns = [
+export const librarySorts = [
+  'newest',
+  'lastBought',
   'rating',
+  'communityRating',
   'roaster',
   'origin',
   'roastLevel',
+  'roastedFor',
   'latestPrice',
-  'lastBought',
 ] as const
+
+export const boughtSorts = ['lastBought', 'latestPrice'] as const
+
+export const libraryScopes = ['all', 'bought'] as const
 
 export const sortDirections = ['ascending', 'descending'] as const
 

@@ -151,7 +151,7 @@ describe('FilterPicker', () => {
 
     await vi.waitFor(() =>
       expect(byTestId('library-filter-none')!.textContent).toContain(
-        'Nothing in your library matches “nope”',
+        'Nothing in the coffees you bought matches “nope”',
       ),
     )
   })

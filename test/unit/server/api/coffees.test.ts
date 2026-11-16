@@ -350,6 +350,7 @@ describe('the catalog', () => {
           roastedFor: 'filter',
           photoUrl: null,
           roastedOn: null,
+          rating: null,
           communityRating: { average: 5, raters: 1 },
           onShelf: false,
           flavorNotes: [{ id: expect.any(String), name: 'Strawberry' }],

@@ -9,7 +9,6 @@ test('never scrolls sideways on a 320px phone', async ({ page, member }) => {
   for (const path of [
     `/shelves/${member.shelfId}`,
     `/shelves/${member.shelfId}/library`,
-    `/shelves/${member.shelfId}/discover`,
     `/shelves/${member.shelfId}/settings`,
     '/roasters',
     '/profile',
