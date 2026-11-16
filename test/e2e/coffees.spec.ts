@@ -1255,7 +1255,9 @@ test('gives every control on a coffee a touch-sized target on a phone and keeps 
   await page.getByTestId('library-filters-done').click()
 
   await page.goto('/roasters')
+  await page.getByTestId('roasters-filters-open').click()
   await expectTouchable(page.getByTestId('roasters-filter-bought-from'))
+  await page.getByTestId('roasters-filters-done').click()
 
   await page.setViewportSize(desktop)
   await page.goto(`/shelves/${member.shelfId}`)
