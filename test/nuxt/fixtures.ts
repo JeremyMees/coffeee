@@ -390,3 +390,30 @@ export function forgetPushDevice() {
   useState('push-busy').value = false
   localStorage.clear()
 }
+
+export function fakeBadge(options: { refuse?: boolean } = {}) {
+  const answer = () =>
+    options.refuse
+      ? Promise.reject(new DOMException('Not allowed', 'NotAllowedError'))
+      : Promise.resolve()
+  const badge = {
+    set: vi.fn((_unread?: number) => answer()),
+    clear: vi.fn(() => answer()),
+  }
+
+  Object.defineProperty(navigator, 'setAppBadge', {
+    configurable: true,
+    value: badge.set,
+  })
+  Object.defineProperty(navigator, 'clearAppBadge', {
+    configurable: true,
+    value: badge.clear,
+  })
+
+  return badge
+}
+
+export function forgetBadge() {
+  Reflect.deleteProperty(navigator, 'setAppBadge')
+  Reflect.deleteProperty(navigator, 'clearAppBadge')
+}

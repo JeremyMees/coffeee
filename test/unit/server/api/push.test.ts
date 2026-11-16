@@ -12,6 +12,7 @@ import inviteHandler from '#server/api/shelves/[shelfId]/invites/index.post'
 import leaveHandler from '#server/api/shelves/[shelfId]/leave.post'
 import type { PushMessage, PushTarget } from '#server/types/push'
 import { pushSubscription, shelfMember } from '#server/db/schemas'
+import { markNotificationsRead } from '#server/utils/notifications'
 import { createShelf } from '#server/utils/shelves'
 import { shelfCoffeePath, shelfPath } from '#shared/utils/slugs'
 import { createTestAuth } from '#test/support/auth'
@@ -294,7 +295,29 @@ describe('pushing notifications', () => {
         { id: home.id, name: 'Home' },
         { id: coffeeId, name: 'Ayele Fulasa' },
       ),
+      unread: 1,
     })
+  })
+
+  it('tells each device how many notifications its owner has unread', async () => {
+    const { sarah, tom, addCoffee } = await setup()
+    await subscribe(sarah.headers, 'sarah-phone')
+    await subscribe(tom.headers, 'tom-phone')
+    await addCoffee()
+    await markNotificationsRead(db, tom.user.id)
+
+    await addCoffee()
+    await addCoffee()
+    await addCoffee(tom.headers)
+
+    expect(
+      current.pushed.map(push => [push.endpoint, push.message.unread]),
+    ).toEqual([
+      ['https://push.example.com/tom-phone', 1],
+      ['https://push.example.com/tom-phone', 1],
+      ['https://push.example.com/tom-phone', 2],
+      ['https://push.example.com/sarah-phone', 1],
+    ])
   })
 
   it('pushes a finished bag', async () => {
@@ -324,6 +347,7 @@ describe('pushing notifications', () => {
         title: 'Home',
         body: 'Tom left Home',
         path: shelfPath({ id: home.id, name: 'Home' }),
+        unread: 1,
       },
     ])
   })
@@ -344,6 +368,7 @@ describe('pushing notifications', () => {
           title: 'Home',
           body: 'Sarah invited you to Home',
           path: '/notifications',
+          unread: 1,
         },
       },
     ])

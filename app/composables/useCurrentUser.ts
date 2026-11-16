@@ -12,9 +12,12 @@ export async function signOut() {
 
 export async function forgetCurrentUser() {
   if ('caches' in window) await caches.delete('pages')
+
   await forgetDevicePush().catch(caught =>
     console.error('Could not forget the push subscription', caught),
   )
+
+  await clearBadge()
 
   useCurrentUser().value = null
 

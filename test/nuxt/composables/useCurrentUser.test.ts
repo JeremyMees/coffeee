@@ -5,7 +5,9 @@ import { useCurrentUser } from '#imports'
 import {
   currentPath,
   deviceEndpoint,
+  fakeBadge,
   fakePushDevice,
+  forgetBadge,
   forgetPushDevice,
 } from '../fixtures'
 import { database, failRequest, scenario, signIn } from '../server'
@@ -23,6 +25,7 @@ beforeEach(() => {
 
 afterEach(() => {
   forgetPushDevice()
+  forgetBadge()
 })
 
 async function subscribedDevice() {
@@ -85,6 +88,14 @@ describe('signOut', () => {
     expect(subscription.unsubscribe).toHaveBeenCalled()
   })
 
+  it('clears the unread count from the app icon', async () => {
+    const badge = fakeBadge()
+
+    await signOut()
+
+    expect(badge.clear).toHaveBeenCalledOnce()
+  })
+
   it('still signs out when the subscription cannot be removed', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const device = await subscribedDevice()
@@ -119,5 +130,11 @@ describe('forgetCurrentUser', () => {
     await forgetCurrentUser()
 
     expect(subscription.unsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('still signs out on a browser without badges', async () => {
+    await forgetCurrentUser()
+
+    expect(currentPath()).toBe('/sign-in')
   })
 })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 useSearchShortcut()
 useAddCoffeeShortcut()
+useAppBadge()
 
 const addRoaster = useAddRoaster()
 </script>

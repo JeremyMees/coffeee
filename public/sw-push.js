@@ -1,14 +1,23 @@
+async function showUnread(unread) {
+  if (typeof unread !== 'number' || !('setAppBadge' in self.navigator)) return
+
+  await self.navigator.setAppBadge(unread).catch(() => null)
+}
+
 self.addEventListener('push', event => {
   const message = event.data?.json()
   if (!message) return
 
   event.waitUntil(
-    self.registration.showNotification(message.title, {
-      body: message.body,
-      icon: '/pwa-192x192.png',
-      badge: '/badge-96x96.png',
-      data: { path: message.path },
-    }),
+    Promise.all([
+      self.registration.showNotification(message.title, {
+        body: message.body,
+        icon: '/pwa-192x192.png',
+        badge: '/badge-96x96.png',
+        data: { path: message.path },
+      }),
+      showUnread(message.unread),
+    ]),
   )
 })
 

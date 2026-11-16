@@ -22,7 +22,12 @@ const target = {
   p256dh: 'phone-p256dh',
   auth: 'phone-auth',
 }
-const message = { title: 'Home', body: 'Tom left Home', path: '/shelves/home' }
+const message = {
+  title: 'Home',
+  body: 'Tom left Home',
+  path: '/shelves/home',
+  unread: 3,
+}
 
 beforeEach(() => {
   sendNotification.mockReset()
