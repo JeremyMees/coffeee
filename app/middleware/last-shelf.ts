@@ -1,11 +1,9 @@
 export default defineNuxtRouteMiddleware(({ query }) => {
   const path = lastShelfPath()
+  const adding = query.add === 'coffee' && path !== '/shelves/new'
 
-  if (query.add === 'coffee' && path !== '/shelves/new') {
-    useAddCoffeeLink().value =
-      typeof query.link === 'string' ? query.link : null
-    useAddCoffee().value = true
-  }
-
-  return navigateTo(path, { replace: true })
+  return navigateTo(
+    { path, query: adding ? { add: 'coffee', link: query.link } : {} },
+    { replace: true },
+  )
 })
