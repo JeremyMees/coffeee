@@ -16,6 +16,18 @@ describe('signed-out visitors', () => {
     )
   })
 
+  it.each(['/?add=coffee', '/notifications'])(
+    'are brought back to the %s shortcut after signing in',
+    async route => {
+      await mountSuspended(App, { route })
+
+      const current = useRouter().currentRoute.value
+
+      expect(current.path).toBe('/sign-in')
+      expect(current.query.redirect).toBe(route)
+    },
+  )
+
   it.each(['/sign-up', '/forgot-password', '/reset-password?token=t'])(
     'can open %s without signing in',
     async route => {

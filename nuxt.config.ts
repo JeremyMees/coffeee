@@ -217,6 +217,24 @@ export default defineNuxtConfig({
           purpose: 'monochrome',
         },
       ],
+      shortcuts: [
+        {
+          name: 'Add coffee',
+          short_name: 'Add coffee',
+          url: '/?add=coffee',
+          icons: [
+            { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          ],
+        },
+        {
+          name: 'Notifications',
+          short_name: 'Notifications',
+          url: '/notifications',
+          icons: [
+            { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          ],
+        },
+      ],
     },
     workbox: {
       globPatterns: ['**/*.{js,css,woff2,png,svg,ico}'],
