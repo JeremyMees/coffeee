@@ -19,6 +19,7 @@ import {
   pickScoped,
   submit,
   type,
+  waitForSheet,
 } from '../../fixtures'
 import { database, scenario, signIn } from '../../server'
 
@@ -100,10 +101,7 @@ async function openSheet() {
     attachTo: document.body,
   })
 
-  await vi.waitFor(
-    () => expect(byTestId('edit-coffee-steps')).not.toBeNull(),
-    3000,
-  )
+  await waitForSheet('edit-coffee-steps')
 
   return sheet
 }

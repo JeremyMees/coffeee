@@ -21,6 +21,7 @@ import {
   pickerOptions,
   submit,
   type,
+  waitForSheet,
 } from '../../fixtures'
 import { database, scenario, signIn } from '../../server'
 
@@ -95,10 +96,7 @@ async function openSheet(route = shelfPath(sarah.shelf)) {
   })
 
   useAddCoffee().value = true
-  await vi.waitFor(
-    () => expect(byTestId('add-coffee-steps')).not.toBeNull(),
-    10_000,
-  )
+  await waitForSheet('add-coffee-steps')
 
   return sheet
 }

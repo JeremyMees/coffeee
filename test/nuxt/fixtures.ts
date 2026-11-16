@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { Window as HappyWindow } from 'happy-dom'
 import { useForm } from 'vee-validate'
-import { vi } from 'vitest'
+import { expect, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import type { Component } from 'vue'
 import {
@@ -46,6 +46,10 @@ export function byTestId<Element extends HTMLElement = HTMLElement>(
   ...ids: string[]
 ) {
   return document.body.querySelector<Element>(tid(...ids))
+}
+
+export async function waitForSheet(testId: string) {
+  await vi.waitFor(() => expect(byTestId(testId)).not.toBeNull(), 10_000)
 }
 
 export function allByTestId(...ids: string[]) {

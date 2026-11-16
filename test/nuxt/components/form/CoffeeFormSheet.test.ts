@@ -19,6 +19,7 @@ import {
   pickRoaster,
   submit,
   type,
+  waitForSheet,
 } from '../../fixtures'
 import { database, failRequest, scenario, signIn } from '../../server'
 
@@ -66,10 +67,7 @@ async function openSheet(
     attachTo: document.body,
   })
 
-  await vi.waitFor(
-    () => expect(byTestId('coffee-form-steps')).not.toBeNull(),
-    3000,
-  )
+  await waitForSheet('coffee-form-steps')
 
   return sheet
 }
