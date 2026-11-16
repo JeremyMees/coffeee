@@ -141,9 +141,9 @@ describe('profile page', () => {
       (page.get(tid('profile-name-input')).element as HTMLInputElement).value,
     ).toBe('Sarah')
     expect(page.find(tid('profile-stats-skeleton')).exists()).toBe(true)
-    expect(
-      page.find(tid('profile-notification-emails-skeleton')).exists(),
-    ).toBe(true)
+    expect(page.find(tid('profile-notification-kinds-skeleton')).exists()).toBe(
+      true,
+    )
 
     for (const hold of holds) hold.release()
 

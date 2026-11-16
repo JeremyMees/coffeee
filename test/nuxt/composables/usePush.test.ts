@@ -1,3 +1,4 @@
+import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { pushSubscription } from '#server/db/schemas'
 import { usePush } from '#imports'
@@ -70,6 +71,27 @@ describe('usePush', () => {
     const { state } = await push()
 
     expect(state.value).toBe('blocked')
+  })
+
+  it('notices when push is allowed in the browser settings', async () => {
+    const device = fakePushDevice({ permission: 'denied' })
+    const found = await push()
+    expect(found.state.value).toBe('blocked')
+    await flushPromises()
+
+    device.allowInBrowser()
+
+    await vi.waitFor(() => expect(found.state.value).toBe('off'))
+  })
+
+  it('looks again when coming back to the tab', async () => {
+    const device = fakePushDevice({ permission: 'denied' })
+    const found = await push()
+
+    device.allowWhileAway()
+    window.dispatchEvent(new Event('focus'))
+
+    await vi.waitFor(() => expect(found.state.value).toBe('off'))
   })
 
   it('knows a browser without push', async () => {

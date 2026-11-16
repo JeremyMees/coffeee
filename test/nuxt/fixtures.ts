@@ -265,6 +265,10 @@ export const devices = {
     'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
   desktop:
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  firefox:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:132.0) Gecko/20100101 Firefox/132.0',
+  safari:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
 }
 
 export function onDevice(device: keyof typeof devices) {
@@ -302,6 +306,7 @@ export function fakePushDevice(
     permission?: NotificationPermission
     answer?: NotificationPermission
     subscribed?: boolean
+    withoutWorker?: boolean
   } = {},
 ) {
   let permission = options.permission ?? 'default'
@@ -322,8 +327,17 @@ export function fakePushDevice(
     }
   }
 
+  const permissionStatus = new EventTarget()
+
   const device = {
     subscription: options.subscribed ? subscription() : null,
+    allowInBrowser() {
+      permission = 'granted'
+      permissionStatus.dispatchEvent(new Event('change'))
+    },
+    allowWhileAway() {
+      permission = 'granted'
+    },
     requestPermission: vi.fn(async () => {
       permission = options.answer ?? 'granted'
 
@@ -349,11 +363,18 @@ export function fakePushDevice(
     },
     requestPermission: device.requestPermission,
   })
+  Object.defineProperty(navigator, 'permissions', {
+    configurable: true,
+    value: { query: async () => permissionStatus },
+  })
   Object.defineProperty(navigator, 'serviceWorker', {
     configurable: true,
     value: {
-      getRegistration: async () => registration,
-      ready: Promise.resolve(registration),
+      getRegistration: async () =>
+        options.withoutWorker ? undefined : registration,
+      ready: options.withoutWorker
+        ? new Promise(() => {})
+        : Promise.resolve(registration),
     },
   })
 
@@ -363,6 +384,7 @@ export function fakePushDevice(
 export function forgetPushDevice() {
   vi.unstubAllGlobals()
   Reflect.deleteProperty(navigator, 'serviceWorker')
+  Reflect.deleteProperty(navigator, 'permissions')
   useState('push-permission').value = null
   useState('push-subscribed').value = null
   useState('push-busy').value = false

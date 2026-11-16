@@ -80,6 +80,7 @@ export const queryKeys = {
   notifications: () => ['me', 'notifications'],
   unreadNotifications: () => ['me', 'notifications', 'unread'],
   notificationEmails: () => ['me', 'notifications', 'emails'],
+  notificationPushes: () => ['me', 'notifications', 'pushes'],
   admin: () => ['admin'],
   adminEntries: (list: AdminList, query: Record<string, string>) => [
     'admin',

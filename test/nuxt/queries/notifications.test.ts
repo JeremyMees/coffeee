@@ -3,6 +3,8 @@ import { useQueryClient } from '@tanstack/vue-query'
 import {
   useNotificationEmails,
   useNotificationEmailsUpdate,
+  useNotificationPushes,
+  useNotificationPushesUpdate,
   useNotifications,
   useNotificationsRead,
   useUnreadNotifications,
@@ -10,8 +12,10 @@ import {
 import {
   countUnreadNotifications,
   listEmailedKinds,
+  listPushedKinds,
   markNotificationsRead,
   setEmailedKinds,
+  setPushedKinds,
 } from '#server/utils/notifications'
 import type { Member } from '#test/support/types'
 import { queryKeys } from '#imports'
@@ -116,6 +120,38 @@ describe('useNotificationEmailsUpdate', () => {
     ).toEqual(['coffeeAdded', 'memberJoined'])
     expect(client.getQueryData(queryKeys.notificationEmails())).toEqual({
       emailed: ['coffeeAdded', 'memberJoined'],
+    })
+  })
+})
+
+describe('useNotificationPushes', () => {
+  it('fetches which notifications are pushed', async () => {
+    await setPushedKinds(await database(), {
+      userId: sarah.id,
+      pushed: ['invited', 'memberLeft'],
+    })
+    const { data, suspense } = await runOn('/', useNotificationPushes)
+
+    await suspense()
+
+    expect(data.value).toEqual({ pushed: ['invited', 'memberLeft'] })
+  })
+})
+
+describe('useNotificationPushesUpdate', () => {
+  it('saves which notifications are pushed and keeps the answer', async () => {
+    const { result, client } = await runOn('/', () => ({
+      result: useNotificationPushesUpdate(),
+      client: useQueryClient(),
+    }))
+
+    await result.mutateAsync(['bagFinished'])
+
+    expect(await listPushedKinds(await database(), sarah.id)).toEqual([
+      'bagFinished',
+    ])
+    expect(client.getQueryData(queryKeys.notificationPushes())).toEqual({
+      pushed: ['bagFinished'],
     })
   })
 })

@@ -8,7 +8,7 @@ import {
   libraryPageSize,
   sortDirections,
 } from './library'
-import { optionalEmailKinds } from './notifications'
+import { notificationKinds, optionalEmailKinds } from './notifications'
 import { isOriginCode, originListFields } from './origins'
 import { roastersPageSize } from './roasters'
 import type { DescribedCoffee } from '../types/coffee'
@@ -545,6 +545,10 @@ export const profileNameSchema = signUpSchema.pick({ name: true })
 
 export const notificationEmailsSchema = z.object({
   emailed: z.array(z.enum(optionalEmailKinds)),
+})
+
+export const notificationPushesSchema = z.object({
+  pushed: z.array(z.enum(notificationKinds)),
 })
 
 export const pushEndpointSchema = z.object({

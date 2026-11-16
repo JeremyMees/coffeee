@@ -1,10 +1,12 @@
+import { useDocumentVisibility, useEventListener } from '@vueuse/core'
+
 export type PushState =
   'checking' | 'needsInstall' | 'unsupported' | 'blocked' | 'off' | 'on'
 
 export function usePush() {
   const hydrated = useHydrated()
   const onClient = computed(() => import.meta.client && hydrated.value)
-  const { needsSteps } = useInstall()
+  const { needsSteps, settingsPlace } = useInstall()
   const config = useRuntimeConfig()
   const permission = useState<NotificationPermission | null>(
     'push-permission',
@@ -21,7 +23,19 @@ export function usePush() {
     subscribed.value = Boolean(await devicePushSubscription())
   }
 
-  onMounted(refresh)
+  const permissionStatus = shallowRef<PermissionStatus | null>(null)
+  const visibility = useDocumentVisibility()
+
+  onMounted(async () => {
+    await refresh()
+    permissionStatus.value = await notificationPermissionStatus()
+  })
+
+  useEventListener(permissionStatus, 'change', refresh)
+  useEventListener('focus', refresh)
+  watch(visibility, shown => {
+    if (shown === 'visible') refresh()
+  })
 
   const state = computed<PushState>(() => {
     if (!onClient.value) return 'checking'
@@ -61,5 +75,12 @@ export function usePush() {
     return change(unsubscribeDevice)
   }
 
-  return { state, undecided, busy: readonly(busy), turnOn, turnOff }
+  return {
+    state,
+    undecided,
+    settingsPlace,
+    busy: readonly(busy),
+    turnOn,
+    turnOff,
+  }
 }

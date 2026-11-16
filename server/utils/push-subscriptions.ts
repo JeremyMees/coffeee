@@ -1,7 +1,8 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, notExists } from 'drizzle-orm'
 import type { Database } from '#server/types/database'
 import type { PushMessage, PushTarget } from '#server/types/push'
-import { pushSubscription } from '#server/db/schemas'
+import type { NotificationKind } from '#shared/types/notifications'
+import { notificationPushOff, pushSubscription } from '#server/db/schemas'
 import { sendPush } from '#server/utils/push'
 
 export async function savePushSubscription(
@@ -33,7 +34,7 @@ export async function removePushSubscription(
 
 export async function pushToUsers(
   db: Database,
-  input: { userIds: string[]; message: PushMessage },
+  input: { userIds: string[]; kind: NotificationKind; message: PushMessage },
 ) {
   if (input.userIds.length === 0) return
 
@@ -44,7 +45,22 @@ export async function pushToUsers(
       auth: pushSubscription.auth,
     })
     .from(pushSubscription)
-    .where(inArray(pushSubscription.userId, input.userIds))
+    .where(
+      and(
+        inArray(pushSubscription.userId, input.userIds),
+        notExists(
+          db
+            .select()
+            .from(notificationPushOff)
+            .where(
+              and(
+                eq(notificationPushOff.userId, pushSubscription.userId),
+                eq(notificationPushOff.kind, input.kind),
+              ),
+            ),
+        ),
+      ),
+    )
 
   const sent = await Promise.allSettled(
     targets.map(target => sendPush(target, input.message)),

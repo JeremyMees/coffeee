@@ -21,5 +21,17 @@ export function useInstall() {
     await $pwa?.install()
   }
 
-  return { installed, canPrompt, needsSteps, phone, offered, install }
+  const settingsPlace = computed(() =>
+    notificationSettingsPlace(userAgent.value, installed.value),
+  )
+
+  return {
+    installed,
+    canPrompt,
+    needsSteps,
+    phone,
+    offered,
+    settingsPlace,
+    install,
+  }
 }

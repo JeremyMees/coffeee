@@ -25,6 +25,10 @@ export async function devicePushSubscription() {
 }
 
 export async function subscribeDevice(publicKey: string) {
+  if (!(await navigator.serviceWorker.getRegistration())) {
+    throw new Error('Push needs a service worker and this page has none')
+  }
+
   const registration = await navigator.serviceWorker.ready
   const subscription =
     (await registration.pushManager.getSubscription()) ??
@@ -60,4 +64,12 @@ export async function forgetDevicePush() {
   const subscription = await devicePushSubscription()
 
   await subscription?.unsubscribe()
+}
+
+export async function notificationPermissionStatus() {
+  if (!('permissions' in navigator)) return null
+
+  return navigator.permissions
+    .query({ name: 'notifications' })
+    .catch(() => null)
 }

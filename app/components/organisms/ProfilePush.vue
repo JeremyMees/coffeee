@@ -1,5 +1,21 @@
 <script setup lang="ts">
-const { state, busy, turnOn, turnOff } = usePush()
+import { BellOffIcon, InfoIcon, SmartphoneIcon } from '@lucide/vue'
+
+const { state, busy, settingsPlace, turnOn, turnOff } = usePush()
+
+const unblockSteps: Record<NotificationSettingsPlace, string> = {
+  iPhoneApp:
+    'Open Settings on your iPhone, tap Notifications, then Coffeee, and turn on Allow Notifications.',
+  androidApp:
+    'Press and hold the Coffeee icon, tap App info, then Notifications, and turn them on.',
+  chromium:
+    'Click the icon left of the web address, then set Notifications to Allow.',
+  firefox:
+    'Click the icon left of the web address and clear Blocked next to Send notifications.',
+  safari:
+    'Open Safari Settings, go to Websites, then Notifications, and set Coffeee to Allow.',
+  other: 'Allow notifications for Coffeee in your browser settings.',
+}
 const saveError = ref('')
 
 const usable = computed(() => state.value === 'on' || state.value === 'off')
@@ -23,7 +39,7 @@ async function toggle(on: boolean) {
     <div>
       <h2 class="text-[28px]">Push</h2>
       <p class="mt-1 text-xs">
-        Get a push on this device for every notification.
+        Get a push on this device for the notifications you choose below.
       </p>
     </div>
     <div
@@ -40,31 +56,32 @@ async function toggle(on: boolean) {
         @update:model-value="toggle"
       />
     </div>
-    <div
+    <Notice
       v-if="state === 'needsInstall'"
-      data-testid="push-needs-install"
-      class="flex flex-col gap-3"
+      title="Add Coffeee to your Home Screen"
+      :icon="SmartphoneIcon"
+      testid="push-needs-install"
     >
-      <p class="text-xs">
-        On iPhone, push works once Coffeee is on your Home Screen.
-      </p>
-      <InstallAction />
-    </div>
-    <p
+      On iPhone, push works once Coffeee is on your Home Screen.
+      <template #action><InstallAction /></template>
+    </Notice>
+    <Notice
       v-else-if="state === 'blocked'"
-      class="text-xs"
-      data-testid="push-blocked"
+      title="Push is blocked"
+      tone="warning"
+      :icon="BellOffIcon"
+      testid="push-blocked"
     >
-      Push is blocked in your browser settings. Allow notifications for Coffeee
-      there to turn it on.
-    </p>
-    <p
+      {{ unblockSteps[settingsPlace] }} Then come back and turn on the switch.
+    </Notice>
+    <Notice
       v-else-if="state === 'unsupported'"
-      class="text-xs"
-      data-testid="push-unsupported"
+      title="No push in this browser"
+      :icon="InfoIcon"
+      testid="push-unsupported"
     >
       This browser can't receive push. Email still works.
-    </p>
+    </Notice>
     <Alert v-if="saveError" variant="destructive" data-testid="push-error">
       <AlertDescription>{{ saveError }}</AlertDescription>
     </Alert>

@@ -60,7 +60,7 @@ useHead({ title: 'Profile · Coffeee' })
       </TabsContent>
       <TabsContent value="notifications" class="mt-6">
         <ProfilePush />
-        <ProfileNotificationEmails class="mt-12" />
+        <ProfileNotificationKinds class="mt-12" />
       </TabsContent>
       <TabsContent value="danger" class="mt-6">
         <section class="flex flex-col items-start gap-4">

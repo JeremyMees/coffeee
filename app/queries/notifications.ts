@@ -53,3 +53,26 @@ export function useNotificationEmailsUpdate() {
       queryClient.setQueryData(queryKeys.notificationEmails(), saved),
   })
 }
+
+export function useNotificationPushes() {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: queryKeys.notificationPushes(),
+    queryFn: () => request('/api/me/notifications/pushes'),
+  })
+}
+
+export function useNotificationPushesUpdate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (pushed: NotificationKind[]) =>
+      $fetch('/api/me/notifications/pushes', {
+        method: 'PUT',
+        body: { pushed },
+      }),
+    onSuccess: saved =>
+      queryClient.setQueryData(queryKeys.notificationPushes(), saved),
+  })
+}

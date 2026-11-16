@@ -3,15 +3,20 @@ import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '#server/types/database'
 import type {
   InviteStatus,
+  NotificationKind,
   OptionalEmailKind,
 } from '#shared/types/notifications'
-import { notificationText } from '#shared/utils/notifications'
+import {
+  notificationKinds,
+  notificationText,
+} from '#shared/utils/notifications'
 import { shelfCoffeePath, shelfPath } from '#shared/utils/slugs'
 import {
   coffee,
   invite,
   notification,
   notificationEmail,
+  notificationPushOff,
   shelf,
   shelfMember,
   user,
@@ -119,6 +124,7 @@ async function tellShelfNews(db: Database, news: Told, origin: string) {
     ),
     pushToUsers(db, {
       userIds: news.userIds,
+      kind: news.kind,
       message: { title: about.shelf, body: about.text, path: about.path },
     }).catch(caught => console.error('Could not send a push', caught)),
   ])
@@ -210,6 +216,7 @@ async function pushInvite(
 
   await pushToUsers(db, {
     userIds: [input.userId],
+    kind: 'invited',
     message: {
       title: found!.shelf,
       body: notificationText({
@@ -297,5 +304,35 @@ export async function setEmailedKinds(
         kind,
       })),
     )
+  })
+}
+
+export async function listPushedKinds(db: Database, userId: string) {
+  const found = await db
+    .select({ kind: notificationPushOff.kind })
+    .from(notificationPushOff)
+    .where(eq(notificationPushOff.userId, userId))
+  const off = new Set(found.map(row => row.kind))
+
+  return notificationKinds.filter(kind => !off.has(kind))
+}
+
+export async function setPushedKinds(
+  db: Database,
+  input: { userId: string; pushed: NotificationKind[] },
+) {
+  const pushed = new Set(input.pushed)
+  const off = notificationKinds.filter(kind => !pushed.has(kind))
+
+  await db.transaction(async tx => {
+    await tx
+      .delete(notificationPushOff)
+      .where(eq(notificationPushOff.userId, input.userId))
+
+    if (off.length === 0) return
+
+    await tx
+      .insert(notificationPushOff)
+      .values(off.map(kind => ({ userId: input.userId, kind })))
   })
 }

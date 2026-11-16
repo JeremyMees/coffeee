@@ -4,7 +4,10 @@ import type { GrindSettingChange, NewGrinder } from '#shared/types/grinders'
 import type { RoasterDetails } from '#shared/types/roasters'
 import type { VerdictChange } from '#shared/types/verdicts'
 import type { NewPurchase } from '#shared/types/purchases'
-import type { OptionalEmailKind } from '#shared/types/notifications'
+import type {
+  NotificationKind,
+  OptionalEmailKind,
+} from '#shared/types/notifications'
 import { newCoffeeSchema } from '#shared/utils/schemas'
 import { coffee, invite, purchase } from '#server/db/schemas'
 import { addAdminEntry } from '#server/utils/admin-lists'
@@ -22,6 +25,7 @@ import {
   markNotificationsRead,
   notifyInvited,
   setEmailedKinds,
+  setPushedKinds,
 } from '#server/utils/notifications'
 import { storePhoto } from '#server/utils/photos'
 import { buyAgain, finishCoffee } from '#server/utils/purchases'
@@ -210,6 +214,10 @@ export function createScenario(database: () => Promise<TestDatabase>) {
 
     async emailed(member: { id: string }, emailed: OptionalEmailKind[]) {
       await setEmailedKinds(await database(), { userId: member.id, emailed })
+    },
+
+    async pushed(member: { id: string }, pushed: NotificationKind[]) {
+      await setPushedKinds(await database(), { userId: member.id, pushed })
     },
 
     async expireInvite(inviteId: string) {

@@ -85,3 +85,22 @@ export const notificationEmail = pgTable(
     }).onDelete('cascade'),
   ],
 )
+
+export const notificationPushOff = pgTable(
+  'notificationPushOff',
+  {
+    userId: text().notNull(),
+    kind: notificationKind().notNull(),
+  },
+  table => [
+    primaryKey({
+      name: 'notificationPushOffPk',
+      columns: [table.userId, table.kind],
+    }),
+    foreignKey({
+      name: 'notificationPushOffUserIdFk',
+      columns: [table.userId],
+      foreignColumns: [user.id],
+    }).onDelete('cascade'),
+  ],
+)

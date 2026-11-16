@@ -2,6 +2,8 @@ import { createApp, createRouter, toWebHandler } from 'h3'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import deleteMeHandler from '#server/api/me.delete'
+import pushesHandler from '#server/api/me/notifications/pushes/index.get'
+import savePushesHandler from '#server/api/me/notifications/pushes/index.put'
 import removeHandler from '#server/api/me/push/subscription.delete'
 import saveHandler from '#server/api/me/push/subscription.put'
 import finishCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/finish.post'
@@ -68,11 +70,14 @@ afterEach(() => {
 
 const coffeePath = '/api/shelves/:shelfId/coffees/:coffeeId'
 const subscriptionPath = '/api/me/push/subscription'
+const pushesPath = '/api/me/notifications/pushes'
 
 function request(path: string, init: RequestInit = {}) {
   const router = createRouter()
     .put(subscriptionPath, saveHandler)
     .delete(subscriptionPath, removeHandler)
+    .get(pushesPath, pushesHandler)
+    .put(pushesPath, savePushesHandler)
     .delete('/api/me', deleteMeHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
     .post(`${coffeePath}/finish`, finishCoffeeHandler)
@@ -126,6 +131,10 @@ async function subscriptionsOf(userId: string) {
     .where(eq(pushSubscription.userId, userId))
 
   return found.map(row => row.endpoint).sort()
+}
+
+function choosePushed(headers: Headers, pushed: string[]) {
+  return send('PUT', pushesPath, headers, { pushed })
 }
 
 function pushedTo() {
@@ -370,5 +379,136 @@ describe('pushing notifications', () => {
       'Could not send a push',
       expect.any(Error),
     )
+  })
+})
+
+describe('choosing which kinds are pushed', () => {
+  const everyKind = [
+    'invited',
+    'coffeeAdded',
+    'purchaseAdded',
+    'bagFinished',
+    'memberJoined',
+    'memberLeft',
+  ]
+
+  it('refuses anonymous requests', async () => {
+    const response = await request(pushesPath)
+
+    expect(response.status).toBe(401)
+  })
+
+  it('pushes every kind until something is switched off', async () => {
+    const { headers } = await person('Sarah')
+
+    const response = await send('GET', pushesPath, headers)
+
+    expect(await response.json()).toEqual({ pushed: everyKind })
+  })
+
+  it('remembers the kinds switched off', async () => {
+    const { headers } = await person('Sarah')
+
+    const saved = await choosePushed(headers, ['invited', 'bagFinished'])
+    const read = await send('GET', pushesPath, headers)
+
+    expect(await saved.json()).toEqual({ pushed: ['invited', 'bagFinished'] })
+    expect(await read.json()).toEqual({ pushed: ['invited', 'bagFinished'] })
+  })
+
+  it('switches a kind on again', async () => {
+    const { headers } = await person('Sarah')
+    await choosePushed(headers, [])
+
+    const response = await choosePushed(headers, everyKind)
+
+    expect(await response.json()).toEqual({ pushed: everyKind })
+  })
+
+  it('keeps the choices of everyone else', async () => {
+    const sarah = await person('Sarah')
+    const tom = await person('Tom')
+    await choosePushed(tom.headers, ['invited'])
+
+    await choosePushed(sarah.headers, [])
+    const response = await send('GET', pushesPath, tom.headers)
+
+    expect(await response.json()).toEqual({ pushed: ['invited'] })
+  })
+
+  it('refuses a kind that does not exist', async () => {
+    const { headers } = await person('Sarah')
+
+    const response = await choosePushed(headers, ['coffeeBrewed'])
+
+    expect(response.status).toBe(400)
+  })
+
+  it('stops pushing a switched-off kind to every device', async () => {
+    const { sarah, tom, home, addCoffee } = await setup()
+    await subscribe(tom.headers, 'tom-phone')
+    await subscribe(tom.headers, 'tom-laptop')
+    await subscribe(sarah.headers, 'sarah-phone')
+    await choosePushed(tom.headers, ['bagFinished'])
+
+    const { coffeeId } = await addCoffee()
+    await send(
+      'POST',
+      `/api/shelves/${home.id}/coffees/${coffeeId}/finish`,
+      sarah.headers,
+    )
+
+    expect(pushedTo()).toEqual([
+      'https://push.example.com/tom-laptop',
+      'https://push.example.com/tom-phone',
+    ])
+    expect(current.pushed.map(push => push.message.body)).toEqual([
+      'Sarah finished a bag of Ayele Fulasa on Home',
+      'Sarah finished a bag of Ayele Fulasa on Home',
+    ])
+  })
+
+  it('still pushes the kind to others on the shelf', async () => {
+    const { sarah, tom, home, addCoffee } = await setup()
+    const lisa = await person('Lisa')
+    await db
+      .insert(shelfMember)
+      .values({ shelfId: home.id, userId: lisa.user.id })
+    await subscribe(tom.headers, 'tom-phone')
+    await subscribe(lisa.headers, 'lisa-phone')
+    await choosePushed(tom.headers, [])
+
+    await addCoffee(sarah.headers)
+
+    expect(pushedTo()).toEqual(['https://push.example.com/lisa-phone'])
+  })
+
+  it('keeps a kind off on a device added later', async () => {
+    const { tom, addCoffee } = await setup()
+    await choosePushed(tom.headers, ['invited'])
+    const again = await testAuth.signIn(tom.user.id)
+    again.set('content-type', 'application/json')
+
+    await subscribe(again, 'tom-new-phone')
+    await addCoffee()
+
+    expect(current.pushed).toEqual([])
+  })
+
+  it('stops pushing invites once they are switched off', async () => {
+    const { sarah, home } = await setup()
+    const lisa = await person('Lisa')
+    await subscribe(lisa.headers, 'lisa-phone')
+    await choosePushed(lisa.headers, ['coffeeAdded'])
+
+    const response = await send(
+      'POST',
+      `/api/shelves/${home.id}/invites`,
+      sarah.headers,
+      { email: 'lisa@example.com' },
+    )
+
+    expect(response.status).toBe(201)
+    expect(current.pushed).toEqual([])
   })
 })
