@@ -16,7 +16,7 @@ const scope = defineModel<LibraryScope>({ required: true })
       :data-testid="`library-scope-${option}`"
       :aria-pressed="scope === option"
       :class="[
-        'rounded-full px-5 py-3 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none lg:py-2',
+        'inline-flex min-h-11 items-center rounded-full px-5 py-3 text-[12px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none lg:min-h-0 lg:py-2',
         scope === option
           ? 'bg-primary text-primary-foreground'
           : 'hover:bg-background',

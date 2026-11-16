@@ -22,7 +22,7 @@ function pick(column: LibrarySortBy) {
       <button
         type="button"
         data-testid="library-sort"
-        class="flex items-center gap-2 rounded-full border border-primary px-4 py-3 text-[12px] uppercase hover:bg-accent lg:py-2"
+        class="flex min-h-11 items-center gap-2 rounded-full border border-primary px-4 py-3 text-[12px] uppercase hover:bg-accent lg:min-h-0 lg:py-2"
       >
         <ArrowUpDownIcon class="size-3.5" aria-hidden="true" />
         <span class="sr-only">Sort by </span>
