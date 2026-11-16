@@ -1220,8 +1220,9 @@ test('gives every control on a coffee a touch-sized target on a phone and keeps 
     'verdict-star-1',
     'verdict-star-5',
     'verdict-buy-again',
+    'share',
     'coffee-edit',
-    'coffee-more',
+    'coffee-delete',
   ]) {
     await expectTouchable(page.getByTestId(testId))
   }

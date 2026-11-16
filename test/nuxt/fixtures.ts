@@ -417,3 +417,37 @@ export function forgetBadge() {
   Reflect.deleteProperty(navigator, 'setAppBadge')
   Reflect.deleteProperty(navigator, 'clearAppBadge')
 }
+
+export function fakeShareSheet(answer: 'share' | 'cancel' | 'fail' = 'share') {
+  const share = vi.fn(async (_data?: ShareData) => {
+    if (answer === 'cancel') {
+      throw new DOMException('Share canceled', 'AbortError')
+    }
+    if (answer === 'fail') {
+      throw new DOMException('Not allowed', 'NotAllowedError')
+    }
+  })
+
+  Object.defineProperty(navigator, 'share', {
+    configurable: true,
+    value: share,
+  })
+
+  return share
+}
+
+export function fakeClipboard() {
+  const writeText = vi.fn(async (_text: string) => {})
+
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText },
+  })
+
+  return writeText
+}
+
+export function forgetShareSheet() {
+  Reflect.deleteProperty(navigator, 'share')
+  Reflect.deleteProperty(navigator, 'clipboard')
+}

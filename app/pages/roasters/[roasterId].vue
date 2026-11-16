@@ -70,7 +70,7 @@ watch(error, showMissing)
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
       {{ back.label }}
     </NuxtLink>
-    <header class="mt-6 flex items-end justify-between gap-4">
+    <header class="mt-6 flex flex-wrap items-end justify-between gap-4">
       <div v-if="roaster" class="flex min-w-0 items-center gap-4">
         <RoasterLogoImage
           :roaster="roaster"
@@ -111,18 +111,25 @@ watch(error, showMissing)
           <template #skeleton><LazyRoasterHeaderSkeleton /></template>
         </QuerySection>
       </template>
-      <Button
-        v-if="roaster?.canEdit"
-        type="button"
-        data-testid="roaster-edit"
-        variant="outline"
-        size="sm"
-        class="mb-2"
-        @click="editing = true"
-      >
-        <PencilIcon class="size-4" aria-hidden="true" />
-        Edit
-      </Button>
+      <div v-if="roaster" class="mb-2 flex w-full gap-2 sm:w-auto sm:shrink-0">
+        <ShareButton
+          :name="roaster.name"
+          :path="roasterPath(roaster)"
+          class="flex-1 sm:flex-none"
+        />
+        <Button
+          v-if="roaster.canEdit"
+          type="button"
+          data-testid="roaster-edit"
+          variant="outline"
+          size="sm"
+          class="flex-1 sm:flex-none"
+          @click="editing = true"
+        >
+          <PencilIcon class="size-4" aria-hidden="true" />
+          Edit
+        </Button>
+      </div>
     </header>
     <section class="mt-10">
       <div class="flex flex-wrap items-end justify-between gap-4">

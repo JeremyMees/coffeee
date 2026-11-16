@@ -9,13 +9,16 @@ import {
   roasterPath,
   shelfCoffeePath,
   useError,
+  useRequestURL,
   useRouter,
 } from '#imports'
 import type { Member } from '#test/support/types'
 import {
   click,
   currentPath,
+  fakeShareSheet,
   forgetLastShelf,
+  forgetShareSheet,
   isFetching,
   tid,
 } from '../../fixtures'
@@ -39,7 +42,10 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-afterEach(() => onlineManager.setOnline(true))
+afterEach(() => {
+  onlineManager.setOnline(true)
+  forgetShareSheet()
+})
 
 function openRoaster(route = roasterPath(squareMile)) {
   return mountSuspended(App, { route, attachTo: document.body })
@@ -80,6 +86,18 @@ describe('the page of a roaster', () => {
     )
     expect(page.get(tid('roaster-logo-placeholder')).text()).toBe('S')
     expect(page.get(tid('roaster-back')).attributes('href')).toBe('/roasters')
+  })
+
+  it('shares the roaster’s name and canonical link', async () => {
+    const share = fakeShareSheet()
+    await roaster()
+
+    await click('share')
+
+    expect(share).toHaveBeenCalledExactlyOnceWith({
+      title: 'Square Mile',
+      url: `${useRequestURL().origin}${roasterPath(squareMile)}`,
+    })
   })
 
   it('lists every coffee from it, opening the shelf’s own on the shelf', async () => {

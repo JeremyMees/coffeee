@@ -1,15 +1,16 @@
 import { onlineManager } from '@tanstack/vue-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { and, eq } from 'drizzle-orm'
 import App from '~/app.vue'
 import {
   clearError,
+  coffeePath,
   queryKeys,
   shelfCoffeePath,
   shelfPath,
   useError,
+  useRequestURL,
   useRouter,
 } from '#imports'
 import { coffee, coffeeVerdict, purchase } from '#server/db/schemas'
@@ -19,7 +20,9 @@ import {
   byTestId,
   currentPath,
   click,
+  fakeShareSheet,
   forgetLastShelf,
+  forgetShareSheet,
   isFetching,
   submit,
   tid,
@@ -44,7 +47,10 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-afterEach(() => onlineManager.setOnline(true))
+afterEach(() => {
+  onlineManager.setOnline(true)
+  forgetShareSheet()
+})
 
 const ayeleDetails: ScenarioCoffee = {
   origins: ['ET'],
@@ -138,6 +144,19 @@ describe('a coffee page', () => {
       'Size unknown · Price unknown',
     )
     expect(text(earlier, 'purchase-status')).toBe('Finished')
+  })
+
+  it('shares the coffee’s public link, not the shelf', async () => {
+    const share = fakeShareSheet()
+    const shown = await ayele()
+    await coffeePage(shown)
+
+    await click('share')
+
+    expect(share).toHaveBeenCalledExactlyOnceWith({
+      title: 'Ayele Fulasa',
+      url: `${useRequestURL().origin}${coffeePath(shown)}`,
+    })
   })
 
   it('says when nobody on this shelf has bought it yet', async () => {
@@ -513,10 +532,8 @@ describe('a coffee page', () => {
 
   it('deletes the coffee and goes back', async () => {
     const shown = await ayele()
-    const page = await coffeePage(shown)
+    await coffeePage(shown)
 
-    await page.get(tid('coffee-more')).trigger('keydown', { key: 'Enter' })
-    await flushPromises()
     await click('coffee-delete')
     await click('confirm-dialog-confirm')
 
@@ -529,12 +546,10 @@ describe('a coffee page', () => {
 
   it('explains why the coffee could not be deleted', async () => {
     const shown = await ayele()
-    const page = await coffeePage(shown)
+    await coffeePage(shown)
     const tom = await scenario.member('Tom')
     await scenario.coffee(tom.shelf)
 
-    await page.get(tid('coffee-more')).trigger('keydown', { key: 'Enter' })
-    await flushPromises()
     await click('coffee-delete')
     await click('confirm-dialog-confirm')
 
@@ -553,7 +568,7 @@ describe('a coffee page', () => {
 
     const page = await coffeePage(shown)
 
-    expect(page.find(tid('coffee-more')).exists()).toBe(false)
+    expect(page.find(tid('coffee-delete')).exists()).toBe(false)
   })
 })
 

@@ -1,6 +1,5 @@
 import { onlineManager } from '@tanstack/vue-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { and, eq } from 'drizzle-orm'
 import App from '~/app.vue'
@@ -12,6 +11,7 @@ import {
   shelfCoffeePath,
   shelfPath,
   useError,
+  useRequestURL,
   useRouter,
 } from '#imports'
 import { coffee, coffeeVerdict } from '#server/db/schemas'
@@ -20,7 +20,9 @@ import {
   byTestId,
   currentPath,
   click,
+  fakeShareSheet,
   forgetLastShelf,
+  forgetShareSheet,
   isFetching,
   rememberShelf,
   submit,
@@ -49,7 +51,10 @@ beforeEach(async () => {
   await signIn(sarah)
 })
 
-afterEach(() => onlineManager.setOnline(true))
+afterEach(() => {
+  onlineManager.setOnline(true)
+  forgetShareSheet()
+})
 
 function openCoffee(route = coffeePath(ayele)) {
   return mountSuspended(App, { route, attachTo: document.body })
@@ -82,6 +87,18 @@ describe('the page of a coffee', () => {
     expect(page.find(tid('purchases')).exists()).toBe(false)
     expect(page.find(tid('coffee-buy-again')).exists()).toBe(false)
     expect(page.find(tid('grind-setting-form')).exists()).toBe(false)
+  })
+
+  it('shares the coffee’s name and canonical link', async () => {
+    const share = fakeShareSheet()
+    await coffeePage()
+
+    await click('share')
+
+    expect(share).toHaveBeenCalledExactlyOnceWith({
+      title: 'Ayele Fulasa',
+      url: `${useRequestURL().origin}${coffeePath(ayele)}`,
+    })
   })
 
   it('leads back to Discover on the current shelf', async () => {
@@ -173,10 +190,8 @@ describe('the page of a coffee', () => {
   })
 
   it('deletes the coffee and goes back', async () => {
-    const page = await coffeePage()
+    await coffeePage()
 
-    await page.get(tid('coffee-more')).trigger('keydown', { key: 'Enter' })
-    await flushPromises()
     await click('coffee-delete')
     await click('confirm-dialog-confirm')
 
@@ -192,10 +207,8 @@ describe('the page of a coffee', () => {
       message:
         'Someone else has bought this coffee too, so only an admin can delete it',
     })
-    const page = await coffeePage()
+    await coffeePage()
 
-    await page.get(tid('coffee-more')).trigger('keydown', { key: 'Enter' })
-    await flushPromises()
     await click('coffee-delete')
     await click('confirm-dialog-confirm')
 
@@ -214,7 +227,7 @@ describe('the page of a coffee', () => {
     const page = await coffeePage()
 
     expect(page.find(tid('coffee-edit')).exists()).toBe(true)
-    expect(page.find(tid('coffee-more')).exists()).toBe(false)
+    expect(page.find(tid('coffee-delete')).exists()).toBe(false)
   })
 })
 
