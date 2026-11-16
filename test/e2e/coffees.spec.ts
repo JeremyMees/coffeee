@@ -1243,18 +1243,19 @@ test('gives every control on a coffee a touch-sized target on a phone and keeps 
   await sheet.getByTestId('form-sheet-close').click()
 
   await page.goto(`/shelves/${member.shelfId}/library`)
+  await expectTouchable(page.getByTestId('library-scope-bought'))
+  await expectTouchable(page.getByTestId('library-sort'))
+  await expectTouchable(page.getByTestId('library-filters-open'))
+  await page.getByTestId('library-filters-open').click()
   await expectTouchable(page.getByTestId('library-filter-favourites'))
   await page.getByTestId('library-filter-roasters').click()
   await page.getByTestId('library-filter-option').first().click()
   await page.keyboard.press('Escape')
   await expectTouchable(page.getByTestId('library-applied-filter').first())
+  await page.getByTestId('library-filters-done').click()
 
   await page.goto('/roasters')
   await expectTouchable(page.getByTestId('roasters-filter-bought-from'))
-
-  await page.goto(`/shelves/${member.shelfId}/library`)
-  await expectTouchable(page.getByTestId('library-scope-bought'))
-  await expectTouchable(page.getByTestId('library-sort'))
 
   await page.setViewportSize(desktop)
   await page.goto(`/shelves/${member.shelfId}`)
