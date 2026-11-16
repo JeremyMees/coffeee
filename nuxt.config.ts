@@ -243,6 +243,7 @@ export default defineNuxtConfig({
     },
     workbox: {
       globPatterns: ['**/*.{js,css,woff2,png,svg,ico}'],
+      globIgnores: ['og-image.png'],
       navigateFallback: null,
       importScripts: ['/sw-push.js'],
       runtimeCaching: [
