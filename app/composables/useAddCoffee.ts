@@ -4,6 +4,10 @@ export function useAddCoffee() {
   return useState('add-coffee-open', () => false)
 }
 
+export function useAddCoffeeLink() {
+  return useState<string | null>('add-coffee-link', () => null)
+}
+
 function isTyping(target: EventTarget | null) {
   return (
     target instanceof HTMLElement &&

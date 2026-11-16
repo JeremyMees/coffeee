@@ -28,3 +28,13 @@ export async function shareLink(link: {
     return copyLink(link.url)
   }
 }
+
+export function sharedLink(...parts: unknown[]) {
+  for (const part of parts) {
+    if (typeof part !== 'string') continue
+
+    const found = part.match(/https?:\/\/[^\s<>"']+/i)?.[0]
+
+    if (found) return found.replace(/[.,;:!?)\]}]+$/, '')
+  }
+}

@@ -13,6 +13,7 @@ const props = defineProps<{
   coffee?: EditableCoffee
   photoUrl?: string | null
   firstBag?: boolean
+  link?: string | null
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -27,6 +28,7 @@ const locale = useLocale()
 function startValues() {
   return {
     ...coffeeFormValues(props.coffee),
+    ...(props.link ? { link: props.link } : {}),
     ...(props.firstBag ? purchaseFormValues(undefined, locale.value) : {}),
   }
 }

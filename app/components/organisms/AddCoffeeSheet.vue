@@ -2,6 +2,7 @@
 import { useCoffeeCreate } from '~/queries/coffees'
 
 const open = useAddCoffee()
+const link = useAddCoffeeLink()
 const shelf = useCurrentShelf()
 const { mutateAsync: createCoffee } = useCoffeeCreate()
 
@@ -14,6 +15,10 @@ async function add(coffee: NewCoffee) {
 
   return added.coffee.id
 }
+
+watch(open, isOpen => {
+  if (!isOpen) link.value = null
+})
 
 function stock() {
   return shelf.value && shelfPath(shelf.value)
@@ -28,6 +33,7 @@ function stock() {
     description="A coffee you just bought, with its first bag."
     submit-label="Add coffee"
     first-bag
+    :link="link"
     :send="add"
     :go-to="stock"
   />
