@@ -18,7 +18,7 @@ import {
   descriptionOf,
 } from '#server/utils/descriptions'
 import { changeShelf } from '#server/utils/notifications'
-import { addPurchase } from '#server/utils/purchases'
+import { addPurchase, latestRoastColumns } from '#server/utils/purchases'
 import { roasterColumns } from '#server/utils/roasters'
 import { communityRatingOf, reviewsOf, verdictOn } from '#server/utils/verdicts'
 
@@ -74,7 +74,7 @@ export async function listStock(
   const stock = await db
     .select({
       ...coffeeColumns,
-      roastedOn: max(purchase.roastedOn),
+      ...latestRoastColumns({ shelfId: input.shelfId, inStock: true }),
       rating: coffeeVerdict.rating,
     })
     .from(purchase)

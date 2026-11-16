@@ -4,12 +4,14 @@ import PurchaseFields from '~/components/form/PurchaseFields.vue'
 import { mountInForm, tid } from '../../fixtures'
 
 describe('PurchaseFields', () => {
-  it('asks when the bag was bought and roasted, its size and price', async () => {
+  it('asks when the bag was bought, roasted, frozen and thawed, its size and price', async () => {
     const { wrapper } = await mountInForm(PurchaseFields)
 
     for (const field of [
       'coffee-purchased-on',
       'coffee-roasted-on',
+      'coffee-frozen-on',
+      'coffee-thawed-on',
       'coffee-size',
       'coffee-price',
     ]) {

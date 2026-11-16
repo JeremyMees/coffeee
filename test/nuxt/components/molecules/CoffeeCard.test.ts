@@ -11,6 +11,8 @@ const coffee: CardCoffee = {
   roastLevel: 'medium-dark',
   roastedFor: 'espresso',
   roastedOn: daysAgo(3),
+  frozenOn: null,
+  thawedOn: null,
   flavorNotes: [],
   photoUrl: null,
   rating: null,
@@ -96,6 +98,29 @@ describe('CoffeeCard', () => {
 
     expect(card.get(tid('coffee-card-days')).text()).toBe('3 days off roast')
     expect(card.get(tid('coffee-card-freshness')).text()).toBe('Resting')
+  })
+
+  it('holds the days off roast at the day the coffee was frozen', async () => {
+    const card = await mountCard({
+      coffee: { ...coffee, roastedOn: daysAgo(40), frozenOn: daysAgo(20) },
+    })
+
+    expect(card.get(tid('coffee-card-days')).text()).toBe('Frozen at 20 days')
+    expect(card.get(tid('coffee-card-freshness')).text()).toBe('Peak')
+  })
+
+  it('counts on once the coffee is thawed', async () => {
+    const card = await mountCard({
+      coffee: {
+        ...coffee,
+        roastedOn: daysAgo(40),
+        frozenOn: daysAgo(30),
+        thawedOn: daysAgo(5),
+      },
+    })
+
+    expect(card.get(tid('coffee-card-days')).text()).toBe('15 days off roast')
+    expect(card.get(tid('coffee-card-freshness')).text()).toBe('Peak')
   })
 
   it('says when there is no roast date', async () => {

@@ -171,6 +171,8 @@ describe('the catalog', () => {
       roastedFor: 'espresso',
       photoUrl: null,
       roastedOn: null,
+      frozenOn: null,
+      thawedOn: null,
       rating: null,
       communityRating: { average: null, raters: 0 },
       onShelf: false,
@@ -179,6 +181,32 @@ describe('the catalog', () => {
       matches: [],
     })
     expect(ayele.roastedOn).toBe('2026-10-28')
+  })
+
+  it('shows the freezer dates of the shelf’s bag with the newest roast date', async () => {
+    const context = await setup()
+    await addTo(context, context.home, {
+      roastedOn: '2026-10-20',
+      frozenOn: '2026-10-22',
+    })
+    await addTo(context, context.home, {
+      roastedOn: '2026-10-28',
+      frozenOn: '2026-10-30',
+      thawedOn: '2026-11-05',
+    })
+    await addTo(context, context.work, {
+      roastedOn: '2026-11-03',
+      frozenOn: '2026-11-04',
+    })
+
+    const { coffees } = await catalog(context)
+
+    expect(coffees).toHaveLength(1)
+    expect(coffees[0]).toMatchObject({
+      roastedOn: '2026-10-28',
+      frozenOn: '2026-10-30',
+      thawedOn: '2026-11-05',
+    })
   })
 
   it('shows the community rating and the viewer’s own', async () => {

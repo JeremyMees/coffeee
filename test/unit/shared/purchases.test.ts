@@ -6,6 +6,7 @@ import {
   latestRoastDate,
   priceCents,
   pricePerGram,
+  purchaseDetails,
   purchaseFormValues,
   shelfBags,
   timesBought,
@@ -20,6 +21,8 @@ function bought(
   return {
     purchasedOn,
     roastedOn: null,
+    frozenOn: null,
+    thawedOn: null,
     sizeGrams: null,
     priceCents: null,
     ...overrides,
@@ -106,9 +109,23 @@ describe('purchaseFormValues', () => {
     expect(purchaseFormValues(history[0], 'en')).toEqual({
       purchasedOn: '2026-09-01',
       roastedOn: '2026-08-28',
+      frozenOn: '',
+      thawedOn: '',
       sizeGrams: '250',
       price: '15.00',
     })
+  })
+
+  it('fills in when the bag was frozen and thawed', () => {
+    expect(
+      purchaseFormValues(
+        bought('2026-09-01', {
+          frozenOn: '2026-09-10',
+          thawedOn: '2026-10-01',
+        }),
+        'en',
+      ),
+    ).toMatchObject({ frozenOn: '2026-09-10', thawedOn: '2026-10-01' })
   })
 
   it('writes the price with the decimal separator of the locale', () => {
@@ -119,9 +136,37 @@ describe('purchaseFormValues', () => {
     expect(purchaseFormValues(undefined, 'en')).toEqual({
       purchasedOn: localDate(),
       roastedOn: '',
+      frozenOn: '',
+      thawedOn: '',
       sizeGrams: '',
       price: '',
     })
+  })
+})
+
+describe('purchaseDetails', () => {
+  it('turns a purchase back into the details it was saved from', () => {
+    expect(
+      purchaseDetails(
+        bought('2026-09-01', {
+          roastedOn: '2026-08-28',
+          frozenOn: '2026-09-10',
+          sizeGrams: 250,
+          priceCents: 1650,
+        }),
+      ),
+    ).toEqual({
+      purchasedOn: '2026-09-01',
+      roastedOn: '2026-08-28',
+      frozenOn: '2026-09-10',
+      thawedOn: null,
+      sizeGrams: 250,
+      price: 16.5,
+    })
+  })
+
+  it('keeps an unknown price unknown', () => {
+    expect(purchaseDetails(bought('2026-09-01')).price).toBeNull()
   })
 })
 
@@ -133,7 +178,11 @@ describe('buyAgainValues', () => {
       buyAgainValues(
         [
           ...history,
-          bought('2026-11-02', { sizeGrams: 500, priceCents: 2950 }),
+          bought('2026-11-02', {
+            frozenOn: '2026-11-02',
+            sizeGrams: 500,
+            priceCents: 2950,
+          }),
         ],
         'en',
         today,
@@ -141,6 +190,8 @@ describe('buyAgainValues', () => {
     ).toEqual({
       purchasedOn: '2026-11-02',
       roastedOn: '',
+      frozenOn: '',
+      thawedOn: '',
       sizeGrams: '500',
       price: '29.50',
     })
@@ -150,6 +201,8 @@ describe('buyAgainValues', () => {
     expect(buyAgainValues([], 'en', new Date(2026, 10, 2))).toEqual({
       purchasedOn: '2026-11-02',
       roastedOn: '',
+      frozenOn: '',
+      thawedOn: '',
       sizeGrams: '',
       price: '',
     })

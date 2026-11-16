@@ -13,6 +13,7 @@ import { isOriginCode, originListFields } from './origins'
 import { roastersPageSize } from './roasters'
 import type { DescribedCoffee } from '../types/coffee'
 import type { OriginListField } from '../types/origins'
+import type { FreezeDates } from '../types/purchases'
 import type { ListNouns } from '../types/validation'
 
 function blankToNull(value: unknown) {
@@ -372,6 +373,14 @@ const purchaseShape = {
     blankToNull,
     z.iso.date({ error: 'Enter the roast date as a date' }).nullable(),
   ),
+  frozenOn: z.preprocess(
+    blankToNull,
+    z.iso.date({ error: 'Enter the freeze date as a date' }).nullish(),
+  ),
+  thawedOn: z.preprocess(
+    blankToNull,
+    z.iso.date({ error: 'Enter the thaw date as a date' }).nullish(),
+  ),
   sizeGrams: z.preprocess(
     numberFromForm,
     z
@@ -391,10 +400,39 @@ const purchaseShape = {
   ),
 }
 
-export const purchaseSchema = z.object(purchaseShape)
+function freezable<Purchase extends z.ZodType<FreezeDates>>(
+  purchase: Purchase,
+) {
+  return purchase
+    .refine(
+      ({ roastedOn, frozenOn }) =>
+        !roastedOn || !frozenOn || roastedOn <= frozenOn,
+      {
+        path: ['frozenOn'],
+        message: "The freeze date can't be before the roast date",
+        when: validFields('roastedOn', 'frozenOn'),
+      },
+    )
+    .refine(({ frozenOn, thawedOn }) => !thawedOn || Boolean(frozenOn), {
+      path: ['thawedOn'],
+      message: 'Add the freeze date before the thaw date',
+      when: validFields('frozenOn', 'thawedOn'),
+    })
+    .refine(
+      ({ frozenOn, thawedOn }) =>
+        !frozenOn || !thawedOn || frozenOn <= thawedOn,
+      {
+        path: ['thawedOn'],
+        message: "The thaw date can't be before the freeze date",
+        when: validFields('frozenOn', 'thawedOn'),
+      },
+    )
+}
+
+export const purchaseSchema = freezable(z.object(purchaseShape))
 
 export const newCoffeeSchema = describedCoffee(
-  z.object({ ...coffeeDetailsShape, ...purchaseShape }),
+  freezable(z.object({ ...coffeeDetailsShape, ...purchaseShape })),
 )
 
 export const verdictSchema = z

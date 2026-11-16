@@ -169,6 +169,13 @@
       "when": 1794573167224,
       "tag": "0023_push_choices",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794844286144,
+      "tag": "0024_purchase_freezing",
+      "breakpoints": true
     }
   ]
 }

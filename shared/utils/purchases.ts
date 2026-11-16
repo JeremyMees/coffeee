@@ -1,4 +1,4 @@
-import type { PurchaseRecord } from '../types/purchases'
+import type { NewPurchase, PurchaseRecord } from '../types/purchases'
 import { localDate } from './dates'
 import { formatAmount } from './money'
 
@@ -48,6 +48,8 @@ export function purchaseFormValues(
   return {
     purchasedOn: purchase?.purchasedOn ?? localDate(),
     roastedOn: purchase?.roastedOn ?? '',
+    frozenOn: purchase?.frozenOn ?? '',
+    thawedOn: purchase?.thawedOn ?? '',
     sizeGrams: purchase?.sizeGrams?.toString() ?? '',
     price:
       purchase?.priceCents == null
@@ -67,6 +69,19 @@ export function buyAgainValues(
     ...purchaseFormValues(last, locale),
     purchasedOn: localDate(today),
     roastedOn: '',
+    frozenOn: '',
+    thawedOn: '',
+  }
+}
+
+export function purchaseDetails(purchase: PurchaseRecord): NewPurchase {
+  return {
+    purchasedOn: purchase.purchasedOn,
+    roastedOn: purchase.roastedOn,
+    frozenOn: purchase.frozenOn,
+    thawedOn: purchase.thawedOn,
+    sizeGrams: purchase.sizeGrams,
+    price: purchase.priceCents === null ? null : purchase.priceCents / 100,
   }
 }
 

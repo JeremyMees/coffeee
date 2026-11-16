@@ -21,6 +21,8 @@ export const purchase = pgTable(
     coffeeId: text().notNull(),
     purchasedOn: date().notNull(),
     roastedOn: date(),
+    frozenOn: date(),
+    thawedOn: date(),
     sizeGrams: integer(),
     priceCents: integer(),
     finishedAt: timestamp(),

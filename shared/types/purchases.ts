@@ -7,7 +7,18 @@ export type Purchase = InferSelectModel<typeof purchase>
 
 export type PurchaseRecord = Pick<
   Purchase,
-  'purchasedOn' | 'roastedOn' | 'sizeGrams' | 'priceCents'
+  | 'purchasedOn'
+  | 'roastedOn'
+  | 'frozenOn'
+  | 'thawedOn'
+  | 'sizeGrams'
+  | 'priceCents'
 >
+
+export type FreezeDates = Partial<
+  Pick<Purchase, 'roastedOn' | 'frozenOn' | 'thawedOn'>
+>
+
+export type RoastDates = FreezeDates & { roastedOn: string }
 
 export type NewPurchase = z.output<typeof purchaseSchema>

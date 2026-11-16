@@ -131,6 +131,8 @@ describe('adding a coffee to a shelf', () => {
         roaster: 'Square Mile',
         roastLevel: 'light',
         roastedOn: '2026-10-28',
+        frozenOn: null,
+        thawedOn: null,
       }),
     ])
   })
@@ -350,6 +352,8 @@ describe('the catalog', () => {
           roastedFor: 'filter',
           photoUrl: null,
           roastedOn: null,
+          frozenOn: null,
+          thawedOn: null,
           rating: null,
           communityRating: { average: 5, raters: 1 },
           onShelf: false,

@@ -44,7 +44,14 @@ function mountRow(shown = inStock) {
 async function stored(purchaseId: string) {
   const db = await database()
   const [found] = await db
-    .select({ finishedAt: purchase.finishedAt })
+    .select({
+      finishedAt: purchase.finishedAt,
+      frozenOn: purchase.frozenOn,
+      thawedOn: purchase.thawedOn,
+      roastedOn: purchase.roastedOn,
+      sizeGrams: purchase.sizeGrams,
+      priceCents: purchase.priceCents,
+    })
     .from(purchase)
     .where(eq(purchase.id, purchaseId))
 
@@ -94,6 +101,61 @@ describe('PurchaseRow', () => {
     await vi.waitFor(async () =>
       expect((await stored(inStock.id))?.finishedAt).toBeInstanceOf(Date),
     )
+  })
+
+  it('puts the bag in the freezer today and keeps its other details', async () => {
+    const row = await mountRow()
+    expect(row.find(tid('purchase-frozen')).exists()).toBe(false)
+    expect(row.find(tid('purchase-thaw')).exists()).toBe(false)
+
+    await row.get(tid('purchase-freeze')).trigger('click')
+
+    await vi.waitFor(async () =>
+      expect(await stored(inStock.id)).toMatchObject({
+        frozenOn: localDate(),
+        thawedOn: null,
+        roastedOn: '2026-10-28',
+        sizeGrams: 250,
+        priceCents: 1650,
+      }),
+    )
+  })
+
+  it('takes a frozen bag out of the freezer today', async () => {
+    const row = await mountRow({ ...inStock, frozenOn: '2026-11-02' })
+    expect(row.get(tid('purchase-frozen')).text()).toBe(
+      `In the freezer since ${formatDate('2026-11-02', 'en-US')}`,
+    )
+    expect(row.find(tid('purchase-freeze')).exists()).toBe(false)
+
+    await row.get(tid('purchase-thaw')).trigger('click')
+
+    await vi.waitFor(async () =>
+      expect(await stored(inStock.id)).toMatchObject({
+        frozenOn: '2026-11-02',
+        thawedOn: localDate(),
+      }),
+    )
+  })
+
+  it('shows when a thawed bag was in the freezer, with nothing left to do', async () => {
+    const row = await mountRow({
+      ...inStock,
+      frozenOn: '2026-11-02',
+      thawedOn: '2026-11-09',
+    })
+
+    expect(row.get(tid('purchase-frozen')).text()).toBe(
+      `Frozen ${formatDate('2026-11-02', 'en-US')} · Thawed ${formatDate('2026-11-09', 'en-US')}`,
+    )
+    expect(row.find(tid('purchase-freeze')).exists()).toBe(false)
+    expect(row.find(tid('purchase-thaw')).exists()).toBe(false)
+  })
+
+  it('leaves a finished bag out of the freezer', async () => {
+    const row = await mountRow(finished)
+
+    expect(row.find(tid('purchase-freeze')).exists()).toBe(false)
   })
 
   it('deletes the purchase only once that is confirmed', async () => {

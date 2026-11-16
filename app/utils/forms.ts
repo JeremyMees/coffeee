@@ -66,7 +66,14 @@ export const coffeeSteps = [
 
 export const firstBagStep = {
   title: 'First bag',
-  fields: ['purchasedOn', 'roastedOn', 'sizeGrams', 'price'],
+  fields: [
+    'purchasedOn',
+    'roastedOn',
+    'frozenOn',
+    'thawedOn',
+    'sizeGrams',
+    'price',
+  ],
 } as const satisfies FormStep
 
 export function coffeeFormSteps(withFirstBag: boolean): FormStep[] {

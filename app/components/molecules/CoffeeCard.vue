@@ -3,9 +3,18 @@ const props = withDefaults(defineProps<{ coffee: CardCoffee; to?: string }>(), {
   to: undefined,
 })
 
-const days = computed(() =>
-  props.coffee.roastedOn ? daysOffRoast(props.coffee.roastedOn) : null,
-)
+const days = computed(() => {
+  const { roastedOn, frozenOn, thawedOn } = props.coffee
+
+  return roastedOn ? daysOffRoast({ roastedOn, frozenOn, thawedOn }) : null
+})
+const age = computed(() => {
+  if (days.value === null) return 'No roast date'
+
+  return isFrozen(props.coffee)
+    ? `Frozen at ${days.value} days`
+    : `${days.value} days off roast`
+})
 const fresh = computed(() =>
   days.value === null
     ? 'Unknown'
@@ -30,7 +39,7 @@ const freshStyles: Record<string, string> = {
       <SpecRow label="Fresh" centered>
         <dd class="flex shrink-0 items-center gap-1.5">
           <span data-testid="coffee-card-days">
-            {{ days === null ? 'No roast date' : `${days} days off roast` }}
+            {{ age }}
           </span>
           <span
             :class="[

@@ -188,6 +188,27 @@ describe('changing a purchase', () => {
     })
   })
 
+  it('saves when the bag went into and came out of the freezer', async () => {
+    const { db, ref } = await setup()
+
+    const frozen = await editPurchase(db, {
+      ...ref,
+      purchase: bag({ frozenOn: '2026-09-10' }),
+    })
+    const thawed = await editPurchase(db, {
+      ...ref,
+      purchase: bag({ frozenOn: '2026-09-10', thawedOn: '2026-10-01' }),
+    })
+    const cleared = await editPurchase(db, { ...ref, purchase: bag() })
+
+    expect(frozen).toMatchObject({ frozenOn: '2026-09-10', thawedOn: null })
+    expect(thawed).toMatchObject({
+      frozenOn: '2026-09-10',
+      thawedOn: '2026-10-01',
+    })
+    expect(cleared).toMatchObject({ frozenOn: null, thawedOn: null })
+  })
+
   it('keeps the date a purchase was first finished', async () => {
     const { db, ref } = await setup()
     const first = await finishPurchase(db, ref)

@@ -34,6 +34,34 @@ import { Field as VeeField } from 'vee-validate'
         <FieldError :errors="errors" />
       </Field>
     </VeeField>
+    <VeeField v-slot="{ componentField, errors }" name="frozenOn">
+      <Field :data-invalid="errors.length ? true : undefined">
+        <FieldLabel for="frozen-on">Frozen on</FieldLabel>
+        <DatePicker
+          id="frozen-on"
+          v-bind="componentField"
+          data-testid="coffee-frozen-on"
+          label="Frozen on"
+          clearable
+          :invalid="errors.length > 0"
+        />
+        <FieldError :errors="errors" />
+      </Field>
+    </VeeField>
+    <VeeField v-slot="{ componentField, errors }" name="thawedOn">
+      <Field :data-invalid="errors.length ? true : undefined">
+        <FieldLabel for="thawed-on">Thawed on</FieldLabel>
+        <DatePicker
+          id="thawed-on"
+          v-bind="componentField"
+          data-testid="coffee-thawed-on"
+          label="Thawed on"
+          clearable
+          :invalid="errors.length > 0"
+        />
+        <FieldError :errors="errors" />
+      </Field>
+    </VeeField>
     <VeeField v-slot="{ componentField, errors }" name="sizeGrams">
       <Field :data-invalid="errors.length ? true : undefined">
         <FieldLabel for="size-grams">Size (g)</FieldLabel>

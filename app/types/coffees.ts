@@ -29,6 +29,8 @@ export type CardCoffee = Pick<
   | 'roastLevel'
   | 'roastedFor'
   | 'roastedOn'
+  | 'frozenOn'
+  | 'thawedOn'
   | 'flavorNotes'
   | 'photoUrl'
   | 'rating'

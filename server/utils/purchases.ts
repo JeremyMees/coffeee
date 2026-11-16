@@ -1,4 +1,6 @@
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
+import type { PgColumn } from 'drizzle-orm/pg-core'
 import type { NewPurchase } from '#shared/types/purchases'
 import { priceCents } from '#shared/utils/purchases'
 import type { Database } from '#server/types/database'
@@ -11,9 +13,44 @@ export const purchaseColumns = {
   id: purchase.id,
   purchasedOn: purchase.purchasedOn,
   roastedOn: purchase.roastedOn,
+  frozenOn: purchase.frozenOn,
+  thawedOn: purchase.thawedOn,
   sizeGrams: purchase.sizeGrams,
   priceCents: purchase.priceCents,
   finishedAt: purchase.finishedAt,
+}
+
+const roastedPurchase = alias(purchase, 'roastedPurchase')
+
+function latestRoast(
+  column: PgColumn,
+  input: { shelfId: string; inStock?: boolean },
+) {
+  const inStock = input.inStock
+    ? sql`and ${roastedPurchase.finishedAt} is null`
+    : sql``
+
+  return sql<string | null>`(
+    select ${column}
+    from ${purchase} as ${sql.identifier('roastedPurchase')}
+    where ${roastedPurchase.shelfId} = ${input.shelfId}
+      and ${roastedPurchase.coffeeId} = ${coffee.id}
+      and ${roastedPurchase.roastedOn} is not null
+      ${inStock}
+    order by ${roastedPurchase.roastedOn} desc, ${roastedPurchase.createdAt} desc
+    limit 1
+  )`
+}
+
+export function latestRoastColumns(input: {
+  shelfId: string
+  inStock?: boolean
+}) {
+  return {
+    roastedOn: latestRoast(roastedPurchase.roastedOn, input),
+    frozenOn: latestRoast(roastedPurchase.frozenOn, input),
+    thawedOn: latestRoast(roastedPurchase.thawedOn, input),
+  }
 }
 
 export async function listShelfPurchases(
@@ -36,6 +73,8 @@ function purchaseValues(details: NewPurchase) {
   return {
     purchasedOn: details.purchasedOn,
     roastedOn: details.roastedOn ?? null,
+    frozenOn: details.frozenOn ?? null,
+    thawedOn: details.thawedOn ?? null,
     sizeGrams: details.sizeGrams ?? null,
     priceCents: priceCents(details.price ?? null),
   }

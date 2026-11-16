@@ -1,4 +1,5 @@
 import type { RoastedFor, RoastLevel } from '../types/coffee'
+import type { RoastDates } from '../types/purchases'
 
 const dayLength = 24 * 60 * 60 * 1000
 
@@ -45,12 +46,26 @@ export const roastedForLabels: Record<RoastedFor, string> = {
   omni: 'Omni',
 }
 
-export function daysOffRoast(roastedOn: string, today = new Date()) {
-  const [year, month, day] = roastedOn.split('-').map(Number)
-  const roasted = Date.UTC(year!, month! - 1, day!)
-  const now = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+function dayOf(isoDate: string) {
+  const [year, month, day] = isoDate.split('-').map(Number)
 
-  return Math.round((now - roasted) / dayLength)
+  return Date.UTC(year!, month! - 1, day!)
+}
+
+export function isFrozen(roast: Pick<RoastDates, 'frozenOn' | 'thawedOn'>) {
+  return Boolean(roast.frozenOn) && !roast.thawedOn
+}
+
+export function daysOffRoast(roast: RoastDates, today = new Date()) {
+  const roasted = dayOf(roast.roastedOn)
+  const now = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+  const within = (isoDate: string) =>
+    Math.min(Math.max(dayOf(isoDate), roasted), now)
+  const frozenFrom = roast.frozenOn ? within(roast.frozenOn) : now
+  const frozenUntil = roast.thawedOn ? within(roast.thawedOn) : now
+  const frozen = Math.max(frozenUntil - frozenFrom, 0)
+
+  return Math.round((now - roasted - frozen) / dayLength)
 }
 
 const freshnessWindows: Record<RoastedFor, { rest: number; peak: number }> = {

@@ -223,6 +223,8 @@ describe('current stock', () => {
         roastLevel: 'light',
         roastedFor: 'filter',
         roastedOn: '2026-10-28',
+        frozenOn: null,
+        thawedOn: null,
         flavorNotes: [],
         photoUrl: null,
         rating: null,
@@ -260,6 +262,43 @@ describe('current stock', () => {
 
     expect(stock).toHaveLength(1)
     expect(stock[0]!.roastedOn).toBe('2026-10-28')
+  })
+
+  it('shows the freezer dates of the bag with the newest roast date', async () => {
+    const { db, sarah, home } = await setup()
+    const bags = [
+      { roastedOn: '2026-10-20', frozenOn: '2026-10-22' },
+      {
+        roastedOn: '2026-10-28',
+        frozenOn: '2026-10-30',
+        thawedOn: '2026-11-05',
+      },
+      { roastedOn: '2026-11-03', frozenOn: '2026-11-04' },
+    ]
+    const added = []
+    for (const bag of bags) {
+      added.push(
+        await addCoffee(db, {
+          shelfId: home.id,
+          userId: sarah.id,
+          coffee: newCoffee(bag),
+          origin: testOrigin,
+        }),
+      )
+    }
+    await db
+      .update(purchase)
+      .set({ finishedAt: new Date() })
+      .where(eq(purchase.id, added[2]!.purchase.id))
+
+    const stock = await listStock(db, { shelfId: home.id, userId: sarah.id })
+
+    expect(stock).toHaveLength(1)
+    expect(stock[0]).toMatchObject({
+      roastedOn: '2026-10-28',
+      frozenOn: '2026-10-30',
+      thawedOn: '2026-11-05',
+    })
   })
 
   it('puts the coffee bought last first', async () => {

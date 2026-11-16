@@ -151,6 +151,59 @@ describe('purchaseSchema', () => {
     ).toMatchObject({ price: 'Enter the price as a number' })
   })
 
+  it('reads when the bag went into and came out of the freezer', () => {
+    expect(
+      purchaseSchema.parse({
+        purchasedOn: '2026-11-02',
+        roastedOn: '2026-10-20',
+        frozenOn: '2026-10-25',
+        thawedOn: '',
+        sizeGrams: '',
+        price: '',
+      }),
+    ).toMatchObject({ frozenOn: '2026-10-25', thawedOn: null })
+  })
+
+  it.each([
+    [
+      { roastedOn: '2026-10-20', frozenOn: '2026-10-19' },
+      { frozenOn: "The freeze date can't be before the roast date" },
+    ],
+    [
+      { thawedOn: '2026-10-30' },
+      { thawedOn: 'Add the freeze date before the thaw date' },
+    ],
+    [
+      { frozenOn: '2026-10-25', thawedOn: '2026-10-24' },
+      { thawedOn: "The thaw date can't be before the freeze date" },
+    ],
+    [
+      { frozenOn: '25/10/2026' },
+      { frozenOn: 'Enter the freeze date as a date' },
+    ],
+    [{ thawedOn: 'soon' }, { thawedOn: 'Enter the thaw date as a date' }],
+  ])('explains freezer dates that make no sense', (dates, errors) => {
+    expect(
+      errorsOf(purchaseSchema, {
+        purchasedOn: '2026-11-02',
+        roastedOn: null,
+        sizeGrams: null,
+        price: null,
+        ...dates,
+      }),
+    ).toEqual(errors)
+  })
+
+  it('checks the freezer dates of a first bag too', () => {
+    expect(
+      errorsOf(newCoffeeSchema, {
+        ...coffee,
+        roastedOn: '2026-10-20',
+        frozenOn: '2026-10-19',
+      }),
+    ).toEqual({ frozenOn: "The freeze date can't be before the roast date" })
+  })
+
   it('explains a missing purchase date', () => {
     expect(errorsOf(purchaseSchema, { roastedOn: null })).toEqual({
       purchasedOn: 'Enter the date you bought it',

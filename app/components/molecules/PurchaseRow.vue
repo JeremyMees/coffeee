@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { usePurchaseFinish, usePurchaseRemoval } from '~/queries/purchases'
+import {
+  usePurchaseFinish,
+  usePurchaseRemoval,
+  usePurchaseUpdate,
+} from '~/queries/purchases'
 
 const props = defineProps<{
   shelfId: string
@@ -18,6 +22,17 @@ const { mutateAsync: finishPurchase, isPending: finishing } =
   usePurchaseFinish()
 const { mutateAsync: removePurchase, isPending: removing } =
   usePurchaseRemoval()
+const { mutateAsync: updatePurchase, isPending: updating } = usePurchaseUpdate()
+
+const frozen = computed(() => {
+  const { frozenOn, thawedOn } = props.purchase
+
+  if (!frozenOn) return ''
+
+  return thawedOn
+    ? `Frozen ${formatDate(frozenOn, locale.value)} · Thawed ${formatDate(thawedOn, locale.value)}`
+    : `In the freezer since ${formatDate(frozenOn, locale.value)}`
+})
 
 const target = computed(() => ({
   shelfId: props.shelfId,
@@ -37,6 +52,15 @@ async function attempt(action: () => Promise<unknown>) {
 
 function finish() {
   return attempt(() => finishPurchase(target.value))
+}
+
+function stamp(field: 'frozenOn' | 'thawedOn') {
+  return attempt(() =>
+    updatePurchase({
+      ...target.value,
+      purchase: { ...purchaseDetails(props.purchase), [field]: localDate() },
+    }),
+  )
 }
 
 function remove() {
@@ -70,6 +94,13 @@ function remove() {
       </span>
       <span class="uppercase sm:text-right" data-testid="purchase-status">
         {{ purchase.finishedAt ? 'Finished' : 'In stock' }}
+      </span>
+      <span
+        v-if="frozen"
+        class="col-span-2 sm:col-span-4"
+        data-testid="purchase-frozen"
+      >
+        {{ frozen }}
       </span>
     </div>
     <div v-if="confirming" class="flex flex-wrap items-center gap-2">
@@ -114,6 +145,28 @@ function remove() {
         @click="finish"
       >
         Finished
+      </Button>
+      <Button
+        v-if="!purchase.finishedAt && !purchase.frozenOn"
+        type="button"
+        data-testid="purchase-freeze"
+        variant="quiet"
+        size="xs"
+        :disabled="updating"
+        @click="stamp('frozenOn')"
+      >
+        Freeze
+      </Button>
+      <Button
+        v-if="!purchase.finishedAt && isFrozen(purchase)"
+        type="button"
+        data-testid="purchase-thaw"
+        variant="quiet"
+        size="xs"
+        :disabled="updating"
+        @click="stamp('thawedOn')"
+      >
+        Thaw
       </Button>
       <Button
         type="button"

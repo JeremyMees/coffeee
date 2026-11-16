@@ -150,6 +150,8 @@ describe('the library', () => {
           roastedFor: 'filter',
           photoUrl: null,
           roastedOn: '2026-10-28',
+          frozenOn: null,
+          thawedOn: null,
           lastBought: '2026-11-01',
           rating: null,
           wouldBuyAgain: false,
@@ -207,6 +209,35 @@ describe('the library', () => {
     const { coffees } = await library(context)
 
     expect(coffees[0]!.latestPriceCents).toBe(1800)
+  })
+
+  it('shows the freezer dates of the bag with the newest roast date', async () => {
+    const context = await setup()
+    const added = await add(context, {
+      roastedOn: '2026-10-20',
+      frozenOn: '2026-10-22',
+    })
+    await addPurchase(context.db, {
+      shelfId: context.home.id,
+      coffeeId: added,
+      userId: context.sarah.id,
+      purchase: {
+        purchasedOn: '2026-10-25',
+        roastedOn: '2026-10-28',
+        frozenOn: '2026-10-30',
+        sizeGrams: 250,
+        price: null,
+      },
+    })
+    await context.db.update(purchase).set({ finishedAt: new Date() })
+
+    const { coffees } = await library(context)
+
+    expect(coffees[0]).toMatchObject({
+      roastedOn: '2026-10-28',
+      frozenOn: '2026-10-30',
+      thawedOn: null,
+    })
   })
 
   it("shows the viewer's own verdict, not another member's", async () => {

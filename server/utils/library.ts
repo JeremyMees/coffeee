@@ -19,6 +19,7 @@ import {
 } from '#server/utils/browsing'
 import { coffeeColumns } from '#server/utils/coffees'
 import { originNamesSort } from '#server/utils/descriptions'
+import { latestRoastColumns } from '#server/utils/purchases'
 import { communityRatingColumns, verdictOn } from '#server/utils/verdicts'
 
 const pricedPurchase = alias(purchase, 'pricedPurchase')
@@ -110,7 +111,7 @@ export async function listLibrary(
     .select({
       ...coffeeColumns,
       roasterId: coffee.roasterId,
-      roastedOn: latestOf(purchase.roastedOn, input.shelfId),
+      ...latestRoastColumns({ shelfId: input.shelfId }),
       lastBought: latestOf(purchase.purchasedOn, input.shelfId),
       latestPriceCents: latestPriceOf(input.shelfId),
       rating: coffeeVerdict.rating,

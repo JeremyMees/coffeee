@@ -1,10 +1,10 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import type { BrowsingFilterKind } from '#shared/types/browsing'
 import type { CatalogSearch } from '#shared/types/catalog'
 import type { LibraryFilterSearch } from '#shared/types/library'
 import type { Database } from '#server/types/database'
 import type { Viewer } from '#server/types/coffees'
-import { coffee, coffeeVerdict, purchase, roaster } from '#server/db/schemas'
+import { coffee, coffeeVerdict, roaster } from '#server/db/schemas'
 import {
   boughtOn,
   browseCoffees,
@@ -12,6 +12,7 @@ import {
   browsingFilterOptions,
 } from '#server/utils/browsing'
 import { coffeeColumns } from '#server/utils/coffees'
+import { latestRoastColumns } from '#server/utils/purchases'
 import {
   byCommunityRating,
   communityRatingColumns,
@@ -20,14 +21,6 @@ import {
 
 export function canEditCatalogEntry(viewer: Viewer, createdBy: string | null) {
   return viewer.role === 'admin' || viewer.id === createdBy
-}
-
-function latestRoastOn(shelfId: string) {
-  return sql<string | null>`(
-    select max(${purchase.roastedOn}) from ${purchase}
-    where ${purchase.shelfId} = ${shelfId}
-      and ${purchase.coffeeId} = ${coffee.id}
-  )`
 }
 
 export async function listCatalog(
@@ -41,7 +34,7 @@ export async function listCatalog(
     .select({
       ...coffeeColumns,
       roasterId: coffee.roasterId,
-      roastedOn: latestRoastOn(input.shelfId),
+      ...latestRoastColumns({ shelfId: input.shelfId }),
       rating: coffeeVerdict.rating,
       communityRating: communityRatingColumns,
       onShelf: boughtOn(input.shelfId),
