@@ -1,6 +1,5 @@
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
-import { local } from 'c15t/vue'
 import { blobHost } from './shared/utils/photos.ts'
 
 const photoHost = blobHost(process.env)
@@ -18,7 +17,6 @@ export default defineNuxtConfig({
     'shadcn-nuxt',
     '@maizzle/nuxt',
     '@sentry/nuxt/module',
-    'c15t/vue',
     'nuxt-security',
   ],
 
@@ -28,27 +26,6 @@ export default defineNuxtConfig({
 
   experimental: {
     viewTransition: true,
-  },
-
-  $test: { c15t: false },
-
-  $env: {
-    e2e: {
-      c15t: {
-        mode: local({
-          policyRules: [
-            {
-              id: 'test',
-              match: { isDefault: true },
-              model: 'none',
-              prompt: 'none',
-              rights: ['disclosure', 'preferences'],
-            },
-          ],
-        }),
-        colorScheme: 'light',
-      },
-    },
   },
 
   $development: {
@@ -121,25 +98,6 @@ export default defineNuxtConfig({
     corsHandler: false,
     removeLoggers: false,
     sri: false,
-  },
-
-  c15t: {
-    tokens: {
-      'c15t-primary': '#1f4fd8',
-      'c15t-primary-hover': '#1a43b8',
-      'c15t-text-on-primary': '#fffaf5',
-      'c15t-surface': '#fffaf5',
-      'c15t-surface-hover': '#f3eef0',
-      'c15t-border': '#b4c2ef',
-      'c15t-border-hover': '#1f4fd8',
-      'c15t-text': '#1f4fd8',
-      'c15t-text-muted': '#3a65dc',
-      'c15t-switch-track': '#b4c2ef',
-      'c15t-font-family': "'Space Mono', ui-monospace, monospace",
-      'c15t-radius-sm': '0.45rem',
-      'c15t-radius-md': '0.6rem',
-      'c15t-radius-lg': '18px',
-    },
   },
 
   alias: {

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeEach, vi } from 'vitest'
-import { config, enableAutoUnmount } from '@vue/test-utils'
+import { enableAutoUnmount } from '@vue/test-utils'
 import { useQueryClient } from '@tanstack/vue-query'
 import type { Email } from '#server/types/email'
 import type { PushMessage, PushTarget } from '#server/types/push'
@@ -61,12 +61,6 @@ afterEach(async () => {
 })
 
 enableAutoUnmount(afterEach)
-
-config.global.stubs = {
-  ...config.global.stubs,
-  ConsentRoot: true,
-  ConsentDialogLink: true,
-}
 
 beforeEach(async () => {
   const { resetServer } = await import('#test/nuxt/server')

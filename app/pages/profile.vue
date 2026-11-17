@@ -53,9 +53,6 @@ useHead({ title: 'Profile · Coffeee' })
           <Button variant="outline" data-testid="sign-out" @click="signOut">
             Sign out
           </Button>
-          <ConsentDialogLink :class="buttonVariants({ variant: 'outline' })">
-            Privacy settings
-          </ConsentDialogLink>
         </div>
       </TabsContent>
       <TabsContent value="notifications" class="mt-6">
