@@ -6,6 +6,7 @@ export async function signOut() {
   await unsubscribeDevice().catch(caught =>
     console.error('Could not remove the push subscription', caught),
   )
+  const { authClient } = await import('~/utils/authClient')
   await authClient.signOut()
   await forgetCurrentUser()
 }
