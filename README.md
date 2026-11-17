@@ -37,6 +37,8 @@ The words the app uses, and what each one means, are in
   passkeys, invite-only
 - [Plunk](https://www.useplunk.com) and [Maizzle](https://maizzle.com) for email
 - Vercel for hosting and Blob storage for photos, Sentry for errors
+- [nuxt-security](https://nuxt-security.vercel.app) for the content security
+  policy and security headers
 - Vitest (against a real PGlite database) and Playwright for tests
 
 The reasons behind the main choices are written down as decision records in

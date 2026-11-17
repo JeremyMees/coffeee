@@ -184,7 +184,8 @@ server transactions, so treat as anecdotes, not statistics):
   SSR, which looks like the c15t consent backend.
 - `GET /api/c15t/**` in production: 307 samples, p50 ~131 ms, p95 ~3.9 s. Out of
   scope here, but worth a separate look, since c15t runs on every page
-  (`nuxt.config.ts:21`, `app/app.vue:4`).
+  (`nuxt.config.ts:21`, `app/app.vue:4`). Update 2026-11-17: c15t was removed,
+  see [ADR 0011](../adr/0011-no-consent-banner.md).
 
 Better tracing (more samples, per-query DB spans) would be the way to confirm or
 refute items 4 and 5 before rewriting endpoints.

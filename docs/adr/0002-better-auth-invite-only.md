@@ -23,3 +23,14 @@ to stay comfortably inside the free tiers.
 
 Email and password sign-in was added later, once the app needed to send email
 for shelves; see ADR 0004.
+
+## Trusted hosts
+
+Better Auth only redirects to, and accepts requests from, hosts we trust, and a
+password reset sends its token to the redirect it was given. So each environment
+trusts only its own hosts (`authHostsFor` in `server/utils/auth.ts`): production
+trusts `www.coffeee.app` and `coffeee.app`, a preview also trusts its own
+deployment through Vercel's `VERCEL_URL` and `VERCEL_BRANCH_URL`, and anything
+else trusts only localhost. We used to trust `coffeee-*.vercel.app`, but anyone
+can create a Vercel project with that name, so a reset link could have sent
+someone's token to a stranger's site. Don't bring the wildcard back.
