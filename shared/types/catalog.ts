@@ -1,5 +1,5 @@
 import type { InferSelectModel } from 'drizzle-orm'
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import type { coffee, origin, producer, region } from '#server/db/schemas'
 import type { catalogMatchFields, catalogSorts } from '../utils/catalog'
 import type { catalogSearchSchema } from '../utils/schemas'

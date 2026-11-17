@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import {
   coffeeDetailsSchema,
   grinderModelSearchSchema,
@@ -19,7 +19,7 @@ import {
 } from '#shared/utils/schemas'
 import { fieldErrors } from '#shared/utils/validation'
 
-function errorsOf(schema: z.ZodType, value: unknown) {
+function errorsOf(schema: z.ZodMiniType, value: unknown) {
   const result = schema.safeParse(value)
 
   return result.success ? {} : fieldErrors(result.error)

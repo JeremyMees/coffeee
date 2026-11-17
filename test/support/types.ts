@@ -1,5 +1,5 @@
 import type { App } from 'h3'
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import type { newCoffeeSchema } from '#shared/utils/schemas'
 import type { createShelf } from '#server/utils/shelves'
 import type { createTestAuth } from '#test/support/auth'

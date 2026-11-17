@@ -118,7 +118,7 @@ export default defineNuxtConfig({
         'reka-ui',
         'reka-ui/date',
         'vee-validate',
-        'zod',
+        'zod/mini',
       ],
     },
   },

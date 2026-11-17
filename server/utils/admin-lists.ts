@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import type { AdminEntrySearch, AdminList } from '#shared/types/admin'
 import type { CoffeeDetails } from '#shared/types/coffee'
 import type { NewGrinder } from '#shared/types/grinders'
@@ -355,7 +355,7 @@ type Addition =
   | { outcome: 'taken'; field: string; message: string }
 
 interface AdminListAdder {
-  schema: z.ZodType
+  schema: z.ZodMiniType
   add: (db: Database, body: never, createdBy: string) => Promise<Addition>
 }
 

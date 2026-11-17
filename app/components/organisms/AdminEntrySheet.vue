@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import { useAdminEntryCreate, useAdminEntryUpdate } from '~/queries/admin'
 
 const props = defineProps<{ list: AdminList; entry?: AdminEntry }>()
@@ -43,7 +43,7 @@ function startValues() {
 
 const { handleSubmit, resetForm, setErrors, isSubmitting } = useForm({
   validationSchema: zodSchema(
-    schemas[form] as unknown as z.ZodType<Record<string, string>>,
+    schemas[form] as unknown as z.ZodMiniType<Record<string, string>>,
   ),
   initialValues: startValues(),
 })

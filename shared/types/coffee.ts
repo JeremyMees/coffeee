@@ -3,7 +3,7 @@ import type {
   roastedForOptions,
   roastLevels,
 } from '../utils/coffee'
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import type { coffeeDetailsSchema, newCoffeeSchema } from '../utils/schemas'
 import type { OriginEntry } from './catalog'
 import type { OriginListField } from './origins'

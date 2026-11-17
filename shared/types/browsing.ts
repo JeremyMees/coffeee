@@ -1,4 +1,4 @@
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import type { browsingFilters } from '../utils/browsing'
 import type { browsingSearchSchema } from '../utils/schemas'
 

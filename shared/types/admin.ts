@@ -1,4 +1,4 @@
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import type { adminLists } from '../utils/admin'
 import type { adminEntrySearchSchema } from '../utils/schemas'
 import type { ListNouns } from './validation'

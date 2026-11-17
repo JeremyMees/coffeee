@@ -1,6 +1,6 @@
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 
-export function fieldErrors(error: z.ZodError) {
+export function fieldErrors(error: z.core.$ZodError) {
   const errors: Record<string, string> = {}
 
   for (const issue of error.issues) {

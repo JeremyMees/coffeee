@@ -1,7 +1,7 @@
 import type { TypedSchema, TypedSchemaError } from 'vee-validate'
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 
-export function zodSchema<Schema extends z.ZodType>(
+export function zodSchema<Schema extends z.ZodMiniType>(
   schema: Schema,
 ): TypedSchema<z.input<Schema>, z.output<Schema>> {
   return {

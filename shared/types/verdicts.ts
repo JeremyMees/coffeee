@@ -1,5 +1,5 @@
 import type { InferSelectModel } from 'drizzle-orm'
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import type { coffeeVerdict } from '#server/db/schemas'
 import type { verdictSchema } from '../utils/schemas'
 import type { ratings } from '../utils/verdicts'

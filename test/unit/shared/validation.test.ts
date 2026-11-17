@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { z } from 'zod'
+import { z } from 'zod/mini'
 import { fieldErrors } from '#shared/utils/validation'
 
-function errorsOf(schema: z.ZodType, value: unknown) {
+function errorsOf(schema: z.ZodMiniType, value: unknown) {
   const result = schema.safeParse(value)
 
   return result.success ? {} : fieldErrors(result.error)
@@ -13,8 +13,7 @@ describe('fieldErrors', () => {
     const schema = z.object({
       name: z
         .string()
-        .min(2, 'Too short')
-        .regex(/^[A-Z]/, 'Start big'),
+        .check(z.minLength(2, 'Too short'), z.regex(/^[A-Z]/, 'Start big')),
       size: z.number('Enter a number'),
     })
 
@@ -33,7 +32,7 @@ describe('fieldErrors', () => {
   it('puts a problem with the whole form under form', () => {
     const schema = z
       .object({ from: z.number(), to: z.number() })
-      .refine(range => range.from < range.to, 'Start before the end')
+      .check(z.refine(range => range.from < range.to, 'Start before the end'))
 
     expect(errorsOf(schema, { from: 2, to: 1 })).toEqual({
       form: 'Start before the end',

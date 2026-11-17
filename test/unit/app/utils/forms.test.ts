@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { z } from 'zod'
+import { z } from 'zod/mini'
 import {
   coffeeFormSteps,
   coffeeFormValues,
@@ -12,9 +12,9 @@ import {
 
 const schema = zodSchema(
   z.object({
-    name: z.string().trim().min(1, 'Give it a name'),
-    size: z.number('Enter a size').positive('Too small'),
-    tags: z.array(z.string().min(1, 'Empty tag')),
+    name: z.string().check(z.trim(), z.minLength(1, 'Give it a name')),
+    size: z.number('Enter a size').check(z.positive('Too small')),
+    tags: z.array(z.string().check(z.minLength(1, 'Empty tag'))),
   }),
 )
 
@@ -74,7 +74,7 @@ describe('coffeeFormSteps', () => {
 
     expect(new Set(fields).size).toBe(fields.length)
     expect(fields.toSorted()).toEqual(
-      Object.keys(newCoffeeSchema.in.shape).toSorted(),
+      Object.keys(newCoffeeSchema._zod.def.in.shape).toSorted(),
     )
   })
 

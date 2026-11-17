@@ -1,4 +1,4 @@
-import type { z } from 'zod'
+import type { z } from 'zod/mini'
 import type { filterLabelsSchema } from '../utils/schemas'
 
 export type FilterLabelSearch = z.output<typeof filterLabelsSchema>
