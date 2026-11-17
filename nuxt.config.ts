@@ -19,6 +19,7 @@ export default defineNuxtConfig({
     '@maizzle/nuxt',
     '@sentry/nuxt/module',
     'c15t/vue',
+    'nuxt-security',
   ],
 
   future: { compatibilityVersion: 5 },
@@ -97,6 +98,29 @@ export default defineNuxtConfig({
     authToken: process.env.SENTRY_AUTH_TOKEN,
     release: { name: process.env.SENTRY_RELEASE },
     sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  },
+
+  security: {
+    headers: {
+      contentSecurityPolicy: {
+        'img-src': [
+          "'self'",
+          'data:',
+          'blob:',
+          ...(photoHost ? [`https://${photoHost}`] : []),
+        ],
+        'worker-src': ["'self'"],
+        'upgrade-insecure-requests': Boolean(process.env.VERCEL),
+      },
+      crossOriginEmbedderPolicy: false,
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      strictTransportSecurity: false,
+    },
+    rateLimiter: false,
+    xssValidator: false,
+    corsHandler: false,
+    removeLoggers: false,
+    sri: false,
   },
 
   c15t: {
@@ -184,9 +208,8 @@ export default defineNuxtConfig({
   fonts: {
     defaults: { subsets: ['latin', 'latin-ext'] },
     families: [
-      { name: 'Inter', weights: [400, 600, 700] },
-      { name: 'Space Mono', weights: [400, 700], styles: ['normal', 'italic'] },
-      { name: 'Instrument Serif', styles: ['normal', 'italic'] },
+      { name: 'Inter', weights: [400, 600, 700], styles: ['normal'] },
+      { name: 'Space Mono', weights: [400, 700], styles: ['normal'] },
     ],
   },
 

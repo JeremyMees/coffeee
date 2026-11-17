@@ -2,7 +2,7 @@ import type { GoogleProfile } from 'better-auth/social-providers'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Email } from '#server/types/email'
 import { user as userTable } from '#server/db/schemas'
-import { createAuth, useAuth } from '#server/utils/auth'
+import { authHostsFor, createAuth, useAuth } from '#server/utils/auth'
 import {
   createInviteLink,
   inviteEmail,
@@ -507,6 +507,43 @@ describe('signing up from a shelf invite', () => {
     expect(await listShelves(db, user.id)).toContainEqual(
       expect.objectContaining({ id: home.id }),
     )
+  })
+})
+
+describe('the hosts auth trusts', () => {
+  it('trusts only the Coffeee domains in production', () => {
+    expect(
+      authHostsFor({
+        VERCEL_ENV: 'production',
+        VERCEL_URL: 'coffeee-abc123-lilmees.vercel.app',
+      }),
+    ).toEqual(['www.coffeee.app', 'coffeee.app'])
+  })
+
+  it('also trusts its own deployment in a preview', () => {
+    expect(
+      authHostsFor({
+        VERCEL_ENV: 'preview',
+        VERCEL_URL: 'coffeee-abc123-lilmees.vercel.app',
+        VERCEL_BRANCH_URL: 'coffeee-git-a-branch-lilmees.vercel.app',
+      }),
+    ).toEqual([
+      'www.coffeee.app',
+      'coffeee.app',
+      'coffeee-abc123-lilmees.vercel.app',
+      'coffeee-git-a-branch-lilmees.vercel.app',
+    ])
+  })
+
+  it('leaves out a preview address Vercel did not set', () => {
+    expect(authHostsFor({ VERCEL_ENV: 'preview', VERCEL_URL: '' })).toEqual([
+      'www.coffeee.app',
+      'coffeee.app',
+    ])
+  })
+
+  it('trusts only the local machine away from Vercel', () => {
+    expect(authHostsFor({})).toEqual(['localhost:*', '127.0.0.1:*'])
   })
 })
 

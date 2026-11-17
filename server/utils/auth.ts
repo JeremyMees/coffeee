@@ -12,13 +12,26 @@ import { sendEmail } from '#server/utils/email'
 import { claimInvites, joinInvitedShelves } from '#server/utils/invites'
 import { createShelf, shelfNameFor } from '#server/utils/shelves'
 
-const hosts = [
-  'localhost:*',
-  '127.0.0.1:*',
-  'coffeee-*.vercel.app',
-  'www.coffeee.app',
-  'coffeee.app',
-]
+const productionHosts = ['www.coffeee.app', 'coffeee.app']
+const localHosts = ['localhost:*', '127.0.0.1:*']
+
+export function authHostsFor(env: Record<string, string | undefined>) {
+  if (env.VERCEL_ENV === 'production') return productionHosts
+
+  if (env.VERCEL_ENV === 'preview') {
+    const deployed = [env.VERCEL_URL, env.VERCEL_BRANCH_URL].filter(
+      (host): host is string => Boolean(host),
+    )
+
+    return [...productionHosts, ...deployed]
+  }
+
+  return localHosts
+}
+
+function originOf(host: string) {
+  return `${localHosts.includes(host) ? 'http' : 'https'}://${host}`
+}
 
 async function inviteTokenFromSignUp(context: GenericEndpointContext | null) {
   const state = await getOAuthState().catch(() => null)
@@ -29,16 +42,12 @@ async function inviteTokenFromSignUp(context: GenericEndpointContext | null) {
 }
 
 export function createAuth(config: AuthConfig) {
+  const hosts = authHostsFor(process.env)
+
   return betterAuth({
     secret: config.secret,
     baseURL: { allowedHosts: hosts, fallback: config.productionUrl },
-    trustedOrigins: [
-      'http://localhost:*',
-      'http://127.0.0.1:*',
-      'https://coffeee-*.vercel.app',
-      'https://www.coffeee.app',
-      'https://coffeee.app',
-    ],
+    trustedOrigins: hosts.map(originOf),
     database: drizzleAdapter(config.db, { provider: 'pg', schema }),
     emailAndPassword: {
       enabled: true,
