@@ -17,7 +17,8 @@ exactly one. _Avoid_: Brand, shop, seller
 
 **Purchase**: One bag of a coffee that was bought, with its own purchase date,
 roast date, size, price and stock status. Rebuying a coffee adds a purchase; it
-never adds a coffee. _Avoid_: Bag, order, rebuy, duplicate
+never adds a coffee, so adding a coffee the catalog already has offers to add a
+purchase to it instead. _Avoid_: Bag, order, rebuy, duplicate
 
 **In stock**: A purchase whose bag is not finished yet.
 

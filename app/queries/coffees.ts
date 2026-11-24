@@ -27,6 +27,28 @@ export function useShelfCoffee(
   })
 }
 
+export function useCoffeeMatch(
+  shelfId: MaybeRefOrGetter<string>,
+  search: MaybeRefOrGetter<CoffeeMatchSearch>,
+) {
+  const request = useRequestFetch()
+
+  return useQuery({
+    queryKey: computed(() =>
+      queryKeys.coffeeMatch(toValue(shelfId), toValue(search)),
+    ),
+    queryFn: () =>
+      request(`/api/shelves/${toValue(shelfId)}/coffee-match`, {
+        query: toValue(search),
+      }),
+    enabled: computed(() => {
+      const { name, roaster } = toValue(search)
+
+      return import.meta.client && name !== '' && roaster !== ''
+    }),
+  })
+}
+
 export function useCoffeeVerdict(coffeeId: MaybeRefOrGetter<string>) {
   const request = useRequestFetch()
 

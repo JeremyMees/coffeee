@@ -423,6 +423,11 @@ function withBothAltitudes<Described extends DescribedCoffee>(
 
 export const coffeeDetailsSchema = describedCoffee(z.object(coffeeDetailsShape))
 
+export const coffeeMatchSchema = z.object({
+  name: coffeeDetailsShape.name,
+  roaster: coffeeDetailsShape.roaster,
+})
+
 const purchaseShape = {
   purchasedOn: z.iso.date({ error: 'Enter the date you bought it' }),
   roastedOn: preprocess(

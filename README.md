@@ -12,6 +12,10 @@ ones are easy to find and buy again.
 
 - **Stock**: the bags you have open or waiting, how fresh they are and when they
   were roasted.
+- **Adding a coffee**: the form spots a coffee that is already in the catalog or
+  on your shelf as soon as you type its name and roaster, and offers to add a
+  bag to it instead of filling in its details again
+  ([ADR 0015](docs/adr/0015-adding-a-known-coffee-adds-a-bag.md)).
 - **Library**: the shared catalog of coffees everyone added, with community
   ratings. Narrow it to the coffees you bought to see your prices, purchase
   dates and rating, in a grid or a sortable table.

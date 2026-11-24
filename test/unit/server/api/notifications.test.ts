@@ -108,9 +108,9 @@ async function setup() {
   const home = await createShelf(db, { name: 'Home', ownerId: sarah.user.id })
   await db.insert(shelfMember).values({ shelfId: home.id, userId: tom.user.id })
 
-  async function addCoffee(headers = sarah.headers) {
+  async function addCoffee(headers = sarah.headers, name = 'Ayele Fulasa') {
     const response = await post(`/api/shelves/${home.id}/coffees`, headers, {
-      name: 'Ayele Fulasa',
+      name,
       roaster: 'Square Mile',
       roastLevel: 'light',
       roastedFor: 'filter',
@@ -156,9 +156,9 @@ describe('reading notifications', () => {
   })
 
   it('counts unread notifications until they are marked read', async () => {
-    const { tom, addCoffee } = await setup()
+    const { sarah, tom, addCoffee } = await setup()
     await addCoffee()
-    await addCoffee()
+    await addCoffee(sarah.headers, 'Halo')
 
     const before = await request('/api/me/notifications/unread', {
       headers: tom.headers,

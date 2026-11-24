@@ -18,6 +18,8 @@ import removePhotoHandler from '#server/api/coffees/[coffeeId]/photo.delete'
 import replacePhotoHandler from '#server/api/coffees/[coffeeId]/photo.put'
 import photoHandler from '#server/api/photos/[...pathname].get'
 import addCoffeeHandler from '#server/api/shelves/[shelfId]/coffees/index.post'
+import buyAgainHandler from '#server/api/shelves/[shelfId]/coffees/[coffeeId]/purchases/index.post'
+import coffeeMatchHandler from '#server/api/shelves/[shelfId]/coffee-match.get'
 import catalogFilterHandler from '#server/api/shelves/[shelfId]/catalog/[filter].get'
 import catalogHandler from '#server/api/shelves/[shelfId]/catalog/index.get'
 import libraryFilterHandler from '#server/api/shelves/[shelfId]/library/[filter].get'
@@ -71,6 +73,8 @@ function request(path: string, init: RequestInit = {}) {
     .get('/api/shelves/:shelfId/catalog', catalogHandler)
     .get('/api/shelves/:shelfId/catalog/:filter', catalogFilterHandler)
     .post('/api/shelves/:shelfId/coffees', addCoffeeHandler)
+    .post('/api/shelves/:shelfId/coffees/:coffeeId/purchases', buyAgainHandler)
+    .get('/api/shelves/:shelfId/coffee-match', coffeeMatchHandler)
     .get('/api/coffees/:coffeeId', coffeeHandler)
     .get('/api/coffees/:coffeeId/verdict', coffeeVerdictHandler)
     .get('/api/coffees/:coffeeId/reviews', coffeeReviewsHandler)
@@ -118,6 +122,32 @@ function add(shelfId: string, headers: Headers, body: unknown = coffee) {
 }
 
 describe('adding a coffee to a shelf', () => {
+  it('refuses a coffee the catalog already has and says to add a bag instead', async () => {
+    const sarah = await member()
+    const tom = await member()
+    await add(sarah.shelf.id, sarah.headers)
+
+    const response = await add(tom.shelf.id, tom.headers, {
+      ...coffee,
+      name: 'ayele-fulasa',
+      roaster: 'square mile',
+    })
+    const body = await response.json()
+    const message =
+      'Square Mile already has Ayele Fulasa in the catalog. Add a bag to it instead.'
+
+    expect(response.status).toBe(409)
+    expect(body.statusMessage).toBe(message)
+    expect(body.data).toEqual({ errors: { name: message } })
+    expect(
+      await (
+        await request(`/api/shelves/${tom.shelf.id}/stock`, {
+          headers: tom.headers,
+        })
+      ).json(),
+    ).toEqual([])
+  })
+
   it('adds it to the current stock of that shelf', async () => {
     const { shelf, headers } = await member()
 
@@ -1208,7 +1238,14 @@ describe('deleting a coffee', () => {
     const sarah = await member()
     const tom = await member()
     const coffeeId = await addedBy(sarah)
-    await add(tom.shelf.id, tom.headers)
+    await request(
+      `/api/shelves/${tom.shelf.id}/coffees/${coffeeId}/purchases`,
+      {
+        method: 'POST',
+        headers: tom.headers,
+        body: JSON.stringify({ purchasedOn: '2026-11-02' }),
+      },
+    )
 
     const shown = await request(`/api/coffees/${coffeeId}`, {
       headers: sarah.headers,
@@ -1248,5 +1285,96 @@ describe('deleting a coffee', () => {
     const sarah = await member()
 
     expect((await remove('nope', sarah.headers)).status).toBe(404)
+  })
+})
+
+describe('finding a coffee the catalog already has', () => {
+  function match(
+    shelfId: string,
+    headers: Headers,
+    name: string,
+    roaster: string,
+  ) {
+    const query = new URLSearchParams({ name, roaster })
+
+    return request(`/api/shelves/${shelfId}/coffee-match?${query}`, { headers })
+  }
+
+  it('finds it whatever the case, spacing or hyphens', async () => {
+    const sarah = await member()
+    const tom = await member()
+    await add(sarah.shelf.id, sarah.headers)
+
+    const response = await match(
+      tom.shelf.id,
+      tom.headers,
+      'ayele-fulasa',
+      ' square  mile ',
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      coffee: {
+        id: expect.any(String),
+        name: 'Ayele Fulasa',
+        roaster: 'Square Mile',
+        photoUrl: null,
+        onShelf: false,
+        inStock: false,
+      },
+    })
+  })
+
+  it('says whether it is on the shelf and still in stock', async () => {
+    const sarah = await member()
+    await add(sarah.shelf.id, sarah.headers)
+
+    const response = await match(
+      sarah.shelf.id,
+      sarah.headers,
+      'Ayele Fulasa',
+      'Square Mile',
+    )
+
+    expect((await response.json()).coffee).toMatchObject({
+      onShelf: true,
+      inStock: true,
+    })
+  })
+
+  it('finds nothing for a new coffee or the same name at another roaster', async () => {
+    const sarah = await member()
+    await add(sarah.shelf.id, sarah.headers)
+
+    const responses = await Promise.all([
+      match(sarah.shelf.id, sarah.headers, 'Halo', 'Square Mile'),
+      match(sarah.shelf.id, sarah.headers, 'Ayele Fulasa', 'April'),
+    ])
+
+    expect(
+      await Promise.all(responses.map(response => response.json())),
+    ).toEqual([{ coffee: null }, { coffee: null }])
+  })
+
+  it('asks for both a name and a roaster', async () => {
+    const sarah = await member()
+
+    const response = await match(sarah.shelf.id, sarah.headers, ' ', '')
+
+    expect(response.status).toBe(400)
+  })
+
+  it('keeps it to members of the shelf', async () => {
+    const sarah = await member()
+    const tom = await member()
+
+    const response = await match(
+      sarah.shelf.id,
+      tom.headers,
+      'Ayele Fulasa',
+      'Square Mile',
+    )
+
+    expect(response.status).toBe(404)
   })
 })

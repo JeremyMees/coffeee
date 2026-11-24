@@ -13,6 +13,7 @@ const props = withDefaults(
 )
 
 const open = defineModel<boolean>('open', { default: false })
+const emit = defineEmits<{ saved: [] }>()
 
 const { mutateAsync: buyAgain } = useBuyAgain()
 const { mutateAsync: updatePurchase } = usePurchaseUpdate()
@@ -26,11 +27,17 @@ const copy = computed(() =>
         description: 'Fix the dates, size or price of this bag.',
         submit: 'Save changes',
       }
-    : {
-        title: 'Buy again',
-        description: 'Another bag, filled in from the last one.',
-        submit: 'Add purchase',
-      },
+    : props.purchases.length === 0
+      ? {
+          title: 'Add a bag',
+          description: 'Your first bag of this coffee on this shelf.',
+          submit: 'Add purchase',
+        }
+      : {
+          title: 'Buy again',
+          description: 'Another bag, filled in from the last one.',
+          submit: 'Add purchase',
+        },
 )
 
 function startValues() {
@@ -67,6 +74,7 @@ const save = handleSubmit(async purchase => {
     }
 
     open.value = false
+    emit('saved')
   } catch (error) {
     const { fields, message } = serverErrors(error)
 

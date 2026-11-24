@@ -148,13 +148,13 @@ async function setup() {
   const home = await createShelf(db, { name: 'Home', ownerId: sarah.user.id })
   await db.insert(shelfMember).values({ shelfId: home.id, userId: tom.user.id })
 
-  async function addCoffee(headers = sarah.headers) {
+  async function addCoffee(headers = sarah.headers, name = 'Ayele Fulasa') {
     const response = await send(
       'POST',
       `/api/shelves/${home.id}/coffees`,
       headers,
       {
-        name: 'Ayele Fulasa',
+        name,
         roaster: 'Square Mile',
         roastLevel: 'light',
         roastedFor: 'filter',
@@ -306,9 +306,9 @@ describe('pushing notifications', () => {
     await addCoffee()
     await markNotificationsRead(db, tom.user.id)
 
-    await addCoffee()
-    await addCoffee()
-    await addCoffee(tom.headers)
+    await addCoffee(sarah.headers, 'Halo')
+    await addCoffee(sarah.headers, 'Kiambu')
+    await addCoffee(tom.headers, 'Red Brick')
 
     expect(
       current.pushed.map(push => [push.endpoint, push.message.unread]),

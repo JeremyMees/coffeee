@@ -35,6 +35,12 @@ export const queryKeys = {
     'filter-labels',
     ids,
   ],
+  coffeeMatch: (shelfId: string, search: CoffeeMatchSearch) => [
+    'shelves',
+    shelfId,
+    'coffee-match',
+    search,
+  ],
   shelfCoffee: (shelfId: string, coffeeId: string) => [
     'shelves',
     shelfId,

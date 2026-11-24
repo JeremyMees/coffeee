@@ -6,6 +6,7 @@ import {
   useCoffee,
   useCoffeeCreate,
   useCoffeeDelete,
+  useCoffeeMatch,
   useCoffeePhotoRemoval,
   useCoffeePhotoUpdate,
   useCoffeeShelves,
@@ -104,6 +105,34 @@ describe('useShelfCoffee', () => {
     await suspense()
 
     expect(data.value).toMatchObject({ id: ayele.id, name: 'Ayele Fulasa' })
+  })
+})
+
+describe('useCoffeeMatch', () => {
+  it('finds a coffee the catalog already has', async () => {
+    const { data, suspense } = await runOn('/', () =>
+      useCoffeeMatch(sarah.shelf.id, {
+        name: 'ayele fulasa',
+        roaster: 'Square Mile',
+      }),
+    )
+
+    await suspense()
+
+    expect(data.value?.coffee).toMatchObject({
+      id: ayele.id,
+      onShelf: true,
+      inStock: true,
+    })
+  })
+
+  it('waits for both a name and a roaster', async () => {
+    const { fetchStatus, data } = await runOn('/', () =>
+      useCoffeeMatch(sarah.shelf.id, { name: 'Ayele Fulasa', roaster: '' }),
+    )
+
+    expect(fetchStatus.value).toBe('idle')
+    expect(data.value).toBeUndefined()
   })
 })
 

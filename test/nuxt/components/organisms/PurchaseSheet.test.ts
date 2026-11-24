@@ -93,6 +93,7 @@ describe('PurchaseSheet', () => {
     await vi.waitFor(() =>
       expect(sheet.emitted('update:open')).toEqual([[false]]),
     )
+    expect(sheet.emitted('saved')).toEqual([[]])
     const [added] = await stored()
     expect(added).toMatchObject({
       purchasedOn: localDate(),
@@ -101,6 +102,26 @@ describe('PurchaseSheet', () => {
       priceCents: 1650,
     })
     expect(await stored()).toHaveLength(3)
+  })
+
+  it('adds the first bag of a coffee new to the shelf', async () => {
+    const tom = await scenario.member('Tom')
+    const other = await scenario.coffee(tom.shelf, { name: 'Halo' })
+    purchases = []
+    coffeeId = other.id
+    const sheet = await openSheet()
+
+    expect(byTestId('form-sheet-title')!.textContent).toContain('Add a bag')
+    expect(inputValue('coffee-size')).toBe('')
+
+    await submit('purchase-form')
+
+    await vi.waitFor(() => expect(sheet.emitted('saved')).toEqual([[]]))
+    expect(
+      (await stored()).filter(
+        bag => bag.purchasedOn === localDate() && bag.sizeGrams === null,
+      ),
+    ).toHaveLength(1)
   })
 
   it('edits a purchase from its own details', async () => {

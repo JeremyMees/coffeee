@@ -5,6 +5,10 @@ export type ShelfCoffee =
 
 export type SharedCoffee = InternalApi['/api/coffees/:coffeeId']['get']
 
+export type CoffeeMatch = NonNullable<
+  InternalApi['/api/shelves/:shelfId/coffee-match']['get']['coffee']
+>
+
 export type CoffeeShelf =
   InternalApi['/api/coffees/:coffeeId/shelves']['get'][number]
 

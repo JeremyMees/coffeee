@@ -12,6 +12,7 @@ import {
   currentPath,
   daysAgo,
   forgetLastShelf,
+  inputValue,
   pickDate,
   pickFile,
   pickOrigin,
@@ -293,6 +294,72 @@ describe('AddCoffeeSheet', () => {
       flavorNotes: [],
     })
     expect(names(added.processes)).toEqual(['Thermal shock'])
+  })
+
+  it('adds a bag to a coffee the catalog already has instead of a new one', async () => {
+    await openSheet(`${shelfPath(sarah.shelf)}/library`)
+
+    await type('coffee-name', 'hambela lot')
+    await pickRoaster('square', 'Square Mile')
+    await vi.waitFor(() =>
+      expect(byTestId('coffee-match')!.textContent).toContain(
+        'Already in the catalog',
+      ),
+    )
+    await click('coffee-match-pick')
+    await waitForSheet('purchase-form')
+
+    expect(useAddCoffee().value).toBe(false)
+    expect(byTestId('form-sheet-title')!.textContent).toContain('Add a bag')
+    await type('coffee-size', '200')
+    await submit('purchase-form')
+
+    await vi.waitFor(async () =>
+      expect(await bagsOnShelf()).toEqual([
+        expect.objectContaining({
+          coffee: 'Hambela Lot',
+          roaster: 'Square Mile',
+          purchasedOn: localDate(),
+          sizeGrams: 200,
+        }),
+      ]),
+    )
+    expect(currentPath()).toBe(shelfPath(sarah.shelf))
+  })
+
+  it('buys again a coffee that is still in stock, filled in from its last bag', async () => {
+    await scenario.coffee(sarah.shelf, { sizeGrams: 340 })
+    await openSheet()
+
+    await type('coffee-name', 'Ayele Fulasa')
+    await pickRoaster('square', 'Square Mile')
+    await vi.waitFor(() =>
+      expect(byTestId('coffee-match')!.textContent).toContain(
+        'Already on your shelf',
+      ),
+    )
+    await click('coffee-match-pick')
+    await waitForSheet('purchase-form')
+
+    expect(byTestId('form-sheet-title')!.textContent).toContain('Buy again')
+    expect(inputValue('coffee-size')).toBe('340')
+  })
+
+  it('refuses a coffee the catalog already has and goes back to its name', async () => {
+    await openSheet()
+
+    await fillRequired('Hambela Lot')
+    await addCoffee()
+
+    const message =
+      'Square Mile already has Hambela Lot in the catalog. Add a bag to it instead.'
+    await vi.waitFor(() => {
+      expect(sheetText()).toContain(message)
+      expect(currentStep()).toBe('add-coffee-step-coffee')
+    })
+    expect(sheetText()).toContain('Already in the catalog')
+    expect(await bagsOnShelf()).toEqual([])
+    expect(useAddCoffee().value).toBe(true)
   })
 
   it('adds nothing when there is no shelf to add to', async () => {

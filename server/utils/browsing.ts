@@ -55,6 +55,15 @@ export function boughtOn(shelfId: string) {
   )`
 }
 
+export function inStockOn(shelfId: string) {
+  return sql<boolean>`exists (
+    select 1 from ${purchase}
+    where ${purchase.shelfId} = ${shelfId}
+      and ${purchase.coffeeId} = ${coffee.id}
+      and ${purchase.finishedAt} is null
+  )`
+}
+
 export function coffeesBoughtOn(db: Database, shelfId: string) {
   return db
     .select({ coffeeId: purchase.coffeeId })

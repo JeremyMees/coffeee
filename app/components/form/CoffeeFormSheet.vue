@@ -135,6 +135,9 @@ const save = handleSubmit(
             :current-url="photoUrl"
           />
         </template>
+        <template v-if="$slots.match" #match>
+          <slot name="match" />
+        </template>
         <template #error>
           <Alert
             v-if="formError"

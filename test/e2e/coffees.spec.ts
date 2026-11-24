@@ -199,7 +199,7 @@ test('adds a coffee with its first bag and shows it in Stock', async ({
   )
 })
 
-test('adds a purchase instead of a duplicate when the coffee exists', async ({
+test('offers another bag instead of a duplicate when the coffee exists', async ({
   page,
   member,
 }) => {
@@ -207,11 +207,19 @@ test('adds a purchase instead of a duplicate when the coffee exists', async ({
   await page.goto(`/shelves/${member.shelfId}`)
 
   await addCoffee(page, { name: 'Ayele Fulasa', roaster, newRoaster: true })
-  await addCoffee(page, {
-    name: 'ayele-fulasa',
-    roaster: roaster.toUpperCase(),
-    newRoaster: false,
-  })
+  await page.getByTestId('page-add-coffee').click()
+  const sheet = page.getByTestId('add-coffee-sheet')
+  await sheet.getByTestId('coffee-name').fill('ayele-fulasa')
+  await pickRoaster(page, roaster, false)
+
+  await expect(sheet.getByTestId('coffee-match')).toContainText(
+    'Already on your shelf',
+  )
+  await sheet.getByTestId('coffee-match-pick').click()
+  const bag = page.getByTestId('purchase-sheet')
+  await expect(bag.getByTestId('coffee-size')).toHaveValue('250')
+  await bag.getByTestId('purchase-submit').click()
+  await expect(bag).toBeHidden()
 
   await expect(page.getByTestId('coffee-card')).toHaveCount(1)
 

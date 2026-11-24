@@ -1,14 +1,16 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { coffee, roaster } from '#server/db/schemas'
+import { coffee, purchase, roaster } from '#server/db/schemas'
 import type { CatalogCoffee } from '#server/types/catalog-entries'
 import {
   addCatalogCoffee,
   changeCatalog,
+  findCatalogCoffee,
   findOrCreateRoaster,
   findTakenName,
 } from '#server/utils/catalog-entries'
 import { descriptionOf } from '#server/utils/descriptions'
+import { createShelf } from '#server/utils/shelves'
 import { storages } from '#test/support/nitro'
 import { createTestDatabase, createTestUser } from '#test/support/database'
 
@@ -103,6 +105,85 @@ describe('findOrCreateRoaster', () => {
     expect(
       await findOrCreateRoaster(db, { name: 'la cabra ', createdBy: sarah.id }),
     ).toEqual({ roaster: first.roaster, created: false })
+  })
+})
+
+describe('findCatalogCoffee', () => {
+  async function catalogWithAyele() {
+    const { db, sarah } = await setup()
+    const shelf = await createShelf(db, { name: 'Home', ownerId: sarah.id })
+    const { coffee: added } = await addCatalogCoffee(db, {
+      userId: sarah.id,
+      details: ayele,
+      whenFound: 'keep',
+    })
+
+    return { db, sarah, shelf, coffeeId: added.id }
+  }
+
+  function bag(input: { shelfId: string; coffeeId: string; userId: string }) {
+    return {
+      shelfId: input.shelfId,
+      coffeeId: input.coffeeId,
+      addedBy: input.userId,
+      purchasedOn: '2026-11-01',
+    }
+  }
+
+  it('finds a coffee by roaster and name, whatever their spelling', async () => {
+    const { db, shelf, coffeeId } = await catalogWithAyele()
+
+    const found = await findCatalogCoffee(db, {
+      shelfId: shelf.id,
+      roaster: 'SQUARE-mile',
+      name: 'Ayelé  Fulasa',
+    })
+
+    expect(found).toEqual({
+      id: coffeeId,
+      name: 'Ayele Fulasa',
+      roaster: 'Square Mile',
+      photoUrl: null,
+      onShelf: false,
+      inStock: false,
+    })
+  })
+
+  it('finds nothing for another name or roaster', async () => {
+    const { db, shelf } = await catalogWithAyele()
+
+    expect(
+      await findCatalogCoffee(db, {
+        shelfId: shelf.id,
+        roaster: 'Square Mile',
+        name: 'Halo',
+      }),
+    ).toBeNull()
+    expect(
+      await findCatalogCoffee(db, {
+        shelfId: shelf.id,
+        roaster: 'April',
+        name: 'Ayele Fulasa',
+      }),
+    ).toBeNull()
+  })
+
+  it('tells a bag in stock from one that was finished', async () => {
+    const { db, sarah, shelf, coffeeId } = await catalogWithAyele()
+    const search = {
+      shelfId: shelf.id,
+      roaster: 'Square Mile',
+      name: 'Ayele Fulasa',
+    }
+    const owned = { shelfId: shelf.id, coffeeId, userId: sarah.id }
+
+    await db.insert(purchase).values({ ...bag(owned), finishedAt: new Date() })
+    const finished = await findCatalogCoffee(db, search)
+    await db.insert(purchase).values(bag(owned))
+    const stocked = await findCatalogCoffee(db, search)
+
+    expect(finished).toMatchObject({ onShelf: true, inStock: false })
+    expect(stocked).toMatchObject({ onShelf: true, inStock: true })
   })
 })
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { asc, eq } from 'drizzle-orm'
 import { useProfileStats } from '~/queries/account'
 import { useStock } from '~/queries/coffees'
@@ -64,6 +64,20 @@ const bag = {
   sizeGrams: 250,
   price: 16.5,
 }
+
+describe('useShelfPurchases', () => {
+  it('waits until the purchases are wanted', async () => {
+    const wanted = ref(false)
+    const { fetchStatus, data } = await runOn('/', () =>
+      useShelfPurchases(target.shelfId, target.coffeeId, wanted),
+    )
+
+    expect(fetchStatus.value).toBe('idle')
+    wanted.value = true
+
+    await vi.waitFor(() => expect(data.value).toHaveLength(1))
+  })
+})
 
 describe('useBuyAgain', () => {
   it('adds a purchase and shows it on the coffee and in the stats', async () => {

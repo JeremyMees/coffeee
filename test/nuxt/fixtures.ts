@@ -166,6 +166,7 @@ export function pickMulti(testId: string, search: string, text: string) {
 export async function mountInForm(
   component: Component,
   initialValues: Record<string, unknown> = {},
+  props: Record<string, unknown> = {},
 ) {
   let form!: ReturnType<typeof useForm>
 
@@ -188,7 +189,7 @@ export async function mountInForm(
         },
       })
 
-      return () => h('form', [h(component)])
+      return () => h('form', [h(component, props)])
     },
   })
 

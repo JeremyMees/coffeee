@@ -1,4 +1,5 @@
 import { and, eq, ne, sql } from 'drizzle-orm'
+import type { CoffeeMatchSearch } from '#shared/types/coffee'
 import type { RoasterDetails } from '#shared/types/roasters'
 import { nameKey } from '#shared/utils/names'
 import type {
@@ -9,6 +10,7 @@ import type {
 import type { Database } from '#server/types/database'
 import type { SharedList } from '#server/types/lists'
 import { coffee, roaster } from '#server/db/schemas'
+import { boughtOn, inStockOn } from '#server/utils/browsing'
 import { coffeeColumns } from '#server/utils/coffees'
 import { describeCoffee } from '#server/utils/descriptions'
 import { withFreshId } from '#server/utils/ids'
@@ -48,6 +50,31 @@ export async function findTakenName(
     )
 
   return taken
+}
+
+export async function findCatalogCoffee(
+  db: Database,
+  input: CoffeeMatchSearch & { shelfId: string },
+) {
+  const [found] = await db
+    .select({
+      id: coffee.id,
+      name: coffee.name,
+      roaster: roaster.name,
+      photoUrl: coffee.photoUrl,
+      onShelf: boughtOn(input.shelfId),
+      inStock: inStockOn(input.shelfId),
+    })
+    .from(coffee)
+    .innerJoin(roaster, eq(roaster.id, coffee.roasterId))
+    .where(
+      and(
+        eq(roaster.nameKey, nameKey(input.roaster)),
+        eq(coffee.nameKey, nameKey(input.name)),
+      ),
+    )
+
+  return found ?? null
 }
 
 export async function findOrCreateRoaster(

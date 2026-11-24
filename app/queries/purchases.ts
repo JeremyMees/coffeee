@@ -27,6 +27,7 @@ function purchasePath(input: {
 export function useShelfPurchases(
   shelfId: MaybeRefOrGetter<string>,
   coffeeId: MaybeRefOrGetter<string>,
+  wanted: MaybeRefOrGetter<boolean> = true,
 ) {
   const request = useRequestFetch()
 
@@ -38,7 +39,7 @@ export function useShelfPurchases(
       request(
         `/api/shelves/${toValue(shelfId)}/coffees/${toValue(coffeeId)}/purchases`,
       ),
-    enabled: import.meta.client,
+    enabled: computed(() => import.meta.client && toValue(wanted)),
   })
 }
 

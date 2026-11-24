@@ -3,7 +3,10 @@ import { defineComponent, h, ref } from 'vue'
 import CoffeeFormSteps from '~/components/form/CoffeeFormSteps.vue'
 import { byTestId, click, mountInForm } from '../../fixtures'
 
-async function mountSteps(withFirstBag: boolean) {
+async function mountSteps(
+  withFirstBag: boolean,
+  slots: Record<string, () => unknown> = {},
+) {
   const step = ref(1)
   const mounted = await mountInForm(
     defineComponent({
@@ -16,7 +19,7 @@ async function mountSteps(withFirstBag: boolean) {
             steps: coffeeFormSteps(withFirstBag),
             prefix: 'coffee',
           },
-          { submit: () => 'Done' },
+          { submit: () => 'Done', ...slots },
         ),
     }),
   )
@@ -35,6 +38,16 @@ describe('CoffeeFormSteps', () => {
     expect(byTestId('coffee-steps')!.textContent).toContain('Coffee')
     expect(byTestId('coffee-steps')!.textContent).toContain('First bag')
     expect([1, 2, 3, 4].map(shown)).toEqual([true, false, false, false])
+  })
+
+  it('shows what matches the coffee under its name and roaster', async () => {
+    await mountSteps(true, {
+      match: () => h('p', { 'data-testid': 'matched' }, 'Already there'),
+    })
+
+    expect(byTestId('coffee-pane-1')!.lastElementChild).toBe(
+      byTestId('matched'),
+    )
   })
 
   it('leaves out the first bag when it is not a step', async () => {

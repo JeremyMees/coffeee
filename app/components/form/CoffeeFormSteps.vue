@@ -76,6 +76,7 @@ const nextTitle = computed(() => props.steps[step.value]?.title)
     >
       <slot name="photo" />
       <CoffeeIdentityFields />
+      <slot name="match" />
     </FieldGroup>
     <FieldGroup
       v-show="step === 2"

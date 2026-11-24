@@ -4,7 +4,11 @@ import type {
   roastLevels,
 } from '../utils/coffee'
 import type { z } from 'zod/mini'
-import type { coffeeDetailsSchema, newCoffeeSchema } from '../utils/schemas'
+import type {
+  coffeeDetailsSchema,
+  coffeeMatchSchema,
+  newCoffeeSchema,
+} from '../utils/schemas'
 import type { OriginEntry } from './catalog'
 import type { OriginListField } from './origins'
 
@@ -23,6 +27,8 @@ export type DescribedCoffee = Record<OriginListField, OriginEntry[]> & {
 export type CoffeeDetails = z.output<typeof coffeeDetailsSchema>
 
 export type NewCoffee = z.output<typeof newCoffeeSchema>
+
+export type CoffeeMatchSearch = z.output<typeof coffeeMatchSchema>
 
 export type CoffeeDescription = Pick<
   CoffeeDetails,
