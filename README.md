@@ -103,3 +103,8 @@ an 80% coverage gate) and Playwright in GitHub Actions. A pull request gets its
 own Neon database branch and a Vercel preview; a push to `main` migrates the
 production database and deploys to production. See
 [ADR 0003](docs/adr/0003-deploy-from-github-actions.md).
+
+Bots are kept out with Vercel Firewall rules set in the dashboard: Bot
+Protection on, and a rule denying `*.php` and `/wp-*` paths. Signed-out page
+requests that get through are sent to sign in before any page renders; see
+[ADR 0014](docs/adr/0014-signed-out-visitors-skip-the-page-render.md).
