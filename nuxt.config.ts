@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import { blobHost } from './shared/utils/photos.ts'
+import { signedOutEdgeRoutes } from './shared/utils/sign-in.ts'
 
 const photoHost = blobHost(process.env)
 const description = 'Your coffee shelf, and every coffee you ever bought.'
@@ -125,6 +126,7 @@ export default defineNuxtConfig({
 
   nitro: {
     externals: { inline: ['xtend'] },
+    vercel: { config: { routes: signedOutEdgeRoutes() as never } },
     storage: {
       photos: { driver: 'fs', base: './.data/photos' },
     },

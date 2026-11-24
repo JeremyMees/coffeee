@@ -19,3 +19,36 @@ export function signInFor(fullPath: string): {
     query: fullPath === '/' ? {} : { redirect: fullPath },
   }
 }
+
+export const sessionCookie = '__Secure-better-auth.session_token'
+
+const skippedOnTheEdge = [
+  'api/',
+  '_',
+  ...publicPaths.map(path => path.slice(1)),
+]
+
+export function signedOutEdgeRoutes() {
+  const signedOut = [{ type: 'cookie', key: sessionCookie }]
+
+  return [
+    {
+      src: '^/$',
+      missing: signedOut,
+      status: 302,
+      headers: { Location: '/sign-in' },
+    },
+    {
+      src: `^/((?!${skippedOnTheEdge.join('|')})[^.]+)$`,
+      missing: signedOut,
+      status: 302,
+      headers: { Location: '/sign-in?redirect=/$1' },
+    },
+    {
+      src: '^/.+\\.php$',
+      missing: signedOut,
+      status: 302,
+      headers: { Location: '/sign-in' },
+    },
+  ]
+}

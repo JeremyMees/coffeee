@@ -23,7 +23,13 @@ browser carry the browser's trace and keep its decision, so our own requests are
 all still traced. Requests without one, mostly bots, are traced one time in ten,
 and Vercel's internal `/_vercel/ping` requests are never traced.
 
-Blocking bots before they reach the function at all is left to Vercel Firewall
-rules in the dashboard (Bot Protection, and denying `*.php` and `/wp-*`), as
-rate limiting already is
-([ADR 0012](0012-security-headers-from-nuxt-security.md)).
+Vercel's Firewall rules need a paid plan, so the same redirect also runs on
+Vercel's edge, before the function starts. `nitro.vercel.config.routes` adds
+routes to the build output that send requests without the
+`__Secure-better-auth.session_token` cookie from `/`, from any page path without
+a dot outside `/api/`, `/_` and the public pages, and from any `.php` path to
+`/sign-in`. That is the cookie name Better Auth uses on Vercel, where it runs in
+production mode. The edge keeps the path in `redirect` but drops the query
+string, which only matters for a signed-out `/?add=coffee` shortcut. Paths with
+a dot are left alone so static files like `/sw.js` are still served; the Nitro
+middleware covers the rest, and every host that is not Vercel.
