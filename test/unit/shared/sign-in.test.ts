@@ -51,8 +51,6 @@ describe('signedOutEdgeRoutes', () => {
       '/shelves/home-ab12/library',
       '/sign-in?redirect=/shelves/home-ab12/library',
     ],
-    ['/wp-admin/install.php', '/sign-in'],
-    ['/xmlrpc.php', '/sign-in'],
   ])('sends signed-out visitors from %s to %s', (path, location) => {
     expect(edgeRedirectFor(path)).toBe(location)
   })

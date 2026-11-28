@@ -44,11 +44,5 @@ export function signedOutEdgeRoutes() {
       status: 302,
       headers: { Location: '/sign-in?redirect=/$1' },
     },
-    {
-      src: '^/.+\\.php$',
-      missing: signedOut,
-      status: 302,
-      headers: { Location: '/sign-in' },
-    },
   ]
 }

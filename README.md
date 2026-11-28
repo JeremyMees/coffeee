@@ -141,7 +141,13 @@ own Neon database branch and a Vercel preview; a push to `main` migrates the
 production database and deploys to production. See
 [ADR 0003](docs/adr/0003-deploy-from-github-actions.md).
 
-Signed-out page requests, which are mostly bots, are sent to sign in by Vercel's
-edge before the function starts, and by a Nitro middleware before any page
-renders; see
-[ADR 0014](docs/adr/0014-signed-out-visitors-skip-the-page-render.md).
+The functions run in `fra1` (Frankfurt), next to the Neon database in AWS
+eu-central-1. That region is set in the Vercel dashboard under Settings →
+Functions, not in code.
+
+Vercel's edge answers bots before a function starts: known scanner paths get a
+`404`, the `sitewatch` crawler gets a `403`, and signed-out page requests are
+sent to sign in. A Nitro middleware does the same on every other host. See
+[ADR 0014](docs/adr/0014-signed-out-visitors-skip-the-page-render.md). The
+baseline these changes are measured against, and how to measure it again, is in
+[docs/research/performance-baseline.md](docs/research/performance-baseline.md).
