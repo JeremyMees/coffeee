@@ -66,6 +66,10 @@ NUXT_BETTER_AUTH_SECRET="any long random string"
 NUXT_ADMIN_EMAIL="you@example.com"
 ```
 
+`runtimeConfig` in `nuxt.config.ts` gives each value a zod schema. The server
+refuses to start without `NUXT_DATABASE_URL` and `NUXT_BETTER_AUTH_SECRET`; the
+other values default to an empty string.
+
 Then create the tables and start the app on
 [localhost:3000](http://localhost:3000):
 

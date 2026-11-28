@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import { blobHost } from './shared/utils/photos.ts'
 import { signedOutEdgeRoutes } from './shared/utils/sign-in.ts'
+import { z } from 'zod'
 
 const photoHost = blobHost(process.env)
 const description = 'Your coffee shelf, and every coffee you ever bought.'
@@ -29,6 +30,13 @@ export default defineNuxtConfig({
     viewTransition: true,
   },
 
+  $test: {
+    runtimeConfig: {
+      databaseUrl: '',
+      betterAuthSecret: 'a-test-secret-that-is-long-enough-to-use',
+    },
+  },
+
   $development: {
     nitro: { experimental: { tasks: true } },
   },
@@ -36,20 +44,22 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
-    databaseUrl: '',
-    betterAuthSecret: '',
-    productionUrl: '',
-    adminEmail: '',
-    googleClientId: '',
-    googleClientSecret: '',
-    plunkApiKey: '',
-    emailFrom: '',
-    vapidPrivateKey: '',
+    databaseUrl: z.string(),
+    betterAuthSecret: z.string(),
+    productionUrl: z.string().default(''),
+    adminEmail: z.string().default(''),
+    googleClientId: z.string().default(''),
+    googleClientSecret: z.string().default(''),
+    plunkApiKey: z.string().default(''),
+    emailFrom: z.string().default(''),
+    vapidPrivateKey: z.string().default(''),
     public: {
-      vapidPublicKey: '',
+      vapidPublicKey: z.string().default(''),
       sentry: {
-        dsn: '',
-        environment: process.env.VERCEL_ENV ?? 'development',
+        dsn: z.string().default(''),
+        environment: z
+          .string()
+          .default(process.env.VERCEL_ENV ?? 'development'),
       },
     },
   },

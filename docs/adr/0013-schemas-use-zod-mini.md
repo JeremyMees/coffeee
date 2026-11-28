@@ -29,3 +29,6 @@ library back.
   `shared/utils/schemas.ts` pipes a transform into the schema, the same as
   classic zod does under the hood.
 - A pipe's input schema is `schema._zod.def.in`, not `schema.in`.
+- The `runtimeConfig` schemas in `nuxt.config.ts` use classic `zod`. Nuxt needs
+  a Standard JSON Schema there, which `zod/mini` does not provide, and those
+  schemas are compiled at build time and never reach the bundle.
