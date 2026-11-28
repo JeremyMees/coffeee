@@ -104,6 +104,35 @@ pnpm seed:dev
 | `pnpm db:migrate`  | Applies the migrations                       |
 | `pnpm db:studio`   | Opens Drizzle Studio                         |
 
+## Database work per request
+
+Every API response carries a `Server-Timing` header with the database work that
+request did:
+
+```
+server-timing: db;dur=18.1;desc="3 queries"
+```
+
+`dur` is the total time in milliseconds spent waiting on the database, and
+`desc` the number of queries. Queries that run in parallel each add their own
+time, so `dur` can be longer than the request. In the browser, open the network
+panel, pick a request and look at its Timing tab, or read the header under
+Headers. That works on production too.
+
+The count belongs to one request, even while others run at the same time: the
+plugin in `server/plugins/query-tally.ts` gives each API request its own tally,
+and `talliedClient` in `server/utils/query-tally.ts` adds every query the
+database client sends to it.
+
+The heavy routes have a query budget in
+`test/unit/server/api/query-budgets.test.ts`. The test fails when a route makes
+more queries than its budget and says which route, its budget and the count. To
+lower a budget, make the route do less work, run
+`pnpm vitest run test/unit/server/api/query-budgets.test.ts` with the budget set
+to `0` to see the new count in the failure message, and write that count in.
+Budgets only go down. The tests run on PGlite, which doesn't count the `begin`
+and `commit` of a transaction that Postgres in production does.
+
 ## Deploying
 
 Pull requests and pushes to `main` run lint, format, typecheck, the tests (with

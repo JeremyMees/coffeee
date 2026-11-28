@@ -4,6 +4,7 @@ import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm'
 import { drizzle } from 'drizzle-orm/pglite'
 import { inject } from 'vitest'
 import * as schema from '#server/db/schemas'
+import { talliedClient } from '#server/utils/query-tally'
 import type { TestDatabase } from '#test/support/types'
 
 let opened: ReturnType<typeof openDatabase> | undefined
@@ -34,7 +35,11 @@ async function openDatabase() {
     ...seeded.map(table => `insert into ${table} select * from seed.${table}`),
   ].join(';\n')
 
-  return { db: drizzle({ client, schema }), client, reset }
+  return {
+    db: drizzle({ client: talliedClient(client), schema }),
+    client,
+    reset,
+  }
 }
 
 export async function createTestDatabase() {

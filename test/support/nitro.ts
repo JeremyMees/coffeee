@@ -21,3 +21,7 @@ export function useStorage(base: string) {
     },
   }
 }
+
+export function defineNitroPlugin<T>(plugin: T) {
+  return plugin
+}

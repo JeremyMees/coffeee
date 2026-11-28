@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { useRuntimeConfig } from 'nitropack/runtime'
 import * as schema from '#server/db/schemas'
+import { talliedClient } from '#server/utils/query-tally'
 
 let db: ReturnType<typeof connectDb> | undefined
 
@@ -15,7 +16,7 @@ export function connectDb(connectionString: string) {
 
   attachDatabasePool(pool)
 
-  return drizzle({ client: pool, schema })
+  return drizzle({ client: talliedClient(pool), schema })
 }
 
 export function useDb() {
