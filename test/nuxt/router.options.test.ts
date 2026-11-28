@@ -2,11 +2,15 @@ import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { START_LOCATION } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
-import options from '~/router.options'
 
 const finished = vi.hoisted(() => ({ fullPath: '/stock' }))
 
 mockNuxtImport('useRoute', () => () => finished)
+
+const afterTheMock = '~/router.options?mocked'
+const { default: options }: typeof import('~/router.options') = await import(
+  afterTheMock
+)
 
 beforeEach(() => {
   finished.fullPath = '/stock'
